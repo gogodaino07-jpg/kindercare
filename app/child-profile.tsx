@@ -34,7 +34,10 @@ export default function ChildProfileScreen() {
   const [name, setName] = useState(editingChild?.name ?? '');
   const [age, setAge] = useState<ChildAge | null>(editingChild?.age ?? null);
   const [className, setClassName] = useState(editingChild?.className ?? '');
-  const [ageError, setAgeError] = useState(false);
+
+  const nameValid = name.trim().length > 0;
+  const classNameValid = className.trim().length > 0;
+  const canSave = nameValid && !!age && classNameValid;
 
   const openCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -69,14 +72,13 @@ export default function ChildProfileScreen() {
   };
 
   const handleSave = () => {
-    if (!age) {
-      setAgeError(true);
+    if (!canSave || !age) {
       return;
     }
     const input = {
-      name: name.trim() || undefined,
+      name: name.trim(),
       age,
-      className: className.trim() || undefined,
+      className: className.trim(),
       photoUri: photoUri ?? undefined,
     };
     if (editingChild) {
@@ -105,14 +107,15 @@ export default function ChildProfileScreen() {
           </Pressable>
 
           <View style={styles.field}>
-            <Text style={styles.label}>이름</Text>
+            <Text style={styles.label}>이름 *</Text>
             <TextInput
               style={styles.input}
               value={name}
               onChangeText={setName}
-              placeholder="이름을 입력해주세요 (선택)"
+              placeholder="이름을 입력해주세요"
               placeholderTextColor={COLORS.textSecondary}
             />
+            {!nameValid ? <Text style={styles.errorText}>이름을 입력해주세요</Text> : null}
           </View>
 
           <View style={styles.field}>
@@ -122,10 +125,7 @@ export default function ChildProfileScreen() {
                 <Pressable
                   key={option}
                   style={[styles.chip, age === option && styles.chipSelected]}
-                  onPress={() => {
-                    setAge(option);
-                    setAgeError(false);
-                  }}
+                  onPress={() => setAge(option)}
                 >
                   <Text style={[styles.chipText, age === option && styles.chipTextSelected]}>
                     {option}세
@@ -133,21 +133,34 @@ export default function ChildProfileScreen() {
                 </Pressable>
               ))}
             </View>
-            {ageError ? <Text style={styles.errorText}>나이를 선택해주세요</Text> : null}
+            {!age ? <Text style={styles.errorText}>나이를 선택해주세요</Text> : null}
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>반 이름</Text>
+            <Text style={styles.label}>반 이름 *</Text>
             <TextInput
               style={styles.input}
               value={className}
               onChangeText={setClassName}
-              placeholder="예: 병아리반 (선택)"
+              placeholder="예: 병아리반"
               placeholderTextColor={COLORS.textSecondary}
             />
+            {!classNameValid ? (
+              <Text style={styles.errorText}>반 이름을 입력해주세요</Text>
+            ) : null}
           </View>
 
-          <Pressable style={styles.saveButton} onPress={handleSave}>
+          {!canSave ? (
+            <Text style={styles.summaryErrorText}>
+              이름, 나이, 반 이름을 모두 입력해야 저장할 수 있어요
+            </Text>
+          ) : null}
+
+          <Pressable
+            style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={!canSave}
+          >
             <Text style={styles.saveButtonText}>저장</Text>
           </Pressable>
         </ScrollView>
@@ -274,6 +287,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 8,
   },
+  summaryErrorText: {
+    color: COLORS.tomorrowRed,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+    width: '100%',
+  },
   saveButton: {
     width: '100%',
     backgroundColor: COLORS.accent,
@@ -282,6 +303,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
     ...SHADOW,
+  },
+  saveButtonDisabled: {
+    backgroundColor: COLORS.border,
+    opacity: 0.7,
   },
   saveButtonText: {
     color: '#FFFFFF',

@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { DEFAULT_CHALKBOARD_THEME_ID } from '../constants/chalkboardThemes';
-import { DEFAULT_FONT_ID, FontChoiceId } from '../constants/fontOptions';
+import {
+  DEFAULT_FONT_ID,
+  DEFAULT_FONT_SIZE,
+  FontChoiceId,
+  FontSizeChoice,
+} from '../constants/fontOptions';
 import {
   generateFamilyKey,
   seedChildren,
@@ -43,6 +48,8 @@ interface AppDataContextValue {
   // Appearance
   fontChoiceId: FontChoiceId;
   setFontChoiceId: (id: FontChoiceId) => void;
+  fontSizeChoice: FontSizeChoice;
+  setFontSizeChoice: (id: FontSizeChoice) => void;
   chalkboardThemeId: string;
   setChalkboardThemeId: (id: string) => void;
 
@@ -71,6 +78,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const [notificationSettings, setNotificationSettings] =
     useState<NotificationSettings>(seedNotificationSettings);
   const [fontChoiceId, setFontChoiceId] = useState<FontChoiceId>(DEFAULT_FONT_ID);
+  const [fontSizeChoice, setFontSizeChoice] = useState<FontSizeChoice>(DEFAULT_FONT_SIZE);
   const [chalkboardThemeId, setChalkboardThemeId] = useState(DEFAULT_CHALKBOARD_THEME_ID);
   const [adDismissedDate, setAdDismissedDate] = useState<string | null>(null);
 
@@ -160,6 +168,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
     fontChoiceId,
     setFontChoiceId,
+    fontSizeChoice,
+    setFontSizeChoice,
     chalkboardThemeId,
     setChalkboardThemeId,
 

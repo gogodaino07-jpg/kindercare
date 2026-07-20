@@ -13,6 +13,8 @@ export default function ChalkboardThemeScreen() {
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.title}>칠판 테마 색상</Text>
+          <Text style={styles.subtitle}>원하는 색상 조합을 골라주세요</Text>
           <View style={styles.grid}>
             {CHALKBOARD_THEMES.map((theme) => {
               const isSelected = theme.id === chalkboardThemeId;
@@ -45,10 +47,24 @@ export default function ChalkboardThemeScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  content: { padding: 20 },
+  content: { padding: 20, alignItems: 'center' },
+  title: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 16,
   },
   item: {

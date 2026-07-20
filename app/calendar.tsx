@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 4,
   },
-  cellToday: { backgroundColor: '#E4F0FB' },
+  cellToday: { backgroundColor: '#A9D8F5' },
   cellSelected: { borderWidth: 2, borderColor: COLORS.accent },
   cellText: { fontSize: 13, color: COLORS.textPrimary },
   cellTextToday: { fontWeight: '800', color: COLORS.accent },

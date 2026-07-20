@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
-import React, { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { BackHandler, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AdBannerPlaceholder from '../components/home/AdBannerPlaceholder';
 import AdPopupModal from '../components/home/AdPopupModal';
@@ -28,6 +28,16 @@ export default function HomeScreen() {
   // Look up the live event by id each render so edits made in the modal (updateEventNote)
   // are reflected immediately instead of showing a stale snapshot.
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
+
+  // Home is the app's true root screen — pressing hardware back here should exit
+  // the app rather than step backward through onboarding history.
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      BackHandler.exitApp();
+      return true;
+    });
+    return () => subscription.remove();
+  }, []);
 
   if (!hasOnboarded) {
     return <Redirect href="/splash" />;

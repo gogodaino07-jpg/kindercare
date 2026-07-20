@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../constants/theme';
 
 export default function SplashScreen() {
@@ -14,7 +15,7 @@ export default function SplashScreen() {
   }, [router]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.logoCircle}>
         <Text style={styles.logoIcon}>🐥</Text>
       </View>
@@ -22,7 +23,7 @@ export default function SplashScreen() {
         kinder<Text style={styles.logoTextAccent}>care</Text>
       </Text>
       <Text style={styles.tagline}>우리 아이 유치원 소식, 놓치지 마세요</Text>
-    </View>
+    </SafeAreaView>
   );
 }
 

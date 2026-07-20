@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CHALKBOARD_THEMES } from '../../constants/chalkboardThemes';
-import { FONT_OPTIONS } from '../../constants/fontOptions';
+import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
 import { COLORS } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
 import { Event } from '../../types/models';
@@ -15,13 +15,14 @@ interface BlackboardModalProps {
 }
 
 export default function BlackboardModal({ event, onClose, readOnly }: BlackboardModalProps) {
-  const { updateEventNote, fontChoiceId, chalkboardThemeId } = useAppData();
+  const { updateEventNote, fontChoiceId, fontSizeChoice, chalkboardThemeId } = useAppData();
   const [editing, setEditing] = useState(false);
   const [draftNote, setDraftNote] = useState('');
 
   const theme =
     CHALKBOARD_THEMES.find((t) => t.id === chalkboardThemeId) ?? CHALKBOARD_THEMES[0];
   const fontFamily = FONT_OPTIONS.find((f) => f.id === fontChoiceId)?.fontFamily;
+  const fontScale = FONT_SIZE_OPTIONS.find((f) => f.id === fontSizeChoice)?.scale ?? 1;
 
   useEffect(() => {
     if (event) {
@@ -57,8 +58,10 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
           </View>
 
           <View style={[styles.board, { backgroundColor: theme.board }]}>
-            <Text style={[styles.date, { fontFamily }]}>{formatMD(event.date)}</Text>
-            <Text style={[styles.title, { fontFamily }]}>
+            <Text style={[styles.date, { fontFamily, fontSize: 18 * fontScale }]}>
+              {formatMD(event.date)}
+            </Text>
+            <Text style={[styles.title, { fontFamily, fontSize: 28 * fontScale }]}>
               {event.icon ? `${event.icon} ` : ''}
               {event.title}
             </Text>
@@ -66,7 +69,7 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
             {editing ? (
               <>
                 <TextInput
-                  style={[styles.input, { fontFamily }]}
+                  style={[styles.input, { fontFamily, fontSize: 20 * fontScale }]}
                   value={draftNote}
                   onChangeText={setDraftNote}
                   multiline
@@ -78,7 +81,9 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
                 </Pressable>
               </>
             ) : (
-              <Text style={[styles.note, { fontFamily }]}>{event.note || '준비물이 없어요'}</Text>
+              <Text style={[styles.note, { fontFamily, fontSize: 20 * fontScale }]}>
+                {event.note || '준비물이 없어요'}
+              </Text>
             )}
           </View>
         </View>

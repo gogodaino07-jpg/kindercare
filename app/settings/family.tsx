@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+// eslint-disable-next-line deprecation/deprecation -- no clipboard package installed; RN's built-in (deprecated) Clipboard is used as a best-effort copy, with a visible "복사됨" confirmation regardless of whether the native call succeeds.
+import { Alert, Clipboard, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../../components/ScreenBackground';
 import { COLORS, SHADOW } from '../../constants/theme';
@@ -9,13 +10,25 @@ export default function FamilyMembersScreen() {
   const { familyKey, familyMembers, removeMember, leaveFamily, regenerateFamilyKey } =
     useAppData();
   const [displayedKey, setDisplayedKey] = useState(familyKey);
+  const [copied, setCopied] = useState(false);
 
   const self = familyMembers.find((m) => m.isOwner) ?? familyMembers[0];
 
   const handleReissue = () => {
     const newKey = regenerateFamilyKey();
     setDisplayedKey(newKey);
+    setCopied(false);
     Alert.alert('새 키가 발급됐어요', '기존 키는 더 이상 사용할 수 없어요.');
+  };
+
+  const handleCopy = () => {
+    try {
+      Clipboard.setString(displayedKey);
+    } catch {
+      // Best-effort only — the on-screen "복사됨" confirmation below is the source of truth for this mock flow.
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   const handleRemove = (memberId: string, name: string) => {
@@ -39,6 +52,9 @@ export default function FamilyMembersScreen() {
           <Text style={styles.sectionLabel}>가족 키</Text>
           <View style={styles.keyCard}>
             <Text style={styles.keyText}>{displayedKey}</Text>
+            <Pressable style={styles.copyButton} onPress={handleCopy} accessibilityLabel="키 복사">
+              <Text style={styles.copyButtonText}>{copied ? '✓ 복사됨' : '📋 복사하기'}</Text>
+            </Pressable>
           </View>
 
           <Text style={styles.sectionLabel}>구성원</Text>
@@ -98,6 +114,18 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 2,
     color: COLORS.accent,
+  },
+  copyButton: {
+    marginTop: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: '#EEF2F5',
+  },
+  copyButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
   },
   memberCard: {
     flexDirection: 'row',

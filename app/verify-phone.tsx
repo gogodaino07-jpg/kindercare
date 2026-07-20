@@ -13,15 +13,21 @@ import { COLORS, SHADOW } from '../constants/theme';
 
 /** Mock verification: any code works except "000000", which is reserved to demo the failure state. */
 const FAILURE_CODE = '000000';
+/** Auto-filled after "인증번호 요청" so the happy path can be completed without knowing a magic value. */
+const FAKE_SUCCESS_CODE = '135792';
+
+const CARRIERS = ['SKT', 'KT', 'LG U+', '알뜰폰'];
 
 export default function VerifyPhoneScreen() {
   const router = useRouter();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [carrier, setCarrier] = useState<string | null>(null);
   const [formError, setFormError] = useState(false);
 
   const [codeRequested, setCodeRequested] = useState(false);
+  const [codeSentNotice, setCodeSentNotice] = useState(false);
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState(false);
   const [verified, setVerified] = useState(false);
@@ -29,15 +35,16 @@ export default function VerifyPhoneScreen() {
   const [termsAgreed, setTermsAgreed] = useState(false);
 
   const handleRequestCode = () => {
-    if (!name.trim() || !phone.trim()) {
+    if (!name.trim() || !phone.trim() || !carrier) {
       setFormError(true);
       return;
     }
     setFormError(false);
     setCodeRequested(true);
     setVerified(false);
-    setCode('');
+    setCode(FAKE_SUCCESS_CODE);
     setCodeError(false);
+    setCodeSentNotice(true);
   };
 
   const handleVerifyCode = () => {
@@ -78,6 +85,29 @@ export default function VerifyPhoneScreen() {
             placeholderTextColor={COLORS.textSecondary}
           />
 
+          <Text style={styles.label}>통신사</Text>
+          <View style={styles.carrierRow}>
+            {CARRIERS.map((c) => (
+              <Pressable
+                key={c}
+                style={[styles.carrierChip, carrier === c && styles.carrierChipSelected]}
+                onPress={() => {
+                  setCarrier(c);
+                  setFormError(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.carrierChipText,
+                    carrier === c && styles.carrierChipTextSelected,
+                  ]}
+                >
+                  {c}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
           <Text style={styles.label}>전화번호</Text>
           <TextInput
             style={styles.input}
@@ -89,7 +119,7 @@ export default function VerifyPhoneScreen() {
           />
 
           {formError ? (
-            <Text style={styles.errorText}>이름과 전화번호를 모두 입력해주세요</Text>
+            <Text style={styles.errorText}>이름, 통신사, 전화번호를 모두 입력해주세요</Text>
           ) : null}
 
           <Pressable style={styles.requestButton} onPress={handleRequestCode}>
@@ -100,6 +130,11 @@ export default function VerifyPhoneScreen() {
 
           {codeRequested ? (
             <>
+              {codeSentNotice ? (
+                <Text style={styles.successText}>
+                  📩 {carrier} 번호로 인증번호가 발송됐어요 (테스트용으로 자동 입력해드렸어요)
+                </Text>
+              ) : null}
               <Text style={styles.hint}>
                 테스트용 안내: 000000을 입력하면 인증 실패 상황을 볼 수 있어요
               </Text>
@@ -183,6 +218,31 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     color: COLORS.textPrimary,
+  },
+  carrierRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  carrierChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  carrierChipSelected: {
+    backgroundColor: COLORS.coralPink,
+    borderColor: COLORS.coralPink,
+  },
+  carrierChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  carrierChipTextSelected: {
+    color: '#FFFFFF',
   },
   errorText: {
     color: COLORS.tomorrowRed,

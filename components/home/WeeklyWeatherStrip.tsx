@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { COLORS } from '../../constants/theme';
 import { useWeeklyWeather } from '../../hooks/useWeeklyWeather';
@@ -6,6 +6,15 @@ import WeatherDayCard from './WeatherDayCard';
 
 export default function WeeklyWeatherStrip() {
   const { days, loading, error, retry } = useWeeklyWeather();
+  const [refreshingLocation, setRefreshingLocation] = useState(false);
+
+  const handleRefreshLocation = () => {
+    setRefreshingLocation(true);
+    retry();
+    // Brief fake "위치 업데이트 중" beat so the refresh feels intentional even
+    // though the underlying retry() call usually resolves almost instantly.
+    setTimeout(() => setRefreshingLocation(false), 800);
+  };
 
   if (loading) {
     return (
@@ -27,22 +36,57 @@ export default function WeeklyWeatherStrip() {
   }
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContent}
-    >
-      {days.map((day) => (
-        <WeatherDayCard key={day.date} day={day} />
-      ))}
-    </ScrollView>
+    <View style={styles.row}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        style={styles.scroll}
+      >
+        {days.map((day) => (
+          <WeatherDayCard key={day.date} day={day} />
+        ))}
+      </ScrollView>
+      <Pressable
+        style={styles.locationButton}
+        onPress={handleRefreshLocation}
+        accessibilityLabel="현재 위치로 새로고침"
+        disabled={refreshingLocation}
+      >
+        {refreshingLocation ? (
+          <ActivityIndicator size="small" color={COLORS.accent} />
+        ) : (
+          <Text style={styles.locationIcon}>📍</Text>
+        )}
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  scroll: {
+    flex: 1,
+  },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingLeft: 20,
     paddingVertical: 8,
+  },
+  locationButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: COLORS.cardWhite,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 20,
+    marginLeft: 4,
+  },
+  locationIcon: {
+    fontSize: 15,
   },
   statusContainer: {
     height: 88,

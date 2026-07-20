@@ -19,8 +19,8 @@ export interface FontOption {
 }
 
 export const FONT_OPTIONS: FontOption[] = [
-  { id: 'default', label: '기본 돋움체' },
   { id: 'system', label: '시스템 폰트' },
+  { id: 'default', label: '기본 돋움체' },
   { id: 'Gaegu', label: 'Gaegu', fontFamily: 'Gaegu_400Regular' },
   { id: 'GamjaFlower', label: 'Gamja Flower', fontFamily: 'GamjaFlower_400Regular' },
   { id: 'HiMelody', label: 'Hi Melody', fontFamily: 'HiMelody_400Regular' },
@@ -33,3 +33,20 @@ export const FONT_OPTIONS: FontOption[] = [
 ];
 
 export const DEFAULT_FONT_ID: FontChoiceId = 'default';
+
+export type FontSizeChoice = 'small' | 'medium' | 'large';
+
+export interface FontSizeOption {
+  id: FontSizeChoice;
+  label: string;
+  /** Multiplier applied to the chalkboard modal's base font sizes. */
+  scale: number;
+}
+
+export const FONT_SIZE_OPTIONS: FontSizeOption[] = [
+  { id: 'small', label: '작게', scale: 0.85 },
+  { id: 'medium', label: '보통', scale: 1 },
+  { id: 'large', label: '크게', scale: 1.2 },
+];
+
+export const DEFAULT_FONT_SIZE: FontSizeChoice = 'medium';

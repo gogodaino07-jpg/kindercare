@@ -20,10 +20,13 @@ export default function HomeHeader({ selectedChild, onPressChild }: HomeHeaderPr
 
   return (
     <View style={styles.container}>
-      <Pressable style={styles.childButton} onPress={onPressChild}>
-        <Text style={styles.childLabel}>{childLabel}</Text>
-        <Text style={styles.chevron}>▾</Text>
-      </Pressable>
+      <View style={styles.leftSpacer} />
+      <View style={styles.centerArea}>
+        <Pressable style={styles.childButton} onPress={onPressChild}>
+          <Text style={styles.childLabel}>{childLabel}</Text>
+          <Text style={styles.chevron}>▾</Text>
+        </Pressable>
+      </View>
       <View style={styles.rightActions}>
         <Pressable
           style={styles.iconButton}
@@ -48,10 +51,16 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 8,
+  },
+  leftSpacer: {
+    width: 96,
+  },
+  centerArea: {
+    flex: 1,
+    alignItems: 'center',
   },
   childButton: {
     flexDirection: 'row',

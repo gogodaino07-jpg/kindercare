@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleSheet, ViewStyle } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/theme';
 
 interface OnboardingBackgroundProps {
@@ -9,7 +10,11 @@ interface OnboardingBackgroundProps {
 
 /** Warm cream-beige background shared by the onboarding-chain screens (slides, family group, verify phone, child setup). */
 export default function OnboardingBackground({ children, style }: OnboardingBackgroundProps) {
-  return <View style={[styles.container, style]}>{children}</View>;
+  return (
+    <SafeAreaView style={[styles.container, style]} edges={['top', 'bottom']}>
+      {children}
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({

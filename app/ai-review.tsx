@@ -24,7 +24,7 @@ export default function AIReviewScreen() {
   const { children, selectedChild, addEvents } = useAppData();
 
   const [draftEvents, setDraftEvents] = useState<DraftEvent[]>(() =>
-    generateMockAIEvents(children).map((e, i) => ({ ...e, localId: `draft-${i}` }))
+    generateMockAIEvents(selectedChild).map((e, i) => ({ ...e, localId: `draft-${i}` }))
   );
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);

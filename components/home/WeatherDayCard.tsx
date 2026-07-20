@@ -15,20 +15,19 @@ export default function WeatherDayCard({ day }: WeatherDayCardProps) {
         {day.weekdayLabel}
       </Text>
       <Text style={styles.emoji}>{day.emoji}</Text>
-      <Text style={styles.temp}>
-        {day.tempMax}° <Text style={styles.tempMin}>{day.tempMin}°</Text>
-      </Text>
+      <Text style={styles.tempMax}>{day.tempMax}°</Text>
+      <Text style={styles.tempMin}>{day.tempMin}°</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    width: 60,
+    width: 46,
     alignItems: 'center',
     paddingVertical: 10,
-    marginRight: 8,
-    borderRadius: 16,
+    marginRight: 6,
+    borderRadius: 14,
   },
   cardHighlighted: {
     backgroundColor: COLORS.cardWhite,
@@ -46,14 +45,16 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginBottom: 4,
   },
-  temp: {
-    fontSize: 13,
-    fontWeight: '600',
+  tempMax: {
+    fontSize: 12,
+    fontWeight: '700',
     color: COLORS.textPrimary,
+    lineHeight: 15,
   },
   tempMin: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '400',
     color: COLORS.textSecondary,
+    lineHeight: 14,
   },
 });

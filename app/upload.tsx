@@ -14,7 +14,7 @@ const MAX_DOCS = 5;
 
 export default function UploadScreen() {
   const router = useRouter();
-  const { children, events } = useAppData();
+  const { selectedChild, events } = useAppData();
   const [docs, setDocs] = useState<UploadedDoc[]>([]);
 
   const addDoc = (doc: UploadedDoc) => {
@@ -85,7 +85,7 @@ export default function UploadScreen() {
       Alert.alert('먼저 사진이나 파일을 올려주세요');
       return;
     }
-    const mockResult = generateMockAIEvents(children);
+    const mockResult = generateMockAIEvents(selectedChild);
     const hasDuplicate = mockResult.some((mockEvent) =>
       events.some(
         (existing) =>
