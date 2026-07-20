@@ -1,0 +1,86 @@
+import React from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import ScreenBackground from '../../components/ScreenBackground';
+import { CHALKBOARD_THEMES } from '../../constants/chalkboardThemes';
+import { COLORS } from '../../constants/theme';
+import { useAppData } from '../../context/AppDataContext';
+
+export default function ChalkboardThemeScreen() {
+  const { chalkboardThemeId, setChalkboardThemeId } = useAppData();
+
+  return (
+    <ScreenBackground>
+      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.grid}>
+            {CHALKBOARD_THEMES.map((theme) => {
+              const isSelected = theme.id === chalkboardThemeId;
+              return (
+                <Pressable
+                  key={theme.id}
+                  style={styles.item}
+                  onPress={() => setChalkboardThemeId(theme.id)}
+                >
+                  <View
+                    style={[
+                      styles.swatch,
+                      { backgroundColor: theme.frame },
+                      isSelected && styles.swatchSelected,
+                    ]}
+                  >
+                    <View style={[styles.swatchInner, { backgroundColor: theme.board }]} />
+                    {isSelected ? <Text style={styles.checkIcon}>✓</Text> : null}
+                  </View>
+                  <Text style={styles.label}>{theme.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </ScreenBackground>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1 },
+  content: { padding: 20 },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  item: {
+    width: '22%',
+    alignItems: 'center',
+  },
+  swatch: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swatchSelected: {
+    borderWidth: 3,
+    borderColor: COLORS.accent,
+  },
+  swatchInner: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  checkIcon: {
+    position: 'absolute',
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 14,
+  },
+  label: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 6,
+    textAlign: 'center',
+  },
+});
