@@ -1,6 +1,6 @@
+import * as Clipboard from 'expo-clipboard';
 import React, { useState } from 'react';
-// eslint-disable-next-line deprecation/deprecation -- no clipboard package installed; RN's built-in (deprecated) Clipboard is used as a best-effort copy, with a visible "복사됨" confirmation regardless of whether the native call succeeds.
-import { Alert, Clipboard, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../../components/ScreenBackground';
 import { COLORS, SHADOW } from '../../constants/theme';
@@ -21,14 +21,14 @@ export default function FamilyMembersScreen() {
     Alert.alert('새 키가 발급됐어요', '기존 키는 더 이상 사용할 수 없어요.');
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     try {
-      Clipboard.setString(displayedKey);
+      await Clipboard.setStringAsync(displayedKey);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
     } catch {
-      // Best-effort only — the on-screen "복사됨" confirmation below is the source of truth for this mock flow.
+      Alert.alert('복사에 실패했어요', '잠시 후 다시 시도해주세요.');
     }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
   };
 
   const handleRemove = (memberId: string, name: string) => {

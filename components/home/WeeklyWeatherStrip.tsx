@@ -5,18 +5,23 @@ import { useWeeklyWeather } from '../../hooks/useWeeklyWeather';
 import WeatherDayCard from './WeatherDayCard';
 
 export default function WeeklyWeatherStrip() {
-  const { days, loading, error, retry } = useWeeklyWeather();
-  const [refreshingLocation, setRefreshingLocation] = useState(false);
+  const { days, loading, error, retry, usingFallbackLocation } = useWeeklyWeather();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const handleRefreshLocation = () => {
-    setRefreshingLocation(true);
-    retry();
-    // Brief fake "위치 업데이트 중" beat so the refresh feels intentional even
-    // though the underlying retry() call usually resolves almost instantly.
-    setTimeout(() => setRefreshingLocation(false), 800);
+  const handleRefreshLocation = async () => {
+    setRefreshing(true);
+    try {
+      // Real GPS re-read + Open-Meteo refetch (see hooks/useWeeklyWeather.ts) —
+      // awaited so the button's spinner tracks the actual network/location call.
+      await retry();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
-  if (loading) {
+  // Only block the whole strip on the very first load. Once we already have a
+  // week of data, a manual refresh should update in place instead of hiding it.
+  if (loading && !days) {
     return (
       <View style={styles.statusContainer}>
         <ActivityIndicator color={COLORS.accent} />
@@ -36,29 +41,36 @@ export default function WeeklyWeatherStrip() {
   }
 
   return (
-    <View style={styles.row}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        style={styles.scroll}
-      >
-        {days.map((day) => (
-          <WeatherDayCard key={day.date} day={day} />
-        ))}
-      </ScrollView>
-      <Pressable
-        style={styles.locationButton}
-        onPress={handleRefreshLocation}
-        accessibilityLabel="현재 위치로 새로고침"
-        disabled={refreshingLocation}
-      >
-        {refreshingLocation ? (
-          <ActivityIndicator size="small" color={COLORS.accent} />
-        ) : (
-          <Text style={styles.locationIcon}>📍</Text>
-        )}
-      </Pressable>
+    <View>
+      <View style={styles.row}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          style={styles.scroll}
+        >
+          {days.map((day) => (
+            <WeatherDayCard key={day.date} day={day} />
+          ))}
+        </ScrollView>
+        <Pressable
+          style={styles.locationButton}
+          onPress={handleRefreshLocation}
+          accessibilityLabel="현재 위치로 새로고침"
+          disabled={refreshing}
+        >
+          {refreshing ? (
+            <ActivityIndicator size="small" color={COLORS.accent} />
+          ) : (
+            <Text style={styles.locationIcon}>📍</Text>
+          )}
+        </Pressable>
+      </View>
+      {usingFallbackLocation ? (
+        <Text style={styles.fallbackNotice}>
+          위치 권한이 없어 서울 기준으로 보여드리고 있어요
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -87,6 +99,12 @@ const styles = StyleSheet.create({
   },
   locationIcon: {
     fontSize: 15,
+  },
+  fallbackNotice: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginLeft: 20,
+    marginBottom: 6,
   },
   statusContainer: {
     height: 88,

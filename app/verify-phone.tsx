@@ -11,10 +11,17 @@ import {
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
 import { COLORS, SHADOW } from '../constants/theme';
 
-/** Mock verification: any code works except "000000", which is reserved to demo the failure state. */
+/**
+ * Mock verification (real telecom SDK integration is deferred to a future contract).
+ * "인증번호 요청" generates a fresh random code and displays it on-screen — the user
+ * reads it and types it into the 인증번호 field themselves, same as they would with a
+ * real SMS. Entering "000000" is reserved to demo the failure state on purpose.
+ */
 const FAILURE_CODE = '000000';
-/** Auto-filled after "인증번호 요청" so the happy path can be completed without knowing a magic value. */
-const FAKE_SUCCESS_CODE = '135792';
+
+function generateFakeCode(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
 
 const CARRIERS = ['SKT', 'KT', 'LG U+', '알뜰폰'];
 
@@ -27,7 +34,7 @@ export default function VerifyPhoneScreen() {
   const [formError, setFormError] = useState(false);
 
   const [codeRequested, setCodeRequested] = useState(false);
-  const [codeSentNotice, setCodeSentNotice] = useState(false);
+  const [issuedCode, setIssuedCode] = useState('');
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState(false);
   const [verified, setVerified] = useState(false);
@@ -42,9 +49,9 @@ export default function VerifyPhoneScreen() {
     setFormError(false);
     setCodeRequested(true);
     setVerified(false);
-    setCode(FAKE_SUCCESS_CODE);
+    setCode('');
     setCodeError(false);
-    setCodeSentNotice(true);
+    setIssuedCode(generateFakeCode());
   };
 
   const handleVerifyCode = () => {
@@ -53,7 +60,7 @@ export default function VerifyPhoneScreen() {
       setVerified(false);
       return;
     }
-    if (code.trim() === FAILURE_CODE) {
+    if (code.trim() === FAILURE_CODE || code.trim() !== issuedCode) {
       setCodeError(true);
       setVerified(false);
       return;
@@ -130,11 +137,14 @@ export default function VerifyPhoneScreen() {
 
           {codeRequested ? (
             <>
-              {codeSentNotice ? (
-                <Text style={styles.successText}>
-                  📩 {carrier} 번호로 인증번호가 발송됐어요 (테스트용으로 자동 입력해드렸어요)
+              <Text style={styles.successText}>📩 {carrier} 번호로 인증번호가 발송됐어요</Text>
+              <View style={styles.codeAnnounceBox}>
+                <Text style={styles.codeAnnounceLabel}>발급된 인증번호</Text>
+                <Text style={styles.codeAnnounceValue}>{issuedCode}</Text>
+                <Text style={styles.codeAnnounceHint}>
+                  실제 서비스에서는 문자로 오는 번호예요. 아래 칸에 직접 입력해주세요
                 </Text>
-              ) : null}
+              </View>
               <Text style={styles.hint}>
                 테스트용 안내: 000000을 입력하면 인증 실패 상황을 볼 수 있어요
               </Text>
@@ -259,6 +269,32 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.textSecondary,
     marginTop: 14,
+  },
+  codeAnnounceBox: {
+    backgroundColor: '#FFF3E9',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  codeAnnounceLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
+  codeAnnounceValue: {
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: 4,
+    color: COLORS.coralPink,
+    marginTop: 4,
+  },
+  codeAnnounceHint: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 6,
+    textAlign: 'center',
   },
   requestButton: {
     marginTop: 18,
