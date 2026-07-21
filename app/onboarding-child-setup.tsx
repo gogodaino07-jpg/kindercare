@@ -33,8 +33,10 @@ export default function OnboardingChildSetupScreen() {
   const [error, setError] = useState(false);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
 
+  const canCreate = !!name.trim() && !!birthdate;
+
   const handleCreate = () => {
-    if (!name.trim() || !birthdate) {
+    if (!canCreate || !birthdate) {
       setError(true);
       return;
     }
@@ -58,9 +60,12 @@ export default function OnboardingChildSetupScreen() {
         <View style={styles.card}>
           <Text style={styles.label}>이름</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, error && !name.trim() && styles.inputInvalid]}
             value={name}
-            onChangeText={setName}
+            onChangeText={(t) => {
+              setName(t);
+              setError(false);
+            }}
             placeholder="아이 이름을 입력해주세요"
             placeholderTextColor={COLORS.textSecondary}
           />
@@ -96,7 +101,11 @@ export default function OnboardingChildSetupScreen() {
           {error ? <Text style={styles.errorText}>이름과 생년월일을 모두 입력해주세요</Text> : null}
         </View>
 
-        <Pressable style={styles.completeButton} onPress={handleCreate}>
+        <Pressable
+          style={[styles.completeButton, !canCreate && styles.completeButtonDisabled]}
+          onPress={handleCreate}
+          disabled={!canCreate}
+        >
           <Text style={styles.completeButtonText}>프로필 생성 완료</Text>
         </Pressable>
       </ScrollView>
@@ -139,6 +148,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     color: COLORS.textPrimary,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  inputInvalid: {
+    borderColor: COLORS.tomorrowRed,
   },
   dateButton: {
     backgroundColor: '#FFFFFF',
@@ -162,6 +176,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
+  },
+  completeButtonDisabled: {
+    opacity: 0.4,
   },
   completeButtonText: {
     color: '#FFFFFF',

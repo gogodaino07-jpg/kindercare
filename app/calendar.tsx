@@ -128,15 +128,15 @@ export default function CalendarScreen() {
 
           <View style={styles.legendRow}>
             <View style={styles.legendItem}>
-              <View style={[styles.dot, { backgroundColor: DOT_COLORS.ai }]} />
+              <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.ai }]} />
               <Text style={styles.legendText}>유치원 공지</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.dot, { backgroundColor: DOT_COLORS.review }]} />
+              <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.review }]} />
               <Text style={styles.legendText}>확인 필요</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.dot, { backgroundColor: DOT_COLORS.manual }]} />
+              <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.manual }]} />
               <Text style={styles.legendText}>직접 추가</Text>
             </View>
           </View>
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: 20,
     marginBottom: 4,
   },
   cellToday: { backgroundColor: '#A9D8F5' },
@@ -212,12 +212,13 @@ const styles = StyleSheet.create({
   legendRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 16,
+    gap: 20,
     marginTop: 16,
     marginBottom: 8,
   },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  legendText: { fontSize: 11, color: COLORS.textSecondary },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 9, height: 9, borderRadius: 5 },
+  legendText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
   selectedDateSection: { marginTop: 20 },
   selectedDateLabel: {
     fontSize: 13,

@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
+import TermsAccordion from '../components/onboarding/TermsAccordion';
 import { COLORS, SHADOW } from '../constants/theme';
 
 /**
@@ -96,6 +97,10 @@ export default function VerifyPhoneScreen() {
     setVerified(true);
   };
 
+  const nameInvalid = formError && !name.trim();
+  const phoneInvalid = formError && !phone.trim();
+  const carrierInvalid = formError && !carrier;
+
   const canComplete = verified && termsAgreed;
 
   const handleComplete = () => {
@@ -105,22 +110,29 @@ export default function VerifyPhoneScreen() {
 
   return (
     <OnboardingBackground>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.title}>본인인증</Text>
         <Text style={styles.subtitle}>안전한 서비스 이용을 위해 본인 확인이 필요해요</Text>
 
         <View style={styles.card}>
           <Text style={styles.label}>이름</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, nameInvalid && styles.inputInvalid]}
             value={name}
-            onChangeText={setName}
+            onChangeText={(t) => {
+              setName(t);
+              setFormError(false);
+            }}
             placeholder="이름을 입력해주세요"
             placeholderTextColor={COLORS.textSecondary}
           />
+          {nameInvalid ? <Text style={styles.errorText}>이름을 입력해주세요</Text> : null}
 
           <Text style={styles.label}>통신사</Text>
-          <View style={styles.carrierRow}>
+          <View style={[styles.carrierRow, carrierInvalid && styles.carrierRowInvalid]}>
             {CARRIERS.map((c) => (
               <Pressable
                 key={c}
@@ -141,20 +153,21 @@ export default function VerifyPhoneScreen() {
               </Pressable>
             ))}
           </View>
+          {carrierInvalid ? <Text style={styles.errorText}>통신사를 선택해주세요</Text> : null}
 
           <Text style={styles.label}>전화번호</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, phoneInvalid && styles.inputInvalid]}
             value={phone}
-            onChangeText={setPhone}
+            onChangeText={(t) => {
+              setPhone(t);
+              setFormError(false);
+            }}
             placeholder="010-0000-0000"
             placeholderTextColor={COLORS.textSecondary}
             keyboardType="phone-pad"
           />
-
-          {formError ? (
-            <Text style={styles.errorText}>이름, 통신사, 전화번호를 모두 입력해주세요</Text>
-          ) : null}
+          {phoneInvalid ? <Text style={styles.errorText}>전화번호를 입력해주세요</Text> : null}
 
           <Pressable style={styles.requestButton} onPress={handleRequestCode}>
             <Text style={styles.requestButtonText}>
@@ -214,15 +227,7 @@ export default function VerifyPhoneScreen() {
           ) : null}
         </View>
 
-        <Pressable
-          style={styles.termsRow}
-          onPress={() => setTermsAgreed((prev) => !prev)}
-        >
-          <View style={[styles.checkbox, termsAgreed && styles.checkboxChecked]}>
-            {termsAgreed ? <Text style={styles.checkboxMark}>✓</Text> : null}
-          </View>
-          <Text style={styles.termsText}>전체약관에 동의합니다</Text>
-        </Pressable>
+        <TermsAccordion onChangeAllAgreed={setTermsAgreed} />
 
         <Pressable
           style={[styles.completeButton, !canComplete && styles.completeButtonDisabled]}
@@ -237,7 +242,7 @@ export default function VerifyPhoneScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 24, paddingBottom: 40 },
+  content: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingBottom: 40 },
   title: {
     fontSize: 22,
     fontWeight: '800',
@@ -285,11 +290,23 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     color: COLORS.textPrimary,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  inputInvalid: {
+    borderColor: COLORS.tomorrowRed,
   },
   carrierRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    borderRadius: 12,
+  },
+  carrierRowInvalid: {
+    borderWidth: 1.5,
+    borderColor: COLORS.tomorrowRed,
+    padding: 6,
+    margin: -6,
   },
   carrierChip: {
     paddingVertical: 8,
@@ -372,28 +389,6 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   verifyButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
-  termsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-    backgroundColor: '#FFFFFF',
-  },
-  checkboxChecked: {
-    backgroundColor: COLORS.coralPink,
-    borderColor: COLORS.coralPink,
-  },
-  checkboxMark: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  termsText: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '600' },
   completeButton: {
     marginTop: 24,
     backgroundColor: COLORS.textPrimary,

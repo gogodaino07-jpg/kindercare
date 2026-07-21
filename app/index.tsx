@@ -14,17 +14,13 @@ import WeeklyWeatherStrip from '../components/home/WeeklyWeatherStrip';
 import ScreenBackground from '../components/ScreenBackground';
 import { useAppData } from '../context/AppDataContext';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
-import { toISODate } from '../utils/date';
 
 export default function HomeScreen() {
-  const { hasOnboarded, selectedChild, events, adDismissedDate, dismissAdForToday } =
-    useAppData();
+  const { hasOnboarded, selectedChild, events } = useAppData();
   const { tomorrowEvents, laterGroups, isEmpty } = useUpcomingEvents();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
-  const [adPopupVisible, setAdPopupVisible] = useState(
-    () => adDismissedDate !== toISODate(new Date())
-  );
+  const [adPopupVisible, setAdPopupVisible] = useState(true);
   // Look up the live event by id each render so edits made in the modal (updateEventNote)
   // are reflected immediately instead of showing a stale snapshot.
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
@@ -37,14 +33,9 @@ export default function HomeScreen() {
     return <Redirect href="/splash" />;
   }
 
-  const handleCloseAdPopup = (dismissForToday: boolean) => {
-    if (dismissForToday) dismissAdForToday();
-    setAdPopupVisible(false);
-  };
-
   return (
     <ScreenBackground>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <HomeHeader selectedChild={selectedChild} onPressChild={() => setSwitcherOpen(true)} />
         <WeeklyWeatherStrip />
         <AdBannerPlaceholder />
@@ -61,7 +52,7 @@ export default function HomeScreen() {
       </SafeAreaView>
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
-      <AdPopupModal visible={adPopupVisible} onClose={handleCloseAdPopup} />
+      <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />
     </ScreenBackground>
   );
 }

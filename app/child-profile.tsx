@@ -109,7 +109,7 @@ export default function ChildProfileScreen() {
           <View style={styles.field}>
             <Text style={styles.label}>이름 *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, !nameValid && styles.inputInvalid]}
               value={name}
               onChangeText={setName}
               placeholder="이름을 입력해주세요"
@@ -120,7 +120,7 @@ export default function ChildProfileScreen() {
 
           <View style={styles.field}>
             <Text style={styles.label}>나이 *</Text>
-            <View style={styles.chipRow}>
+            <View style={[styles.chipRow, !age && styles.chipRowInvalid]}>
               {AGE_OPTIONS.map((option) => (
                 <Pressable
                   key={option}
@@ -139,7 +139,7 @@ export default function ChildProfileScreen() {
           <View style={styles.field}>
             <Text style={styles.label}>반 이름 *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, !classNameValid && styles.inputInvalid]}
               value={className}
               onChangeText={setClassName}
               placeholder="예: 병아리반"
@@ -257,12 +257,24 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     color: COLORS.textPrimary,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
     ...SHADOW,
+  },
+  inputInvalid: {
+    borderColor: COLORS.tomorrowRed,
   },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    borderRadius: 12,
+  },
+  chipRowInvalid: {
+    borderWidth: 1.5,
+    borderColor: COLORS.tomorrowRed,
+    padding: 6,
+    margin: -6,
   },
   chip: {
     paddingVertical: 10,

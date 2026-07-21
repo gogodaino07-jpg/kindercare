@@ -64,33 +64,35 @@ export default function OnboardingScreen() {
     <OnboardingBackground>
       <View style={styles.skipRow}>
         <Pressable onPress={() => router.replace('/family-group-start')}>
-          <Text style={styles.skipText}>건너뛰기</Text>
+          <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       </View>
 
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={handleScrollEnd}
-        style={styles.scroll}
-      >
-        {SLIDES.map((slide) => (
-          <View key={slide.title} style={[styles.slide, { width }]}>
-            <View style={styles.iconCircle}>
-              <Text style={styles.icon}>{slide.icon}</Text>
+      <View style={styles.centerArea}>
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleScrollEnd}
+          style={styles.scroll}
+        >
+          {SLIDES.map((slide) => (
+            <View key={slide.title} style={[styles.slide, { width }]}>
+              <View style={styles.iconCircle}>
+                <Text style={styles.icon}>{slide.icon}</Text>
+              </View>
+              <Text style={styles.title}>{slide.title}</Text>
+              <Text style={styles.description}>{slide.description}</Text>
             </View>
-            <Text style={styles.title}>{slide.title}</Text>
-            <Text style={styles.description}>{slide.description}</Text>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
 
-      <View style={styles.dotsRow}>
-        {SLIDES.map((slide, i) => (
-          <View key={slide.title} style={[styles.dot, i === activeIndex && styles.dotActive]} />
-        ))}
+        <View style={styles.dotsRow}>
+          {SLIDES.map((slide, i) => (
+            <View key={slide.title} style={[styles.dot, i === activeIndex && styles.dotActive]} />
+          ))}
+        </View>
       </View>
 
       <Pressable style={styles.nextButton} onPress={goNext}>
@@ -110,6 +112,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textSecondary,
     fontWeight: '600',
+  },
+  centerArea: {
+    flex: 1,
+    justifyContent: 'center',
   },
   scroll: {
     flexGrow: 0,

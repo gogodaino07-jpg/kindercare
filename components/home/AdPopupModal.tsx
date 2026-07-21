@@ -1,17 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { COLORS, SHADOW } from '../../constants/theme';
 
 interface AdPopupModalProps {
   visible: boolean;
-  onClose: (dismissForToday: boolean) => void;
+  onClose: () => void;
 }
 
 export default function AdPopupModal({ visible, onClose }: AdPopupModalProps) {
-  const [dontShowToday, setDontShowToday] = useState(false);
-
   return (
-    <Modal visible={visible} transparent onRequestClose={() => onClose(dontShowToday)}>
+    <Modal visible={visible} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.card}>
           <View style={styles.adArea}>
@@ -20,17 +18,7 @@ export default function AdPopupModal({ visible, onClose }: AdPopupModalProps) {
             <Text style={styles.adSubtitle}>광고 영역이에요 (자리 표시자)</Text>
           </View>
 
-          <Pressable
-            style={styles.checkboxRow}
-            onPress={() => setDontShowToday((prev) => !prev)}
-          >
-            <View style={[styles.checkbox, dontShowToday && styles.checkboxChecked]}>
-              {dontShowToday ? <Text style={styles.checkboxMark}>✓</Text> : null}
-            </View>
-            <Text style={styles.checkboxLabel}>오늘 다시 보지 않기</Text>
-          </Pressable>
-
-          <Pressable style={styles.closeButton} onPress={() => onClose(dontShowToday)}>
+          <Pressable style={styles.closeButton} onPress={onClose}>
             <Text style={styles.closeButtonText}>닫기</Text>
           </Pressable>
         </View>
@@ -65,27 +53,6 @@ const styles = StyleSheet.create({
   adIcon: { fontSize: 40, marginBottom: 10 },
   adTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
   adSubtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 4 },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  checkboxChecked: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
-  },
-  checkboxMark: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
-  checkboxLabel: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600' },
   closeButton: {
     backgroundColor: COLORS.textPrimary,
     borderRadius: 14,
