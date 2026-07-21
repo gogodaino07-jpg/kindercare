@@ -8,10 +8,11 @@ import { PoorStory_400Regular } from '@expo-google-fonts/poor-story';
 import { Sunflower_500Medium } from '@expo-google-fonts/sunflower';
 import { YeonSung_400Regular } from '@expo-google-fonts/yeon-sung';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
+import { BackHandler } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppDataProvider } from '../context/AppDataContext';
@@ -19,6 +20,7 @@ import { AppDataProvider } from '../context/AppDataContext';
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const router = useRouter();
   const [fontsLoaded] = useFonts({
     Gaegu_400Regular,
     GamjaFlower_400Regular,
@@ -36,6 +38,23 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
+
+  // Single app-wide hardware back handler: go back one screen (2뎁스+) whenever the
+  // stack has a previous screen to return to, and only exit the app once there is
+  // nowhere left to go back to (1뎁스, i.e. Home). Registered once at the root so it
+  // always reflects the current navigation depth, instead of being scoped to a single
+  // screen's focus state.
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (router.canGoBack()) {
+        router.back();
+        return true;
+      }
+      BackHandler.exitApp();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [router]);
 
   if (!fontsLoaded) {
     return null;
