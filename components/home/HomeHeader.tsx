@@ -61,14 +61,15 @@ const styles = StyleSheet.create({
   centerArea: {
     flex: 1,
     alignItems: 'center',
+    paddingHorizontal: 12,
   },
   childButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.cardWhite,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingVertical: 11,
+    paddingHorizontal: 18,
+    borderRadius: 16,
     ...SHADOW,
   },
   childLabel: {

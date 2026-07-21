@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ChalkboardPreview from '../../components/settings/ChalkboardPreview';
 import ScreenBackground from '../../components/ScreenBackground';
 import { CHALKBOARD_THEMES } from '../../constants/chalkboardThemes';
 import { COLORS } from '../../constants/theme';
@@ -8,6 +9,8 @@ import { useAppData } from '../../context/AppDataContext';
 
 export default function ChalkboardThemeScreen() {
   const { chalkboardThemeId, setChalkboardThemeId } = useAppData();
+  const selectedTheme =
+    CHALKBOARD_THEMES.find((t) => t.id === chalkboardThemeId) ?? CHALKBOARD_THEMES[0];
 
   return (
     <ScreenBackground>
@@ -39,6 +42,8 @@ export default function ChalkboardThemeScreen() {
               );
             })}
           </View>
+
+          <ChalkboardPreview theme={selectedTheme} />
         </ScrollView>
       </SafeAreaView>
     </ScreenBackground>

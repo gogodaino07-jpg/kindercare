@@ -1,5 +1,5 @@
-import { Redirect } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { Redirect, useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import { BackHandler, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AdBannerPlaceholder from '../components/home/AdBannerPlaceholder';
@@ -29,15 +29,20 @@ export default function HomeScreen() {
   // are reflected immediately instead of showing a stale snapshot.
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
 
-  // Home is the app's true root screen — pressing hardware back here should exit
-  // the app rather than step backward through onboarding history.
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      BackHandler.exitApp();
-      return true;
-    });
-    return () => subscription.remove();
-  }, []);
+  // Home is the app's true root (1뎁스) screen — pressing hardware back here should
+  // exit the app. The listener is registered only while Home is the focused screen
+  // (via useFocusEffect, not a plain mount-time useEffect) so that on every other
+  // (2뎁스+) screen — which stay mounted in the background under expo-router's Stack —
+  // this handler is detached and the default "go back one screen" behavior applies.
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        BackHandler.exitApp();
+        return true;
+      });
+      return () => subscription.remove();
+    }, [])
+  );
 
   if (!hasOnboarded) {
     return <Redirect href="/splash" />;

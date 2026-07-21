@@ -149,21 +149,21 @@ export default function ChildProfileScreen() {
               <Text style={styles.errorText}>반 이름을 입력해주세요</Text>
             ) : null}
           </View>
-
-          {!canSave ? (
-            <Text style={styles.summaryErrorText}>
-              이름, 나이, 반 이름을 모두 입력해야 저장할 수 있어요
-            </Text>
-          ) : null}
-
-          <Pressable
-            style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
-            onPress={handleSave}
-            disabled={!canSave}
-          >
-            <Text style={styles.saveButtonText}>저장</Text>
-          </Pressable>
         </ScrollView>
+
+        {!canSave ? (
+          <Text style={styles.summaryErrorText}>
+            이름, 나이, 반 이름을 모두 입력해야 저장할 수 있어요
+          </Text>
+        ) : null}
+
+        <Pressable
+          style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
+          onPress={handleSave}
+          disabled={!canSave}
+        >
+          <Text style={styles.saveButtonText}>저장</Text>
+        </Pressable>
       </SafeAreaView>
 
       <PhotoSourceSheet
@@ -293,15 +293,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 8,
-    width: '100%',
+    marginHorizontal: 20,
   },
   saveButton: {
-    width: '100%',
+    marginHorizontal: 20,
+    marginBottom: 16,
     backgroundColor: COLORS.accent,
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 12,
     ...SHADOW,
   },
   saveButtonDisabled: {

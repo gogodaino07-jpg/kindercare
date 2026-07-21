@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -18,9 +18,17 @@ import { COLORS, SHADOW } from '../constants/theme';
  * real SMS. Entering "000000" is reserved to demo the failure state on purpose.
  */
 const FAILURE_CODE = '000000';
+/** 인증번호 유효 시간(초). 만료되면 재요청해야 새 코드/타이머가 발급된다. */
+const CODE_VALID_SECONDS = 180;
 
 function generateFakeCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function formatCountdown(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 const CARRIERS = ['SKT', 'KT', 'LG U+', '알뜰폰'];
@@ -38,8 +46,21 @@ export default function VerifyPhoneScreen() {
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(0);
 
   const [termsAgreed, setTermsAgreed] = useState(false);
+
+  const expired = codeRequested && secondsLeft === 0;
+
+  // Ticks the 3-minute countdown down every second while a code is outstanding.
+  // Keyed on issuedCode so requesting/re-requesting a code cleanly restarts it.
+  useEffect(() => {
+    if (!codeRequested) return;
+    const timer = setInterval(() => {
+      setSecondsLeft((s) => Math.max(0, s - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [codeRequested, issuedCode]);
 
   const handleRequestCode = () => {
     if (!name.trim() || !phone.trim() || !carrier) {
@@ -52,9 +73,15 @@ export default function VerifyPhoneScreen() {
     setCode('');
     setCodeError(false);
     setIssuedCode(generateFakeCode());
+    setSecondsLeft(CODE_VALID_SECONDS);
   };
 
   const handleVerifyCode = () => {
+    if (expired) {
+      setCodeError(true);
+      setVerified(false);
+      return;
+    }
     if (!code.trim()) {
       setCodeError(true);
       setVerified(false);
@@ -148,7 +175,12 @@ export default function VerifyPhoneScreen() {
               <Text style={styles.hint}>
                 테스트용 안내: 000000을 입력하면 인증 실패 상황을 볼 수 있어요
               </Text>
-              <Text style={styles.label}>인증번호</Text>
+              <View style={styles.codeLabelRow}>
+                <Text style={[styles.label, styles.codeLabelInRow]}>인증번호</Text>
+                <Text style={[styles.timerText, expired && styles.timerTextExpired]}>
+                  {expired ? '만료됨' : formatCountdown(secondsLeft)}
+                </Text>
+              </View>
               <TextInput
                 style={styles.input}
                 value={code}
@@ -160,13 +192,22 @@ export default function VerifyPhoneScreen() {
                 placeholderTextColor={COLORS.textSecondary}
                 keyboardType="number-pad"
                 maxLength={6}
+                editable={!expired}
               />
-              {codeError ? (
+              {expired ? (
+                <Text style={styles.errorText}>
+                  인증번호 유효 시간이 지났어요. 다시 요청해주세요
+                </Text>
+              ) : codeError ? (
                 <Text style={styles.errorText}>인증번호가 일치하지 않아요. 다시 확인해주세요</Text>
               ) : null}
               {verified ? <Text style={styles.successText}>✓ 인증이 완료됐어요</Text> : null}
 
-              <Pressable style={styles.verifyButton} onPress={handleVerifyCode}>
+              <Pressable
+                style={[styles.verifyButton, expired && styles.verifyButtonDisabled]}
+                onPress={handleVerifyCode}
+                disabled={expired}
+              >
                 <Text style={styles.verifyButtonText}>인증번호 확인</Text>
               </Pressable>
             </>
@@ -220,6 +261,22 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     marginBottom: 6,
     marginTop: 14,
+  },
+  codeLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  codeLabelInRow: {
+    marginBottom: 6,
+  },
+  timerText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.coralPink,
+  },
+  timerTextExpired: {
+    color: COLORS.tomorrowRed,
   },
   input: {
     backgroundColor: '#FFFFFF',
@@ -310,6 +367,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
+  },
+  verifyButtonDisabled: {
+    opacity: 0.4,
   },
   verifyButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   termsRow: {

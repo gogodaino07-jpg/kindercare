@@ -10,6 +10,7 @@ import { YeonSung_400Regular } from '@expo-google-fonts/yeon-sung';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -44,6 +45,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AppDataProvider>
+          <StatusBar style="auto" />
           <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="splash" options={{ headerShown: false }} />
@@ -62,6 +64,7 @@ export default function RootLayout() {
             <Stack.Screen name="settings/family" options={{ title: '가족 계정' }} />
             <Stack.Screen name="settings/notifications" options={{ title: '알림 설정' }} />
             <Stack.Screen name="settings/font" options={{ title: '글씨체 설정' }} />
+            <Stack.Screen name="settings/font-size" options={{ title: '글자 크기 설정' }} />
             <Stack.Screen
               name="settings/chalkboard-theme"
               options={{ title: '칠판 테마 색상' }}

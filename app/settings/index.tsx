@@ -39,6 +39,7 @@ export default function SettingsScreen() {
         { label: '테마 (라이트/다크)', onPress: comingSoon('테마') },
         { label: '앱 잠금', onPress: comingSoon('앱 잠금') },
         { label: '글씨체', onPress: () => router.push('/settings/font') },
+        { label: '글자 크기 설정', onPress: () => router.push('/settings/font-size') },
         { label: '칠판 테마 색상', onPress: () => router.push('/settings/chalkboard-theme') },
       ],
     },
