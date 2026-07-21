@@ -13,6 +13,7 @@
     "@expo-google-fonts/sunflower": "^0.4.1",
     "@expo-google-fonts/yeon-sung": "^0.4.1",
     "@expo/metro-runtime": "~57.0.6",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "9.1.0",
     "babel-preset-expo": "~57.0.0",
     "expo": "~57.0.7",

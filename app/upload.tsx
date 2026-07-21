@@ -1,7 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
@@ -9,6 +9,11 @@ import { COLORS, SHADOW } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { generateMockAIEvents, isSimilarEvent } from '../data/mockAIResult';
 import { UploadedDoc } from '../types/models';
+import {
+  DAILY_ANALYSIS_LIMIT,
+  consumeAnalysisUse,
+  getRemainingAnalysisCount,
+} from '../utils/aiUsageLimit';
 
 const MAX_DOCS = 5;
 
@@ -16,6 +21,11 @@ export default function UploadScreen() {
   const router = useRouter();
   const { selectedChild, events } = useAppData();
   const [docs, setDocs] = useState<UploadedDoc[]>([]);
+  const [remainingAnalyses, setRemainingAnalyses] = useState(DAILY_ANALYSIS_LIMIT);
+
+  useEffect(() => {
+    getRemainingAnalysisCount().then(setRemainingAnalyses);
+  }, []);
 
   const addDoc = (doc: UploadedDoc) => {
     if (docs.length >= MAX_DOCS) {
@@ -80,11 +90,19 @@ export default function UploadScreen() {
     router.push('/ai-review');
   };
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (docs.length === 0) {
       Alert.alert('먼저 사진이나 파일을 올려주세요');
       return;
     }
+    if (remainingAnalyses <= 0) {
+      Alert.alert(
+        '오늘의 무료 AI 분석 기회(3회)를 모두 소진하셨습니다. 내일 다시 시도해주세요!'
+      );
+      return;
+    }
+    setRemainingAnalyses(await consumeAnalysisUse());
+
     const mockResult = generateMockAIEvents(selectedChild);
     const hasDuplicate = mockResult.some((mockEvent) =>
       events.some(
@@ -147,6 +165,9 @@ export default function UploadScreen() {
           </View>
         </ScrollView>
 
+        <Text style={styles.usageText}>
+          오늘 남은 횟수: {remainingAnalyses}/{DAILY_ANALYSIS_LIMIT}회
+        </Text>
         <Pressable style={styles.analyzeButton} onPress={handleAnalyze}>
           <Text style={styles.analyzeButtonText}>AI로 내용 분석하기</Text>
         </Pressable>
@@ -218,6 +239,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   removeBadgeText: { color: '#FFFFFF', fontSize: 11 },
+  usageText: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+  },
   analyzeButton: {
     marginHorizontal: 20,
     marginBottom: 16,
