@@ -8,6 +8,7 @@ import ScreenBackground from '../components/ScreenBackground';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import { generateMockAIEvents, isSimilarEvent } from '../data/mockAIResult';
 import { UploadedDoc } from '../types/models';
 import {
@@ -21,6 +22,7 @@ const MAX_DOCS = 5;
 export default function UploadScreen() {
   const router = useRouter();
   const { selectedChild, events } = useAppData();
+  const { showToast } = useToast();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [docs, setDocs] = useState<UploadedDoc[]>([]);
@@ -90,6 +92,7 @@ export default function UploadScreen() {
   };
 
   const goToAnalysis = () => {
+    showToast('업로드가 완료되었습니다.');
     router.push('/ai-review');
   };
 

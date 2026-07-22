@@ -17,12 +17,12 @@ export default function FamilyGroupStartScreen() {
 
   const handleCreateNew = () => {
     regenerateFamilyKey();
-    router.push('/verify-phone');
+    router.push({ pathname: '/verify-phone', params: { flow: 'create' } });
   };
 
   const handleJoin = (_code: string) => {
     setShowJoinModal(false);
-    router.push('/verify-phone');
+    router.push({ pathname: '/verify-phone', params: { flow: 'join' } });
   };
 
   return (

@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { GestureResponderEvent, PanResponder, StyleSheet, View } from 'react-native';
+import Svg, { Circle, Polyline } from 'react-native-svg';
 import { ThemeColors } from '../../constants/theme';
 
 interface PatternGridProps {
@@ -21,6 +22,7 @@ function centerFor(index: number, cell: number) {
 export default function PatternGrid({ colors, showTrail, onComplete, size = 240 }: PatternGridProps) {
   const cell = size / GRID_SIZE;
   const [path, setPath] = useState<number[]>([]);
+  const [dragPoint, setDragPoint] = useState<{ x: number; y: number } | null>(null);
   const pathRef = useRef<number[]>([]);
 
   const centers = useMemo(
@@ -36,6 +38,7 @@ export default function PatternGrid({ colors, showTrail, onComplete, size = 240 
 
   const handleTouch = (evt: GestureResponderEvent) => {
     const { locationX, locationY } = evt.nativeEvent;
+    setDragPoint({ x: locationX, y: locationY });
     for (let i = 0; i < centers.length; i += 1) {
       if (pathRef.current.includes(i)) continue;
       const dx = locationX - centers[i].x;
@@ -63,19 +66,51 @@ export default function PatternGrid({ colors, showTrail, onComplete, size = 240 
         onCompleteRef.current(pathRef.current);
         pathRef.current = [];
         setPath([]);
+        setDragPoint(null);
       },
       onPanResponderTerminate: () => {
         pathRef.current = [];
         setPath([]);
+        setDragPoint(null);
       },
     })
   ).current;
+
+  const linePoints = showTrail
+    ? [
+        ...path.map((i) => centers[i]),
+        ...(dragPoint && path.length > 0 ? [dragPoint] : []),
+      ]
+    : [];
+  const polylinePoints = linePoints.map((p) => `${p.x},${p.y}`).join(' ');
 
   return (
     <View
       style={[styles.container, { width: size, height: size }]}
       {...panResponder.panHandlers}
     >
+      {linePoints.length > 1 ? (
+        <Svg
+          width={size}
+          height={size}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        >
+          <Polyline
+            points={polylinePoints}
+            fill="none"
+            stroke={colors.accent}
+            strokeWidth={5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={0.85}
+          />
+          {path.map((i) => (
+            <Circle key={i} cx={centers[i].x} cy={centers[i].y} r={5} fill={colors.accent} />
+          ))}
+        </Svg>
+      ) : null}
+
       {centers.map((c, i) => {
         const visited = path.includes(i);
         const active = visited && showTrail;

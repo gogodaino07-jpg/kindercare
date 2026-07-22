@@ -50,6 +50,10 @@ export default function CalendarScreen() {
     const list: (string | null)[] = [];
     for (let i = 0; i < startWeekday; i++) list.push(null);
     for (let d = 1; d <= daysInMonth; d++) list.push(toISODate(new Date(year, month, d)));
+    // Always pad to a fixed 6-row grid (42 cells) so the legend row below
+    // doesn't shift up/down between 5-week and 6-week months.
+    const WEEKS = 6;
+    while (list.length < WEEKS * 7) list.push(null);
     return list;
   }, [monthCursor]);
 
@@ -236,7 +240,7 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 16,
       backgroundColor: colors.accent,
       borderRadius: 16,
-      paddingVertical: 14,
+      paddingVertical: 16,
       alignItems: 'center',
       ...SHADOW,
     },

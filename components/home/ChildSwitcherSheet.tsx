@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -12,9 +12,18 @@ interface ChildSwitcherSheetProps {
 
 export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSheetProps) {
   const router = useRouter();
-  const { children, selectedChild, selectChild } = useAppData();
+  const { children, selectedChild, selectChild, deleteChild } = useAppData();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const mainChildId = children[0]?.id;
+
+  const handleDelete = (childId: string, label: string) => {
+    Alert.alert('아이 프로필 삭제', `정말 이 아이 프로필을 삭제하시겠습니까?\n${label}`, [
+      { text: '취소', style: 'cancel' },
+      { text: '삭제', style: 'destructive', onPress: () => deleteChild(childId) },
+    ]);
+  };
 
   return (
     <Modal visible={visible} transparent onRequestClose={onClose}>
@@ -23,6 +32,7 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
           <Text style={styles.title}>아이 전환·관리</Text>
           {children.map((child) => {
             const isSelected = child.id === selectedChild?.id;
+            const isMainChild = child.id === mainChildId;
             const label = [child.name, `${child.age}세`, child.className]
               .filter(Boolean)
               .join(' · ');
@@ -58,6 +68,15 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
                 >
                   <Text style={styles.editIcon}>✏️</Text>
                 </Pressable>
+                {isMainChild ? null : (
+                  <Pressable
+                    style={styles.deleteButton}
+                    onPress={() => handleDelete(child.id, label)}
+                    accessibilityLabel="프로필 삭제"
+                  >
+                    <Text style={styles.deleteIcon}>🗑️</Text>
+                  </Pressable>
+                )}
               </View>
             );
           })}
@@ -151,8 +170,14 @@ function createStyles(colors: ThemeColors) {
     editIcon: {
       fontSize: 16,
     },
+    deleteButton: {
+      padding: 8,
+    },
+    deleteIcon: {
+      fontSize: 16,
+    },
     addButton: {
-      marginTop: 2,
+      marginTop: 12,
       paddingVertical: 14,
       alignItems: 'center',
       borderRadius: 14,

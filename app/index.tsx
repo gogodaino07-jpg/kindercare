@@ -2,7 +2,6 @@ import { Redirect } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AdBannerPlaceholder from '../components/home/AdBannerPlaceholder';
 import AdPopupModal from '../components/home/AdPopupModal';
 import BlackboardModal from '../components/home/BlackboardModal';
 import ChildSwitcherSheet from '../components/home/ChildSwitcherSheet';
@@ -38,7 +37,6 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <HomeHeader selectedChild={selectedChild} onPressChild={() => setSwitcherOpen(true)} />
         <WeeklyWeatherStrip />
-        <AdBannerPlaceholder />
         {isEmpty ? (
           <EmptyState />
         ) : (

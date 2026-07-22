@@ -23,10 +23,11 @@ export default function HomeHeader({ selectedChild, onPressChild }: HomeHeaderPr
 
   return (
     <View style={styles.container}>
-      <View style={styles.leftSpacer} />
       <View style={styles.centerArea}>
         <Pressable style={styles.childButton} onPress={onPressChild}>
-          <Text style={styles.childLabel}>{childLabel}</Text>
+          <Text style={styles.childLabel} numberOfLines={1}>
+            {childLabel}
+          </Text>
           <Text style={styles.chevron}>▾</Text>
         </Pressable>
       </View>
@@ -59,17 +60,14 @@ function createStyles(colors: ThemeColors) {
       paddingTop: 12,
       paddingBottom: 8,
     },
-    leftSpacer: {
-      width: 96,
-    },
     centerArea: {
       flex: 1,
-      alignItems: 'center',
-      paddingHorizontal: 12,
+      marginRight: 12,
     },
     childButton: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
       backgroundColor: colors.cardWhite,
       paddingVertical: 11,
       paddingHorizontal: 18,
@@ -77,6 +75,7 @@ function createStyles(colors: ThemeColors) {
       ...SHADOW,
     },
     childLabel: {
+      flex: 1,
       fontSize: 15,
       fontWeight: '600',
       color: colors.textPrimary,

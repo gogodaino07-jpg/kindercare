@@ -1,17 +1,19 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import { formatMD, toISODate } from '../utils/date';
 
 export default function AddEventScreen() {
   const router = useRouter();
   const { selectedChild, addEvent } = useAppData();
+  const { showToast } = useToast();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -35,13 +37,14 @@ export default function AddEventScreen() {
       source: 'manual',
       icon: '📌',
     });
+    showToast('저장이 완료되었습니다.');
     router.back();
   };
 
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <View style={styles.content}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>날짜 *</Text>
           {Platform.OS === 'web' ? (
             <DateTimePicker
@@ -89,11 +92,11 @@ export default function AddEventScreen() {
             placeholderTextColor={colors.textSecondary}
             multiline
           />
+        </ScrollView>
 
-          <Pressable style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>저장</Text>
-          </Pressable>
-        </View>
+        <Pressable style={styles.saveButton} onPress={handleSave}>
+          <Text style={styles.saveButtonText}>저장</Text>
+        </Pressable>
       </SafeAreaView>
     </ScreenBackground>
   );
@@ -141,11 +144,12 @@ function createStyles(colors: ThemeColors) {
       marginTop: 6,
     },
     saveButton: {
+      marginHorizontal: 20,
+      marginBottom: 16,
       backgroundColor: colors.accent,
       borderRadius: 16,
       paddingVertical: 16,
       alignItems: 'center',
-      marginTop: 28,
       ...SHADOW,
     },
     saveButtonText: {

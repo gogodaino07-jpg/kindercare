@@ -5,6 +5,7 @@ import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
 import { ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
+import { useToast } from '../../context/ToastContext';
 import { Event } from '../../types/models';
 import { formatMD } from '../../utils/date';
 
@@ -17,6 +18,7 @@ interface BlackboardModalProps {
 
 export default function BlackboardModal({ event, onClose, readOnly }: BlackboardModalProps) {
   const { updateEventNote, fontChoiceId, fontSizeChoice, chalkboardThemeId } = useAppData();
+  const { showToast } = useToast();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [editing, setEditing] = useState(false);
@@ -39,6 +41,7 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
   const handleSave = () => {
     updateEventNote(event.id, draftNote.trim());
     setEditing(false);
+    showToast('저장이 완료되었습니다.');
   };
 
   return (

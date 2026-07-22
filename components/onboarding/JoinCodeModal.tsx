@@ -30,8 +30,10 @@ export default function JoinCodeModal({ visible, onClose, onJoin }: JoinCodeModa
     onClose();
   };
 
+  const isValidFormat = (value: string) => /^[A-Z0-9]{4}-[A-Z0-9]{4}$/i.test(value);
+
   const handleJoin = () => {
-    if (!code.trim()) {
+    if (!isValidFormat(code.trim())) {
       setError(true);
       return;
     }
@@ -64,7 +66,7 @@ export default function JoinCodeModal({ visible, onClose, onJoin }: JoinCodeModa
             autoCapitalize="characters"
             autoFocus
           />
-          {error ? <Text style={styles.errorText}>초대 코드를 입력해주세요</Text> : null}
+          {error ? <Text style={styles.errorText}>올바른 초대 코드를 입력해 주세요</Text> : null}
 
           <Pressable
             style={[styles.joinButton, !code.trim() && styles.joinButtonDisabled]}

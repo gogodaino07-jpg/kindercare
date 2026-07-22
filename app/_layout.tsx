@@ -19,6 +19,7 @@ import AppLockScreen from '../components/AppLockScreen';
 import { AppDataProvider } from '../context/AppDataContext';
 import { AppLockProvider, useAppLock } from '../context/AppLockContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
+import { ToastProvider } from '../context/ToastContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -124,11 +125,13 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AppDataProvider>
-            <AppLockProvider>
-              <ThemedNavigation />
-            </AppLockProvider>
-          </AppDataProvider>
+          <ToastProvider>
+            <AppDataProvider>
+              <AppLockProvider>
+                <ThemedNavigation />
+              </AppLockProvider>
+            </AppDataProvider>
+          </ToastProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -66,7 +66,11 @@ export default function OnboardingScreen() {
   return (
     <OnboardingBackground>
       <View style={styles.skipRow}>
-        <Pressable onPress={() => router.replace('/family-group-start')}>
+        <Pressable
+          style={styles.skipButton}
+          hitSlop={8}
+          onPress={() => router.replace('/family-group-start')}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       </View>
@@ -109,13 +113,17 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     skipRow: {
       alignItems: 'flex-end',
-      paddingHorizontal: 20,
-      paddingTop: 16,
+      paddingHorizontal: 12,
+      paddingTop: 8,
+    },
+    skipButton: {
+      paddingVertical: 10,
+      paddingHorizontal: 12,
     },
     skipText: {
-      fontSize: 13,
+      fontSize: 16,
       color: colors.textSecondary,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     centerArea: {
       flex: 1,

@@ -32,6 +32,7 @@ interface AppDataContextValue {
   selectChild: (id: string) => void;
   addChild: (input: Omit<Child, 'id'>) => void;
   updateChild: (id: string, input: Omit<Child, 'id'>) => void;
+  deleteChild: (id: string) => void;
 
   // Events
   events: Event[];
@@ -113,6 +114,15 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setChildProfiles((prev) => prev.map((c) => (c.id === id ? { ...input, id } : c)));
   };
 
+  const deleteChild = (id: string) => {
+    setChildProfiles((prev) => prev.filter((c) => c.id !== id));
+    setSelectedChildId((prev) => {
+      if (prev !== id) return prev;
+      const remaining = childProfiles.filter((c) => c.id !== id);
+      return remaining[0]?.id;
+    });
+  };
+
   const updateEventNote = (eventId: string, note: string) => {
     setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, note } : e)));
   };
@@ -155,6 +165,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     selectChild: setSelectedChildId,
     addChild,
     updateChild,
+    deleteChild,
 
     events,
     updateEventNote,

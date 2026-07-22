@@ -56,7 +56,15 @@ export default function OnboardingChildSetupScreen() {
 
   return (
     <OnboardingBackground>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Pressable style={styles.backButton} hitSlop={8} onPress={() => router.back()}>
+          <Text style={styles.backIcon}>‹</Text>
+        </Pressable>
+
         <Text style={styles.title}>아이 프로필 설정</Text>
         <Text style={styles.subtitle}>우리 아이 정보를 알려주세요</Text>
 
@@ -72,17 +80,24 @@ export default function OnboardingChildSetupScreen() {
             placeholder="아이 이름을 입력해주세요"
             placeholderTextColor={colors.textSecondary}
           />
+          {error && !name.trim() ? (
+            <Text style={styles.errorText}>아이 이름을 입력해주세요</Text>
+          ) : null}
 
           <Text style={styles.label}>생년월일</Text>
           {Platform.OS === 'web' ? (
             <DateTimePicker
               value={birthdate ?? new Date()}
               mode="date"
+              accentColor={colors.coralPink}
               onChange={(_, selected) => selected && setBirthdate(selected)}
             />
           ) : (
             <>
-              <Pressable style={styles.dateButton} onPress={() => setShowPicker(true)}>
+              <Pressable
+                style={[styles.dateButton, error && !birthdate && styles.inputInvalid]}
+                onPress={() => setShowPicker(true)}
+              >
                 <Text style={styles.dateButtonText}>
                   {birthdate ? formatBirthdate(birthdate) : '생년월일을 선택해주세요'}
                 </Text>
@@ -92,6 +107,7 @@ export default function OnboardingChildSetupScreen() {
                   value={birthdate ?? new Date()}
                   mode="date"
                   maximumDate={new Date()}
+                  accentColor={colors.coralPink}
                   onChange={(event, selected) => {
                     setShowPicker(Platform.OS === 'ios');
                     if (selected) setBirthdate(selected);
@@ -100,18 +116,19 @@ export default function OnboardingChildSetupScreen() {
               ) : null}
             </>
           )}
-
-          {error ? <Text style={styles.errorText}>이름과 생년월일을 모두 입력해주세요</Text> : null}
+          {error && !birthdate ? (
+            <Text style={styles.errorText}>생년월일을 선택해주세요</Text>
+          ) : null}
         </View>
-
-        <Pressable
-          style={[styles.completeButton, !canCreate && styles.completeButtonDisabled]}
-          onPress={handleCreate}
-          disabled={!canCreate}
-        >
-          <Text style={styles.completeButtonText}>프로필 생성 완료</Text>
-        </Pressable>
       </ScrollView>
+
+      <Pressable
+        style={[styles.completeButton, !canCreate && styles.completeButtonDisabled]}
+        onPress={handleCreate}
+        disabled={!canCreate}
+      >
+        <Text style={styles.completeButtonText}>프로필 생성 완료</Text>
+      </Pressable>
 
       <PermissionModal visible={showPermissionModal} onDone={handlePermissionDone} />
     </OnboardingBackground>
@@ -120,7 +137,21 @@ export default function OnboardingChildSetupScreen() {
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    content: { padding: 24, paddingBottom: 40 },
+    scroll: { flex: 1 },
+    content: { padding: 24, paddingBottom: 24 },
+    backButton: {
+      width: 36,
+      height: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 4,
+      marginLeft: -8,
+    },
+    backIcon: {
+      fontSize: 26,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
     title: {
       fontSize: 22,
       fontWeight: '800',
@@ -175,7 +206,8 @@ function createStyles(colors: ThemeColors) {
       marginTop: 10,
     },
     completeButton: {
-      marginTop: 24,
+      marginHorizontal: 24,
+      marginBottom: 24,
       backgroundColor: colors.textPrimary,
       borderRadius: 16,
       paddingVertical: 16,

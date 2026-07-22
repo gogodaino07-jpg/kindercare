@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { SHADOW, ThemeColors } from '../../constants/theme';
+import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Event } from '../../types/models';
 
@@ -49,7 +49,6 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 16,
       padding: 14,
       marginBottom: 10,
-      ...SHADOW,
     },
     cardHighlighted: {
       backgroundColor: colors.tomorrowRedBg,

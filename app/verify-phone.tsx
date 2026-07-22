@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
@@ -11,6 +11,7 @@ import {
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
 import TermsAccordion from '../components/onboarding/TermsAccordion';
 import { SHADOW, ThemeColors } from '../constants/theme';
+import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 
 /**
@@ -37,13 +38,15 @@ const CARRIERS = ['SKT', 'KT', 'LG U+', '알뜰폰'];
 
 export default function VerifyPhoneScreen() {
   const router = useRouter();
+  const { flow } = useLocalSearchParams<{ flow?: string }>();
+  const { completeOnboarding } = useAppData();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [carrier, setCarrier] = useState<string | null>(null);
-  const [formError, setFormError] = useState(false);
+  const [touched, setTouched] = useState(false);
 
   const [codeRequested, setCodeRequested] = useState(false);
   const [issuedCode, setIssuedCode] = useState('');
@@ -66,12 +69,15 @@ export default function VerifyPhoneScreen() {
     return () => clearInterval(timer);
   }, [codeRequested, issuedCode]);
 
+  const phoneDigits = phone.replace(/[^0-9]/g, '');
+  const phoneFormatValid = phoneDigits.length >= 10 && phoneDigits.length <= 11;
+  const isFormValid = !!name.trim() && !!carrier && phoneFormatValid;
+
   const handleRequestCode = () => {
-    if (!name.trim() || !phone.trim() || !carrier) {
-      setFormError(true);
+    if (!isFormValid) {
+      setTouched(true);
       return;
     }
-    setFormError(false);
     setCodeRequested(true);
     setVerified(false);
     setCode('');
@@ -100,14 +106,22 @@ export default function VerifyPhoneScreen() {
     setVerified(true);
   };
 
-  const nameInvalid = formError && !name.trim();
-  const phoneInvalid = formError && !phone.trim();
-  const carrierInvalid = formError && !carrier;
+  const nameInvalid = touched && !name.trim();
+  const phoneInvalid = touched && !phoneFormatValid;
+  const carrierInvalid = touched && !carrier;
 
   const canComplete = verified && termsAgreed;
 
   const handleComplete = () => {
     if (!canComplete) return;
+    if (flow === 'join') {
+      // Invite-code joins land in an already-existing family group, so the
+      // seeded children are already "theirs" — skip straight to Home instead
+      // of asking them to create a first child profile.
+      completeOnboarding();
+      router.replace('/');
+      return;
+    }
     router.push('/onboarding-child-setup');
   };
 
@@ -117,6 +131,10 @@ export default function VerifyPhoneScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
+        <Pressable style={styles.backButton} hitSlop={8} onPress={() => router.back()}>
+          <Text style={styles.backIcon}>‹</Text>
+        </Pressable>
+
         <Text style={styles.title}>본인인증</Text>
         <Text style={styles.subtitle}>안전한 서비스 이용을 위해 본인 확인이 필요해요</Text>
 
@@ -125,10 +143,8 @@ export default function VerifyPhoneScreen() {
           <TextInput
             style={[styles.input, nameInvalid && styles.inputInvalid]}
             value={name}
-            onChangeText={(t) => {
-              setName(t);
-              setFormError(false);
-            }}
+            onChangeText={setName}
+            onBlur={() => setTouched(true)}
             placeholder="이름을 입력해주세요"
             placeholderTextColor={colors.textSecondary}
           />
@@ -142,7 +158,7 @@ export default function VerifyPhoneScreen() {
                 style={[styles.carrierChip, carrier === c && styles.carrierChipSelected]}
                 onPress={() => {
                   setCarrier(c);
-                  setFormError(false);
+                  setTouched(true);
                 }}
               >
                 <Text
@@ -162,17 +178,27 @@ export default function VerifyPhoneScreen() {
           <TextInput
             style={[styles.input, phoneInvalid && styles.inputInvalid]}
             value={phone}
-            onChangeText={(t) => {
-              setPhone(t);
-              setFormError(false);
-            }}
+            onChangeText={setPhone}
+            onBlur={() => setTouched(true)}
             placeholder="010-0000-0000"
             placeholderTextColor={colors.textSecondary}
             keyboardType="phone-pad"
           />
-          {phoneInvalid ? <Text style={styles.errorText}>전화번호를 입력해주세요</Text> : null}
+          {phoneInvalid ? (
+            <Text style={styles.errorText}>
+              {phone.trim() ? '전화번호 10~11자리 숫자를 입력해주세요' : '전화번호를 입력해주세요'}
+            </Text>
+          ) : null}
 
-          <Pressable style={styles.requestButton} onPress={handleRequestCode}>
+          {touched && !isFormValid ? (
+            <Text style={styles.errorText}>올바른 정보를 입력해 주세요</Text>
+          ) : null}
+
+          <Pressable
+            style={[styles.requestButton, !isFormValid && styles.requestButtonDisabled]}
+            onPress={handleRequestCode}
+            disabled={!isFormValid}
+          >
             <Text style={styles.requestButtonText}>
               {codeRequested ? '인증번호 재요청' : '인증번호 요청'}
             </Text>
@@ -247,6 +273,20 @@ export default function VerifyPhoneScreen() {
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     content: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingBottom: 40 },
+    backButton: {
+      position: 'absolute',
+      top: 4,
+      left: 4,
+      width: 36,
+      height: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    backIcon: {
+      fontSize: 26,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
     title: {
       fontSize: 22,
       fontWeight: '800',
@@ -380,6 +420,9 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 12,
       paddingVertical: 12,
       alignItems: 'center',
+    },
+    requestButtonDisabled: {
+      opacity: 0.4,
     },
     requestButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
     verifyButton: {

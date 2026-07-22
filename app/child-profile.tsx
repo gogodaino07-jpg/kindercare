@@ -19,6 +19,7 @@ import ScreenBackground from '../components/ScreenBackground';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import { ChildAge } from '../types/models';
 
 const AGE_OPTIONS: ChildAge[] = [3, 4, 5, 6, 7];
@@ -26,6 +27,7 @@ const AGE_OPTIONS: ChildAge[] = [3, 4, 5, 6, 7];
 export default function ChildProfileScreen() {
   const router = useRouter();
   const { children, addChild, updateChild } = useAppData();
+  const { showToast } = useToast();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { childId } = useLocalSearchParams<{ childId?: string }>();
@@ -89,6 +91,7 @@ export default function ChildProfileScreen() {
     } else {
       addChild(input);
     }
+    showToast('저장이 완료되었습니다.');
     router.back();
   };
 
