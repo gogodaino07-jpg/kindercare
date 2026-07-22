@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ChalkboardPreview from '../../components/settings/ChalkboardPreview';
 import ScreenBackground from '../../components/ScreenBackground';
 import { CHALKBOARD_THEMES } from '../../constants/chalkboardThemes';
-import { COLORS } from '../../constants/theme';
+import { ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
+import { useThemeColors } from '../../context/ThemeContext';
 
 export default function ChalkboardThemeScreen() {
   const { chalkboardThemeId, setChalkboardThemeId } = useAppData();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const selectedTheme =
     CHALKBOARD_THEMES.find((t) => t.id === chalkboardThemeId) ?? CHALKBOARD_THEMES[0];
 
@@ -50,58 +53,60 @@ export default function ChalkboardThemeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { padding: 20, alignItems: 'center' },
-  title: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  item: {
-    width: '22%',
-    alignItems: 'center',
-  },
-  swatch: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  swatchSelected: {
-    borderWidth: 3,
-    borderColor: COLORS.accent,
-  },
-  swatchInner: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  checkIcon: {
-    position: 'absolute',
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 14,
-  },
-  label: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginTop: 6,
-    textAlign: 'center',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: { flex: 1 },
+    content: { padding: 20, alignItems: 'center' },
+    title: {
+      fontSize: 17,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      textAlign: 'center',
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: 16,
+    },
+    item: {
+      width: '22%',
+      alignItems: 'center',
+    },
+    swatch: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    swatchSelected: {
+      borderWidth: 3,
+      borderColor: colors.accent,
+    },
+    swatchInner: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+    },
+    checkIcon: {
+      position: 'absolute',
+      color: '#FFFFFF',
+      fontWeight: '800',
+      fontSize: 14,
+    },
+    label: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      marginTop: 6,
+      textAlign: 'center',
+    },
+  });
+}

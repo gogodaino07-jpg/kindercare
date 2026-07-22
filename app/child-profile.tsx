@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { ImagePickerAsset } from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Alert,
   Image,
@@ -16,8 +16,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import PhotoCropModal from '../components/child-profile/PhotoCropModal';
 import PhotoSourceSheet from '../components/child-profile/PhotoSourceSheet';
 import ScreenBackground from '../components/ScreenBackground';
-import { COLORS, SHADOW } from '../constants/theme';
+import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
+import { useThemeColors } from '../context/ThemeContext';
 import { ChildAge } from '../types/models';
 
 const AGE_OPTIONS: ChildAge[] = [3, 4, 5, 6, 7];
@@ -25,6 +26,8 @@ const AGE_OPTIONS: ChildAge[] = [3, 4, 5, 6, 7];
 export default function ChildProfileScreen() {
   const router = useRouter();
   const { children, addChild, updateChild } = useAppData();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { childId } = useLocalSearchParams<{ childId?: string }>();
   const editingChild = childId ? children.find((c) => c.id === childId) : undefined;
 
@@ -113,7 +116,7 @@ export default function ChildProfileScreen() {
               value={name}
               onChangeText={setName}
               placeholder="이름을 입력해주세요"
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
             />
             {!nameValid ? <Text style={styles.errorText}>이름을 입력해주세요</Text> : null}
           </View>
@@ -143,7 +146,7 @@ export default function ChildProfileScreen() {
               value={className}
               onChangeText={setClassName}
               placeholder="예: 병아리반"
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
             />
             {!classNameValid ? (
               <Text style={styles.errorText}>반 이름을 입력해주세요</Text>
@@ -193,136 +196,138 @@ export default function ChildProfileScreen() {
 
 const PHOTO_SIZE = 120;
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  content: {
-    padding: 24,
-    alignItems: 'center',
-  },
-  photoContainer: {
-    width: PHOTO_SIZE,
-    height: PHOTO_SIZE,
-    marginBottom: 32,
-  },
-  photo: {
-    width: PHOTO_SIZE,
-    height: PHOTO_SIZE,
-    borderRadius: PHOTO_SIZE / 2,
-  },
-  photoPlaceholder: {
-    width: PHOTO_SIZE,
-    height: PHOTO_SIZE,
-    borderRadius: PHOTO_SIZE / 2,
-    backgroundColor: COLORS.cardWhite,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    borderStyle: 'dashed',
-  },
-  photoPlaceholderIcon: {
-    fontSize: 40,
-  },
-  cameraBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOW,
-  },
-  cameraBadgeIcon: {
-    fontSize: 16,
-  },
-  field: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: COLORS.cardWhite,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.textPrimary,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-    ...SHADOW,
-  },
-  inputInvalid: {
-    borderColor: COLORS.tomorrowRed,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    borderRadius: 12,
-  },
-  chipRowInvalid: {
-    borderWidth: 1.5,
-    borderColor: COLORS.tomorrowRed,
-    padding: 6,
-    margin: -6,
-  },
-  chip: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    backgroundColor: COLORS.cardWhite,
-    ...SHADOW,
-  },
-  chipSelected: {
-    backgroundColor: COLORS.accent,
-  },
-  chipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  chipTextSelected: {
-    color: '#FFFFFF',
-  },
-  errorText: {
-    color: COLORS.tomorrowRed,
-    fontSize: 12,
-    marginTop: 8,
-  },
-  summaryErrorText: {
-    color: COLORS.tomorrowRed,
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 8,
-    marginHorizontal: 20,
-  },
-  saveButton: {
-    marginHorizontal: 20,
-    marginBottom: 16,
-    backgroundColor: COLORS.accent,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-    ...SHADOW,
-  },
-  saveButtonDisabled: {
-    backgroundColor: COLORS.border,
-    opacity: 0.7,
-  },
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+    },
+    content: {
+      padding: 24,
+      alignItems: 'center',
+    },
+    photoContainer: {
+      width: PHOTO_SIZE,
+      height: PHOTO_SIZE,
+      marginBottom: 32,
+    },
+    photo: {
+      width: PHOTO_SIZE,
+      height: PHOTO_SIZE,
+      borderRadius: PHOTO_SIZE / 2,
+    },
+    photoPlaceholder: {
+      width: PHOTO_SIZE,
+      height: PHOTO_SIZE,
+      borderRadius: PHOTO_SIZE / 2,
+      backgroundColor: colors.cardWhite,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+    },
+    photoPlaceholderIcon: {
+      fontSize: 40,
+    },
+    cameraBadge: {
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...SHADOW,
+    },
+    cameraBadgeIcon: {
+      fontSize: 16,
+    },
+    field: {
+      width: '100%',
+      marginBottom: 20,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginBottom: 8,
+    },
+    input: {
+      backgroundColor: colors.cardWhite,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      fontSize: 15,
+      color: colors.textPrimary,
+      borderWidth: 1.5,
+      borderColor: 'transparent',
+      ...SHADOW,
+    },
+    inputInvalid: {
+      borderColor: colors.tomorrowRed,
+    },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      borderRadius: 12,
+    },
+    chipRowInvalid: {
+      borderWidth: 1.5,
+      borderColor: colors.tomorrowRed,
+      padding: 6,
+      margin: -6,
+    },
+    chip: {
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 999,
+      backgroundColor: colors.cardWhite,
+      ...SHADOW,
+    },
+    chipSelected: {
+      backgroundColor: colors.accent,
+    },
+    chipText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    chipTextSelected: {
+      color: '#FFFFFF',
+    },
+    errorText: {
+      color: colors.tomorrowRed,
+      fontSize: 12,
+      marginTop: 8,
+    },
+    summaryErrorText: {
+      color: colors.tomorrowRed,
+      fontSize: 12,
+      fontWeight: '600',
+      textAlign: 'center',
+      marginBottom: 8,
+      marginHorizontal: 20,
+    },
+    saveButton: {
+      marginHorizontal: 20,
+      marginBottom: 16,
+      backgroundColor: colors.accent,
+      borderRadius: 16,
+      paddingVertical: 16,
+      alignItems: 'center',
+      ...SHADOW,
+    },
+    saveButtonDisabled: {
+      backgroundColor: colors.border,
+      opacity: 0.7,
+    },
+    saveButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '700',
+    },
+  });
+}

@@ -1,12 +1,13 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
-import { COLORS, SHADOW } from '../constants/theme';
+import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
+import { useThemeColors } from '../context/ThemeContext';
 import { generateMockAIEvents, isSimilarEvent } from '../data/mockAIResult';
 import { UploadedDoc } from '../types/models';
 import {
@@ -20,6 +21,8 @@ const MAX_DOCS = 5;
 export default function UploadScreen() {
   const router = useRouter();
   const { selectedChild, events } = useAppData();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [docs, setDocs] = useState<UploadedDoc[]>([]);
   const [remainingAnalyses, setRemainingAnalyses] = useState(DAILY_ANALYSIS_LIMIT);
 
@@ -176,87 +179,89 @@ export default function UploadScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { padding: 20, paddingBottom: 12 },
-  sourceRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  sourceButton: {
-    flex: 1,
-    aspectRatio: 1,
-    backgroundColor: COLORS.cardWhite,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOW,
-  },
-  sourceIcon: { fontSize: 28, marginBottom: 6 },
-  sourceLabel: { fontSize: 13, fontWeight: '600', color: COLORS.textPrimary },
-  countLabel: {
-    marginTop: 20,
-    marginBottom: 8,
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    textAlign: 'right',
-  },
-  docGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  imageThumb: {
-    width: 90,
-    height: 90,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  imageThumbImg: {
-    width: '100%',
-    height: '100%',
-  },
-  fileCard: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardWhite,
-    borderRadius: 12,
-    padding: 12,
-    ...SHADOW,
-  },
-  fileIcon: { fontSize: 20, marginRight: 8 },
-  fileName: { flex: 1, fontSize: 13, color: COLORS.textPrimary },
-  removeBadge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeBadgeText: { color: '#FFFFFF', fontSize: 11 },
-  usageText: {
-    textAlign: 'center',
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginBottom: 8,
-  },
-  analyzeButton: {
-    marginHorizontal: 20,
-    marginBottom: 16,
-    backgroundColor: COLORS.accent,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-    ...SHADOW,
-  },
-  analyzeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: { flex: 1 },
+    content: { padding: 20, paddingBottom: 12 },
+    sourceRow: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    sourceButton: {
+      flex: 1,
+      aspectRatio: 1,
+      backgroundColor: colors.cardWhite,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...SHADOW,
+    },
+    sourceIcon: { fontSize: 28, marginBottom: 6 },
+    sourceLabel: { fontSize: 13, fontWeight: '600', color: colors.textPrimary },
+    countLabel: {
+      marginTop: 20,
+      marginBottom: 8,
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'right',
+    },
+    docGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+    imageThumb: {
+      width: 90,
+      height: 90,
+      borderRadius: 12,
+      overflow: 'hidden',
+    },
+    imageThumbImg: {
+      width: '100%',
+      height: '100%',
+    },
+    fileCard: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardWhite,
+      borderRadius: 12,
+      padding: 12,
+      ...SHADOW,
+    },
+    fileIcon: { fontSize: 20, marginRight: 8 },
+    fileName: { flex: 1, fontSize: 13, color: colors.textPrimary },
+    removeBadge: {
+      position: 'absolute',
+      top: 4,
+      right: 4,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    removeBadgeText: { color: '#FFFFFF', fontSize: 11 },
+    usageText: {
+      textAlign: 'center',
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginBottom: 8,
+    },
+    analyzeButton: {
+      marginHorizontal: 20,
+      marginBottom: 16,
+      backgroundColor: colors.accent,
+      borderRadius: 16,
+      paddingVertical: 16,
+      alignItems: 'center',
+      ...SHADOW,
+    },
+    analyzeButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '700',
+    },
+  });
+}

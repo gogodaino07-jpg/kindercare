@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -9,7 +9,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { COLORS, SHADOW } from '../../constants/theme';
+import { SHADOW, ThemeColors } from '../../constants/theme';
+import { useThemeColors } from '../../context/ThemeContext';
 
 interface JoinCodeModalProps {
   visible: boolean;
@@ -18,6 +19,8 @@ interface JoinCodeModalProps {
 }
 
 export default function JoinCodeModal({ visible, onClose, onJoin }: JoinCodeModalProps) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [code, setCode] = useState('');
   const [error, setError] = useState(false);
 
@@ -57,7 +60,7 @@ export default function JoinCodeModal({ visible, onClose, onJoin }: JoinCodeModa
               setError(false);
             }}
             placeholder="초대 코드를 입력해주세요"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             autoCapitalize="characters"
             autoFocus
           />
@@ -79,82 +82,84 @@ export default function JoinCodeModal({ visible, onClose, onJoin }: JoinCodeModa
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(20, 24, 22, 0.5)',
-  },
-  card: {
-    width: '100%',
-    maxWidth: 340,
-    backgroundColor: COLORS.creamBeigeCard,
-    borderRadius: 20,
-    padding: 24,
-    alignItems: 'center',
-    ...SHADOW,
-  },
-  icon: { fontSize: 32, marginBottom: 8 },
-  title: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginBottom: 18,
-    textAlign: 'center',
-  },
-  input: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.textPrimary,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  inputError: {
-    borderColor: COLORS.tomorrowRed,
-  },
-  errorText: {
-    alignSelf: 'flex-start',
-    color: COLORS.tomorrowRed,
-    fontSize: 12,
-    marginTop: 6,
-  },
-  joinButton: {
-    width: '100%',
-    marginTop: 16,
-    backgroundColor: COLORS.peachOrange,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  joinButtonDisabled: {
-    opacity: 0.4,
-  },
-  joinButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  cancelButton: {
-    marginTop: 10,
-    paddingVertical: 6,
-  },
-  cancelButtonText: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 32,
+    },
+    backdrop: {
+      ...StyleSheet.absoluteFill,
+      backgroundColor: 'rgba(20, 24, 22, 0.5)',
+    },
+    card: {
+      width: '100%',
+      maxWidth: 340,
+      backgroundColor: colors.creamBeigeCard,
+      borderRadius: 20,
+      padding: 24,
+      alignItems: 'center',
+      ...SHADOW,
+    },
+    icon: { fontSize: 32, marginBottom: 8 },
+    title: {
+      fontSize: 17,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginBottom: 18,
+      textAlign: 'center',
+    },
+    input: {
+      width: '100%',
+      backgroundColor: '#FFFFFF',
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 15,
+      color: colors.textPrimary,
+      borderWidth: 1.5,
+      borderColor: 'transparent',
+    },
+    inputError: {
+      borderColor: colors.tomorrowRed,
+    },
+    errorText: {
+      alignSelf: 'flex-start',
+      color: colors.tomorrowRed,
+      fontSize: 12,
+      marginTop: 6,
+    },
+    joinButton: {
+      width: '100%',
+      marginTop: 16,
+      backgroundColor: colors.peachOrange,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: 'center',
+    },
+    joinButtonDisabled: {
+      opacity: 0.4,
+    },
+    joinButtonText: {
+      color: '#FFFFFF',
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    cancelButton: {
+      marginTop: 10,
+      paddingVertical: 6,
+    },
+    cancelButtonText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      fontWeight: '600',
+    },
+  });
+}

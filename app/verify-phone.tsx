@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
 import TermsAccordion from '../components/onboarding/TermsAccordion';
-import { COLORS, SHADOW } from '../constants/theme';
+import { SHADOW, ThemeColors } from '../constants/theme';
+import { useThemeColors } from '../context/ThemeContext';
 
 /**
  * Mock verification (real telecom SDK integration is deferred to a future contract).
@@ -36,6 +37,8 @@ const CARRIERS = ['SKT', 'KT', 'LG U+', '알뜰폰'];
 
 export default function VerifyPhoneScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -127,7 +130,7 @@ export default function VerifyPhoneScreen() {
               setFormError(false);
             }}
             placeholder="이름을 입력해주세요"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
           />
           {nameInvalid ? <Text style={styles.errorText}>이름을 입력해주세요</Text> : null}
 
@@ -164,7 +167,7 @@ export default function VerifyPhoneScreen() {
               setFormError(false);
             }}
             placeholder="010-0000-0000"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             keyboardType="phone-pad"
           />
           {phoneInvalid ? <Text style={styles.errorText}>전화번호를 입력해주세요</Text> : null}
@@ -202,7 +205,7 @@ export default function VerifyPhoneScreen() {
                   setCodeError(false);
                 }}
                 placeholder="6자리 숫자"
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="number-pad"
                 maxLength={6}
                 editable={!expired}
@@ -241,167 +244,169 @@ export default function VerifyPhoneScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingBottom: 40 },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginBottom: 24,
-  },
-  card: {
-    backgroundColor: COLORS.creamBeigeCard,
-    borderRadius: 18,
-    padding: 20,
-    ...SHADOW,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 6,
-    marginTop: 14,
-  },
-  codeLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  codeLabelInRow: {
-    marginBottom: 6,
-  },
-  timerText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.coralPink,
-  },
-  timerTextExpired: {
-    color: COLORS.tomorrowRed,
-  },
-  input: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.textPrimary,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  inputInvalid: {
-    borderColor: COLORS.tomorrowRed,
-  },
-  carrierRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    borderRadius: 12,
-  },
-  carrierRowInvalid: {
-    borderWidth: 1.5,
-    borderColor: COLORS.tomorrowRed,
-    padding: 6,
-    margin: -6,
-  },
-  carrierChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  carrierChipSelected: {
-    backgroundColor: COLORS.coralPink,
-    borderColor: COLORS.coralPink,
-  },
-  carrierChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  carrierChipTextSelected: {
-    color: '#FFFFFF',
-  },
-  errorText: {
-    color: COLORS.tomorrowRed,
-    fontSize: 12,
-    marginTop: 8,
-  },
-  successText: {
-    color: '#3A8455',
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 8,
-  },
-  hint: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginTop: 14,
-  },
-  codeAnnounceBox: {
-    backgroundColor: '#FFF3E9',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  codeAnnounceLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-  },
-  codeAnnounceValue: {
-    fontSize: 26,
-    fontWeight: '800',
-    letterSpacing: 4,
-    color: COLORS.coralPink,
-    marginTop: 4,
-  },
-  codeAnnounceHint: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginTop: 6,
-    textAlign: 'center',
-  },
-  requestButton: {
-    marginTop: 18,
-    backgroundColor: COLORS.peachOrange,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  requestButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
-  verifyButton: {
-    marginTop: 14,
-    backgroundColor: COLORS.coralPink,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  verifyButtonDisabled: {
-    opacity: 0.4,
-  },
-  verifyButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
-  completeButton: {
-    marginTop: 24,
-    backgroundColor: COLORS.textPrimary,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  completeButtonDisabled: {
-    opacity: 0.4,
-  },
-  completeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    content: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingBottom: 40 },
+    title: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      marginBottom: 6,
+    },
+    subtitle: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginBottom: 24,
+    },
+    card: {
+      backgroundColor: colors.creamBeigeCard,
+      borderRadius: 18,
+      padding: 20,
+      ...SHADOW,
+    },
+    label: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 6,
+      marginTop: 14,
+    },
+    codeLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    codeLabelInRow: {
+      marginBottom: 6,
+    },
+    timerText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.coralPink,
+    },
+    timerTextExpired: {
+      color: colors.tomorrowRed,
+    },
+    input: {
+      backgroundColor: '#FFFFFF',
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 15,
+      color: colors.textPrimary,
+      borderWidth: 1.5,
+      borderColor: 'transparent',
+    },
+    inputInvalid: {
+      borderColor: colors.tomorrowRed,
+    },
+    carrierRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      borderRadius: 12,
+    },
+    carrierRowInvalid: {
+      borderWidth: 1.5,
+      borderColor: colors.tomorrowRed,
+      padding: 6,
+      margin: -6,
+    },
+    carrierChip: {
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: 999,
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    carrierChipSelected: {
+      backgroundColor: colors.coralPink,
+      borderColor: colors.coralPink,
+    },
+    carrierChipText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    carrierChipTextSelected: {
+      color: '#FFFFFF',
+    },
+    errorText: {
+      color: colors.tomorrowRed,
+      fontSize: 12,
+      marginTop: 8,
+    },
+    successText: {
+      color: '#3A8455',
+      fontSize: 12,
+      fontWeight: '700',
+      marginTop: 8,
+    },
+    hint: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      marginTop: 14,
+    },
+    codeAnnounceBox: {
+      backgroundColor: '#FFF3E9',
+      borderRadius: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    codeAnnounceLabel: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    codeAnnounceValue: {
+      fontSize: 26,
+      fontWeight: '800',
+      letterSpacing: 4,
+      color: colors.coralPink,
+      marginTop: 4,
+    },
+    codeAnnounceHint: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      marginTop: 6,
+      textAlign: 'center',
+    },
+    requestButton: {
+      marginTop: 18,
+      backgroundColor: colors.peachOrange,
+      borderRadius: 12,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    requestButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+    verifyButton: {
+      marginTop: 14,
+      backgroundColor: colors.coralPink,
+      borderRadius: 12,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    verifyButtonDisabled: {
+      opacity: 0.4,
+    },
+    verifyButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+    completeButton: {
+      marginTop: 24,
+      backgroundColor: colors.textPrimary,
+      borderRadius: 16,
+      paddingVertical: 16,
+      alignItems: 'center',
+    },
+    completeButtonDisabled: {
+      opacity: 0.4,
+    },
+    completeButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '700',
+    },
+  });
+}

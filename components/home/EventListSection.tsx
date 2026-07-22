@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { COLORS } from '../../constants/theme';
+import { ThemeColors } from '../../constants/theme';
+import { useThemeColors } from '../../context/ThemeContext';
 import { EventDateGroup } from '../../hooks/useUpcomingEvents';
 import { Event } from '../../types/models';
 import { formatMD } from '../../utils/date';
@@ -17,6 +18,9 @@ export default function EventListSection({
   laterGroups,
   onEventPress,
 }: EventListSectionProps) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
       {tomorrowEvents.length > 0 && (
@@ -50,28 +54,30 @@ export default function EventListSection({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  stickyBlock: {
-    paddingTop: 4,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 24,
-  },
-  dateGroup: {
-    marginBottom: 4,
-  },
-  dateGroupHeader: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-    marginBottom: 8,
-    marginTop: 4,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      paddingHorizontal: 20,
+    },
+    stickyBlock: {
+      paddingTop: 4,
+    },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingBottom: 24,
+    },
+    dateGroup: {
+      marginBottom: 4,
+    },
+    dateGroupHeader: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      marginBottom: 8,
+      marginTop: 4,
+    },
+  });
+}

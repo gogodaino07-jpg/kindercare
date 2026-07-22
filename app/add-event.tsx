@@ -1,16 +1,19 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
-import { COLORS, SHADOW } from '../constants/theme';
+import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
+import { useThemeColors } from '../context/ThemeContext';
 import { formatMD, toISODate } from '../utils/date';
 
 export default function AddEventScreen() {
   const router = useRouter();
   const { selectedChild, addEvent } = useAppData();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(Platform.OS === 'web');
@@ -73,7 +76,7 @@ export default function AddEventScreen() {
               setTitleError(false);
             }}
             placeholder="예: 병원 예약"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
           />
           {titleError ? <Text style={styles.errorText}>제목을 입력해주세요</Text> : null}
 
@@ -83,7 +86,7 @@ export default function AddEventScreen() {
             value={note}
             onChangeText={setNote}
             placeholder="선택 입력"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             multiline
           />
 
@@ -96,57 +99,59 @@ export default function AddEventScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { padding: 20 },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-    marginTop: 16,
-  },
-  dateButton: {
-    backgroundColor: COLORS.cardWhite,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    ...SHADOW,
-  },
-  dateButtonText: {
-    fontSize: 15,
-    color: COLORS.textPrimary,
-    fontWeight: '600',
-  },
-  input: {
-    backgroundColor: COLORS.cardWhite,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.textPrimary,
-    ...SHADOW,
-  },
-  multilineInput: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  errorText: {
-    color: COLORS.tomorrowRed,
-    fontSize: 12,
-    marginTop: 6,
-  },
-  saveButton: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 28,
-    ...SHADOW,
-  },
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: { flex: 1 },
+    content: { padding: 20 },
+    label: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginBottom: 8,
+      marginTop: 16,
+    },
+    dateButton: {
+      backgroundColor: colors.cardWhite,
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      ...SHADOW,
+    },
+    dateButtonText: {
+      fontSize: 15,
+      color: colors.textPrimary,
+      fontWeight: '600',
+    },
+    input: {
+      backgroundColor: colors.cardWhite,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      fontSize: 15,
+      color: colors.textPrimary,
+      ...SHADOW,
+    },
+    multilineInput: {
+      minHeight: 80,
+      textAlignVertical: 'top',
+    },
+    errorText: {
+      color: colors.tomorrowRed,
+      fontSize: 12,
+      marginTop: 6,
+    },
+    saveButton: {
+      backgroundColor: colors.accent,
+      borderRadius: 16,
+      paddingVertical: 16,
+      alignItems: 'center',
+      marginTop: 28,
+      ...SHADOW,
+    },
+    saveButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '700',
+    },
+  });
+}

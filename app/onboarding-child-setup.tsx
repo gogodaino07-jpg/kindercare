@@ -1,11 +1,12 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import PermissionModal from '../components/onboarding/PermissionModal';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
-import { COLORS, SHADOW } from '../constants/theme';
+import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
+import { useThemeColors } from '../context/ThemeContext';
 import { ChildAge } from '../types/models';
 
 /** Calendar age from a birthdate, clamped into the app's supported 3~7 range. */
@@ -26,6 +27,8 @@ function formatBirthdate(date: Date): string {
 export default function OnboardingChildSetupScreen() {
   const router = useRouter();
   const { addChild, completeOnboarding } = useAppData();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [name, setName] = useState('');
   const [birthdate, setBirthdate] = useState<Date | null>(null);
@@ -67,7 +70,7 @@ export default function OnboardingChildSetupScreen() {
               setError(false);
             }}
             placeholder="아이 이름을 입력해주세요"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
           />
 
           <Text style={styles.label}>생년월일</Text>
@@ -115,74 +118,76 @@ export default function OnboardingChildSetupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: { padding: 24, paddingBottom: 40 },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginBottom: 24,
-  },
-  card: {
-    backgroundColor: COLORS.creamBeigeCard,
-    borderRadius: 18,
-    padding: 20,
-    ...SHADOW,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 6,
-    marginTop: 14,
-  },
-  input: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.textPrimary,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  inputInvalid: {
-    borderColor: COLORS.tomorrowRed,
-  },
-  dateButton: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  dateButtonText: {
-    fontSize: 15,
-    color: COLORS.textPrimary,
-    fontWeight: '600',
-  },
-  errorText: {
-    color: COLORS.tomorrowRed,
-    fontSize: 12,
-    marginTop: 10,
-  },
-  completeButton: {
-    marginTop: 24,
-    backgroundColor: COLORS.textPrimary,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  completeButtonDisabled: {
-    opacity: 0.4,
-  },
-  completeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    content: { padding: 24, paddingBottom: 40 },
+    title: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      marginBottom: 6,
+    },
+    subtitle: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginBottom: 24,
+    },
+    card: {
+      backgroundColor: colors.creamBeigeCard,
+      borderRadius: 18,
+      padding: 20,
+      ...SHADOW,
+    },
+    label: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 6,
+      marginTop: 14,
+    },
+    input: {
+      backgroundColor: '#FFFFFF',
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 15,
+      color: colors.textPrimary,
+      borderWidth: 1.5,
+      borderColor: 'transparent',
+    },
+    inputInvalid: {
+      borderColor: colors.tomorrowRed,
+    },
+    dateButton: {
+      backgroundColor: '#FFFFFF',
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+    },
+    dateButtonText: {
+      fontSize: 15,
+      color: colors.textPrimary,
+      fontWeight: '600',
+    },
+    errorText: {
+      color: colors.tomorrowRed,
+      fontSize: 12,
+      marginTop: 10,
+    },
+    completeButton: {
+      marginTop: 24,
+      backgroundColor: colors.textPrimary,
+      borderRadius: 16,
+      paddingVertical: 16,
+      alignItems: 'center',
+    },
+    completeButtonDisabled: {
+      opacity: 0.4,
+    },
+    completeButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '700',
+    },
+  });
+}

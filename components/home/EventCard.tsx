@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORS, SHADOW } from '../../constants/theme';
+import { SHADOW, ThemeColors } from '../../constants/theme';
+import { useThemeColors } from '../../context/ThemeContext';
 import { Event } from '../../types/models';
 
 interface EventCardProps {
@@ -12,6 +13,9 @@ interface EventCardProps {
 }
 
 export default function EventCard({ event, dateBadgeText, highlighted, onPress }: EventCardProps) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <Pressable
       style={[styles.card, highlighted && styles.cardHighlighted]}
@@ -36,48 +40,50 @@ export default function EventCard({ event, dateBadgeText, highlighted, onPress }
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardWhite,
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
-    ...SHADOW,
-  },
-  cardHighlighted: {
-    backgroundColor: COLORS.tomorrowRedBg,
-  },
-  dateBadge: {
-    backgroundColor: '#EEF2F5',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginRight: 12,
-  },
-  dateBadgeHighlighted: {
-    backgroundColor: COLORS.tomorrowRed,
-  },
-  dateBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  dateBadgeTextHighlighted: {
-    color: '#FFFFFF',
-  },
-  body: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  note: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardWhite,
+      borderRadius: 16,
+      padding: 14,
+      marginBottom: 10,
+      ...SHADOW,
+    },
+    cardHighlighted: {
+      backgroundColor: colors.tomorrowRedBg,
+    },
+    dateBadge: {
+      backgroundColor: '#EEF2F5',
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      marginRight: 12,
+    },
+    dateBadgeHighlighted: {
+      backgroundColor: colors.tomorrowRed,
+    },
+    dateBadgeText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    dateBadgeTextHighlighted: {
+      color: '#FFFFFF',
+    },
+    body: {
+      flex: 1,
+    },
+    title: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    note: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+  });
+}

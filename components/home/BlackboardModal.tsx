@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CHALKBOARD_THEMES } from '../../constants/chalkboardThemes';
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
-import { COLORS } from '../../constants/theme';
+import { ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
+import { useThemeColors } from '../../context/ThemeContext';
 import { Event } from '../../types/models';
 import { formatMD } from '../../utils/date';
 
@@ -16,6 +17,8 @@ interface BlackboardModalProps {
 
 export default function BlackboardModal({ event, onClose, readOnly }: BlackboardModalProps) {
   const { updateEventNote, fontChoiceId, fontSizeChoice, chalkboardThemeId } = useAppData();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [editing, setEditing] = useState(false);
   const [draftNote, setDraftNote] = useState('');
 
@@ -92,73 +95,75 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(20, 24, 22, 0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 28,
-  },
-  frame: {
-    width: '100%',
-    maxWidth: 380,
-    borderRadius: 20,
-    padding: 14,
-  },
-  iconRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: 8,
-  },
-  iconButton: {
-    padding: 6,
-    marginLeft: 4,
-  },
-  icon: {
-    fontSize: 16,
-  },
-  board: {
-    borderRadius: 12,
-    padding: 24,
-    minHeight: 200,
-  },
-  date: {
-    fontSize: 18,
-    color: COLORS.chalkboardText,
-    opacity: 0.85,
-  },
-  title: {
-    fontSize: 28,
-    color: COLORS.chalkboardText,
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  note: {
-    fontSize: 20,
-    color: COLORS.chalkboardText,
-    lineHeight: 28,
-  },
-  input: {
-    fontSize: 20,
-    color: COLORS.chalkboardText,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.chalkboardText,
-    paddingVertical: 4,
-    minHeight: 60,
-    textAlignVertical: 'top',
-  },
-  saveButton: {
-    alignSelf: 'flex-end',
-    backgroundColor: COLORS.chalkboardText,
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginTop: 12,
-  },
-  saveButtonText: {
-    color: COLORS.chalkboardSage,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(20, 24, 22, 0.55)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 28,
+    },
+    frame: {
+      width: '100%',
+      maxWidth: 380,
+      borderRadius: 20,
+      padding: 14,
+    },
+    iconRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginBottom: 8,
+    },
+    iconButton: {
+      padding: 6,
+      marginLeft: 4,
+    },
+    icon: {
+      fontSize: 16,
+    },
+    board: {
+      borderRadius: 12,
+      padding: 24,
+      minHeight: 200,
+    },
+    date: {
+      fontSize: 18,
+      color: colors.chalkboardText,
+      opacity: 0.85,
+    },
+    title: {
+      fontSize: 28,
+      color: colors.chalkboardText,
+      marginTop: 8,
+      marginBottom: 16,
+    },
+    note: {
+      fontSize: 20,
+      color: colors.chalkboardText,
+      lineHeight: 28,
+    },
+    input: {
+      fontSize: 20,
+      color: colors.chalkboardText,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.chalkboardText,
+      paddingVertical: 4,
+      minHeight: 60,
+      textAlignVertical: 'top',
+    },
+    saveButton: {
+      alignSelf: 'flex-end',
+      backgroundColor: colors.chalkboardText,
+      borderRadius: 999,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      marginTop: 12,
+    },
+    saveButtonText: {
+      color: colors.chalkboardSage,
+      fontWeight: '700',
+      fontSize: 13,
+    },
+  });
+}

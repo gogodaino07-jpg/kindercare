@@ -3,8 +3,9 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BlackboardModal from '../components/home/BlackboardModal';
 import ScreenBackground from '../components/ScreenBackground';
-import { COLORS, SHADOW } from '../constants/theme';
+import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
+import { useThemeColors } from '../context/ThemeContext';
 import { Event } from '../types/models';
 import { formatMD, isPast, parseISODate } from '../utils/date';
 
@@ -15,6 +16,8 @@ function monthLabel(isoDate: string): string {
 
 export default function PastEventsScreen() {
   const { events, selectedChild, deleteEvent } = useAppData();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
 
@@ -86,48 +89,50 @@ export default function PastEventsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { padding: 20 },
-  emptyText: {
-    textAlign: 'center',
-    color: COLORS.textSecondary,
-    marginTop: 40,
-  },
-  monthGroup: { marginBottom: 20 },
-  monthLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-    marginBottom: 10,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardWhite,
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 8,
-    ...SHADOW,
-  },
-  dateBadge: {
-    backgroundColor: '#EEF2F5',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginRight: 10,
-  },
-  dateBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  cardTitle: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  trashButton: { padding: 6 },
-  trashIcon: { fontSize: 14 },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: { flex: 1 },
+    content: { padding: 20 },
+    emptyText: {
+      textAlign: 'center',
+      color: colors.textSecondary,
+      marginTop: 40,
+    },
+    monthGroup: { marginBottom: 20 },
+    monthLabel: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      marginBottom: 10,
+    },
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardWhite,
+      borderRadius: 14,
+      padding: 12,
+      marginBottom: 8,
+      ...SHADOW,
+    },
+    dateBadge: {
+      backgroundColor: '#EEF2F5',
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      marginRight: 10,
+    },
+    dateBadgeText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    cardTitle: {
+      flex: 1,
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    trashButton: { padding: 6 },
+    trashIcon: { fontSize: 14 },
+  });
+}

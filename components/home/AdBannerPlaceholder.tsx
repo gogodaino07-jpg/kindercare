@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { COLORS } from '../../constants/theme';
+import { ThemeColors } from '../../constants/theme';
+import { useThemeColors } from '../../context/ThemeContext';
 
 /** Reserves space for the future Coupang Partners banner (WebView) — placeholder box only for now. */
 export default function AdBannerPlaceholder() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
       <View style={styles.box}>
@@ -16,29 +20,31 @@ export default function AdBannerPlaceholder() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginHorizontal: 20,
-    marginVertical: 8,
-  },
-  box: {
-    height: 60,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.cardWhite,
-  },
-  boxText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-  },
-  disclosure: {
-    fontSize: 10,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      marginHorizontal: 20,
+      marginVertical: 8,
+    },
+    box: {
+      height: 60,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.cardWhite,
+    },
+    boxText: {
+      color: colors.textSecondary,
+      fontSize: 13,
+    },
+    disclosure: {
+      fontSize: 10,
+      color: colors.textSecondary,
+      marginTop: 4,
+      textAlign: 'center',
+    },
+  });
+}

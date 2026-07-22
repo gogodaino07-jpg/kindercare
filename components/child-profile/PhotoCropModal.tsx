@@ -4,7 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
-import { COLORS } from '../../constants/theme';
+import { ThemeColors } from '../../constants/theme';
+import { useThemeColors } from '../../context/ThemeContext';
 
 const VIEWPORT = 280;
 const MIN_SCALE = 1;
@@ -22,6 +23,8 @@ interface PhotoCropModalProps {
 }
 
 export default function PhotoCropModal({ asset, onCancel, onApply }: PhotoCropModalProps) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [saving, setSaving] = useState(false);
 
   const scale = useSharedValue(1);
@@ -144,70 +147,72 @@ export default function PhotoCropModal({ asset, onCancel, onApply }: PhotoCropMo
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#111417',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  viewportWrapper: {
-    width: VIEWPORT,
-    height: VIEWPORT,
-  },
-  viewport: {
-    width: VIEWPORT,
-    height: VIEWPORT,
-    borderRadius: VIEWPORT / 2,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#000',
-  },
-  ring: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: VIEWPORT,
-    height: VIEWPORT,
-    borderRadius: VIEWPORT / 2,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.85)',
-  },
-  hint: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 13,
-    textAlign: 'center',
-    marginTop: 24,
-    paddingHorizontal: 20,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    marginTop: 32,
-    gap: 12,
-  },
-  secondaryButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.4)',
-  },
-  secondaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  primaryButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 999,
-    backgroundColor: COLORS.accent,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#111417',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    viewportWrapper: {
+      width: VIEWPORT,
+      height: VIEWPORT,
+    },
+    viewport: {
+      width: VIEWPORT,
+      height: VIEWPORT,
+      borderRadius: VIEWPORT / 2,
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#000',
+    },
+    ring: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: VIEWPORT,
+      height: VIEWPORT,
+      borderRadius: VIEWPORT / 2,
+      borderWidth: 3,
+      borderColor: 'rgba(255,255,255,0.85)',
+    },
+    hint: {
+      color: 'rgba(255,255,255,0.7)',
+      fontSize: 13,
+      textAlign: 'center',
+      marginTop: 24,
+      paddingHorizontal: 20,
+    },
+    buttonRow: {
+      flexDirection: 'row',
+      marginTop: 32,
+      gap: 12,
+    },
+    secondaryButton: {
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.4)',
+    },
+    secondaryButtonText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    primaryButton: {
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 999,
+      backgroundColor: colors.accent,
+    },
+    primaryButtonText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '700',
+    },
+  });
+}

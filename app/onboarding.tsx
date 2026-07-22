@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -11,7 +11,8 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
-import { COLORS } from '../constants/theme';
+import { ThemeColors } from '../constants/theme';
+import { useThemeColors } from '../context/ThemeContext';
 
 interface Slide {
   icon: string;
@@ -40,6 +41,8 @@ const SLIDES: Slide[] = [
 export default function OnboardingScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const scrollRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -102,82 +105,84 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  skipRow: {
-    alignItems: 'flex-end',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  skipText: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    fontWeight: '600',
-  },
-  centerArea: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  scroll: {
-    flexGrow: 0,
-  },
-  slide: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 36,
-  },
-  iconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: COLORS.creamBeigeCard,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 32,
-  },
-  icon: {
-    fontSize: 56,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  description: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 12,
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: COLORS.border,
-  },
-  dotActive: {
-    backgroundColor: COLORS.coralPink,
-    width: 18,
-  },
-  nextButton: {
-    marginHorizontal: 24,
-    marginTop: 28,
-    marginBottom: 24,
-    backgroundColor: COLORS.peachOrange,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  nextButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    skipRow: {
+      alignItems: 'flex-end',
+      paddingHorizontal: 20,
+      paddingTop: 16,
+    },
+    skipText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      fontWeight: '600',
+    },
+    centerArea: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    scroll: {
+      flexGrow: 0,
+    },
+    slide: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 36,
+    },
+    iconCircle: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: colors.creamBeigeCard,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 32,
+    },
+    icon: {
+      fontSize: 56,
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      textAlign: 'center',
+      marginBottom: 12,
+    },
+    description: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    dotsRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 8,
+      marginTop: 12,
+    },
+    dot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+      backgroundColor: colors.border,
+    },
+    dotActive: {
+      backgroundColor: colors.coralPink,
+      width: 18,
+    },
+    nextButton: {
+      marginHorizontal: 24,
+      marginTop: 28,
+      marginBottom: 24,
+      backgroundColor: colors.peachOrange,
+      borderRadius: 16,
+      paddingVertical: 16,
+      alignItems: 'center',
+    },
+    nextButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '700',
+    },
+  });
+}

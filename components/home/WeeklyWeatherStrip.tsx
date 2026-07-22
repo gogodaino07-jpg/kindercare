@@ -1,16 +1,19 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { COLORS } from '../../constants/theme';
+import { ThemeColors } from '../../constants/theme';
+import { useThemeColors } from '../../context/ThemeContext';
 import { useWeeklyWeather } from '../../hooks/useWeeklyWeather';
 import WeatherDayCard from './WeatherDayCard';
 
 export default function WeeklyWeatherStrip() {
   const { days, loading, error, retry, usingFallbackLocation } = useWeeklyWeather();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   if (loading && !days) {
     return (
       <View style={styles.statusContainer}>
-        <ActivityIndicator color={COLORS.accent} />
+        <ActivityIndicator color={colors.accent} />
       </View>
     );
   }
@@ -46,31 +49,33 @@ export default function WeeklyWeatherStrip() {
   );
 }
 
-const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-  },
-  fallbackNotice: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginLeft: 20,
-    marginBottom: 6,
-  },
-  statusContainer: {
-    height: 88,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  errorText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    marginRight: 8,
-  },
-  retryText: {
-    color: COLORS.accent,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    scrollContent: {
+      paddingHorizontal: 20,
+      paddingVertical: 8,
+    },
+    fallbackNotice: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      marginLeft: 20,
+      marginBottom: 6,
+    },
+    statusContainer: {
+      height: 88,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+    },
+    errorText: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      marginRight: 8,
+    },
+    retryText: {
+      color: colors.accent,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+  });
+}

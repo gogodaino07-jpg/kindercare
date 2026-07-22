@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORS, SHADOW } from '../../constants/theme';
+import { SHADOW, ThemeColors } from '../../constants/theme';
+import { useThemeColors } from '../../context/ThemeContext';
 import { Child } from '../../types/models';
 
 interface HomeHeaderProps {
@@ -11,6 +12,8 @@ interface HomeHeaderProps {
 
 export default function HomeHeader({ selectedChild, onPressChild }: HomeHeaderProps) {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const childLabel = selectedChild
     ? [selectedChild.name, `${selectedChild.age}세`, selectedChild.className]
@@ -47,55 +50,57 @@ export default function HomeHeader({ selectedChild, onPressChild }: HomeHeaderPr
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  leftSpacer: {
-    width: 96,
-  },
-  centerArea: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 12,
-  },
-  childButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardWhite,
-    paddingVertical: 11,
-    paddingHorizontal: 18,
-    borderRadius: 16,
-    ...SHADOW,
-  },
-  childLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginRight: 6,
-  },
-  chevron: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
-  rightActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.cardWhite,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOW,
-  },
-  icon: {
-    fontSize: 20,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      paddingBottom: 8,
+    },
+    leftSpacer: {
+      width: 96,
+    },
+    centerArea: {
+      flex: 1,
+      alignItems: 'center',
+      paddingHorizontal: 12,
+    },
+    childButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardWhite,
+      paddingVertical: 11,
+      paddingHorizontal: 18,
+      borderRadius: 16,
+      ...SHADOW,
+    },
+    childLabel: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginRight: 6,
+    },
+    chevron: {
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+    rightActions: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    iconButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.cardWhite,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...SHADOW,
+    },
+    icon: {
+      fontSize: 20,
+    },
+  });
+}

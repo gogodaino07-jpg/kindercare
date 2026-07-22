@@ -1,14 +1,17 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import JoinCodeModal from '../components/onboarding/JoinCodeModal';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
-import { COLORS, SHADOW } from '../constants/theme';
+import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
+import { useThemeColors } from '../context/ThemeContext';
 
 export default function FamilyGroupStartScreen() {
   const router = useRouter();
   const { regenerateFamilyKey } = useAppData();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [showJoinModal, setShowJoinModal] = useState(false);
 
@@ -56,47 +59,49 @@ export default function FamilyGroupStartScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginBottom: 32,
-    textAlign: 'center',
-  },
-  primaryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.coralPink,
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 14,
-    ...SHADOW,
-  },
-  primaryCardIcon: { fontSize: 28, marginRight: 14 },
-  primaryCardTitle: { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
-  primaryCardSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
-  secondaryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.coralPink,
-    borderRadius: 18,
-    padding: 20,
-    ...SHADOW,
-  },
-  secondaryCardIcon: { fontSize: 28, marginRight: 14 },
-  secondaryCardTitle: { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
-  secondaryCardSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
-  cardTextArea: { flex: 1 },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    content: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+    },
+    title: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    subtitle: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginBottom: 32,
+      textAlign: 'center',
+    },
+    primaryCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.coralPink,
+      borderRadius: 18,
+      padding: 20,
+      marginBottom: 14,
+      ...SHADOW,
+    },
+    primaryCardIcon: { fontSize: 28, marginRight: 14 },
+    primaryCardTitle: { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
+    primaryCardSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+    secondaryCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.coralPink,
+      borderRadius: 18,
+      padding: 20,
+      ...SHADOW,
+    },
+    secondaryCardIcon: { fontSize: 28, marginRight: 14 },
+    secondaryCardTitle: { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
+    secondaryCardSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+    cardTextArea: { flex: 1 },
+  });
+}

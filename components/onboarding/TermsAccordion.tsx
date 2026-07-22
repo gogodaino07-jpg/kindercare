@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORS } from '../../constants/theme';
+import { ThemeColors } from '../../constants/theme';
+import { useThemeColors } from '../../context/ThemeContext';
 import Checkbox from '../common/Checkbox';
 
 interface TermItem {
@@ -32,6 +33,8 @@ interface TermsAccordionProps {
 }
 
 export default function TermsAccordion({ onChangeAllAgreed }: TermsAccordionProps) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -98,59 +101,61 @@ export default function TermsAccordion({ onChangeAllAgreed }: TermsAccordionProp
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginTop: 24,
-  },
-  allRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  allText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginVertical: 12,
-  },
-  itemRow: {
-    marginBottom: 8,
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  itemTitleArea: {
-    flex: 1,
-  },
-  itemTitle: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    fontWeight: '600',
-  },
-  expandButton: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-  },
-  expandIcon: {
-    fontSize: 10,
-    color: COLORS.textSecondary,
-  },
-  itemBody: {
-    marginTop: 6,
-    marginLeft: 28,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 12,
-  },
-  itemBodyText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    lineHeight: 18,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      marginTop: 24,
+    },
+    allRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    allText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginVertical: 12,
+    },
+    itemRow: {
+      marginBottom: 8,
+    },
+    itemHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    itemTitleArea: {
+      flex: 1,
+    },
+    itemTitle: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      fontWeight: '600',
+    },
+    expandButton: {
+      paddingHorizontal: 6,
+      paddingVertical: 4,
+    },
+    expandIcon: {
+      fontSize: 10,
+      color: colors.textSecondary,
+    },
+    itemBody: {
+      marginTop: 6,
+      marginLeft: 28,
+      backgroundColor: '#FFFFFF',
+      borderRadius: 10,
+      padding: 12,
+    },
+    itemBodyText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      lineHeight: 18,
+    },
+  });
+}

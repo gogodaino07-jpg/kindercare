@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORS } from '../../constants/theme';
+import { ThemeColors } from '../../constants/theme';
+import { useThemeColors } from '../../context/ThemeContext';
 
 interface PhotoSourceSheetProps {
   visible: boolean;
@@ -15,6 +16,9 @@ export default function PhotoSourceSheet({
   onPickGallery,
   onCancel,
 }: PhotoSourceSheetProps) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <Modal visible={visible} transparent onRequestClose={onCancel}>
       <Pressable style={styles.overlay} onPress={onCancel}>
@@ -35,44 +39,46 @@ export default function PhotoSourceSheet({
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(20, 24, 22, 0.45)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: COLORS.cardWhite,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 32,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  option: {
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    alignItems: 'center',
-  },
-  optionText: {
-    fontSize: 16,
-    color: COLORS.textPrimary,
-    fontWeight: '600',
-  },
-  cancelOption: {
-    marginTop: 8,
-    borderTopWidth: 0,
-  },
-  cancelText: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(20, 24, 22, 0.45)',
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: colors.cardWhite,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: 20,
+      paddingBottom: 32,
+    },
+    title: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: 12,
+    },
+    option: {
+      paddingVertical: 16,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      alignItems: 'center',
+    },
+    optionText: {
+      fontSize: 16,
+      color: colors.textPrimary,
+      fontWeight: '600',
+    },
+    cancelOption: {
+      marginTop: 8,
+      borderTopWidth: 0,
+    },
+    cancelText: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      fontWeight: '600',
+    },
+  });
+}

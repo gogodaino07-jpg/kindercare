@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../../components/ScreenBackground';
 import { FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
-import { COLORS, SHADOW } from '../../constants/theme';
+import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
+import { useThemeColors } from '../../context/ThemeContext';
 
 export default function FontSizeSettingsScreen() {
   const { fontSizeChoice, setFontSizeChoice } = useAppData();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const activeScale = FONT_SIZE_OPTIONS.find((o) => o.id === fontSizeChoice)?.scale ?? 1;
 
   return (
@@ -48,57 +51,59 @@ export default function FontSizeSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { padding: 20 },
-  title: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginBottom: 20,
-  },
-  sizeRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  sizeButton: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 14,
-    backgroundColor: COLORS.cardWhite,
-    ...SHADOW,
-  },
-  sizeButtonSelected: {
-    backgroundColor: COLORS.accent,
-  },
-  sizeButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-  },
-  sizeButtonTextSelected: {
-    color: '#FFFFFF',
-  },
-  previewCard: {
-    marginTop: 24,
-    backgroundColor: COLORS.cardWhite,
-    borderRadius: 14,
-    padding: 16,
-    ...SHADOW,
-  },
-  previewLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-    marginBottom: 8,
-  },
-  previewText: {
-    color: COLORS.textPrimary,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: { flex: 1 },
+    content: { padding: 20 },
+    title: {
+      fontSize: 17,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginBottom: 20,
+    },
+    sizeRow: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    sizeButton: {
+      flex: 1,
+      paddingVertical: 12,
+      alignItems: 'center',
+      borderRadius: 14,
+      backgroundColor: colors.cardWhite,
+      ...SHADOW,
+    },
+    sizeButtonSelected: {
+      backgroundColor: colors.accent,
+    },
+    sizeButtonText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    sizeButtonTextSelected: {
+      color: '#FFFFFF',
+    },
+    previewCard: {
+      marginTop: 24,
+      backgroundColor: colors.cardWhite,
+      borderRadius: 14,
+      padding: 16,
+      ...SHADOW,
+    },
+    previewLabel: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      marginBottom: 8,
+    },
+    previewText: {
+      color: colors.textPrimary,
+    },
+  });
+}

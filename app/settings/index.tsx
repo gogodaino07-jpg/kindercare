@@ -1,22 +1,22 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ChildSwitcherSheet from '../../components/home/ChildSwitcherSheet';
 import ScreenBackground from '../../components/ScreenBackground';
-import { COLORS, SHADOW } from '../../constants/theme';
+import { SHADOW } from '../../constants/theme';
+import { THEME_MODE_LABELS, useTheme } from '../../context/ThemeContext';
 
 interface SettingsRow {
   label: string;
+  subtitle?: string;
   onPress: () => void;
 }
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { mode, colors } = useTheme();
   const [childManagerOpen, setChildManagerOpen] = useState(false);
-
-  const comingSoon = (label: string) => () =>
-    Alert.alert(label, '추후 지원 예정이에요.');
 
   const groups: { title: string; rows: SettingsRow[] }[] = [
     {
@@ -36,8 +36,12 @@ export default function SettingsScreen() {
     {
       title: '화면 및 보안',
       rows: [
-        { label: '테마 (라이트/다크)', onPress: comingSoon('테마') },
-        { label: '앱 잠금', onPress: comingSoon('앱 잠금') },
+        {
+          label: '테마',
+          subtitle: THEME_MODE_LABELS[mode],
+          onPress: () => router.push('/settings/theme'),
+        },
+        { label: '앱 잠금', onPress: () => router.push('/settings/app-lock') },
         { label: '글씨체', onPress: () => router.push('/settings/font') },
         { label: '글자 크기 설정', onPress: () => router.push('/settings/font-size') },
         { label: '칠판 테마 색상', onPress: () => router.push('/settings/chalkboard-theme') },
@@ -50,21 +54,29 @@ export default function SettingsScreen() {
   ];
 
   return (
-    <ScreenBackground>
+    <ScreenBackground style={{ backgroundColor: colors.skyBackground }}>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           {groups.map((group) => (
             <View key={group.title} style={styles.group}>
-              <Text style={styles.groupTitle}>{group.title}</Text>
-              <View style={styles.card}>
+              <Text style={[styles.groupTitle, { color: colors.textSecondary }]}>{group.title}</Text>
+              <View style={[styles.card, { backgroundColor: colors.cardWhite }]}>
                 {group.rows.map((row, idx) => (
                   <Pressable
                     key={row.label}
-                    style={[styles.row, idx < group.rows.length - 1 && styles.rowDivider]}
+                    style={[
+                      styles.row,
+                      idx < group.rows.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                    ]}
                     onPress={row.onPress}
                   >
-                    <Text style={styles.rowLabel}>{row.label}</Text>
-                    <Text style={styles.chevron}>›</Text>
+                    <View style={styles.rowTextGroup}>
+                      <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>{row.label}</Text>
+                      {row.subtitle ? (
+                        <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>{row.subtitle}</Text>
+                      ) : null}
+                    </View>
+                    <Text style={[styles.chevron, { color: colors.textSecondary }]}>›</Text>
                   </Pressable>
                 ))}
               </View>
@@ -84,11 +96,9 @@ const styles = StyleSheet.create({
   groupTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.textSecondary,
     marginBottom: 8,
   },
   card: {
-    backgroundColor: COLORS.cardWhite,
     borderRadius: 14,
     ...SHADOW,
   },
@@ -99,17 +109,18 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  rowDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+  rowTextGroup: {
+    flex: 1,
   },
   rowLabel: {
     fontSize: 15,
-    color: COLORS.textPrimary,
     fontWeight: '600',
+  },
+  rowSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
   },
   chevron: {
     fontSize: 18,
-    color: COLORS.textSecondary,
   },
 });

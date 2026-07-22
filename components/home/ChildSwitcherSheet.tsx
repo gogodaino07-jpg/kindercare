@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORS, SHADOW } from '../../constants/theme';
+import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
+import { useThemeColors } from '../../context/ThemeContext';
 
 interface ChildSwitcherSheetProps {
   visible: boolean;
@@ -12,6 +13,8 @@ interface ChildSwitcherSheetProps {
 export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSheetProps) {
   const router = useRouter();
   const { children, selectedChild, selectChild } = useAppData();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <Modal visible={visible} transparent onRequestClose={onClose}>
@@ -73,92 +76,94 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(20, 24, 22, 0.45)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: COLORS.skyBackground,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: 32,
-  },
-  title: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardWhite,
-    borderRadius: 16,
-    marginBottom: 10,
-    paddingRight: 12,
-    ...SHADOW,
-  },
-  cardSelected: {
-    backgroundColor: '#E4F0FB',
-  },
-  cardMain: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: 12,
-  },
-  avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#EEF2F5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  avatarIcon: {
-    fontSize: 22,
-  },
-  cardLabel: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  checkIcon: {
-    fontSize: 16,
-    color: COLORS.accent,
-    fontWeight: '700',
-    marginLeft: 8,
-  },
-  editButton: {
-    padding: 8,
-  },
-  editIcon: {
-    fontSize: 16,
-  },
-  addButton: {
-    marginTop: 2,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderStyle: 'dashed',
-  },
-  addButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.accent,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(20, 24, 22, 0.45)',
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: colors.skyBackground,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      padding: 20,
+      paddingBottom: 32,
+    },
+    title: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardWhite,
+      borderRadius: 16,
+      marginBottom: 10,
+      paddingRight: 12,
+      ...SHADOW,
+    },
+    cardSelected: {
+      backgroundColor: '#E4F0FB',
+    },
+    cardMain: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+    },
+    avatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      marginRight: 12,
+    },
+    avatarPlaceholder: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: '#EEF2F5',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    avatarIcon: {
+      fontSize: 22,
+    },
+    cardLabel: {
+      flex: 1,
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    checkIcon: {
+      fontSize: 16,
+      color: colors.accent,
+      fontWeight: '700',
+      marginLeft: 8,
+    },
+    editButton: {
+      padding: 8,
+    },
+    editIcon: {
+      fontSize: 16,
+    },
+    addButton: {
+      marginTop: 2,
+      paddingVertical: 14,
+      alignItems: 'center',
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+    },
+    addButtonText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.accent,
+    },
+  });
+}

@@ -1,8 +1,9 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as Notifications from 'expo-notifications';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORS, SHADOW } from '../../constants/theme';
+import { SHADOW, ThemeColors } from '../../constants/theme';
+import { useThemeColors } from '../../context/ThemeContext';
 
 interface PermissionModalProps {
   visible: boolean;
@@ -15,6 +16,8 @@ const PERMISSION_ITEMS = [
 ];
 
 export default function PermissionModal({ visible, onDone }: PermissionModalProps) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [requesting, setRequesting] = useState(false);
 
   const handleAllow = async () => {
@@ -56,54 +59,56 @@ export default function PermissionModal({ visible, onDone }: PermissionModalProp
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(20, 24, 22, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 28,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 380,
-    backgroundColor: COLORS.creamBeigeCard,
-    borderRadius: 24,
-    padding: 24,
-    ...SHADOW,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 24,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
-  },
-  itemIcon: { fontSize: 24, marginRight: 12 },
-  itemTextArea: { flex: 1 },
-  itemTitle: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary },
-  itemDescription: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  allowButton: {
-    marginTop: 12,
-    backgroundColor: COLORS.coralPink,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  allowButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
-  laterButton: {
-    marginTop: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  laterButtonText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '600' },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(20, 24, 22, 0.5)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 28,
+    },
+    card: {
+      width: '100%',
+      maxWidth: 380,
+      backgroundColor: colors.creamBeigeCard,
+      borderRadius: 24,
+      padding: 24,
+      ...SHADOW,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      textAlign: 'center',
+      marginBottom: 20,
+      lineHeight: 24,
+    },
+    itemRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#FFFFFF',
+      borderRadius: 14,
+      padding: 14,
+      marginBottom: 10,
+    },
+    itemIcon: { fontSize: 24, marginRight: 12 },
+    itemTextArea: { flex: 1 },
+    itemTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+    itemDescription: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+    allowButton: {
+      marginTop: 12,
+      backgroundColor: colors.coralPink,
+      borderRadius: 14,
+      paddingVertical: 14,
+      alignItems: 'center',
+    },
+    allowButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+    laterButton: {
+      marginTop: 8,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    laterButtonText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  });
+}

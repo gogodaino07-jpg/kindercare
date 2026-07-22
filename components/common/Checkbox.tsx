@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { COLORS } from '../../constants/theme';
+import { ThemeColors } from '../../constants/theme';
+import { useThemeColors } from '../../context/ThemeContext';
 
 interface CheckboxProps {
   checked: boolean;
@@ -10,6 +11,9 @@ interface CheckboxProps {
 }
 
 export default function Checkbox({ checked, onToggle, size = 22, style }: CheckboxProps) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <Pressable
       onPress={onToggle}
@@ -26,20 +30,22 @@ export default function Checkbox({ checked, onToggle, size = 22, style }: Checkb
   );
 }
 
-const styles = StyleSheet.create({
-  box: {
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  boxChecked: {
-    backgroundColor: COLORS.coralPink,
-    borderColor: COLORS.coralPink,
-  },
-  mark: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    box: {
+      borderWidth: 2,
+      borderColor: colors.border,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    boxChecked: {
+      backgroundColor: colors.coralPink,
+      borderColor: colors.coralPink,
+    },
+    mark: {
+      color: '#FFFFFF',
+      fontWeight: '800',
+    },
+  });
+}

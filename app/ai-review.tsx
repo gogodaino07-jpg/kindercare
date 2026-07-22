@@ -3,8 +3,9 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
-import { COLORS, SHADOW } from '../constants/theme';
+import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
+import { useThemeColors } from '../context/ThemeContext';
 import { generateMockAIEvents } from '../data/mockAIResult';
 import { Event } from '../types/models';
 import { formatMD, parseISODate, startOfDay } from '../utils/date';
@@ -22,6 +23,8 @@ function isImminent(isoDate: string): boolean {
 export default function AIReviewScreen() {
   const router = useRouter();
   const { children, selectedChild, addEvents } = useAppData();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [draftEvents, setDraftEvents] = useState<DraftEvent[]>(() =>
     generateMockAIEvents(selectedChild).map((e, i) => ({ ...e, localId: `draft-${i}` }))
@@ -154,7 +157,7 @@ export default function AIReviewScreen() {
                             value={ev.note ?? ''}
                             onChangeText={(text) => updateDraft(ev.localId, { note: text })}
                             placeholder="준비물을 적어주세요"
-                            placeholderTextColor={COLORS.textSecondary}
+                            placeholderTextColor={colors.textSecondary}
                           />
                         ) : ev.note ? (
                           <View style={styles.noteTag}>
@@ -194,142 +197,144 @@ export default function AIReviewScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { padding: 20, paddingBottom: 12 },
-  dateCard: {
-    backgroundColor: COLORS.cardWhite,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 14,
-    ...SHADOW,
-  },
-  dateCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  dateBadge: {
-    backgroundColor: '#EEF2F5',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  dateBadgeImminent: {
-    backgroundColor: COLORS.tomorrowRed,
-  },
-  dateBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-  },
-  dateBadgeTextImminent: {
-    color: '#FFFFFF',
-  },
-  chevron: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-  },
-  eventRow: {
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingVertical: 10,
-  },
-  eventRowTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  eventTitleArea: {
-    flex: 1,
-  },
-  eventTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  titleInput: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.accent,
-    paddingVertical: 2,
-  },
-  trashButton: {
-    padding: 6,
-  },
-  trashIcon: {
-    fontSize: 15,
-  },
-  noteTag: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#EAF6EE',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    marginTop: 6,
-  },
-  noteTagText: {
-    fontSize: 12,
-    color: '#3A8455',
-    fontWeight: '600',
-  },
-  noteInput: {
-    fontSize: 13,
-    color: COLORS.textPrimary,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    paddingVertical: 4,
-    marginTop: 6,
-  },
-  reviewBadgeRow: {
-    marginTop: 6,
-  },
-  reviewBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#FFF3CD',
-    color: '#8A6A00',
-    fontSize: 11,
-    fontWeight: '700',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  reviewReason: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-  },
-  addButton: {
-    marginTop: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderStyle: 'dashed',
-  },
-  addButtonText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.accent,
-  },
-  saveButton: {
-    marginHorizontal: 20,
-    marginBottom: 16,
-    backgroundColor: COLORS.accent,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-    ...SHADOW,
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: { flex: 1 },
+    content: { padding: 20, paddingBottom: 12 },
+    dateCard: {
+      backgroundColor: colors.cardWhite,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 14,
+      ...SHADOW,
+    },
+    dateCardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 10,
+    },
+    dateBadge: {
+      backgroundColor: '#EEF2F5',
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    dateBadgeImminent: {
+      backgroundColor: colors.tomorrowRed,
+    },
+    dateBadgeText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    dateBadgeTextImminent: {
+      color: '#FFFFFF',
+    },
+    chevron: {
+      fontSize: 16,
+      color: colors.textSecondary,
+    },
+    eventRow: {
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingVertical: 10,
+    },
+    eventRowTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    eventTitleArea: {
+      flex: 1,
+    },
+    eventTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    titleInput: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.accent,
+      paddingVertical: 2,
+    },
+    trashButton: {
+      padding: 6,
+    },
+    trashIcon: {
+      fontSize: 15,
+    },
+    noteTag: {
+      alignSelf: 'flex-start',
+      backgroundColor: '#EAF6EE',
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      marginTop: 6,
+    },
+    noteTagText: {
+      fontSize: 12,
+      color: '#3A8455',
+      fontWeight: '600',
+    },
+    noteInput: {
+      fontSize: 13,
+      color: colors.textPrimary,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      paddingVertical: 4,
+      marginTop: 6,
+    },
+    reviewBadgeRow: {
+      marginTop: 6,
+    },
+    reviewBadge: {
+      alignSelf: 'flex-start',
+      backgroundColor: '#FFF3CD',
+      color: '#8A6A00',
+      fontSize: 11,
+      fontWeight: '700',
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    reviewReason: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      marginTop: 4,
+    },
+    addButton: {
+      marginTop: 8,
+      paddingVertical: 10,
+      alignItems: 'center',
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+    },
+    addButtonText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.accent,
+    },
+    saveButton: {
+      marginHorizontal: 20,
+      marginBottom: 16,
+      backgroundColor: colors.accent,
+      borderRadius: 16,
+      paddingVertical: 16,
+      alignItems: 'center',
+      ...SHADOW,
+    },
+    saveButtonDisabled: {
+      opacity: 0.5,
+    },
+    saveButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '700',
+    },
+  });
+}

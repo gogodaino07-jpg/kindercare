@@ -5,8 +5,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BlackboardModal from '../components/home/BlackboardModal';
 import EventCard from '../components/home/EventCard';
 import ScreenBackground from '../components/ScreenBackground';
-import { COLORS, SHADOW } from '../constants/theme';
+import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
+import { useThemeColors } from '../context/ThemeContext';
 import { WEEKDAY_KO, toISODate } from '../utils/date';
 
 const DOT_COLORS = {
@@ -24,6 +25,8 @@ function dotColorFor(source: 'ai' | 'manual', needsReview?: boolean): string {
 export default function CalendarScreen() {
   const router = useRouter();
   const { events, selectedChild } = useAppData();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [monthCursor, setMonthCursor] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -173,68 +176,70 @@ export default function CalendarScreen() {
 
 const CELL_SIZE = `${100 / 7}%` as const;
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { padding: 16, paddingBottom: 12 },
-  monthNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  navButton: { paddingHorizontal: 16 },
-  navButtonText: { fontSize: 16, color: COLORS.textPrimary },
-  monthLabel: { fontSize: 17, fontWeight: '700', color: COLORS.textPrimary, minWidth: 130, textAlign: 'center' },
-  weekdayRow: { flexDirection: 'row' },
-  weekdayText: {
-    width: CELL_SIZE,
-    textAlign: 'center',
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-    marginBottom: 6,
-  },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  cell: {
-    width: CELL_SIZE,
-    aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 20,
-    marginBottom: 4,
-  },
-  cellToday: { backgroundColor: '#A9D8F5' },
-  cellSelected: { borderWidth: 2, borderColor: COLORS.accent },
-  cellText: { fontSize: 13, color: COLORS.textPrimary },
-  cellTextToday: { fontWeight: '800', color: COLORS.accent },
-  dotRow: { flexDirection: 'row', marginTop: 3, gap: 2, height: 6 },
-  dot: { width: 5, height: 5, borderRadius: 3 },
-  legendRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 20,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 9, height: 9, borderRadius: 5 },
-  legendText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
-  selectedDateSection: { marginTop: 20 },
-  selectedDateLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-    marginBottom: 8,
-  },
-  noEventText: { fontSize: 13, color: COLORS.textSecondary },
-  addButton: {
-    marginHorizontal: 20,
-    marginBottom: 16,
-    backgroundColor: COLORS.accent,
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-    ...SHADOW,
-  },
-  addButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: { flex: 1 },
+    content: { padding: 16, paddingBottom: 12 },
+    monthNav: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
+    navButton: { paddingHorizontal: 16 },
+    navButtonText: { fontSize: 16, color: colors.textPrimary },
+    monthLabel: { fontSize: 17, fontWeight: '700', color: colors.textPrimary, minWidth: 130, textAlign: 'center' },
+    weekdayRow: { flexDirection: 'row' },
+    weekdayText: {
+      width: CELL_SIZE,
+      textAlign: 'center',
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      marginBottom: 6,
+    },
+    grid: { flexDirection: 'row', flexWrap: 'wrap' },
+    cell: {
+      width: CELL_SIZE,
+      aspectRatio: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 20,
+      marginBottom: 4,
+    },
+    cellToday: { backgroundColor: '#A9D8F5' },
+    cellSelected: { borderWidth: 2, borderColor: colors.accent },
+    cellText: { fontSize: 13, color: colors.textPrimary },
+    cellTextToday: { fontWeight: '800', color: colors.accent },
+    dotRow: { flexDirection: 'row', marginTop: 3, gap: 2, height: 6 },
+    dot: { width: 5, height: 5, borderRadius: 3 },
+    legendRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 20,
+      marginTop: 16,
+      marginBottom: 8,
+    },
+    legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    legendDot: { width: 9, height: 9, borderRadius: 5 },
+    legendText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+    selectedDateSection: { marginTop: 20 },
+    selectedDateLabel: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      marginBottom: 8,
+    },
+    noEventText: { fontSize: 13, color: colors.textSecondary },
+    addButton: {
+      marginHorizontal: 20,
+      marginBottom: 16,
+      backgroundColor: colors.accent,
+      borderRadius: 16,
+      paddingVertical: 14,
+      alignItems: 'center',
+      ...SHADOW,
+    },
+    addButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  });
+}
