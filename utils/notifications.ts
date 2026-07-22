@@ -1,4 +1,5 @@
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 import { Event, NotificationSettings, TimeOfDay } from '../types/models';
 import { isPast, parseISODate } from './date';
 
@@ -10,6 +11,18 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false,
   }),
 });
+
+const ANDROID_CHANNEL_ID = 'event-reminders';
+
+/** Android 8+ silently drops notifications with no channel, so this must run before any schedule call. */
+async function ensureAndroidChannel(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
+    name: '일정 알림',
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 250, 250, 250],
+  });
+}
 
 function timeToHour24(time: TimeOfDay): number {
   if (time.period === 'AM') return time.hour === 12 ? 0 : time.hour;
@@ -32,6 +45,8 @@ export async function scheduleEventNotifications(
   const { status } = await Notifications.requestPermissionsAsync();
   if (status !== 'granted') return;
 
+  await ensureAndroidChannel();
+
   const upcoming = events.filter((e) => !isPast(e.date));
 
   for (const event of upcoming) {
@@ -46,7 +61,11 @@ export async function scheduleEventNotifications(
           title: `내일 일정: ${event.title}`,
           body: event.note ? `준비물: ${event.note}` : '준비물을 확인해주세요',
         },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: dayBeforeTrigger },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: dayBeforeTrigger,
+          channelId: ANDROID_CHANNEL_ID,
+        },
       });
     }
 
@@ -58,7 +77,11 @@ export async function scheduleEventNotifications(
             title: `오늘 일정: ${event.title}`,
             body: event.note ? `준비물: ${event.note}` : '오늘 일정이 있어요',
           },
-          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: sameDayTrigger },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: sameDayTrigger,
+            channelId: ANDROID_CHANNEL_ID,
+          },
         });
       }
     }
