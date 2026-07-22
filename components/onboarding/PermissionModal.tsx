@@ -1,7 +1,8 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as Notifications from 'expo-notifications';
 import React, { useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import Text from '../common/AppText';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 
@@ -25,6 +26,9 @@ export default function PermissionModal({ visible, onDone }: PermissionModalProp
     try {
       await Notifications.requestPermissionsAsync();
       await ImagePicker.requestCameraPermissionsAsync();
+      // Small breathing room so the transition to Home doesn't feel like an
+      // abrupt jump cut right after the permission prompts close.
+      await new Promise((resolve) => setTimeout(resolve, 900));
     } finally {
       setRequesting(false);
       onDone();

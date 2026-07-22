@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import Text from '../common/AppText';
 import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import Checkbox from '../common/Checkbox';

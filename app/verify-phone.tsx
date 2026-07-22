@@ -13,6 +13,7 @@ import TermsAccordion from '../components/onboarding/TermsAccordion';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 
 /**
  * Mock verification (real telecom SDK integration is deferred to a future contract).
@@ -40,6 +41,7 @@ export default function VerifyPhoneScreen() {
   const router = useRouter();
   const { flow } = useLocalSearchParams<{ flow?: string }>();
   const { completeOnboarding } = useAppData();
+  const { showToast } = useToast();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -70,7 +72,7 @@ export default function VerifyPhoneScreen() {
   }, [codeRequested, issuedCode]);
 
   const phoneDigits = phone.replace(/[^0-9]/g, '');
-  const phoneFormatValid = phoneDigits.length >= 10 && phoneDigits.length <= 11;
+  const phoneFormatValid = /^01[016789]\d{7,8}$/.test(phoneDigits);
   const isFormValid = !!name.trim() && !!carrier && phoneFormatValid;
 
   const handleRequestCode = () => {
@@ -78,12 +80,14 @@ export default function VerifyPhoneScreen() {
       setTouched(true);
       return;
     }
+    const nextCode = generateFakeCode();
     setCodeRequested(true);
     setVerified(false);
     setCode('');
     setCodeError(false);
-    setIssuedCode(generateFakeCode());
+    setIssuedCode(nextCode);
     setSecondsLeft(CODE_VALID_SECONDS);
+    showToast(`[알림] 인증번호 [${nextCode}]가 발송되었습니다.`);
   };
 
   const handleVerifyCode = () => {
@@ -117,8 +121,10 @@ export default function VerifyPhoneScreen() {
     if (flow === 'join') {
       // Invite-code joins land in an already-existing family group, so the
       // seeded children are already "theirs" — skip straight to Home instead
-      // of asking them to create a first child profile.
+      // of asking them to create a first child profile. Clear onboarding
+      // history too, same as the create-flow's completion below.
       completeOnboarding();
+      router.dismissAll();
       router.replace('/');
       return;
     }
@@ -186,7 +192,7 @@ export default function VerifyPhoneScreen() {
           />
           {phoneInvalid ? (
             <Text style={styles.errorText}>
-              {phone.trim() ? '전화번호 10~11자리 숫자를 입력해주세요' : '전화번호를 입력해주세요'}
+              {phone.trim() ? '올바른 휴대폰 번호 형식을 입력해주세요.' : '전화번호를 입력해주세요'}
             </Text>
           ) : null}
 

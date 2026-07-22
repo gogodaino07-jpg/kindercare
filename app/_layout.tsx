@@ -16,7 +16,8 @@ import { BackHandler, ToastAndroid } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppLockScreen from '../components/AppLockScreen';
-import { AppDataProvider } from '../context/AppDataContext';
+import { AlertProvider } from '../context/AlertContext';
+import { AppDataProvider, useAppData } from '../context/AppDataContext';
 import { AppLockProvider, useAppLock } from '../context/AppLockContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
@@ -28,6 +29,7 @@ const EXIT_CONFIRM_WINDOW_MS = 2000;
 function ThemedNavigation() {
   const { colors, resolvedScheme } = useTheme();
   const { loaded: lockLoaded } = useAppLock();
+  const { onboardingLoaded } = useAppData();
   const router = useRouter();
   const pathname = usePathname();
   const lastBackPressRef = useRef(0);
@@ -56,7 +58,7 @@ function ThemedNavigation() {
     return () => subscription.remove();
   }, [router, pathname]);
 
-  if (!lockLoaded) {
+  if (!lockLoaded || !onboardingLoaded) {
     return null;
   }
 
@@ -77,7 +79,13 @@ function ThemedNavigation() {
         <Stack.Screen name="family-group-start" options={{ headerShown: false }} />
         <Stack.Screen name="verify-phone" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding-child-setup" options={{ headerShown: false }} />
-        <Stack.Screen name="calendar" options={{ title: '캘린더' }} />
+        <Stack.Screen
+          name="calendar"
+          options={{
+            title: '캘린더',
+            headerStyle: { backgroundColor: colors.skyBackground },
+          }}
+        />
         <Stack.Screen name="add-event" options={{ title: '일정 추가' }} />
         <Stack.Screen name="upload" options={{ title: '가정통신문 업로드' }} />
         <Stack.Screen name="ai-review" options={{ title: 'AI 확인·수정' }} />
@@ -125,13 +133,15 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <ToastProvider>
-            <AppDataProvider>
-              <AppLockProvider>
-                <ThemedNavigation />
-              </AppLockProvider>
-            </AppDataProvider>
-          </ToastProvider>
+          <AppDataProvider>
+            <ToastProvider>
+              <AlertProvider>
+                <AppLockProvider>
+                  <ThemedNavigation />
+                </AppLockProvider>
+              </AlertProvider>
+            </ToastProvider>
+          </AppDataProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

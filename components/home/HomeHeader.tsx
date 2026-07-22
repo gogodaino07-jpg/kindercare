@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Child } from '../../types/models';
+import Text from '../common/AppText';
 
 interface HomeHeaderProps {
   selectedChild: Child | undefined;

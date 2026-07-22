@@ -1,8 +1,9 @@
-import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BlackboardModal from '../components/home/BlackboardModal';
+import Text from '../components/common/AppText';
 import EventCard from '../components/home/EventCard';
 import ScreenBackground from '../components/ScreenBackground';
 import { SHADOW, ThemeColors } from '../constants/theme';
@@ -33,6 +34,15 @@ export default function CalendarScreen() {
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [, forceRefresh] = useState(0);
+
+  // Re-sync the selected date's event list whenever this screen regains focus
+  // (e.g. after adding an event elsewhere and navigating back).
+  useFocusEffect(
+    useCallback(() => {
+      forceRefresh((n) => n + 1);
+    }, [])
+  );
 
   const todayISO = toISODate(new Date());
   const childEvents = useMemo(
@@ -168,7 +178,9 @@ export default function CalendarScreen() {
 
         <Pressable
           style={styles.addButton}
-          onPress={() => router.push('/add-event')}
+          onPress={() =>
+            router.push({ pathname: '/add-event', params: { date: selectedDate ?? todayISO } })
+          }
         >
           <Text style={styles.addButtonText}>+ 일정 추가</Text>
         </Pressable>

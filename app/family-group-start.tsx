@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import JoinCodeModal from '../components/onboarding/JoinCodeModal';
+import Text from '../components/common/AppText';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';

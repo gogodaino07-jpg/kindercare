@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
+import Text from '../components/common/AppText';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';

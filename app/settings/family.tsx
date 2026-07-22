@@ -1,19 +1,34 @@
 import * as Clipboard from 'expo-clipboard';
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../../components/ScreenBackground';
+import Text from '../../components/common/AppText';
 import { SHADOW, ThemeColors } from '../../constants/theme';
+import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
+import { FamilyMember } from '../../types/models';
 
 export default function FamilyMembersScreen() {
-  const { familyKey, familyMembers, removeMember, leaveFamily, regenerateFamilyKey } =
+  const { familyKey, familyMembers, removeMember, leaveFamily, regenerateFamilyKey, updateMemberPhone } =
     useAppData();
+  const { showAlert } = useAlert();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [displayedKey, setDisplayedKey] = useState(familyKey);
   const [copied, setCopied] = useState(false);
+  const [phoneModalMemberId, setPhoneModalMemberId] = useState<string | null>(null);
+  const [phoneInput, setPhoneInput] = useState('');
 
   const self = familyMembers.find((m) => m.isOwner) ?? familyMembers[0];
 
@@ -21,7 +36,7 @@ export default function FamilyMembersScreen() {
     const newKey = regenerateFamilyKey();
     setDisplayedKey(newKey);
     setCopied(false);
-    Alert.alert('새 키가 발급됐어요', '기존 키는 더 이상 사용할 수 없어요.');
+    showAlert({ title: '새 키가 발급됐어요', message: '기존 키는 더 이상 사용할 수 없어요.' });
   };
 
   const handleCopy = async () => {
@@ -30,22 +45,65 @@ export default function FamilyMembersScreen() {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      Alert.alert('복사에 실패했어요', '잠시 후 다시 시도해주세요.');
+      showAlert({ title: '복사에 실패했어요', message: '잠시 후 다시 시도해주세요.' });
     }
   };
 
   const handleRemove = (memberId: string, name: string) => {
-    Alert.alert('내보내기', `${name}님을 그룹에서 내보낼까요?`, [
-      { text: '취소', style: 'cancel' },
-      { text: '내보내기', style: 'destructive', onPress: () => removeMember(memberId) },
-    ]);
+    showAlert({
+      title: '내보내기',
+      message: `${name}님을 그룹에서 내보낼까요?`,
+      buttons: [
+        { text: '취소', style: 'cancel' },
+        { text: '내보내기', style: 'destructive', onPress: () => removeMember(memberId) },
+      ],
+    });
   };
 
   const handleLeave = (memberId: string) => {
-    Alert.alert('그룹 나가기', '정말 그룹에서 나가시겠어요?', [
-      { text: '취소', style: 'cancel' },
-      { text: '나가기', style: 'destructive', onPress: () => leaveFamily(memberId) },
-    ]);
+    showAlert({
+      title: '그룹 나가기',
+      message: '정말 그룹에서 나가시겠어요?',
+      buttons: [
+        { text: '취소', style: 'cancel' },
+        { text: '나가기', style: 'destructive', onPress: () => leaveFamily(memberId) },
+      ],
+    });
+  };
+
+  const openPhoneModal = (member: FamilyMember) => {
+    setPhoneInput(member.phone ?? '');
+    setPhoneModalMemberId(member.id);
+  };
+
+  const closePhoneModal = () => {
+    setPhoneModalMemberId(null);
+    setPhoneInput('');
+  };
+
+  const savePhone = () => {
+    if (!phoneModalMemberId) return;
+    const trimmed = phoneInput.trim();
+    if (!trimmed) return;
+    updateMemberPhone(phoneModalMemberId, trimmed);
+    closePhoneModal();
+  };
+
+  const handleCallOrEdit = (member: FamilyMember) => {
+    showAlert({
+      title: member.name,
+      message: member.phone,
+      buttons: [
+        { text: '전화 걸기', onPress: () => Linking.openURL(`tel:${member.phone}`) },
+        { text: '번호 수정', onPress: () => openPhoneModal(member) },
+        {
+          text: '번호 삭제',
+          style: 'destructive',
+          onPress: () => updateMemberPhone(member.id, null),
+        },
+        { text: '취소', style: 'cancel' },
+      ],
+    });
   };
 
   return (
@@ -70,6 +128,25 @@ export default function FamilyMembersScreen() {
                 <Text style={styles.memberName}>{member.name}</Text>
                 {member.isOwner ? <Text style={styles.ownerBadge}>소유자</Text> : null}
               </View>
+
+              {member.phone ? (
+                <Pressable
+                  style={styles.phoneIconButton}
+                  onPress={() => handleCallOrEdit(member)}
+                  accessibilityLabel={`${member.name} 전화`}
+                >
+                  <Text style={styles.phoneIcon}>📞</Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  style={styles.phoneAddButton}
+                  onPress={() => openPhoneModal(member)}
+                  accessibilityLabel={`${member.name} 전화번호 추가`}
+                >
+                  <Text style={styles.phoneAddButtonText}>+ 전화번호</Text>
+                </Pressable>
+              )}
+
               {self?.isOwner && !member.isOwner ? (
                 <Pressable
                   style={styles.actionButton}
@@ -91,6 +168,44 @@ export default function FamilyMembersScreen() {
           </Pressable>
         </View>
       </SafeAreaView>
+
+      <Modal
+        visible={!!phoneModalMemberId}
+        transparent
+        animationType="fade"
+        onRequestClose={closePhoneModal}
+      >
+        <KeyboardAvoidingView
+          style={styles.phoneModalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <Pressable style={styles.phoneModalBackdrop} onPress={closePhoneModal} />
+          <View style={styles.phoneModalCard}>
+            <Text style={styles.phoneModalTitle}>전화번호 등록</Text>
+            <TextInput
+              style={styles.phoneModalInput}
+              value={phoneInput}
+              onChangeText={setPhoneInput}
+              placeholder="010-0000-0000"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="phone-pad"
+              autoFocus
+            />
+            <View style={styles.phoneModalButtonRow}>
+              <Pressable style={styles.phoneModalCancelButton} onPress={closePhoneModal}>
+                <Text style={styles.phoneModalCancelText}>취소</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.phoneModalSaveButton, !phoneInput.trim() && styles.phoneModalSaveButtonDisabled]}
+                onPress={savePhone}
+                disabled={!phoneInput.trim()}
+              >
+                <Text style={styles.phoneModalSaveText}>저장</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </ScreenBackground>
   );
 }
@@ -166,6 +281,30 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '700',
       marginTop: 2,
     },
+    phoneAddButton: {
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 999,
+      backgroundColor: '#EEF2F5',
+      marginRight: 8,
+    },
+    phoneAddButtonText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    phoneIconButton: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: '#EAF6EE',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 8,
+    },
+    phoneIcon: {
+      fontSize: 14,
+    },
     actionButton: {
       paddingVertical: 6,
       paddingHorizontal: 12,
@@ -189,6 +328,74 @@ function createStyles(colors: ThemeColors) {
       fontSize: 14,
       fontWeight: '700',
       color: colors.textPrimary,
+    },
+    phoneModalOverlay: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 32,
+    },
+    phoneModalBackdrop: {
+      ...StyleSheet.absoluteFill,
+      backgroundColor: 'rgba(20, 24, 22, 0.5)',
+    },
+    phoneModalCard: {
+      width: '100%',
+      maxWidth: 340,
+      backgroundColor: colors.cardWhite,
+      borderRadius: 22,
+      padding: 22,
+      ...SHADOW,
+    },
+    phoneModalTitle: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      textAlign: 'center',
+      marginBottom: 14,
+    },
+    phoneModalInput: {
+      backgroundColor: '#FFFFFF',
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 15,
+      color: colors.textPrimary,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+    },
+    phoneModalButtonRow: {
+      flexDirection: 'row',
+      gap: 10,
+      marginTop: 16,
+    },
+    phoneModalCancelButton: {
+      flex: 1,
+      paddingVertical: 13,
+      alignItems: 'center',
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+    },
+    phoneModalCancelText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    phoneModalSaveButton: {
+      flex: 1,
+      paddingVertical: 13,
+      alignItems: 'center',
+      borderRadius: 14,
+      backgroundColor: colors.accent,
+    },
+    phoneModalSaveButtonDisabled: {
+      opacity: 0.4,
+    },
+    phoneModalSaveText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: '#FFFFFF',
     },
   });
 }

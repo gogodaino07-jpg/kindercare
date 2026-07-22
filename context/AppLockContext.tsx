@@ -36,6 +36,7 @@ interface AppLockContextValue {
   setShowPatternEnabled: (enabled: boolean) => Promise<void>;
   unlock: () => void;
   authenticateWithBiometric: () => Promise<boolean>;
+  setPickerActive: (active: boolean) => void;
 }
 
 const AppLockContext = createContext<AppLockContextValue | undefined>(undefined);
@@ -69,7 +70,12 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
 
   const backgroundedRef = useRef(false);
   const authInProgressRef = useRef(false);
+  const pickerActiveRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+
+  const setPickerActive = (active: boolean) => {
+    pickerActiveRef.current = active;
+  };
 
   useEffect(() => {
     loadConfig().then((loadedConfig) => {
@@ -96,7 +102,10 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
       } else if (nextState === 'active' && prevState !== 'active') {
         if (backgroundedRef.current) {
           backgroundedRef.current = false;
-          if (config.method !== 'none' && !authInProgressRef.current) {
+          // A gallery/camera/document picker takes the app to 'background' too
+          // (the OS picker UI takes over), so skip the re-lock in that case —
+          // only a genuine app-switch/home-button exit should trigger it.
+          if (config.method !== 'none' && !authInProgressRef.current && !pickerActiveRef.current) {
             setIsLocked(true);
           }
         }
@@ -175,6 +184,7 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
       setShowPatternEnabled,
       unlock,
       authenticateWithBiometric,
+      setPickerActive,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [loaded, config, isLocked, biometricAvailable]

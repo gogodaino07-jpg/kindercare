@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Text from '../components/common/AppText';
 import { ThemeColors } from '../constants/theme';
 import { useThemeColors } from '../context/ThemeContext';
 

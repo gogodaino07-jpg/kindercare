@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
+import Text from './AppText';
 
 interface CheckboxProps {
   checked: boolean;

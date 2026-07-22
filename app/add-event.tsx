@@ -1,23 +1,28 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
+import Text from '../components/common/AppText';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
-import { formatMD, toISODate } from '../utils/date';
+import { formatMD, parseISODate, toISODate } from '../utils/date';
 
 export default function AddEventScreen() {
   const router = useRouter();
   const { selectedChild, addEvent } = useAppData();
   const { showToast } = useToast();
+  const { date: dateParam } = useLocalSearchParams<{ date?: string }>();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const [date, setDate] = useState(new Date());
+  // Pre-fill with the date the user had selected on the calendar (if any) —
+  // parsed via parseISODate (local Y/M/D components) rather than `new
+  // Date(dateParam)` to avoid the UTC-string-parsing day-shift pitfall.
+  const [date, setDate] = useState(() => (dateParam ? parseISODate(dateParam) : new Date()));
   const [showPicker, setShowPicker] = useState(Platform.OS === 'web');
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');

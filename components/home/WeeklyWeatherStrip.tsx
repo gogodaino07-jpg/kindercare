@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { useWeeklyWeather } from '../../hooks/useWeeklyWeather';
 import WeatherDayCard from './WeatherDayCard';
+import Text from '../common/AppText';
 
 export default function WeeklyWeatherStrip() {
   const { days, loading, error, retry, usingFallbackLocation } = useWeeklyWeather();
@@ -27,8 +28,8 @@ export default function WeeklyWeatherStrip() {
 
   if (loading && !days) {
     return (
-      <View>
-        <View style={styles.headerRow}>{refreshButton}</View>
+      <View style={styles.wrapper}>
+        {refreshButton}
         <View style={styles.statusContainer}>
           <ActivityIndicator color={colors.accent} />
         </View>
@@ -38,8 +39,8 @@ export default function WeeklyWeatherStrip() {
 
   if (error || !days) {
     return (
-      <View>
-        <View style={styles.headerRow}>{refreshButton}</View>
+      <View style={styles.wrapper}>
+        {refreshButton}
         <View style={styles.statusContainer}>
           <Text style={styles.errorText}>{error ?? '날씨 정보를 가져오지 못했어요'}</Text>
           <Pressable onPress={retry}>
@@ -51,8 +52,8 @@ export default function WeeklyWeatherStrip() {
   }
 
   return (
-    <View>
-      <View style={styles.headerRow}>{refreshButton}</View>
+    <View style={styles.wrapper}>
+      {refreshButton}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -72,20 +73,26 @@ export default function WeeklyWeatherStrip() {
 }
 
 const REFRESH_BUTTON_SIZE = 28;
+// Vertically centers the refresh button on the same line as the day cards'
+// weekday label ('오늘'/'내일'/...), which sits `scrollContent.paddingTop +
+// card paddingVertical + half the label's line height` down from here.
+const REFRESH_BUTTON_TOP = 6;
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    headerRow: {
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
-      paddingHorizontal: 20,
+    wrapper: {
+      position: 'relative',
     },
     refreshButton: {
+      position: 'absolute',
+      top: REFRESH_BUTTON_TOP,
+      right: 20,
       width: REFRESH_BUTTON_SIZE,
       height: REFRESH_BUTTON_SIZE,
       borderRadius: REFRESH_BUTTON_SIZE / 2,
       alignItems: 'center',
       justifyContent: 'center',
+      zIndex: 1,
     },
     refreshIcon: {
       fontSize: 18,
@@ -95,7 +102,8 @@ function createStyles(colors: ThemeColors) {
     },
     scrollContent: {
       paddingHorizontal: 20,
-      paddingVertical: 8,
+      paddingTop: 2,
+      paddingBottom: 8,
     },
     fallbackNotice: {
       fontSize: 11,

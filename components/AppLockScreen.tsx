@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import PatternGrid from './settings/PatternGrid';
 import { serializePattern, useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
+import Text from './common/AppText';
 
 const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'bio', '0', 'del'];
 
@@ -171,24 +172,24 @@ const styles = StyleSheet.create({
   },
   dotsRow: {
     flexDirection: 'row',
-    marginBottom: 28,
+    marginBottom: 36,
   },
   pinDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
-    marginHorizontal: 8,
+    marginHorizontal: 12,
   },
   keypad: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    width: 280,
+    width: '100%',
     justifyContent: 'center',
   },
   key: {
-    width: 280 / 3,
-    height: 64,
+    width: '33.33%',
+    height: 76,
     alignItems: 'center',
     justifyContent: 'center',
   },

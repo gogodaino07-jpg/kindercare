@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Event } from '../../types/models';
+import Text from '../common/AppText';
 
 interface EventCardProps {
   event: Event;

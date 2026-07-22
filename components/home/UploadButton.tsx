@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
+import Text from '../common/AppText';
 
 export default function UploadButton() {
   const router = useRouter();

@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ChildSwitcherSheet from '../../components/home/ChildSwitcherSheet';
 import ScreenBackground from '../../components/ScreenBackground';
+import Text from '../../components/common/AppText';
 import { SHADOW } from '../../constants/theme';
 import { THEME_MODE_LABELS, useTheme } from '../../context/ThemeContext';
 

@@ -26,6 +26,7 @@ export interface FamilyMember {
   id: string;
   name: string;
   isOwner: boolean;
+  phone?: string;
 }
 
 export interface TimeOfDay {

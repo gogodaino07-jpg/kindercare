@@ -1,7 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../../components/ScreenBackground';
+import Text from '../../components/common/AppText';
 import { SHADOW } from '../../constants/theme';
 import { THEME_MODE_LABELS, ThemeMode, useTheme } from '../../context/ThemeContext';
 

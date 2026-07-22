@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text } from 'react-native';
+import { Animated, StyleSheet } from 'react-native';
+import Text from '../components/common/AppText';
 import { useThemeColors } from './ThemeContext';
 
 const VISIBLE_MS = 2000;

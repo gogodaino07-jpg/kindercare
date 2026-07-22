@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { DEFAULT_CHALKBOARD_THEME_ID } from '../constants/chalkboardThemes';
 import {
   DEFAULT_FONT_ID,
   DEFAULT_FONT_SIZE,
+  FONT_SIZE_OPTIONS,
   FontChoiceId,
   FontSizeChoice,
 } from '../constants/fontOptions';
@@ -15,16 +17,22 @@ import {
 } from '../data/seed';
 import { Child, Event, FamilyMember, NotificationSettings } from '../types/models';
 import { toISODate } from '../utils/date';
+import { scheduleEventNotifications } from '../utils/notifications';
+
+const HAS_ONBOARDED_KEY = 'kindercare_has_onboarded';
+const FONT_SIZE_KEY = 'kindercare_font_size';
 
 interface AppDataContextValue {
   // Onboarding / family group
   hasOnboarded: boolean;
+  onboardingLoaded: boolean;
   completeOnboarding: () => void;
   familyKey: string;
   regenerateFamilyKey: () => string;
   familyMembers: FamilyMember[];
   removeMember: (memberId: string) => void;
   leaveFamily: (memberId: string) => void;
+  updateMemberPhone: (memberId: string, phone: string | null) => void;
 
   // Children
   children: Child[];
@@ -51,6 +59,8 @@ interface AppDataContextValue {
   setFontChoiceId: (id: FontChoiceId) => void;
   fontSizeChoice: FontSizeChoice;
   setFontSizeChoice: (id: FontSizeChoice) => void;
+  /** Multiplier for the current fontSizeChoice — the single source of truth AppText reads from. */
+  fontScale: number;
   chalkboardThemeId: string;
   setChalkboardThemeId: (id: string) => void;
 
@@ -69,6 +79,7 @@ function nextEventId() {
 
 export function AppDataProvider({ children: reactChildren }: { children: React.ReactNode }) {
   const [hasOnboarded, setHasOnboarded] = useState(false);
+  const [onboardingLoaded, setOnboardingLoaded] = useState(false);
   const [familyKey, setFamilyKey] = useState(generateFamilyKey);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(seedFamilyMembers);
 
@@ -79,16 +90,46 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const [notificationSettings, setNotificationSettings] =
     useState<NotificationSettings>(seedNotificationSettings);
   const [fontChoiceId, setFontChoiceId] = useState<FontChoiceId>(DEFAULT_FONT_ID);
-  const [fontSizeChoice, setFontSizeChoice] = useState<FontSizeChoice>(DEFAULT_FONT_SIZE);
+  const [fontSizeChoice, setFontSizeChoiceState] = useState<FontSizeChoice>(DEFAULT_FONT_SIZE);
   const [chalkboardThemeId, setChalkboardThemeId] = useState(DEFAULT_CHALKBOARD_THEME_ID);
   const [adDismissedDate, setAdDismissedDate] = useState<string | null>(null);
+
+  // Restore the "already onboarded" / font-size choice made in a previous
+  // session so relaunching the app doesn't force the user back through
+  // onboarding or reset their preferred text size.
+  useEffect(() => {
+    Promise.all([
+      AsyncStorage.getItem(HAS_ONBOARDED_KEY),
+      AsyncStorage.getItem(FONT_SIZE_KEY),
+    ])
+      .then(([storedOnboarded, storedFontSize]) => {
+        if (storedOnboarded === 'true') setHasOnboarded(true);
+        if (storedFontSize === 'small' || storedFontSize === 'medium' || storedFontSize === 'large') {
+          setFontSizeChoiceState(storedFontSize);
+        }
+      })
+      .finally(() => setOnboardingLoaded(true));
+  }, []);
 
   const selectedChild = useMemo(
     () => childProfiles.find((c) => c.id === selectedChildId),
     [childProfiles, selectedChildId]
   );
 
-  const completeOnboarding = () => setHasOnboarded(true);
+  const fontScale = useMemo(
+    () => FONT_SIZE_OPTIONS.find((o) => o.id === fontSizeChoice)?.scale ?? 1,
+    [fontSizeChoice]
+  );
+
+  const completeOnboarding = () => {
+    setHasOnboarded(true);
+    AsyncStorage.setItem(HAS_ONBOARDED_KEY, 'true').catch(() => {});
+  };
+
+  const setFontSizeChoice = (id: FontSizeChoice) => {
+    setFontSizeChoiceState(id);
+    AsyncStorage.setItem(FONT_SIZE_KEY, id).catch(() => {});
+  };
 
   const regenerateFamilyKey = () => {
     const newKey = generateFamilyKey();
@@ -102,6 +143,12 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
   const leaveFamily = (memberId: string) => {
     setFamilyMembers((prev) => prev.filter((m) => m.id !== memberId));
+  };
+
+  const updateMemberPhone = (memberId: string, phone: string | null) => {
+    setFamilyMembers((prev) =>
+      prev.map((m) => (m.id === memberId ? { ...m, phone: phone ?? undefined } : m))
+    );
   };
 
   const addChild = (input: Omit<Child, 'id'>) => {
@@ -151,14 +198,24 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setAdDismissedDate(toISODate(new Date()));
   };
 
+  // Whenever the event list or the notification schedule preferences change,
+  // re-schedule the day-before/same-day local notifications so newly
+  // added/edited events actually get a reminder without the user having to
+  // separately revisit the notification settings screen.
+  useEffect(() => {
+    scheduleEventNotifications(events, notificationSettings).catch(() => {});
+  }, [events, notificationSettings]);
+
   const value: AppDataContextValue = {
     hasOnboarded,
+    onboardingLoaded,
     completeOnboarding,
     familyKey,
     regenerateFamilyKey,
     familyMembers,
     removeMember,
     leaveFamily,
+    updateMemberPhone,
 
     children: childProfiles,
     selectedChild,
@@ -181,6 +238,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setFontChoiceId,
     fontSizeChoice,
     setFontSizeChoice,
+    fontScale,
     chalkboardThemeId,
     setChalkboardThemeId,
 

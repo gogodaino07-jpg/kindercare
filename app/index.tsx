@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AdPopupModal from '../components/home/AdPopupModal';
@@ -19,10 +19,17 @@ export default function HomeScreen() {
   const { tomorrowEvents, laterGroups, isEmpty } = useUpcomingEvents();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
-  const [adPopupVisible, setAdPopupVisible] = useState(true);
+  const [adPopupVisible, setAdPopupVisible] = useState(false);
   // Look up the live event by id each render so edits made in the modal (updateEventNote)
   // are reflected immediately instead of showing a stale snapshot.
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
+
+  // Wait a beat after landing on Home before showing the ad popup so it
+  // doesn't feel like it's ambushing the user the instant the screen appears.
+  useEffect(() => {
+    const timer = setTimeout(() => setAdPopupVisible(true), 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Hardware back handling (go back a screen vs. exit the app) is registered once,
   // app-wide, in app/_layout.tsx — it always checks the live navigation depth there,

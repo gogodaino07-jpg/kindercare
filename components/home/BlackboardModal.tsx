@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import Text from '../common/AppText';
 import { CHALKBOARD_THEMES } from '../../constants/chalkboardThemes';
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
 import { ThemeColors } from '../../constants/theme';
@@ -64,13 +65,12 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
           </View>
 
           <View style={[styles.board, { backgroundColor: theme.board }]}>
-            <Text style={[styles.date, { fontFamily, fontSize: 18 * fontScale }]}>
-              {formatMD(event.date)}
-            </Text>
-            <Text style={[styles.title, { fontFamily, fontSize: 28 * fontScale }]}>
-              {event.icon ? `${event.icon} ` : ''}
-              {event.title}
-            </Text>
+            {/* Plain <Text> here is AppText, which already multiplies by the
+                global font-size setting — don't also scale fontFamily-only
+                overrides here or it compounds. The TextInput below isn't
+                wrapped by AppText, so it still scales manually. */}
+            <Text style={[styles.date, { fontFamily }]}>{formatMD(event.date)}</Text>
+            <Text style={[styles.title, { fontFamily }]}>{event.title}</Text>
 
             {editing ? (
               <>
@@ -87,7 +87,7 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
                 </Pressable>
               </>
             ) : (
-              <Text style={[styles.note, { fontFamily, fontSize: 20 * fontScale }]}>
+              <Text style={[styles.note, { fontFamily }]}>
                 {event.note || '준비물이 없어요'}
               </Text>
             )}

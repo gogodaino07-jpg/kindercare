@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Text from '../../components/common/AppText';
 import ChalkboardPreview from '../../components/settings/ChalkboardPreview';
 import ScreenBackground from '../../components/ScreenBackground';
 import { CHALKBOARD_THEMES } from '../../constants/chalkboardThemes';

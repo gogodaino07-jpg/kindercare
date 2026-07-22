@@ -2,11 +2,13 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
+import Text from '../components/common/AppText';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
+import { useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { generateMockAIEvents, isSimilarEvent } from '../data/mockAIResult';
@@ -22,6 +24,7 @@ const MAX_DOCS = 5;
 export default function UploadScreen() {
   const router = useRouter();
   const { selectedChild, events } = useAppData();
+  const { setPickerActive } = useAppLock();
   const { showToast } = useToast();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -46,9 +49,14 @@ export default function UploadScreen() {
       Alert.alert('카메라 권한이 필요해요');
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
-    if (!result.canceled && result.assets[0]) {
-      addDoc({ id: `doc-${Date.now()}`, uri: result.assets[0].uri, kind: 'image' });
+    setPickerActive(true);
+    try {
+      const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+      if (!result.canceled && result.assets[0]) {
+        addDoc({ id: `doc-${Date.now()}`, uri: result.assets[0].uri, kind: 'image' });
+      }
+    } finally {
+      setPickerActive(false);
     }
   };
 
@@ -58,32 +66,42 @@ export default function UploadScreen() {
       Alert.alert('사진첩 권한이 필요해요');
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-      allowsMultipleSelection: true,
-      selectionLimit: MAX_DOCS - docs.length,
-    });
-    if (!result.canceled) {
-      result.assets.forEach((asset) =>
-        addDoc({ id: `doc-${Date.now()}-${asset.assetId ?? asset.uri}`, uri: asset.uri, kind: 'image' })
-      );
+    setPickerActive(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+        allowsMultipleSelection: true,
+        selectionLimit: MAX_DOCS - docs.length,
+      });
+      if (!result.canceled) {
+        result.assets.forEach((asset) =>
+          addDoc({ id: `doc-${Date.now()}-${asset.assetId ?? asset.uri}`, uri: asset.uri, kind: 'image' })
+        );
+      }
+    } finally {
+      setPickerActive(false);
     }
   };
 
   const handlePickFile = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ['application/pdf', 'image/*'],
-      multiple: false,
-    });
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      addDoc({
-        id: `doc-${Date.now()}`,
-        uri: asset.uri,
-        kind: asset.mimeType?.startsWith('image/') ? 'image' : 'file',
-        name: asset.name,
+    setPickerActive(true);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        multiple: false,
       });
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        addDoc({
+          id: `doc-${Date.now()}`,
+          uri: asset.uri,
+          kind: asset.mimeType?.startsWith('image/') ? 'image' : 'file',
+          name: asset.name,
+        });
+      }
+    } finally {
+      setPickerActive(false);
     }
   };
 

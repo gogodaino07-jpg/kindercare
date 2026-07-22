@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Text from '../../components/common/AppText';
 import PatternGrid from '../../components/settings/PatternGrid';
 import ScreenBackground from '../../components/ScreenBackground';
 import { SHADOW } from '../../constants/theme';

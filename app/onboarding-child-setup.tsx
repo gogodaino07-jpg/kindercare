@@ -1,8 +1,9 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import PermissionModal from '../components/onboarding/PermissionModal';
+import Text from '../components/common/AppText';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
@@ -51,6 +52,9 @@ export default function OnboardingChildSetupScreen() {
   const handlePermissionDone = () => {
     setShowPermissionModal(false);
     completeOnboarding();
+    // Clear the onboarding/verification screens from history so hardware
+    // back from Home exits the app instead of stepping back through them.
+    router.dismissAll();
     router.replace('/');
   };
 
@@ -77,6 +81,7 @@ export default function OnboardingChildSetupScreen() {
               setName(t);
               setError(false);
             }}
+            maxLength={10}
             placeholder="아이 이름을 입력해주세요"
             placeholderTextColor={colors.textSecondary}
           />

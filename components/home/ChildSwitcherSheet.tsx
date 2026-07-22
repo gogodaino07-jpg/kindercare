@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Alert, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
+import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
+import Text from '../common/AppText';
 
 interface ChildSwitcherSheetProps {
   visible: boolean;
@@ -13,16 +15,33 @@ interface ChildSwitcherSheetProps {
 export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSheetProps) {
   const router = useRouter();
   const { children, selectedChild, selectChild, deleteChild } = useAppData();
+  const { showAlert } = useAlert();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const mainChildId = children[0]?.id;
 
+  // Selected child always leads the list; everyone else follows in
+  // alphabetical (가나다) order. `mainChildId` above intentionally keeps
+  // reading from the unsorted `children` array — deletion protection is
+  // about creation order, not display order.
+  const sortedChildren = useMemo(() => {
+    const selected = children.filter((c) => c.id === selectedChild?.id);
+    const rest = children
+      .filter((c) => c.id !== selectedChild?.id)
+      .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'ko'));
+    return [...selected, ...rest];
+  }, [children, selectedChild]);
+
   const handleDelete = (childId: string, label: string) => {
-    Alert.alert('아이 프로필 삭제', `정말 이 아이 프로필을 삭제하시겠습니까?\n${label}`, [
-      { text: '취소', style: 'cancel' },
-      { text: '삭제', style: 'destructive', onPress: () => deleteChild(childId) },
-    ]);
+    showAlert({
+      title: '아이 프로필 삭제',
+      message: `정말 이 아이 프로필을 삭제하시겠습니까?\n${label}`,
+      buttons: [
+        { text: '취소', style: 'cancel' },
+        { text: '삭제', style: 'destructive', onPress: () => deleteChild(childId) },
+      ],
+    });
   };
 
   return (
@@ -30,7 +49,7 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={() => {}}>
           <Text style={styles.title}>아이 전환·관리</Text>
-          {children.map((child) => {
+          {sortedChildren.map((child) => {
             const isSelected = child.id === selectedChild?.id;
             const isMainChild = child.id === mainChildId;
             const label = [child.name, `${child.age}세`, child.className]

@@ -18,6 +18,7 @@ import PhotoSourceSheet from '../components/child-profile/PhotoSourceSheet';
 import ScreenBackground from '../components/ScreenBackground';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
+import { useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { ChildAge } from '../types/models';
@@ -27,6 +28,7 @@ const AGE_OPTIONS: ChildAge[] = [3, 4, 5, 6, 7];
 export default function ChildProfileScreen() {
   const router = useRouter();
   const { children, addChild, updateChild } = useAppData();
+  const { setPickerActive } = useAppLock();
   const { showToast } = useToast();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -50,9 +52,14 @@ export default function ChildProfileScreen() {
       Alert.alert('카메라 권한이 필요해요', '설정에서 카메라 접근을 허용해주세요.');
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 1 });
-    if (!result.canceled && result.assets[0]) {
-      setPendingAsset(result.assets[0]);
+    setPickerActive(true);
+    try {
+      const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 1 });
+      if (!result.canceled && result.assets[0]) {
+        setPendingAsset(result.assets[0]);
+      }
+    } finally {
+      setPickerActive(false);
     }
   };
 
@@ -62,13 +69,18 @@ export default function ChildProfileScreen() {
       Alert.alert('사진첩 권한이 필요해요', '설정에서 사진첩 접근을 허용해주세요.');
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: false,
-      quality: 1,
-      mediaTypes: ['images'],
-    });
-    if (!result.canceled && result.assets[0]) {
-      setPendingAsset(result.assets[0]);
+    setPickerActive(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: false,
+        quality: 1,
+        mediaTypes: ['images'],
+      });
+      if (!result.canceled && result.assets[0]) {
+        setPendingAsset(result.assets[0]);
+      }
+    } finally {
+      setPickerActive(false);
     }
   };
 
@@ -118,6 +130,7 @@ export default function ChildProfileScreen() {
               style={[styles.input, !nameValid && styles.inputInvalid]}
               value={name}
               onChangeText={setName}
+              maxLength={10}
               placeholder="이름을 입력해주세요"
               placeholderTextColor={colors.textSecondary}
             />

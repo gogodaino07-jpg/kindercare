@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../../components/ScreenBackground';
+import Text from '../../components/common/AppText';
 import TimeWheelPicker, { formatTimeOfDay } from '../../components/settings/TimeWheelPicker';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';

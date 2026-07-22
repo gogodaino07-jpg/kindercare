@@ -1,17 +1,17 @@
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../../components/ScreenBackground';
+import Text from '../../components/common/AppText';
 import { SHADOW, ThemeColors } from '../../constants/theme';
-import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
+import { FONT_OPTIONS } from '../../constants/fontOptions';
 import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
 
 export default function FontSettingsScreen() {
-  const { fontChoiceId, setFontChoiceId, fontSizeChoice } = useAppData();
+  const { fontChoiceId, setFontChoiceId } = useAppData();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const activeScale = FONT_SIZE_OPTIONS.find((o) => o.id === fontSizeChoice)?.scale ?? 1;
 
   return (
     <ScreenBackground>
@@ -30,12 +30,7 @@ export default function FontSettingsScreen() {
                 </View>
                 <View style={styles.rowText}>
                   <Text style={styles.rowLabel}>{option.label}</Text>
-                  <Text
-                    style={[
-                      styles.preview,
-                      { fontFamily: option.fontFamily, fontSize: 18 * activeScale },
-                    ]}
-                  >
+                  <Text style={[styles.preview, { fontFamily: option.fontFamily }]}>
                     7/20(월) 현장학습이 있어요
                   </Text>
                 </View>

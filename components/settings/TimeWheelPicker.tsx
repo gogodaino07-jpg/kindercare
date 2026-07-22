@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Text from '../common/AppText';
 import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { TimeOfDay } from '../../types/models';
@@ -16,7 +17,7 @@ const PERIODS: { label: string; value: TimeOfDay['period'] }[] = [
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 1);
 const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
 
-const ITEM_HEIGHT = 36;
+const ITEM_HEIGHT = 46;
 const VISIBLE_ITEMS = 3;
 const COLUMN_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 const SPACER_HEIGHT = ITEM_HEIGHT * Math.floor(VISIBLE_ITEMS / 2);
@@ -154,11 +155,11 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
     },
     itemText: {
-      fontSize: 15,
+      fontSize: 17,
       color: colors.textSecondary,
     },
     itemTextSelected: {
-      fontSize: 17,
+      fontSize: 20,
       fontWeight: '800',
       color: colors.accent,
     },
