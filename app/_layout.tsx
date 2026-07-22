@@ -8,11 +8,11 @@ import { PoorStory_400Regular } from '@expo-google-fonts/poor-story';
 import { Sunflower_500Medium } from '@expo-google-fonts/sunflower';
 import { YeonSung_400Regular } from '@expo-google-fonts/yeon-sung';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect } from 'react';
-import { BackHandler } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { BackHandler, ToastAndroid } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppLockScreen from '../components/AppLockScreen';
@@ -22,10 +22,14 @@ import { ThemeProvider, useTheme } from '../context/ThemeContext';
 
 SplashScreen.preventAutoHideAsync();
 
+const EXIT_CONFIRM_WINDOW_MS = 2000;
+
 function ThemedNavigation() {
   const { colors, resolvedScheme } = useTheme();
   const { loaded: lockLoaded } = useAppLock();
   const router = useRouter();
+  const pathname = usePathname();
+  const lastBackPressRef = useRef(0);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -33,11 +37,23 @@ function ThemedNavigation() {
         router.back();
         return true;
       }
+      // At the Home screen root: require a second press within the confirm
+      // window before exiting, instead of exiting on the very first press.
+      if (pathname === '/') {
+        const now = Date.now();
+        if (now - lastBackPressRef.current < EXIT_CONFIRM_WINDOW_MS) {
+          BackHandler.exitApp();
+        } else {
+          lastBackPressRef.current = now;
+          ToastAndroid.show('뒤로 가기 버튼을 한 번 더 누르면 종료됩니다.', ToastAndroid.SHORT);
+        }
+        return true;
+      }
       BackHandler.exitApp();
       return true;
     });
     return () => subscription.remove();
-  }, [router]);
+  }, [router, pathname]);
 
   if (!lockLoaded) {
     return null;

@@ -10,27 +10,49 @@ export default function WeeklyWeatherStrip() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  const refreshButton = (
+    <Pressable
+      style={styles.refreshButton}
+      onPress={retry}
+      disabled={loading}
+      accessibilityLabel="날씨 새로고침"
+    >
+      {loading ? (
+        <ActivityIndicator size="small" color={colors.accent} />
+      ) : (
+        <Text style={styles.refreshIcon}>↻</Text>
+      )}
+    </Pressable>
+  );
+
   if (loading && !days) {
     return (
-      <View style={styles.statusContainer}>
-        <ActivityIndicator color={colors.accent} />
+      <View>
+        <View style={styles.headerRow}>{refreshButton}</View>
+        <View style={styles.statusContainer}>
+          <ActivityIndicator color={colors.accent} />
+        </View>
       </View>
     );
   }
 
   if (error || !days) {
     return (
-      <View style={styles.statusContainer}>
-        <Text style={styles.errorText}>{error ?? '날씨 정보를 가져오지 못했어요'}</Text>
-        <Pressable onPress={retry}>
-          <Text style={styles.retryText}>다시 시도</Text>
-        </Pressable>
+      <View>
+        <View style={styles.headerRow}>{refreshButton}</View>
+        <View style={styles.statusContainer}>
+          <Text style={styles.errorText}>{error ?? '날씨 정보를 가져오지 못했어요'}</Text>
+          <Pressable onPress={retry}>
+            <Text style={styles.retryText}>다시 시도</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
 
   return (
     <View>
+      <View style={styles.headerRow}>{refreshButton}</View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -49,8 +71,28 @@ export default function WeeklyWeatherStrip() {
   );
 }
 
+const REFRESH_BUTTON_SIZE = 28;
+
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      paddingHorizontal: 20,
+    },
+    refreshButton: {
+      width: REFRESH_BUTTON_SIZE,
+      height: REFRESH_BUTTON_SIZE,
+      borderRadius: REFRESH_BUTTON_SIZE / 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    refreshIcon: {
+      fontSize: 18,
+      lineHeight: 20,
+      color: colors.accent,
+      fontWeight: '700',
+    },
     scrollContent: {
       paddingHorizontal: 20,
       paddingVertical: 8,
