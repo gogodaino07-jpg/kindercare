@@ -8,6 +8,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { Event } from '../../types/models';
+import { openCoupangSearch } from '../../utils/coupang';
 import { formatMD } from '../../utils/date';
 
 interface BlackboardModalProps {
@@ -87,9 +88,19 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
                 </Pressable>
               </>
             ) : (
-              <Text style={[styles.note, { fontFamily }]}>
-                {event.note || '준비물이 없어요'}
-              </Text>
+              <>
+                <Text style={[styles.note, { fontFamily }]}>
+                  {event.note || '준비물이 없어요'}
+                </Text>
+                {event.note ? (
+                  <Pressable
+                    style={styles.coupangButton}
+                    onPress={() => openCoupangSearch(event.note!)}
+                  >
+                    <Text style={styles.coupangButtonText}>🛒 쿠팡에서 구매</Text>
+                  </Pressable>
+                ) : null}
+              </>
             )}
           </View>
         </View>
@@ -167,6 +178,19 @@ function createStyles(colors: ThemeColors) {
       color: colors.chalkboardSage,
       fontWeight: '700',
       fontSize: 13,
+    },
+    coupangButton: {
+      alignSelf: 'flex-start',
+      backgroundColor: 'rgba(255,255,255,0.15)',
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      marginTop: 10,
+    },
+    coupangButtonText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.chalkboardText,
     },
   });
 }

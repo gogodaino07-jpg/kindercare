@@ -9,9 +9,10 @@ import Text from '../common/AppText';
 interface HomeHeaderProps {
   selectedChild: Child | undefined;
   onPressChild: () => void;
+  onPressNotifications: () => void;
 }
 
-export default function HomeHeader({ selectedChild, onPressChild }: HomeHeaderProps) {
+export default function HomeHeader({ selectedChild, onPressChild, onPressNotifications }: HomeHeaderProps) {
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -33,6 +34,13 @@ export default function HomeHeader({ selectedChild, onPressChild }: HomeHeaderPr
         </Pressable>
       </View>
       <View style={styles.rightActions}>
+        <Pressable
+          style={styles.iconButton}
+          onPress={onPressNotifications}
+          accessibilityLabel="알림 센터"
+        >
+          <Text style={styles.icon}>🔔</Text>
+        </Pressable>
         <Pressable
           style={styles.iconButton}
           onPress={() => router.push('/calendar')}
@@ -68,7 +76,7 @@ function createStyles(colors: ThemeColors) {
     childButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      justifyContent: 'center',
       backgroundColor: colors.cardWhite,
       paddingVertical: 11,
       paddingHorizontal: 18,
@@ -76,7 +84,8 @@ function createStyles(colors: ThemeColors) {
       ...SHADOW,
     },
     childLabel: {
-      flex: 1,
+      flexShrink: 1,
+      textAlign: 'center',
       fontSize: 15,
       fontWeight: '600',
       color: colors.textPrimary,

@@ -1,10 +1,11 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BlackboardModal from '../components/home/BlackboardModal';
 import Text from '../components/common/AppText';
 import EventCard from '../components/home/EventCard';
+import NotificationCenterModal from '../components/home/NotificationCenterModal';
 import ScreenBackground from '../components/ScreenBackground';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
@@ -34,6 +35,7 @@ export default function CalendarScreen() {
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [, forceRefresh] = useState(0);
 
   // Re-sync the selected date's event list whenever this screen regains focus
@@ -87,8 +89,21 @@ export default function CalendarScreen() {
 
   return (
     <ScreenBackground>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Pressable
+              onPress={() => setNotificationCenterOpen(true)}
+              accessibilityLabel="알림 센터"
+              hitSlop={8}
+            >
+              <Text style={styles.bellIcon}>🔔</Text>
+            </Pressable>
+          ),
+        }}
+      />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.content}>
           <View style={styles.monthNav}>
             <Pressable onPress={goToPrevMonth} style={styles.navButton}>
               <Text style={styles.navButtonText}>◀</Text>
@@ -164,17 +179,24 @@ export default function CalendarScreen() {
               {selectedDateEvents.length === 0 ? (
                 <Text style={styles.noEventText}>이 날짜엔 일정이 없어요</Text>
               ) : (
-                selectedDateEvents.map((e) => (
-                  <EventCard
-                    key={e.id}
-                    event={e}
-                    onPress={() => setSelectedEventId(e.id)}
-                  />
-                ))
+                <ScrollView
+                  style={styles.eventScroll}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {selectedDateEvents.map((e) => (
+                    <EventCard
+                      key={e.id}
+                      event={e}
+                      showCoupangButton
+                      wrapNote
+                      onPress={() => setSelectedEventId(e.id)}
+                    />
+                  ))}
+                </ScrollView>
               )}
             </View>
           ) : null}
-        </ScrollView>
+        </View>
 
         <Pressable
           style={styles.addButton}
@@ -186,6 +208,10 @@ export default function CalendarScreen() {
         </Pressable>
       </SafeAreaView>
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
+      <NotificationCenterModal
+        visible={notificationCenterOpen}
+        onClose={() => setNotificationCenterOpen(false)}
+      />
     </ScreenBackground>
   );
 }
@@ -195,7 +221,8 @@ const CELL_SIZE = `${100 / 7}%` as const;
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     safeArea: { flex: 1 },
-    content: { padding: 16, paddingBottom: 12 },
+    content: { flex: 1, padding: 16, paddingBottom: 12 },
+    bellIcon: { fontSize: 20, marginRight: 4 },
     monthNav: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -239,13 +266,14 @@ function createStyles(colors: ThemeColors) {
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     legendDot: { width: 9, height: 9, borderRadius: 5 },
     legendText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-    selectedDateSection: { marginTop: 20 },
+    selectedDateSection: { flex: 1, marginTop: 20 },
     selectedDateLabel: {
       fontSize: 13,
       fontWeight: '700',
       color: colors.textSecondary,
       marginBottom: 8,
     },
+    eventScroll: { flex: 1 },
     noEventText: { fontSize: 13, color: colors.textSecondary },
     addButton: {
       marginHorizontal: 20,

@@ -126,7 +126,7 @@ function createStyles(colors: ThemeColors) {
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
       padding: 20,
-      paddingBottom: 32,
+      paddingBottom: 44,
     },
     title: {
       fontSize: 15,
@@ -196,7 +196,8 @@ function createStyles(colors: ThemeColors) {
       fontSize: 16,
     },
     addButton: {
-      marginTop: 12,
+      marginTop: 14,
+      marginBottom: 4,
       paddingVertical: 14,
       alignItems: 'center',
       borderRadius: 14,

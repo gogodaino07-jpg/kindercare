@@ -11,20 +11,23 @@ import { useFonts } from 'expo-font';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useRef } from 'react';
-import { BackHandler, ToastAndroid } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { AppState, AppStateStatus, BackHandler, ToastAndroid } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppLockScreen from '../components/AppLockScreen';
+import BootSplashOverlay from '../components/BootSplashOverlay';
 import { AlertProvider } from '../context/AlertContext';
 import { AppDataProvider, useAppData } from '../context/AppDataContext';
 import { AppLockProvider, useAppLock } from '../context/AppLockContext';
+import { NotificationCenterProvider } from '../context/NotificationCenterContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
 
 SplashScreen.preventAutoHideAsync();
 
 const EXIT_CONFIRM_WINDOW_MS = 2000;
+const BOOT_SPLASH_MS = 2000;
 
 function ThemedNavigation() {
   const { colors, resolvedScheme } = useTheme();
@@ -33,6 +36,35 @@ function ThemedNavigation() {
   const router = useRouter();
   const pathname = usePathname();
   const lastBackPressRef = useRef(0);
+
+  // Shown once on cold boot (initial state below) and again every time the
+  // app returns to the foreground after being backgrounded — distinct from
+  // the routed /splash screen, which only plays once on the way into
+  // onboarding and doesn't fire on every relaunch/resume.
+  const [showBootSplash, setShowBootSplash] = useState(true);
+  const backgroundedRef = useRef(false);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowBootSplash(false), BOOT_SPLASH_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      const prevState = appStateRef.current;
+      appStateRef.current = nextState;
+
+      if (nextState === 'background') {
+        backgroundedRef.current = true;
+      } else if (nextState === 'active' && prevState !== 'active' && backgroundedRef.current) {
+        backgroundedRef.current = false;
+        setShowBootSplash(true);
+        setTimeout(() => setShowBootSplash(false), BOOT_SPLASH_MS);
+      }
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -92,8 +124,14 @@ function ThemedNavigation() {
         <Stack.Screen name="save-complete" options={{ headerShown: false }} />
         <Stack.Screen name="past-events" options={{ title: '지난 일정' }} />
         <Stack.Screen name="child-profile" options={{ title: '아이 프로필 설정' }} />
-        <Stack.Screen name="settings/index" options={{ title: '설정' }} />
-        <Stack.Screen name="settings/family" options={{ title: '가족 계정' }} />
+        <Stack.Screen
+          name="settings/index"
+          options={{ title: '설정', headerStyle: { backgroundColor: colors.skyBackground } }}
+        />
+        <Stack.Screen
+          name="settings/family"
+          options={{ title: '가족 계정', headerStyle: { backgroundColor: colors.skyBackground } }}
+        />
         <Stack.Screen name="settings/notifications" options={{ title: '알림 설정' }} />
         <Stack.Screen name="settings/font" options={{ title: '글씨체 설정' }} />
         <Stack.Screen name="settings/font-size" options={{ title: '글자 크기 설정' }} />
@@ -102,6 +140,7 @@ function ThemedNavigation() {
         <Stack.Screen name="settings/app-lock" options={{ title: '앱 잠금' }} />
       </Stack>
       <AppLockScreen />
+      {showBootSplash ? <BootSplashOverlay /> : null}
     </>
   );
 }
@@ -134,13 +173,15 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ThemeProvider>
           <AppDataProvider>
-            <ToastProvider>
-              <AlertProvider>
-                <AppLockProvider>
-                  <ThemedNavigation />
-                </AppLockProvider>
-              </AlertProvider>
-            </ToastProvider>
+            <NotificationCenterProvider>
+              <ToastProvider>
+                <AlertProvider>
+                  <AppLockProvider>
+                    <ThemedNavigation />
+                  </AppLockProvider>
+                </AlertProvider>
+              </ToastProvider>
+            </NotificationCenterProvider>
           </AppDataProvider>
         </ThemeProvider>
       </SafeAreaProvider>

@@ -6,6 +6,7 @@ import ScreenBackground from '../components/ScreenBackground';
 import Text from '../components/common/AppText';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
+import { useNotificationCenter } from '../context/NotificationCenterContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { generateMockAIEvents } from '../data/mockAIResult';
 import { Event } from '../types/models';
@@ -24,6 +25,7 @@ function isImminent(isoDate: string): boolean {
 export default function AIReviewScreen() {
   const router = useRouter();
   const { children, selectedChild, addEvents } = useAppData();
+  const { addNotification } = useNotificationCenter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -83,6 +85,12 @@ export default function AIReviewScreen() {
   const handleSave = () => {
     if (draftEvents.length === 0) return;
     addEvents(draftEvents.map(({ localId, ...rest }) => rest));
+    const keyword = draftEvents.find((e) => e.note?.trim())?.note;
+    addNotification({
+      title: '가정통신문 분석 완료',
+      body: `${draftEvents.length}건의 일정이 캘린더에 저장됐어요.`,
+      keyword,
+    });
     router.replace({ pathname: '/save-complete', params: { count: String(draftEvents.length) } });
   };
 
