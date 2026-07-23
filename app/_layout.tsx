@@ -141,6 +141,7 @@ function ThemedNavigation() {
         <Stack.Screen name="settings/chalkboard-theme" options={{ title: '팝업 테마' }} />
         <Stack.Screen name="settings/theme" options={{ title: '테마' }} />
         <Stack.Screen name="settings/app-lock" options={{ title: '앱 잠금' }} />
+        <Stack.Screen name="settings/support" options={{ title: '고객센터' }} />
       </Stack>
       <AppLockScreen autoBiometricEnabled={!showBootSplash} />
       {showBootSplash ? <BootSplashOverlay /> : null}

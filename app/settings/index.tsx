@@ -89,7 +89,13 @@ export default function SettingsScreen() {
     },
     {
       title: '기타',
-      rows: [{ label: '지난 일정 모아보기', onPress: () => router.push('/past-events') }],
+      rows: [
+        { label: '지난 일정 모아보기', onPress: () => router.push('/past-events') },
+        {
+          label: '고객센터 / 문의 및 의견 보내기',
+          onPress: () => router.push('/settings/support'),
+        },
+      ],
     },
   ];
 
