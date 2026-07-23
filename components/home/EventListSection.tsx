@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Text from '../common/AppText';
 import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -12,6 +12,8 @@ interface EventListSectionProps {
   tomorrowEvents: Event[];
   laterGroups: EventDateGroup[];
   onEventPress: (event: Event) => void;
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }
 
 // Same-date groups with this many events or more collapse behind a
@@ -23,6 +25,8 @@ export default function EventListSection({
   tomorrowEvents,
   laterGroups,
   onEventPress,
+  refreshing,
+  onRefresh,
 }: EventListSectionProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -56,6 +60,9 @@ export default function EventListSection({
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} /> : undefined
+        }
       >
         {laterGroups.map((group) => {
           const collapsible = group.events.length >= COLLAPSE_THRESHOLD;

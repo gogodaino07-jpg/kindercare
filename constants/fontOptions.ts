@@ -34,7 +34,7 @@ export const FONT_OPTIONS: FontOption[] = [
 
 export const DEFAULT_FONT_ID: FontChoiceId = 'default';
 
-export type FontSizeChoice = 'small' | 'medium' | 'large';
+export type FontSizeChoice = 'xs' | 's' | 'm' | 'l' | 'xl';
 
 export interface FontSizeOption {
   id: FontSizeChoice;
@@ -44,9 +44,11 @@ export interface FontSizeOption {
 }
 
 export const FONT_SIZE_OPTIONS: FontSizeOption[] = [
-  { id: 'small', label: '작게', scale: 0.9 },
-  { id: 'medium', label: '보통', scale: 1 },
-  { id: 'large', label: '크게', scale: 1.15 },
+  { id: 'xs', label: '아주 작게', scale: 0.85 },
+  { id: 's', label: '작게', scale: 0.95 },
+  { id: 'm', label: '보통', scale: 1 },
+  { id: 'l', label: '크게', scale: 1.2 },
+  { id: 'xl', label: '아주 크게', scale: 1.45 },
 ];
 
-export const DEFAULT_FONT_SIZE: FontSizeChoice = 'medium';
+export const DEFAULT_FONT_SIZE: FontSizeChoice = 'm';

@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AdPopupModal from '../components/home/AdPopupModal';
 import BlackboardModal from '../components/home/BlackboardModal';
@@ -14,33 +14,47 @@ import WeeklyWeatherStrip from '../components/home/WeeklyWeatherStrip';
 import ScreenBackground from '../components/ScreenBackground';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
+import { useNotificationCenter } from '../context/NotificationCenterContext';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
+import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
 
 export default function HomeScreen() {
   const { hasOnboarded, selectedChild, events } = useAppData();
   const { isLocked } = useAppLock();
+  const { hasUnread } = useNotificationCenter();
   const { tomorrowEvents, laterGroups, isEmpty } = useUpcomingEvents();
+  const weather = useWeeklyWeather();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [adPopupVisible, setAdPopupVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const adShownRef = useRef(false);
+
+  // Pull-to-refresh refetches weather immediately — manual per-strip refresh
+  // icon was removed in favor of this. Background auto-refresh (1hr) runs
+  // independently inside useWeeklyWeather.
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await weather.retry();
+    setRefreshing(false);
+  };
   // Look up the live event by id each render so edits made in the modal (updateEventNote)
   // are reflected immediately instead of showing a stale snapshot.
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
 
-  // The ad popup shows exactly once per full app launch: 1s after Home is
-  // settled and unlocked. If the app is still behind the lock screen when
-  // Home mounts, wait for unlock before starting that delay — it must never
-  // be able to render on top of / behind the lock screen. It deliberately
-  // does NOT re-trigger on every background→foreground resume (Home stays
-  // mounted across those), only on a genuine fresh launch.
+  // The ad popup shows exactly once per full app launch: ~1.8s after Home is
+  // settled and unlocked (not immediately on entry). If the app is still
+  // behind the lock screen when Home mounts, wait for unlock before starting
+  // that delay — it must never be able to render on top of / behind the lock
+  // screen. It deliberately does NOT re-trigger on every background→foreground
+  // resume (Home stays mounted across those), only on a genuine fresh launch.
   useEffect(() => {
     if (isLocked || adShownRef.current) return;
     const timer = setTimeout(() => {
       adShownRef.current = true;
       setAdPopupVisible(true);
-    }, 1000);
+    }, 1800);
     return () => clearTimeout(timer);
   }, [isLocked]);
 
@@ -64,15 +78,29 @@ export default function HomeScreen() {
           selectedChild={selectedChild}
           onPressChild={() => setSwitcherOpen(true)}
           onPressNotifications={() => setNotificationCenterOpen(true)}
+          hasUnreadNotifications={hasUnread}
         />
-        <WeeklyWeatherStrip />
+        <WeeklyWeatherStrip
+          days={weather.days}
+          loading={weather.loading}
+          error={weather.error}
+          retry={weather.retry}
+          usingFallbackLocation={weather.usingFallbackLocation}
+        />
         {isEmpty ? (
-          <EmptyState />
+          <ScrollView
+            contentContainerStyle={styles.emptyScrollContent}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+          >
+            <EmptyState />
+          </ScrollView>
         ) : (
           <EventListSection
             tomorrowEvents={tomorrowEvents}
             laterGroups={laterGroups}
             onEventPress={(event) => setSelectedEventId(event.id)}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
           />
         )}
         <UploadButton />
@@ -91,5 +119,8 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+  },
+  emptyScrollContent: {
+    flexGrow: 1,
   },
 });

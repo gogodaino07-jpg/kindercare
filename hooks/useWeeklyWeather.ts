@@ -26,6 +26,8 @@ const SEOUL_COORDS = { latitude: 37.5665, longitude: 126.978 };
 let cachedResult: WeatherResult | null = null;
 let cachedAt = 0;
 const CACHE_TTL_MS = 30 * 60 * 1000;
+/** Background auto-refresh cadence — manual refresh is now pull-to-refresh only. */
+const AUTO_REFRESH_MS = 60 * 60 * 1000;
 
 async function resolveCoords(): Promise<{ coords: { latitude: number; longitude: number }; usingFallback: boolean }> {
   try {
@@ -120,6 +122,13 @@ export function useWeeklyWeather() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Background auto-refresh while Home stays mounted, independent of any
+  // manual pull-to-refresh the user triggers.
+  useEffect(() => {
+    const id = setInterval(() => load(true), AUTO_REFRESH_MS);
+    return () => clearInterval(id);
+  }, [load]);
 
   const retry = useCallback(() => load(true), [load]);
 

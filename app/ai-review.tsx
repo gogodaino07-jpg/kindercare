@@ -16,6 +16,10 @@ interface DraftEvent extends Omit<Event, 'id'> {
   localId: string;
 }
 
+const TITLE_MAX_LENGTH = 20;
+const NOTE_MAX_LENGTH = 50;
+const MEMO_MAX_LENGTH = 200;
+
 function isImminent(isoDate: string): boolean {
   const diffMs = parseISODate(isoDate).getTime() - startOfDay(new Date()).getTime();
   const diffDays = Math.round(diffMs / (24 * 60 * 60 * 1000));
@@ -90,6 +94,7 @@ export default function AIReviewScreen() {
       title: '가정통신문 분석 완료',
       body: `${draftEvents.length}건의 일정이 캘린더에 저장됐어요.`,
       keyword,
+      date: draftEvents[0]?.date,
     });
     router.replace({ pathname: '/save-complete', params: { count: String(draftEvents.length) } });
   };
@@ -141,6 +146,7 @@ export default function AIReviewScreen() {
                                 style={styles.titleInput}
                                 value={ev.title}
                                 onChangeText={(text) => updateDraft(ev.localId, { title: text })}
+                                maxLength={TITLE_MAX_LENGTH}
                                 autoFocus
                               />
                             ) : (
@@ -166,6 +172,7 @@ export default function AIReviewScreen() {
                               style={styles.noteInput}
                               value={ev.note ?? ''}
                               onChangeText={(text) => updateDraft(ev.localId, { note: text })}
+                              maxLength={NOTE_MAX_LENGTH}
                               placeholder="🎒 준비물을 적어주세요"
                               placeholderTextColor={colors.textSecondary}
                             />
@@ -173,6 +180,7 @@ export default function AIReviewScreen() {
                               style={styles.noteInput}
                               value={ev.memo ?? ''}
                               onChangeText={(text) => updateDraft(ev.localId, { memo: text })}
+                              maxLength={MEMO_MAX_LENGTH}
                               placeholder="📝 메모 (선택 입력)"
                               placeholderTextColor={colors.textSecondary}
                             />

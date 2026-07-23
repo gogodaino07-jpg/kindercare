@@ -11,6 +11,7 @@ import { useToast } from '../../context/ToastContext';
 import { Event } from '../../types/models';
 import { openCoupangSearch } from '../../utils/coupang';
 import { formatMD } from '../../utils/date';
+import { isValidCoupangKeyword } from '../../utils/validation';
 
 interface BlackboardModalProps {
   event: Event | null;
@@ -19,6 +20,10 @@ interface BlackboardModalProps {
   readOnly?: boolean;
 }
 
+const TITLE_MAX_LENGTH = 20;
+const NOTE_MAX_LENGTH = 50;
+const MEMO_MAX_LENGTH = 200;
+
 export default function BlackboardModal({ event, onClose, readOnly }: BlackboardModalProps) {
   const { updateEvent, fontChoiceId, fontSizeChoice, chalkboardThemeId } = useAppData();
   const { showToast } = useToast();
@@ -26,6 +31,7 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [editing, setEditing] = useState(false);
+  const [draftTitle, setDraftTitle] = useState('');
   const [draftNote, setDraftNote] = useState('');
   const [draftMemo, setDraftMemo] = useState('');
 
@@ -41,6 +47,7 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
 
   useEffect(() => {
     if (event) {
+      setDraftTitle(event.title);
       setDraftNote(event.note ?? '');
       setDraftMemo(event.memo ?? '');
       setEditing(false);
@@ -50,7 +57,9 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
   if (!event) return null;
 
   const handleSave = () => {
+    if (!draftTitle.trim()) return;
     updateEvent(event.id, {
+      title: draftTitle.trim(),
       note: draftNote.trim() || undefined,
       memo: draftMemo.trim() || undefined,
     });
@@ -77,7 +86,23 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
             <Text style={[styles.date, { color: theme.text, fontFamily }]}>
               {formatMD(event.date)}
             </Text>
-            <Text style={[styles.title, { color: theme.text, fontFamily }]}>{event.title}</Text>
+            {editing ? (
+              <>
+                <TextInput
+                  style={[styles.input, { color: theme.text, borderColor: theme.text, fontFamily, fontSize: 20 * fontScale }]}
+                  value={draftTitle}
+                  onChangeText={setDraftTitle}
+                  maxLength={TITLE_MAX_LENGTH}
+                  placeholder="제목을 입력해주세요"
+                  placeholderTextColor={`${theme.text}80`}
+                />
+                <Text style={[styles.counterText, { color: theme.text }]}>
+                  {draftTitle.length}/{TITLE_MAX_LENGTH}
+                </Text>
+              </>
+            ) : (
+              <Text style={[styles.title, { color: theme.text, fontFamily }]}>{event.title}</Text>
+            )}
 
             <View style={[styles.divider, { borderColor: theme.text }]} />
 
@@ -85,19 +110,25 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
               🎒 준비물
             </Text>
             {editing ? (
-              <TextInput
-                style={[styles.input, { color: theme.text, borderColor: theme.text, fontFamily, fontSize: 16 * fontScale }]}
-                value={draftNote}
-                onChangeText={setDraftNote}
-                placeholder="준비물을 적어주세요"
-                placeholderTextColor={`${theme.text}80`}
-              />
+              <>
+                <TextInput
+                  style={[styles.input, { color: theme.text, borderColor: theme.text, fontFamily, fontSize: 16 * fontScale }]}
+                  value={draftNote}
+                  onChangeText={setDraftNote}
+                  maxLength={NOTE_MAX_LENGTH}
+                  placeholder="준비물을 적어주세요"
+                  placeholderTextColor={`${theme.text}80`}
+                />
+                <Text style={[styles.counterText, { color: theme.text }]}>
+                  {draftNote.length}/{NOTE_MAX_LENGTH}
+                </Text>
+              </>
             ) : (
               <Text style={[styles.note, { color: theme.text, fontFamily }]}>
                 {event.note || '준비물이 없어요'}
               </Text>
             )}
-            {!editing && event.note ? (
+            {!editing && isValidCoupangKeyword(event.note) ? (
               <Pressable
                 style={styles.coupangButton}
                 onPress={() => openCoupangSearch(event.note!)}
@@ -110,14 +141,20 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
               📝 메모
             </Text>
             {editing ? (
-              <TextInput
-                style={[styles.input, styles.memoInput, { color: theme.text, borderColor: theme.text, fontFamily, fontSize: 16 * fontScale }]}
-                value={draftMemo}
-                onChangeText={setDraftMemo}
-                multiline
-                placeholder="상세 주의사항 등 (선택 입력)"
-                placeholderTextColor={`${theme.text}80`}
-              />
+              <>
+                <TextInput
+                  style={[styles.input, styles.memoInput, { color: theme.text, borderColor: theme.text, fontFamily, fontSize: 16 * fontScale }]}
+                  value={draftMemo}
+                  onChangeText={setDraftMemo}
+                  maxLength={MEMO_MAX_LENGTH}
+                  multiline
+                  placeholder="상세 주의사항 등 (선택 입력)"
+                  placeholderTextColor={`${theme.text}80`}
+                />
+                <Text style={[styles.counterText, { color: theme.text }]}>
+                  {draftMemo.length}/{MEMO_MAX_LENGTH}
+                </Text>
+              </>
             ) : (
               <Text style={[styles.note, { color: theme.text, fontFamily }]}>
                 {event.memo || '메모가 없어요'}
@@ -125,7 +162,15 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
             )}
 
             {editing ? (
-              <Pressable style={[styles.saveButton, { backgroundColor: theme.text }]} onPress={handleSave}>
+              <Pressable
+                style={[
+                  styles.saveButton,
+                  { backgroundColor: theme.text },
+                  !draftTitle.trim() && styles.saveButtonDisabled,
+                ]}
+                onPress={handleSave}
+                disabled={!draftTitle.trim()}
+              >
                 <Text style={[styles.saveButtonText, { color: theme.board }]}>저장</Text>
               </Pressable>
             ) : null}
@@ -211,6 +256,12 @@ function createStyles(colors: ThemeColors) {
       paddingHorizontal: 10,
       paddingVertical: 8,
     },
+    counterText: {
+      alignSelf: 'flex-end',
+      fontSize: 10,
+      opacity: 0.6,
+      marginTop: 3,
+    },
     memoInput: {
       minHeight: 60,
       textAlignVertical: 'top',
@@ -221,6 +272,9 @@ function createStyles(colors: ThemeColors) {
       paddingHorizontal: 16,
       paddingVertical: 8,
       marginTop: 14,
+    },
+    saveButtonDisabled: {
+      opacity: 0.4,
     },
     saveButtonText: {
       fontWeight: '700',

@@ -1,13 +1,16 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import FingerprintIcon from './common/FingerprintIcon';
 import IdentityVerifyModal from './settings/IdentityVerifyModal';
 import PatternGrid from './settings/PatternGrid';
 import { serializePattern, useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
 import Text from './common/AppText';
 
-const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'bio', '0', 'del'];
+// Standard phone-keypad order: del sits bottom-left, 0 center, fingerprint
+// bottom-right — directly to the right of 0, within easy thumb reach.
+const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'bio'];
 
 interface AppLockScreenProps {
   /** False while the boot splash is still covering the screen — the native
@@ -135,9 +138,7 @@ export default function AppLockScreen({ autoBiometricEnabled = true }: AppLockSc
                       disabled={!canUseBiometric}
                     >
                       {canUseBiometric ? (
-                        <Text style={[styles.keyText, { color: colors.accent, fontSize: 26 }]}>
-                          👆
-                        </Text>
+                        <FingerprintIcon size={30} color={colors.accent} />
                       ) : null}
                     </Pressable>
                   );
@@ -207,7 +208,7 @@ const styles = StyleSheet.create({
   },
   dotsRow: {
     flexDirection: 'row',
-    marginBottom: 36,
+    marginBottom: 44,
   },
   pinDot: {
     width: 20,
@@ -221,6 +222,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     width: '100%',
     justifyContent: 'center',
+    marginTop: 64,
   },
   key: {
     width: '33.33%',

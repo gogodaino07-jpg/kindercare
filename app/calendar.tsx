@@ -1,16 +1,15 @@
-import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BlackboardModal from '../components/home/BlackboardModal';
 import Text from '../components/common/AppText';
 import EventCard from '../components/home/EventCard';
-import NotificationCenterModal from '../components/home/NotificationCenterModal';
 import ScreenBackground from '../components/ScreenBackground';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
-import { WEEKDAY_KO, toISODate } from '../utils/date';
+import { WEEKDAY_KO, parseISODate, toISODate } from '../utils/date';
 
 const DOT_COLORS = {
   ai: '#2E4374',
@@ -26,6 +25,7 @@ function dotColorFor(source: 'ai' | 'manual', needsReview?: boolean): string {
 
 export default function CalendarScreen() {
   const router = useRouter();
+  const { date: dateParam } = useLocalSearchParams<{ date?: string }>();
   const { events, selectedChild } = useAppData();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -35,8 +35,16 @@ export default function CalendarScreen() {
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [, forceRefresh] = useState(0);
+
+  // Deep-link entry from a notification-center tap: jump straight to that
+  // event's month/date instead of wherever the calendar was last showing.
+  useEffect(() => {
+    if (!dateParam) return;
+    const parsed = parseISODate(dateParam);
+    setMonthCursor(new Date(parsed.getFullYear(), parsed.getMonth(), 1));
+    setSelectedDate(dateParam);
+  }, [dateParam]);
 
   // Re-sync the selected date's event list whenever this screen regains focus
   // (e.g. after adding an event elsewhere and navigating back). Deferred a
@@ -93,19 +101,6 @@ export default function CalendarScreen() {
 
   return (
     <ScreenBackground>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <Pressable
-              onPress={() => setNotificationCenterOpen(true)}
-              accessibilityLabel="알림 센터"
-              hitSlop={8}
-            >
-              <Text style={styles.bellIcon}>🔔</Text>
-            </Pressable>
-          ),
-        }}
-      />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <View style={styles.content}>
           <View style={styles.monthNav}>
@@ -212,10 +207,6 @@ export default function CalendarScreen() {
         </Pressable>
       </SafeAreaView>
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
-      <NotificationCenterModal
-        visible={notificationCenterOpen}
-        onClose={() => setNotificationCenterOpen(false)}
-      />
     </ScreenBackground>
   );
 }
@@ -226,7 +217,6 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     safeArea: { flex: 1 },
     content: { flex: 1, padding: 16, paddingBottom: 12 },
-    bellIcon: { fontSize: 20, marginRight: 4 },
     monthNav: {
       flexDirection: 'row',
       alignItems: 'center',

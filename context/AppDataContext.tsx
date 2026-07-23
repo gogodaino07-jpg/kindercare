@@ -22,6 +22,7 @@ import { scheduleEventNotifications } from '../utils/notifications';
 
 const HAS_ONBOARDED_KEY = 'kindercare_has_onboarded';
 const FONT_SIZE_KEY = 'kindercare_font_size';
+const EVENTS_KEY = 'kindercare_events';
 
 interface AppDataContextValue {
   // Onboarding / family group
@@ -99,22 +100,43 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const [chalkboardThemeId, setChalkboardThemeId] = useState(DEFAULT_CHALKBOARD_THEME_ID);
   const [adDismissedDate, setAdDismissedDate] = useState<string | null>(null);
 
-  // Restore the "already onboarded" / font-size choice made in a previous
-  // session so relaunching the app doesn't force the user back through
-  // onboarding or reset their preferred text size.
+  // Restore the "already onboarded" / font-size choice / registered events
+  // made in a previous session so relaunching (or force-quitting) the app
+  // doesn't force the user back through onboarding, reset their preferred
+  // text size, or lose schedules they'd already added.
   useEffect(() => {
     Promise.all([
       AsyncStorage.getItem(HAS_ONBOARDED_KEY),
       AsyncStorage.getItem(FONT_SIZE_KEY),
+      AsyncStorage.getItem(EVENTS_KEY),
     ])
-      .then(([storedOnboarded, storedFontSize]) => {
+      .then(([storedOnboarded, storedFontSize, storedEvents]) => {
         if (storedOnboarded === 'true') setHasOnboarded(true);
-        if (storedFontSize === 'small' || storedFontSize === 'medium' || storedFontSize === 'large') {
-          setFontSizeChoiceState(storedFontSize);
+        if (
+          storedFontSize &&
+          FONT_SIZE_OPTIONS.some((o) => o.id === storedFontSize)
+        ) {
+          setFontSizeChoiceState(storedFontSize as FontSizeChoice);
+        }
+        if (storedEvents) {
+          try {
+            const parsed = JSON.parse(storedEvents);
+            if (Array.isArray(parsed)) setEvents(parsed);
+          } catch {
+            // Ignore corrupt storage — keep the seeded events.
+          }
         }
       })
       .finally(() => setOnboardingLoaded(true));
   }, []);
+
+  // Persist events after the initial load above has resolved, so this
+  // write doesn't fire once with the seed data and clobber what was
+  // just restored from storage before the load above finishes.
+  useEffect(() => {
+    if (!onboardingLoaded) return;
+    AsyncStorage.setItem(EVENTS_KEY, JSON.stringify(events)).catch(() => {});
+  }, [events, onboardingLoaded]);
 
   const selectedChild = useMemo(
     () => childProfiles.find((c) => c.id === selectedChildId),
@@ -212,7 +234,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   // in-memory data back to the same shape a fresh install would have, then
   // the caller navigates back to onboarding.
   const resetAllData = async () => {
-    await AsyncStorage.multiRemove([HAS_ONBOARDED_KEY, FONT_SIZE_KEY]).catch(() => {});
+    await AsyncStorage.multiRemove([HAS_ONBOARDED_KEY, FONT_SIZE_KEY, EVENTS_KEY]).catch(() => {});
     setHasOnboarded(false);
     setFamilyKey(generateFamilyKey());
     setFamilyMembers(seedFamilyMembers);

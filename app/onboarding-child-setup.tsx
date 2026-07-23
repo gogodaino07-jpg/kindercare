@@ -94,6 +94,7 @@ export default function OnboardingChildSetupScreen() {
             <DateTimePicker
               value={birthdate ?? new Date()}
               mode="date"
+              themeVariant="light"
               accentColor={colors.coralPink}
               onChange={(_, selected) => selected && setBirthdate(selected)}
             />
@@ -112,6 +113,8 @@ export default function OnboardingChildSetupScreen() {
                   value={birthdate ?? new Date()}
                   mode="date"
                   maximumDate={new Date()}
+                  display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+                  themeVariant="light"
                   accentColor={colors.coralPink}
                   onChange={(event, selected) => {
                     setShowPicker(Platform.OS === 'ios');

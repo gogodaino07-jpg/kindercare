@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
@@ -5,6 +6,7 @@ import { useAppLock } from '../../context/AppLockContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { NotificationCenterItem, useNotificationCenter } from '../../context/NotificationCenterContext';
 import { openCoupangSearch } from '../../utils/coupang';
+import { isValidCoupangKeyword } from '../../utils/validation';
 import Text from '../common/AppText';
 
 interface NotificationCenterModalProps {
@@ -22,7 +24,8 @@ function formatTimestamp(iso: string): string {
 }
 
 export default function NotificationCenterModal({ visible, onClose }: NotificationCenterModalProps) {
-  const { notifications, clearNotifications } = useNotificationCenter();
+  const router = useRouter();
+  const { notifications, removeNotification, clearNotifications } = useNotificationCenter();
   const { isLocked } = useAppLock();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -31,6 +34,17 @@ export default function NotificationCenterModal({ visible, onClose }: Notificati
     if (isLocked && visible) onClose();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLocked]);
+
+  // Tapping a notification immediately removes it and jumps straight to the
+  // related schedule on the calendar — there's no separate "read" resting
+  // state to preserve once the user has acted on it.
+  const handleItemPress = (item: NotificationCenterItem) => {
+    removeNotification(item.id);
+    onClose();
+    if (item.date) {
+      router.push({ pathname: '/calendar', params: { date: item.date } });
+    }
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -55,7 +69,13 @@ export default function NotificationCenterModal({ visible, onClose }: Notificati
           ) : (
             <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
               {notifications.map((item) => (
-                <NotificationRow key={item.id} item={item} colors={colors} styles={styles} />
+                <NotificationRow
+                  key={item.id}
+                  item={item}
+                  colors={colors}
+                  styles={styles}
+                  onPress={() => handleItemPress(item)}
+                />
               ))}
             </ScrollView>
           )}
@@ -69,28 +89,34 @@ function NotificationRow({
   item,
   colors,
   styles,
+  onPress,
 }: {
   item: NotificationCenterItem;
   colors: ThemeColors;
   styles: ReturnType<typeof createStyles>;
+  onPress: () => void;
 }) {
   return (
-    <View style={styles.card}>
+    <Pressable style={styles.card} onPress={onPress}>
+      {!item.read ? <View style={styles.unreadDot} /> : null}
       <Text style={styles.cardIcon}>📄</Text>
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle}>{item.title}</Text>
         <Text style={styles.cardMessage}>{item.body}</Text>
         <Text style={styles.cardTime}>{formatTimestamp(item.createdAt)}</Text>
-        {item.keyword ? (
+        {isValidCoupangKeyword(item.keyword) ? (
           <Pressable
             style={styles.coupangButton}
-            onPress={() => openCoupangSearch(item.keyword!)}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              openCoupangSearch(item.keyword!);
+            }}
           >
             <Text style={styles.coupangButtonText}>🛒 Coupang에서 바로 구매</Text>
           </Pressable>
         ) : null}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -104,22 +130,22 @@ function createStyles(colors: ThemeColors) {
       paddingRight: 16,
     },
     sheet: {
-      width: 320,
-      maxWidth: '86%',
-      maxHeight: '65%',
+      width: 380,
+      maxWidth: '92%',
+      maxHeight: '78%',
       backgroundColor: colors.skyBackground,
-      borderRadius: 18,
-      padding: 16,
+      borderRadius: 20,
+      padding: 18,
       ...SHADOW,
     },
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 12,
+      marginBottom: 14,
     },
     title: {
-      fontSize: 16,
+      fontSize: 17,
       fontWeight: '700',
       color: colors.textPrimary,
     },
@@ -150,19 +176,28 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       backgroundColor: colors.cardWhite,
       borderRadius: 16,
-      padding: 14,
+      padding: 15,
       marginBottom: 10,
       ...SHADOW,
     },
+    unreadDot: {
+      position: 'absolute',
+      top: 12,
+      right: 12,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.tomorrowRed,
+    },
     cardIcon: {
-      fontSize: 22,
+      fontSize: 24,
       marginRight: 12,
     },
     cardBody: {
       flex: 1,
     },
     cardTitle: {
-      fontSize: 14,
+      fontSize: 15,
       fontWeight: '700',
       color: colors.textPrimary,
     },

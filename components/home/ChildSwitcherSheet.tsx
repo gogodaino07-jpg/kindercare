@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAlert } from '../../context/AlertContext';
@@ -20,6 +20,7 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
   const { isLocked } = useAppLock();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [editMode, setEditMode] = useState(false);
 
   // Never let this sheet render on top of/behind the lock screen — the app
   // may background/lock while it's open (e.g. gallery picker inside the
@@ -28,6 +29,15 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
     if (isLocked && visible) onClose();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLocked]);
+
+  useEffect(() => {
+    if (!visible) setEditMode(false);
+  }, [visible]);
+
+  const handleClose = () => {
+    setEditMode(false);
+    onClose();
+  };
 
   const mainChildId = children[0]?.id;
 
@@ -55,10 +65,20 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
   };
 
   return (
-    <Modal visible={visible} transparent onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
+    <Modal visible={visible} transparent onRequestClose={handleClose}>
+      <Pressable style={styles.overlay} onPress={handleClose}>
         <Pressable style={styles.sheet} onPress={() => {}}>
-          <Text style={styles.title}>아이 전환·관리</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.title}>아이 전환·관리</Text>
+            <View style={styles.headerActions}>
+              <Pressable onPress={() => setEditMode((prev) => !prev)} hitSlop={8}>
+                <Text style={styles.headerActionText}>{editMode ? '완료' : '수정'}</Text>
+              </Pressable>
+              <Pressable onPress={handleClose} accessibilityLabel="닫기" hitSlop={8}>
+                <Text style={styles.closeIcon}>✕</Text>
+              </Pressable>
+            </View>
+          </View>
           {sortedChildren.map((child) => {
             const isSelected = child.id === selectedChild?.id;
             const isMainChild = child.id === mainChildId;
@@ -89,29 +109,31 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
                     {isSelected ? <Text style={styles.checkIcon}>✓</Text> : null}
                   </View>
                 </Pressable>
-                <View style={styles.actionIcons}>
-                  <Pressable
-                    style={styles.actionIconButton}
-                    onPress={() => {
-                      onClose();
-                      router.push({ pathname: '/child-profile', params: { childId: child.id } });
-                    }}
-                    accessibilityLabel="프로필 수정"
-                  >
-                    <Text style={styles.editIcon}>✏️</Text>
-                  </Pressable>
-                  {isMainChild ? (
-                    <View style={styles.actionIconButton} />
-                  ) : (
+                {editMode ? (
+                  <View style={styles.actionIcons}>
                     <Pressable
                       style={styles.actionIconButton}
-                      onPress={() => handleDelete(child.id, label)}
-                      accessibilityLabel="프로필 삭제"
+                      onPress={() => {
+                        onClose();
+                        router.push({ pathname: '/child-profile', params: { childId: child.id } });
+                      }}
+                      accessibilityLabel="프로필 수정"
                     >
-                      <Text style={styles.deleteIcon}>🗑️</Text>
+                      <Text style={styles.editIcon}>✏️</Text>
                     </Pressable>
-                  )}
-                </View>
+                    {isMainChild ? (
+                      <View style={styles.actionIconButton} />
+                    ) : (
+                      <Pressable
+                        style={styles.actionIconButton}
+                        onPress={() => handleDelete(child.id, label)}
+                        accessibilityLabel="프로필 삭제"
+                      >
+                        <Text style={styles.deleteIcon}>🗑️</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                ) : null}
               </View>
             );
           })}
@@ -141,23 +163,41 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.skyBackground,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
-      padding: 20,
+      padding: 22,
       paddingBottom: 44,
     },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 18,
+    },
     title: {
-      fontSize: 15,
+      fontSize: 16,
       fontWeight: '700',
       color: colors.textPrimary,
-      marginBottom: 16,
-      textAlign: 'center',
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+    },
+    headerActionText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.accent,
+    },
+    closeIcon: {
+      fontSize: 16,
+      color: colors.textSecondary,
     },
     card: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: colors.cardWhite,
-      borderRadius: 16,
-      marginBottom: 10,
-      paddingRight: 12,
+      borderRadius: 18,
+      marginBottom: 12,
+      paddingRight: 14,
       ...SHADOW,
     },
     cardSelected: {
@@ -167,41 +207,41 @@ function createStyles(colors: ThemeColors) {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 12,
+      padding: 14,
     },
     avatar: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      marginRight: 12,
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      marginRight: 14,
     },
     avatarPlaceholder: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 52,
+      height: 52,
+      borderRadius: 26,
       backgroundColor: '#EEF2F5',
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 12,
+      marginRight: 14,
     },
     avatarIcon: {
-      fontSize: 22,
+      fontSize: 26,
     },
     cardLabel: {
       flex: 1,
-      fontSize: 15,
+      fontSize: 16,
       fontWeight: '600',
       color: colors.textPrimary,
     },
     checkSlot: {
-      width: 20,
+      width: 26,
       alignItems: 'center',
       marginLeft: 8,
     },
     checkIcon: {
-      fontSize: 16,
+      fontSize: 20,
       color: colors.accent,
-      fontWeight: '700',
+      fontWeight: '900',
     },
     actionIcons: {
       flexDirection: 'row',

@@ -1,7 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
 import Text from '../components/common/AppText';
@@ -10,6 +10,10 @@ import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { formatMD, parseISODate, toISODate } from '../utils/date';
+
+const TITLE_MAX_LENGTH = 20;
+const NOTE_MAX_LENGTH = 50;
+const MEMO_MAX_LENGTH = 200;
 
 export default function AddEventScreen() {
   const router = useRouter();
@@ -52,11 +56,13 @@ export default function AddEventScreen() {
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={styles.label}>날짜 *</Text>
+          <Text style={[styles.label, styles.dateLabel]}>날짜 *</Text>
           {Platform.OS === 'web' ? (
             <DateTimePicker
               value={date}
               mode="date"
+              themeVariant="light"
+              accentColor={colors.accent}
               onChange={(_, selected) => selected && setDate(selected)}
             />
           ) : (
@@ -68,6 +74,9 @@ export default function AddEventScreen() {
                 <DateTimePicker
                   value={date}
                   mode="date"
+                  display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+                  themeVariant="light"
+                  accentColor={colors.accent}
                   onChange={(event, selected) => {
                     setShowPicker(Platform.OS === 'ios');
                     if (selected) setDate(selected);
@@ -77,7 +86,10 @@ export default function AddEventScreen() {
             </>
           )}
 
-          <Text style={styles.label}>제목 *</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>제목 *</Text>
+            <Text style={styles.counterText}>{title.length}/{TITLE_MAX_LENGTH}</Text>
+          </View>
           <TextInput
             style={styles.input}
             value={title}
@@ -85,25 +97,34 @@ export default function AddEventScreen() {
               setTitle(t);
               setTitleError(false);
             }}
+            maxLength={TITLE_MAX_LENGTH}
             placeholder="예: 병원 예약"
             placeholderTextColor={colors.textSecondary}
           />
           {titleError ? <Text style={styles.errorText}>제목을 입력해주세요</Text> : null}
 
-          <Text style={styles.label}>준비물</Text>
+          <View style={[styles.labelRow, styles.labelRowSpaced]}>
+            <Text style={styles.label}>🎒 준비물</Text>
+            <Text style={styles.counterText}>{note.length}/{NOTE_MAX_LENGTH}</Text>
+          </View>
           <TextInput
             style={styles.input}
             value={note}
             onChangeText={setNote}
+            maxLength={NOTE_MAX_LENGTH}
             placeholder="예: 물통, 편한 신발, 여벌 옷"
             placeholderTextColor={colors.textSecondary}
           />
 
-          <Text style={styles.label}>메모</Text>
+          <View style={[styles.labelRow, styles.labelRowSpaced]}>
+            <Text style={styles.label}>📝 메모</Text>
+            <Text style={styles.counterText}>{memo.length}/{MEMO_MAX_LENGTH}</Text>
+          </View>
           <TextInput
             style={[styles.input, styles.multilineInput]}
             value={memo}
             onChangeText={setMemo}
+            maxLength={MEMO_MAX_LENGTH}
             placeholder="상세 주의사항 등 (선택 입력)"
             placeholderTextColor={colors.textSecondary}
             multiline
@@ -126,8 +147,23 @@ function createStyles(colors: ThemeColors) {
       fontSize: 14,
       fontWeight: '600',
       color: colors.textPrimary,
+    },
+    dateLabel: {
       marginBottom: 8,
+    },
+    labelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       marginTop: 16,
+      marginBottom: 8,
+    },
+    labelRowSpaced: {
+      marginTop: 20,
+    },
+    counterText: {
+      fontSize: 11,
+      color: colors.textSecondary,
     },
     dateButton: {
       backgroundColor: colors.cardWhite,
@@ -142,13 +178,12 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '600',
     },
     input: {
-      backgroundColor: colors.cardWhite,
+      backgroundColor: '#F5F7FA',
       borderRadius: 12,
       paddingHorizontal: 16,
       paddingVertical: 12,
       fontSize: 15,
       color: colors.textPrimary,
-      ...SHADOW,
     },
     multilineInput: {
       minHeight: 80,

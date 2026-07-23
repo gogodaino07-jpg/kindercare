@@ -7,12 +7,18 @@ export interface NotificationCenterItem {
   body: string;
   /** 준비물 keyword used for the item's "쿠팡에서 구매" link, if any. */
   keyword?: string;
+  /** ISO date of the related schedule, if any — used to deep-link into the calendar on tap. */
+  date?: string;
+  read: boolean;
   createdAt: string;
 }
 
 interface NotificationCenterContextValue {
   notifications: NotificationCenterItem[];
-  addNotification: (input: Omit<NotificationCenterItem, 'id' | 'createdAt'>) => void;
+  hasUnread: boolean;
+  addNotification: (input: Omit<NotificationCenterItem, 'id' | 'createdAt' | 'read'>) => void;
+  removeNotification: (id: string) => void;
+  markRead: (id: string) => void;
   clearNotifications: () => void;
 }
 
@@ -50,16 +56,26 @@ export function NotificationCenterProvider({ children }: { children: React.React
 
   const addNotification: NotificationCenterContextValue['addNotification'] = (input) => {
     setNotifications((prev) => [
-      { ...input, id: nextId(), createdAt: new Date().toISOString() },
+      { ...input, id: nextId(), read: false, createdAt: new Date().toISOString() },
       ...prev,
     ]);
   };
 
+  const removeNotification = (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  const markRead = (id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  };
+
   const clearNotifications = () => setNotifications([]);
 
+  const hasUnread = useMemo(() => notifications.some((n) => !n.read), [notifications]);
+
   const value = useMemo<NotificationCenterContextValue>(
-    () => ({ notifications, addNotification, clearNotifications }),
-    [notifications]
+    () => ({ notifications, hasUnread, addNotification, removeNotification, markRead, clearNotifications }),
+    [notifications, hasUnread]
   );
 
   return (

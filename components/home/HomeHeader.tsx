@@ -10,9 +10,15 @@ interface HomeHeaderProps {
   selectedChild: Child | undefined;
   onPressChild: () => void;
   onPressNotifications: () => void;
+  hasUnreadNotifications?: boolean;
 }
 
-export default function HomeHeader({ selectedChild, onPressChild, onPressNotifications }: HomeHeaderProps) {
+export default function HomeHeader({
+  selectedChild,
+  onPressChild,
+  onPressNotifications,
+  hasUnreadNotifications,
+}: HomeHeaderProps) {
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -47,6 +53,7 @@ export default function HomeHeader({ selectedChild, onPressChild, onPressNotific
           accessibilityLabel="알림 센터"
         >
           <Text style={styles.icon}>🔔</Text>
+          {hasUnreadNotifications ? <View style={styles.unreadBadge} /> : null}
         </Pressable>
         <Pressable
           style={styles.iconButton}
@@ -85,33 +92,33 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: colors.cardWhite,
-      paddingVertical: 11,
-      paddingHorizontal: 18,
-      borderRadius: 16,
+      paddingVertical: 14,
+      paddingHorizontal: 22,
+      borderRadius: 20,
       ...SHADOW,
     },
     avatar: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      marginRight: 8,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      marginRight: 10,
     },
     avatarPlaceholder: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
       backgroundColor: '#EEF2F5',
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 8,
+      marginRight: 10,
     },
     avatarIcon: {
-      fontSize: 14,
+      fontSize: 18,
     },
     childLabel: {
       flexShrink: 1,
       textAlign: 'center',
-      fontSize: 15,
+      fontSize: 16,
       fontWeight: '600',
       color: colors.textPrimary,
       marginRight: 6,
@@ -135,6 +142,17 @@ function createStyles(colors: ThemeColors) {
     },
     icon: {
       fontSize: 20,
+    },
+    unreadBadge: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      width: 9,
+      height: 9,
+      borderRadius: 5,
+      backgroundColor: colors.tomorrowRed,
+      borderWidth: 1.5,
+      borderColor: colors.cardWhite,
     },
   });
 }

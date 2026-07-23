@@ -12,7 +12,7 @@ import { Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus, BackHandler, ToastAndroid } from 'react-native';
+import { AppState, AppStateStatus, BackHandler, Keyboard, ToastAndroid } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppLockScreen from '../components/AppLockScreen';
@@ -62,8 +62,10 @@ function ThemedNavigation() {
 
       if (nextState === 'background') {
         backgroundedRef.current = true;
+        Keyboard.dismiss();
       } else if (nextState === 'active' && prevState !== 'active' && backgroundedRef.current) {
         backgroundedRef.current = false;
+        Keyboard.dismiss();
         // A picker/contacts/GPS/external-link round trip also blips through
         // 'background' — only replay the splash for a genuine app switch.
         if (!isExternalActionActive()) {

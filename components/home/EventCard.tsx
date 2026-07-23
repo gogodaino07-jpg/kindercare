@@ -4,6 +4,7 @@ import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Event } from '../../types/models';
 import { openCoupangSearch } from '../../utils/coupang';
+import { isValidCoupangKeyword } from '../../utils/validation';
 import Text from '../common/AppText';
 
 interface EventCardProps {
@@ -54,7 +55,7 @@ export default function EventCard({
             {subtitle}
           </Text>
         ) : null}
-        {showCoupangButton && event.note ? (
+        {showCoupangButton && isValidCoupangKeyword(event.note) ? (
           <Pressable
             style={styles.coupangButton}
             onPress={(e) => {

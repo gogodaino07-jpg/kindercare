@@ -32,29 +32,28 @@ export default function FontSizeSettingsScreen() {
           </View>
 
           <View style={styles.sliderCard}>
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={FONT_SIZE_OPTIONS.length - 1}
-              step={1}
-              value={sliderIndex < 0 ? 1 : sliderIndex}
-              onValueChange={(value) => setFontSizeChoice(FONT_SIZE_OPTIONS[value].id)}
-              minimumTrackTintColor={colors.accent}
-              maximumTrackTintColor={colors.border}
-              thumbTintColor={colors.accent}
-            />
-            <View style={styles.sliderLabelRow}>
-              {FONT_SIZE_OPTIONS.map((option) => (
-                <Text
-                  key={option.id}
-                  style={[
-                    styles.sliderLabel,
-                    option.id === fontSizeChoice && styles.sliderLabelActive,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              ))}
+            <Text style={styles.currentLabel}>{activeOption.label}</Text>
+            <View style={styles.sliderRow}>
+              <Text style={styles.endLabelSmall}>가</Text>
+              <View style={styles.sliderTrackArea}>
+                <Slider
+                  style={styles.slider}
+                  minimumValue={0}
+                  maximumValue={FONT_SIZE_OPTIONS.length - 1}
+                  step={1}
+                  value={sliderIndex < 0 ? 2 : sliderIndex}
+                  onValueChange={(value) => setFontSizeChoice(FONT_SIZE_OPTIONS[value].id)}
+                  minimumTrackTintColor={colors.accent}
+                  maximumTrackTintColor={colors.border}
+                  thumbTintColor={colors.accent}
+                />
+                <View style={styles.tickRow} pointerEvents="none">
+                  {FONT_SIZE_OPTIONS.map((option) => (
+                    <View key={option.id} style={styles.tick} />
+                  ))}
+                </View>
+              </View>
+              <Text style={styles.endLabelLarge}>가</Text>
             </View>
           </View>
         </ScrollView>
@@ -102,24 +101,47 @@ function createStyles(colors: ThemeColors) {
       paddingHorizontal: 12,
       ...SHADOW,
     },
+    currentLabel: {
+      textAlign: 'center',
+      fontSize: 13,
+      fontWeight: '800',
+      color: colors.accent,
+      marginBottom: 8,
+    },
+    sliderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    endLabelSmall: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      marginRight: 6,
+    },
+    endLabelLarge: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      marginLeft: 6,
+    },
+    sliderTrackArea: {
+      flex: 1,
+    },
     slider: {
       width: '100%',
       height: 40,
     },
-    sliderLabelRow: {
+    tickRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      paddingHorizontal: 4,
-      marginTop: 4,
+      marginTop: -6,
+      paddingHorizontal: 8,
     },
-    sliderLabel: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: colors.textSecondary,
-    },
-    sliderLabelActive: {
-      color: colors.accent,
-      fontWeight: '800',
+    tick: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.border,
     },
   });
 }
