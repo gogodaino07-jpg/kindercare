@@ -20,13 +20,14 @@ interface BlackboardModalProps {
 }
 
 export default function BlackboardModal({ event, onClose, readOnly }: BlackboardModalProps) {
-  const { updateEventNote, fontChoiceId, fontSizeChoice, chalkboardThemeId } = useAppData();
+  const { updateEvent, fontChoiceId, fontSizeChoice, chalkboardThemeId } = useAppData();
   const { showToast } = useToast();
   const { isLocked } = useAppLock();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [editing, setEditing] = useState(false);
   const [draftNote, setDraftNote] = useState('');
+  const [draftMemo, setDraftMemo] = useState('');
 
   useEffect(() => {
     if (isLocked && event) onClose();
@@ -41,6 +42,7 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
   useEffect(() => {
     if (event) {
       setDraftNote(event.note ?? '');
+      setDraftMemo(event.memo ?? '');
       setEditing(false);
     }
   }, [event]);
@@ -48,18 +50,21 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
   if (!event) return null;
 
   const handleSave = () => {
-    updateEventNote(event.id, draftNote.trim());
+    updateEvent(event.id, {
+      note: draftNote.trim() || undefined,
+      memo: draftMemo.trim() || undefined,
+    });
     setEditing(false);
     showToast('저장이 완료되었습니다.');
   };
 
   return (
     <Modal visible={!!event} transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={[styles.frame, { backgroundColor: theme.frame }]}>
+      <Pressable style={styles.overlay} onPress={onClose}>
+        <Pressable style={[styles.frame, { backgroundColor: theme.frame }]} onPress={() => {}}>
           <View style={styles.iconRow}>
             <Pressable onPress={onClose} accessibilityLabel="닫기" style={styles.iconButton}>
-              <Text style={styles.icon}>✕</Text>
+              <Text style={[styles.icon, { color: theme.text }]}>✕</Text>
             </Pressable>
           </View>
 
@@ -68,38 +73,62 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
                 global font-size setting — don't also scale fontFamily-only
                 overrides here or it compounds. The TextInput below isn't
                 wrapped by AppText, so it still scales manually. */}
-            <Text style={[styles.date, { fontFamily }]}>{formatMD(event.date)}</Text>
-            <Text style={[styles.title, { fontFamily }]}>{event.title}</Text>
+            <Text style={[styles.sectionLabel, { color: theme.text, fontFamily }]}>📌 일정</Text>
+            <Text style={[styles.date, { color: theme.text, fontFamily }]}>
+              {formatMD(event.date)}
+            </Text>
+            <Text style={[styles.title, { color: theme.text, fontFamily }]}>{event.title}</Text>
+
+            <View style={[styles.divider, { borderColor: theme.text }]} />
+
+            <Text style={[styles.sectionLabel, { color: theme.text, fontFamily }]}>
+              🎒 준비물
+            </Text>
+            {editing ? (
+              <TextInput
+                style={[styles.input, { color: theme.text, borderColor: theme.text, fontFamily, fontSize: 16 * fontScale }]}
+                value={draftNote}
+                onChangeText={setDraftNote}
+                placeholder="준비물을 적어주세요"
+                placeholderTextColor={`${theme.text}80`}
+              />
+            ) : (
+              <Text style={[styles.note, { color: theme.text, fontFamily }]}>
+                {event.note || '준비물이 없어요'}
+              </Text>
+            )}
+            {!editing && event.note ? (
+              <Pressable
+                style={styles.coupangButton}
+                onPress={() => openCoupangSearch(event.note!)}
+              >
+                <Text style={styles.coupangButtonText}>🛒 Coupang에서 바로 구매</Text>
+              </Pressable>
+            ) : null}
+
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced, { color: theme.text, fontFamily }]}>
+              📝 메모
+            </Text>
+            {editing ? (
+              <TextInput
+                style={[styles.input, styles.memoInput, { color: theme.text, borderColor: theme.text, fontFamily, fontSize: 16 * fontScale }]}
+                value={draftMemo}
+                onChangeText={setDraftMemo}
+                multiline
+                placeholder="상세 주의사항 등 (선택 입력)"
+                placeholderTextColor={`${theme.text}80`}
+              />
+            ) : (
+              <Text style={[styles.note, { color: theme.text, fontFamily }]}>
+                {event.memo || '메모가 없어요'}
+              </Text>
+            )}
 
             {editing ? (
-              <>
-                <TextInput
-                  style={[styles.input, { fontFamily, fontSize: 20 * fontScale }]}
-                  value={draftNote}
-                  onChangeText={setDraftNote}
-                  multiline
-                  placeholder="준비물을 적어주세요"
-                  placeholderTextColor="#D8E0DA"
-                />
-                <Pressable style={styles.saveButton} onPress={handleSave}>
-                  <Text style={styles.saveButtonText}>저장</Text>
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <Text style={[styles.note, { fontFamily }]}>
-                  {event.note || '준비물이 없어요'}
-                </Text>
-                {event.note ? (
-                  <Pressable
-                    style={styles.coupangButton}
-                    onPress={() => openCoupangSearch(event.note!)}
-                  >
-                    <Text style={styles.coupangButtonText}>🛒 쿠팡에서 구매</Text>
-                  </Pressable>
-                ) : null}
-              </>
-            )}
+              <Pressable style={[styles.saveButton, { backgroundColor: theme.text }]} onPress={handleSave}>
+                <Text style={[styles.saveButtonText, { color: theme.board }]}>저장</Text>
+              </Pressable>
+            ) : null}
           </View>
 
           {!readOnly && !editing ? (
@@ -108,11 +137,11 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
               onPress={() => setEditing(true)}
               accessibilityLabel="일정 수정"
             >
-              <Text style={styles.editButtonText}>✏️ 일정 수정</Text>
+              <Text style={[styles.editButtonText, { color: theme.text }]}>✏️ 일정 수정</Text>
             </Pressable>
           ) : null}
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
@@ -149,47 +178,57 @@ function createStyles(colors: ThemeColors) {
       padding: 24,
       minHeight: 200,
     },
+    sectionLabel: {
+      fontSize: 12,
+      fontWeight: '800',
+      opacity: 0.7,
+      marginBottom: 6,
+    },
+    sectionLabelSpaced: {
+      marginTop: 16,
+    },
+    divider: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      opacity: 0.25,
+      marginVertical: 14,
+    },
     date: {
-      fontSize: 18,
-      color: colors.chalkboardText,
+      fontSize: 15,
       opacity: 0.85,
     },
     title: {
-      fontSize: 28,
-      color: colors.chalkboardText,
-      marginTop: 8,
-      marginBottom: 16,
+      fontSize: 24,
+      marginTop: 4,
     },
     note: {
-      fontSize: 20,
-      color: colors.chalkboardText,
-      lineHeight: 28,
+      fontSize: 16,
+      lineHeight: 22,
     },
     input: {
-      fontSize: 20,
-      color: colors.chalkboardText,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.chalkboardText,
-      paddingVertical: 4,
+      fontSize: 16,
+      borderWidth: 1,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+    },
+    memoInput: {
       minHeight: 60,
       textAlignVertical: 'top',
     },
     saveButton: {
       alignSelf: 'flex-end',
-      backgroundColor: colors.chalkboardText,
       borderRadius: 999,
       paddingHorizontal: 16,
       paddingVertical: 8,
-      marginTop: 12,
+      marginTop: 14,
     },
     saveButtonText: {
-      color: colors.chalkboardSage,
       fontWeight: '700',
       fontSize: 13,
     },
     coupangButton: {
       alignSelf: 'flex-start',
-      backgroundColor: 'rgba(255,255,255,0.15)',
+      backgroundColor: 'rgba(30, 41, 59, 0.08)',
       borderRadius: 999,
       paddingHorizontal: 12,
       paddingVertical: 6,
@@ -198,7 +237,7 @@ function createStyles(colors: ThemeColors) {
     coupangButtonText: {
       fontSize: 12,
       fontWeight: '700',
-      color: colors.chalkboardText,
+      color: colors.coralPink,
     },
     editButton: {
       alignSelf: 'center',
@@ -206,12 +245,11 @@ function createStyles(colors: ThemeColors) {
       paddingHorizontal: 18,
       paddingVertical: 10,
       borderRadius: 999,
-      backgroundColor: 'rgba(255,255,255,0.15)',
+      backgroundColor: 'rgba(30, 41, 59, 0.08)',
     },
     editButtonText: {
       fontSize: 14,
       fontWeight: '700',
-      color: colors.chalkboardText,
     },
   });
 }

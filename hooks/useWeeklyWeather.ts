@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useState } from 'react';
-import { WEEKDAY_KO, toISODate } from '../utils/date';
+import { formatMD, toISODate } from '../utils/date';
 import { withExternalAction } from '../utils/externalAction';
 import { describeWeatherCode } from '../utils/weatherCode';
 
@@ -66,10 +66,9 @@ async function fetchWeeklyWeather(): Promise<WeatherResult> {
 
   const days: WeatherDay[] = time.map((date, i) => {
     const { emoji, label } = describeWeatherCode(weather_code[i]);
-    const weekday = new Date(date).getUTCDay();
     return {
       date,
-      weekdayLabel: date === today ? '오늘' : date === tomorrow ? '내일' : WEEKDAY_KO[weekday],
+      weekdayLabel: formatMD(date),
       tempMax: Math.round(temperature_2m_max[i]),
       tempMin: Math.round(temperature_2m_min[i]),
       emoji,

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../../components/ScreenBackground';
@@ -8,10 +8,13 @@ import TimeWheelPicker, { formatTimeOfDay } from '../../components/settings/Time
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
+import { useToast } from '../../context/ToastContext';
+import { withExternalAction } from '../../utils/externalAction';
 import { scheduleEventNotifications } from '../../utils/notifications';
 
 export default function NotificationSettingsScreen() {
   const { notificationSettings, updateNotificationSettings, events } = useAppData();
+  const { showToast } = useToast();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [draft, setDraft] = useState(notificationSettings);
@@ -21,12 +24,13 @@ export default function NotificationSettingsScreen() {
     setSaving(true);
     updateNotificationSettings(draft);
     try {
-      await scheduleEventNotifications(events, draft);
-      Alert.alert('저장됐어요', '설정한 시간에 알림을 보내드릴게요.');
-    } catch {
-      Alert.alert('저장됐어요', '알림 예약 중 문제가 있었지만 설정은 저장됐어요.');
+      // Requesting notification permissions can briefly blip AppState on
+      // some platforms — suppress the lock/splash replay that would
+      // otherwise fire the instant the permission dialog closes.
+      await withExternalAction(() => scheduleEventNotifications(events, draft));
     } finally {
       setSaving(false);
+      showToast('✓ 저장되었습니다.');
     }
   };
 

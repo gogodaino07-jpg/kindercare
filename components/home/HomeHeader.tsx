@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Child } from '../../types/models';
@@ -27,6 +27,13 @@ export default function HomeHeader({ selectedChild, onPressChild, onPressNotific
     <View style={styles.container}>
       <View style={styles.centerArea}>
         <Pressable style={styles.childButton} onPress={onPressChild}>
+          {selectedChild?.photoUri ? (
+            <Image source={{ uri: selectedChild.photoUri }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarIcon}>🧒</Text>
+            </View>
+          )}
           <Text style={styles.childLabel} numberOfLines={1}>
             {childLabel}
           </Text>
@@ -82,6 +89,24 @@ function createStyles(colors: ThemeColors) {
       paddingHorizontal: 18,
       borderRadius: 16,
       ...SHADOW,
+    },
+    avatar: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      marginRight: 8,
+    },
+    avatarPlaceholder: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: '#EEF2F5',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 8,
+    },
+    avatarIcon: {
+      fontSize: 14,
     },
     childLabel: {
       flexShrink: 1,

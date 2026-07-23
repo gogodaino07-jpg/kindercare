@@ -17,6 +17,7 @@ import {
 } from '../data/seed';
 import { Child, Event, FamilyMember, NotificationSettings } from '../types/models';
 import { toISODate } from '../utils/date';
+import { withExternalAction } from '../utils/externalAction';
 import { scheduleEventNotifications } from '../utils/notifications';
 
 const HAS_ONBOARDED_KEY = 'kindercare_has_onboarded';
@@ -230,7 +231,11 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   // added/edited events actually get a reminder without the user having to
   // separately revisit the notification settings screen.
   useEffect(() => {
-    scheduleEventNotifications(events, notificationSettings).catch(() => {});
+    // The permission prompt this may trigger briefly blips AppState on some
+    // platforms — suppress the lock/splash replay that would otherwise fire.
+    withExternalAction(() => scheduleEventNotifications(events, notificationSettings)).catch(
+      () => {}
+    );
   }, [events, notificationSettings]);
 
   const value: AppDataContextValue = {

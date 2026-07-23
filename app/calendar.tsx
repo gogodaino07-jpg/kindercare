@@ -39,10 +39,14 @@ export default function CalendarScreen() {
   const [, forceRefresh] = useState(0);
 
   // Re-sync the selected date's event list whenever this screen regains focus
-  // (e.g. after adding an event elsewhere and navigating back).
+  // (e.g. after adding an event elsewhere and navigating back). Deferred a
+  // frame so the forced re-render doesn't land mid-push-transition — doing
+  // it synchronously on focus caused a ~0.5s layout jump/overlap while the
+  // screen slide animation was still running.
   useFocusEffect(
     useCallback(() => {
-      forceRefresh((n) => n + 1);
+      const frame = requestAnimationFrame(() => forceRefresh((n) => n + 1));
+      return () => cancelAnimationFrame(frame);
     }, [])
   );
 
@@ -161,7 +165,7 @@ export default function CalendarScreen() {
           <View style={styles.legendRow}>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.ai }]} />
-              <Text style={styles.legendText}>유치원 공지</Text>
+              <Text style={styles.legendText}>유치원 일정</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.review }]} />
@@ -169,7 +173,7 @@ export default function CalendarScreen() {
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.manual }]} />
-              <Text style={styles.legendText}>직접 추가</Text>
+              <Text style={styles.legendText}>일정 등록</Text>
             </View>
           </View>
 
@@ -260,7 +264,7 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       justifyContent: 'center',
       gap: 20,
-      marginTop: 16,
+      marginTop: 6,
       marginBottom: 8,
     },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },

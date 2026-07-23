@@ -13,6 +13,10 @@ export interface AlertButton {
 interface AlertConfig {
   title: string;
   message?: string;
+  /** Rendered above the title, e.g. '⚠️' for destructive/irreversible actions. */
+  icon?: string;
+  /** A second, bold red paragraph below `message` for irreversible-action warnings. */
+  warningMessage?: string;
   buttons?: AlertButton[];
 }
 
@@ -48,8 +52,16 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
         <View style={styles.overlay}>
           {config ? (
             <View style={styles.card}>
+              {config.icon ? <Text style={styles.icon}>{config.icon}</Text> : null}
               <Text style={styles.title}>{config.title}</Text>
-              {config.message ? <Text style={styles.message}>{config.message}</Text> : null}
+              {config.message ? (
+                <Text style={[styles.message, !config.warningMessage && styles.messageLast]}>
+                  {config.message}
+                </Text>
+              ) : null}
+              {config.warningMessage ? (
+                <Text style={styles.warningMessage}>{config.warningMessage}</Text>
+              ) : null}
               <View style={stacked ? styles.buttonColumn : styles.buttonRow}>
                 {buttons.map((button, i) => (
                   <Pressable
@@ -103,6 +115,11 @@ function createStyles(colors: ThemeColors) {
       padding: 22,
       ...SHADOW,
     },
+    icon: {
+      fontSize: 28,
+      textAlign: 'center',
+      marginBottom: 8,
+    },
     title: {
       fontSize: 16,
       fontWeight: '800',
@@ -113,6 +130,17 @@ function createStyles(colors: ThemeColors) {
     message: {
       fontSize: 13,
       color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 19,
+      marginBottom: 8,
+    },
+    messageLast: {
+      marginBottom: 18,
+    },
+    warningMessage: {
+      fontSize: 13,
+      color: '#DC2626',
+      fontWeight: '800',
       textAlign: 'center',
       lineHeight: 19,
       marginBottom: 18,

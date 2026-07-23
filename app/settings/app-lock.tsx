@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Text from '../../components/common/AppText';
@@ -7,6 +8,7 @@ import ScreenBackground from '../../components/ScreenBackground';
 import { SHADOW } from '../../constants/theme';
 import { LockMethod, serializePattern, useAppLock } from '../../context/AppLockContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../../context/ToastContext';
 
 const METHOD_OPTIONS: { id: LockMethod; label: string }[] = [
   { id: 'none', label: '사용 안 함' },
@@ -23,6 +25,8 @@ type SetupStage =
 
 export default function AppLockSettingsScreen() {
   const { colors } = useTheme();
+  const { showToast } = useToast();
+  const { reset } = useLocalSearchParams<{ reset?: string }>();
   const {
     method,
     hasSecret,
@@ -36,6 +40,17 @@ export default function AppLockSettingsScreen() {
 
   const [stage, setStage] = useState<SetupStage>({ kind: 'idle' });
   const [pinInput, setPinInput] = useState('');
+
+  // Arriving here via the lock screen's '비밀번호/패턴을 잊으셨나요?' ➔
+  // identity-verification flow — jump straight into re-setting the same
+  // lock method the user already had, instead of the plain settings list.
+  useEffect(() => {
+    if (reset === '1') {
+      setStage({ kind: method === 'pattern' ? 'pattern-first' : 'password-first' });
+      setPinInput('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reset]);
 
   const startSetup = (target: LockMethod) => {
     if (target === 'none') {
@@ -71,7 +86,7 @@ export default function AppLockSettingsScreen() {
         setLockMethod('password', pinInput);
         setStage({ kind: 'idle' });
         setPinInput('');
-        Alert.alert('저장됐어요', '비밀번호로 앱 잠금이 설정됐어요.');
+        showToast('✓ 저장되었습니다.');
       } else {
         Alert.alert('비밀번호 불일치', '다시 입력해주세요.');
         setPinInput('');
@@ -92,7 +107,7 @@ export default function AppLockSettingsScreen() {
       if (serialized === stage.first) {
         setLockMethod('pattern', serialized);
         setStage({ kind: 'idle' });
-        Alert.alert('저장됐어요', '패턴으로 앱 잠금이 설정됐어요.');
+        showToast('✓ 저장되었습니다.');
       } else {
         Alert.alert('패턴 불일치', '다시 그려주세요.');
         setStage({ kind: 'pattern-first' });

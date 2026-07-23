@@ -161,18 +161,36 @@ export default function AIReviewScreen() {
                         </View>
 
                         {isEditing ? (
-                          <TextInput
-                            style={styles.noteInput}
-                            value={ev.note ?? ''}
-                            onChangeText={(text) => updateDraft(ev.localId, { note: text })}
-                            placeholder="준비물을 적어주세요"
-                            placeholderTextColor={colors.textSecondary}
-                          />
-                        ) : ev.note ? (
-                          <View style={styles.noteTag}>
-                            <Text style={styles.noteTagText}>✔ {ev.note}</Text>
-                          </View>
-                        ) : null}
+                          <>
+                            <TextInput
+                              style={styles.noteInput}
+                              value={ev.note ?? ''}
+                              onChangeText={(text) => updateDraft(ev.localId, { note: text })}
+                              placeholder="🎒 준비물을 적어주세요"
+                              placeholderTextColor={colors.textSecondary}
+                            />
+                            <TextInput
+                              style={styles.noteInput}
+                              value={ev.memo ?? ''}
+                              onChangeText={(text) => updateDraft(ev.localId, { memo: text })}
+                              placeholder="📝 메모 (선택 입력)"
+                              placeholderTextColor={colors.textSecondary}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            {ev.note ? (
+                              <View style={styles.noteTag}>
+                                <Text style={styles.noteTagText}>🎒 {ev.note}</Text>
+                              </View>
+                            ) : null}
+                            {ev.memo ? (
+                              <View style={styles.memoTag}>
+                                <Text style={styles.memoTagText}>📝 {ev.memo}</Text>
+                              </View>
+                            ) : null}
+                          </>
+                        )}
 
                         {ev.needsReview ? (
                           <View style={styles.reviewBadgeRow}>
@@ -286,6 +304,19 @@ function createStyles(colors: ThemeColors) {
     noteTagText: {
       fontSize: 12,
       color: '#3A8455',
+      fontWeight: '600',
+    },
+    memoTag: {
+      alignSelf: 'flex-start',
+      backgroundColor: '#EEF2F5',
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      marginTop: 6,
+    },
+    memoTagText: {
+      fontSize: 12,
+      color: colors.textSecondary,
       fontWeight: '600',
     },
     noteInput: {

@@ -1,5 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import * as Contacts from 'expo-contacts';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -30,6 +31,7 @@ function formatPhoneNumber(raw: string): string {
 }
 
 export default function FamilyMembersScreen() {
+  const { title: titleParam } = useLocalSearchParams<{ title?: string }>();
   const { familyKey, familyMembers, removeMember, leaveFamily, regenerateFamilyKey, updateMemberPhone } =
     useAppData();
   const { showAlert } = useAlert();
@@ -156,6 +158,7 @@ export default function FamilyMembersScreen() {
 
   return (
     <ScreenBackground>
+      <Stack.Screen options={{ title: titleParam ?? '가족 계정' }} />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <View style={styles.content}>
           <Text style={styles.sectionLabel}>가족 키</Text>
@@ -227,7 +230,10 @@ export default function FamilyMembersScreen() {
           style={styles.phoneModalOverlay}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <Pressable style={styles.phoneModalBackdrop} onPress={closePhoneModal} />
+          {/* Backdrop is intentionally non-interactive — outside taps must
+              NOT dismiss this modal (prevents accidental input loss); only
+              the 취소/저장 buttons below can close it. */}
+          <View style={styles.phoneModalBackdrop} />
           <View style={styles.phoneModalCard}>
             <Text style={styles.phoneModalTitle}>전화번호 등록</Text>
             {phoneModalMember && !phoneModalMember.isOwner ? (
@@ -242,6 +248,7 @@ export default function FamilyMembersScreen() {
               placeholder="010-0000-0000"
               placeholderTextColor={colors.textSecondary}
               keyboardType="phone-pad"
+              maxLength={13}
               autoFocus
             />
             <View style={styles.phoneModalButtonRow}>

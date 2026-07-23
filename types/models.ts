@@ -13,7 +13,10 @@ export interface Event {
   /** ISO date string, e.g. "2026-07-21" */
   date: string;
   title: string;
+  /** 준비물 — also used as the Coupang shopping-search keyword. */
   note?: string;
+  /** 메모 — free-form notes, kept separate from 준비물. */
+  memo?: string;
   childId: string;
   /** 'ai' = 가정통신문 업로드 → AI 확인 화면에서 저장된 일정, 'manual' = 캘린더에서 직접 추가 */
   source: 'ai' | 'manual';

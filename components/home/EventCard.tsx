@@ -29,6 +29,12 @@ export default function EventCard({
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  // 준비물 takes priority as the subtitle; only fall back to 메모 when there's
+  // no 준비물, and always truncate the 메모 fallback to one line regardless
+  // of `wrapNote` (that prop only relaxes wrapping for the 준비물 case).
+  const subtitle = event.note || event.memo;
+  const subtitleIsMemo = !event.note && !!event.memo;
+
   return (
     <Pressable
       style={[styles.card, highlighted && styles.cardHighlighted]}
@@ -43,9 +49,9 @@ export default function EventCard({
       ) : null}
       <View style={styles.body}>
         <Text style={styles.title}>{event.title}</Text>
-        {event.note ? (
-          <Text style={styles.note} numberOfLines={wrapNote ? undefined : 1}>
-            {event.note}
+        {subtitle ? (
+          <Text style={styles.note} numberOfLines={subtitleIsMemo ? 1 : wrapNote ? undefined : 1}>
+            {subtitle}
           </Text>
         ) : null}
         {showCoupangButton && event.note ? (
@@ -56,7 +62,7 @@ export default function EventCard({
               openCoupangSearch(event.note!);
             }}
           >
-            <Text style={styles.coupangButtonText}>🛒 쿠팡에서 구매</Text>
+            <Text style={styles.coupangButtonText}>🛒 Coupang에서 바로 구매</Text>
           </Pressable>
         ) : null}
       </View>

@@ -1,5 +1,6 @@
+import Slider from '@react-native-community/slider';
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../../components/ScreenBackground';
 import Text from '../../components/common/AppText';
@@ -13,6 +14,9 @@ export default function FontSizeSettingsScreen() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  const sliderIndex = FONT_SIZE_OPTIONS.findIndex((o) => o.id === fontSizeChoice);
+  const activeOption = FONT_SIZE_OPTIONS[sliderIndex] ?? FONT_SIZE_OPTIONS[1];
+
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -20,28 +24,38 @@ export default function FontSizeSettingsScreen() {
           <Text style={styles.title}>글자 크기</Text>
           <Text style={styles.subtitle}>앱 전체에 표시되는 글씨 크기를 골라주세요.</Text>
 
-          <View style={styles.sizeRow}>
-            {FONT_SIZE_OPTIONS.map((option) => {
-              const isSelected = option.id === fontSizeChoice;
-              return (
-                <Pressable
-                  key={option.id}
-                  style={[styles.sizeButton, isSelected && styles.sizeButtonSelected]}
-                  onPress={() => setFontSizeChoice(option.id)}
-                >
-                  <Text
-                    style={[styles.sizeButtonText, isSelected && styles.sizeButtonTextSelected]}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
           <View style={styles.previewCard}>
             <Text style={styles.previewLabel}>미리보기</Text>
-            <Text style={styles.previewText}>7/20(월) 현장학습이 있어요</Text>
+            <Text style={[styles.previewText, { fontSize: 18 * activeOption.scale }]}>
+              7/20(월) 현장학습이 있어요
+            </Text>
+          </View>
+
+          <View style={styles.sliderCard}>
+            <Slider
+              style={styles.slider}
+              minimumValue={0}
+              maximumValue={FONT_SIZE_OPTIONS.length - 1}
+              step={1}
+              value={sliderIndex < 0 ? 1 : sliderIndex}
+              onValueChange={(value) => setFontSizeChoice(FONT_SIZE_OPTIONS[value].id)}
+              minimumTrackTintColor={colors.accent}
+              maximumTrackTintColor={colors.border}
+              thumbTintColor={colors.accent}
+            />
+            <View style={styles.sliderLabelRow}>
+              {FONT_SIZE_OPTIONS.map((option) => (
+                <Text
+                  key={option.id}
+                  style={[
+                    styles.sliderLabel,
+                    option.id === fontSizeChoice && styles.sliderLabelActive,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              ))}
+            </View>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -64,34 +78,11 @@ function createStyles(colors: ThemeColors) {
       color: colors.textSecondary,
       marginBottom: 20,
     },
-    sizeRow: {
-      flexDirection: 'row',
-      gap: 10,
-    },
-    sizeButton: {
-      flex: 1,
-      paddingVertical: 12,
-      alignItems: 'center',
-      borderRadius: 14,
-      backgroundColor: colors.cardWhite,
-      ...SHADOW,
-    },
-    sizeButtonSelected: {
-      backgroundColor: colors.accent,
-    },
-    sizeButtonText: {
-      fontSize: 14,
-      fontWeight: '700',
-      color: colors.textPrimary,
-    },
-    sizeButtonTextSelected: {
-      color: '#FFFFFF',
-    },
     previewCard: {
-      marginTop: 24,
       backgroundColor: colors.cardWhite,
       borderRadius: 14,
       padding: 16,
+      marginBottom: 20,
       ...SHADOW,
     },
     previewLabel: {
@@ -101,8 +92,34 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 8,
     },
     previewText: {
-      fontSize: 18,
       color: colors.textPrimary,
+      fontWeight: '600',
+    },
+    sliderCard: {
+      backgroundColor: colors.cardWhite,
+      borderRadius: 14,
+      paddingVertical: 16,
+      paddingHorizontal: 12,
+      ...SHADOW,
+    },
+    slider: {
+      width: '100%',
+      height: 40,
+    },
+    sliderLabelRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingHorizontal: 4,
+      marginTop: 4,
+    },
+    sliderLabel: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    sliderLabelActive: {
+      color: colors.accent,
+      fontWeight: '800',
     },
   });
 }

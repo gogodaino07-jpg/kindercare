@@ -20,7 +20,7 @@ export default function ChalkboardThemeScreen() {
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.title}>칠판 테마 색상</Text>
+          <Text style={styles.title}>팝업 테마</Text>
           <Text style={styles.subtitle}>원하는 색상 조합을 골라주세요</Text>
           <View style={styles.grid}>
             {CHALKBOARD_THEMES.map((theme) => {

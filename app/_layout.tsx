@@ -29,6 +29,10 @@ SplashScreen.preventAutoHideAsync();
 
 const EXIT_CONFIRM_WINDOW_MS = 2000;
 const BOOT_SPLASH_MS = 2000;
+// App-wide signature header colors — fixed across light/dark theme so every
+// settings/detail screen header reads consistently.
+const HEADER_BG = '#EAF5F9';
+const HEADER_TEXT = '#1E293B';
 
 function ThemedNavigation() {
   const { colors, resolvedScheme } = useTheme();
@@ -104,9 +108,12 @@ function ThemedNavigation() {
       <StatusBar style={resolvedScheme === 'dark' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: colors.cardWhite },
-          headerTintColor: colors.textPrimary,
-          headerTitleStyle: { color: colors.textPrimary },
+          // App-wide signature pastel-blue header, fixed regardless of
+          // light/dark theme — applies to every settings/detail screen
+          // below that doesn't override it.
+          headerStyle: { backgroundColor: HEADER_BG },
+          headerTintColor: HEADER_TEXT,
+          headerTitleStyle: { color: HEADER_TEXT },
           contentStyle: { backgroundColor: colors.skyBackground },
         }}
       >
@@ -116,36 +123,24 @@ function ThemedNavigation() {
         <Stack.Screen name="family-group-start" options={{ headerShown: false }} />
         <Stack.Screen name="verify-phone" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding-child-setup" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="calendar"
-          options={{
-            title: '캘린더',
-            headerStyle: { backgroundColor: colors.skyBackground },
-          }}
-        />
+        <Stack.Screen name="calendar" options={{ title: '캘린더' }} />
         <Stack.Screen name="add-event" options={{ title: '일정 추가' }} />
         <Stack.Screen name="upload" options={{ title: '가정통신문 업로드' }} />
         <Stack.Screen name="ai-review" options={{ title: 'AI 확인·수정' }} />
         <Stack.Screen name="save-complete" options={{ headerShown: false }} />
         <Stack.Screen name="past-events" options={{ title: '지난 일정' }} />
         <Stack.Screen name="child-profile" options={{ title: '아이 프로필 설정' }} />
-        <Stack.Screen
-          name="settings/index"
-          options={{ title: '설정', headerStyle: { backgroundColor: colors.skyBackground } }}
-        />
-        <Stack.Screen
-          name="settings/family"
-          options={{ title: '가족 계정', headerStyle: { backgroundColor: colors.skyBackground } }}
-        />
+        <Stack.Screen name="settings/index" options={{ title: '설정' }} />
+        {/* Title is overridden per-entry ('구성원 관리' / '키 재발급') by a
+            nested <Stack.Screen> inside family.tsx based on a nav param —
+            this is just the fallback for direct/back navigation. */}
+        <Stack.Screen name="settings/family" options={{ title: '가족 계정' }} />
         <Stack.Screen name="settings/notifications" options={{ title: '알림 설정' }} />
-        <Stack.Screen name="settings/font" options={{ title: '글씨체 설정' }} />
-        <Stack.Screen name="settings/font-size" options={{ title: '글자 크기 설정' }} />
-        <Stack.Screen name="settings/chalkboard-theme" options={{ title: '칠판 테마 색상' }} />
+        <Stack.Screen name="settings/font" options={{ title: '글씨체' }} />
+        <Stack.Screen name="settings/font-size" options={{ title: '글자 크기' }} />
+        <Stack.Screen name="settings/chalkboard-theme" options={{ title: '팝업 테마' }} />
         <Stack.Screen name="settings/theme" options={{ title: '테마' }} />
-        <Stack.Screen
-          name="settings/app-lock"
-          options={{ title: '앱 잠금', headerStyle: { backgroundColor: colors.skyBackground } }}
-        />
+        <Stack.Screen name="settings/app-lock" options={{ title: '앱 잠금' }} />
       </Stack>
       <AppLockScreen autoBiometricEnabled={!showBootSplash} />
       {showBootSplash ? <BootSplashOverlay /> : null}

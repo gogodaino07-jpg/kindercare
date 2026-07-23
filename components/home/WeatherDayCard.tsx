@@ -20,7 +20,6 @@ export default function WeatherDayCard({ day }: WeatherDayCardProps) {
       </Text>
       <Text style={styles.emoji}>{day.emoji}</Text>
       <Text style={styles.tempMax}>{day.tempMax}°</Text>
-      <Text style={styles.tempMin}>{day.tempMin}°</Text>
     </View>
   );
 }
@@ -28,7 +27,7 @@ export default function WeatherDayCard({ day }: WeatherDayCardProps) {
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     card: {
-      width: 46,
+      width: 56,
       alignItems: 'center',
       paddingVertical: 10,
       marginRight: 6,
@@ -38,7 +37,7 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.cardWhite,
     },
     weekday: {
-      fontSize: 12,
+      fontSize: 11,
       color: colors.textSecondary,
       marginBottom: 4,
     },
@@ -55,12 +54,6 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '700',
       color: colors.textPrimary,
       lineHeight: 15,
-    },
-    tempMin: {
-      fontSize: 11,
-      fontWeight: '400',
-      color: colors.textSecondary,
-      lineHeight: 14,
     },
   });
 }

@@ -30,8 +30,10 @@ export default function SettingsScreen() {
   const handleWithdraw = () => {
     showAlert({
       title: '회원탈퇴',
-      message:
-        '정말 탈퇴하시겠습니까?\n등록된 아이 프로필, 일정, 가족키, 앱 잠금 설정 등 모든 데이터가 완전히 삭제되며 복구할 수 없습니다.',
+      icon: '⚠️',
+      message: '정말 탈퇴하시겠습니까?',
+      warningMessage:
+        '등록된 아이 프로필, 일정, 가족키, 앱 잠금 설정 등 모든 데이터가 완전히 삭제되며 복구할 수 없습니다.',
       buttons: [
         { text: '취소', style: 'cancel' },
         {
@@ -61,8 +63,14 @@ export default function SettingsScreen() {
     {
       title: '가족 계정',
       rows: [
-        { label: '구성원 관리', onPress: () => router.push('/settings/family') },
-        { label: '키 재발급', onPress: () => router.push('/settings/family') },
+        {
+          label: '구성원 관리',
+          onPress: () => router.push({ pathname: '/settings/family', params: { title: '구성원 관리' } }),
+        },
+        {
+          label: '키 재발급',
+          onPress: () => router.push({ pathname: '/settings/family', params: { title: '키 재발급' } }),
+        },
       ],
     },
     {
@@ -73,10 +81,10 @@ export default function SettingsScreen() {
           subtitle: THEME_MODE_LABELS[mode],
           onPress: () => router.push('/settings/theme'),
         },
+        { label: '팝업 테마 설정', onPress: () => router.push('/settings/chalkboard-theme') },
         { label: '앱 잠금', onPress: () => router.push('/settings/app-lock') },
-        { label: '글씨체', onPress: () => router.push('/settings/font') },
+        { label: '글씨체 설정', onPress: () => router.push('/settings/font') },
         { label: '글자 크기 설정', onPress: () => router.push('/settings/font-size') },
-        { label: '칠판 테마 색상', onPress: () => router.push('/settings/chalkboard-theme') },
       ],
     },
     {

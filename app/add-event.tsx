@@ -26,6 +26,7 @@ export default function AddEventScreen() {
   const [showPicker, setShowPicker] = useState(Platform.OS === 'web');
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
+  const [memo, setMemo] = useState('');
   const [titleError, setTitleError] = useState(false);
 
   const handleSave = () => {
@@ -38,6 +39,7 @@ export default function AddEventScreen() {
       date: toISODate(date),
       title: title.trim(),
       note: note.trim() || undefined,
+      memo: memo.trim() || undefined,
       childId: selectedChild.id,
       source: 'manual',
       icon: '📌',
@@ -88,12 +90,21 @@ export default function AddEventScreen() {
           />
           {titleError ? <Text style={styles.errorText}>제목을 입력해주세요</Text> : null}
 
-          <Text style={styles.label}>준비물/메모</Text>
+          <Text style={styles.label}>준비물</Text>
           <TextInput
-            style={[styles.input, styles.multilineInput]}
+            style={styles.input}
             value={note}
             onChangeText={setNote}
-            placeholder="선택 입력"
+            placeholder="예: 물통, 편한 신발, 여벌 옷"
+            placeholderTextColor={colors.textSecondary}
+          />
+
+          <Text style={styles.label}>메모</Text>
+          <TextInput
+            style={[styles.input, styles.multilineInput]}
+            value={memo}
+            onChangeText={setMemo}
+            placeholder="상세 주의사항 등 (선택 입력)"
             placeholderTextColor={colors.textSecondary}
             multiline
           />

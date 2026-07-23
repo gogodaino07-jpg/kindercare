@@ -23,9 +23,9 @@ export default function ChalkboardPreview({ theme }: ChalkboardPreviewProps) {
       <Text style={styles.label}>미리보기</Text>
       <View style={[styles.frame, { backgroundColor: theme.frame }]}>
         <View style={[styles.board, { backgroundColor: theme.board }]}>
-          <Text style={[styles.date, { fontFamily }]}>7/20(월)</Text>
-          <Text style={[styles.title, { fontFamily }]}>🎨 미리보기 일정</Text>
-          <Text style={[styles.note, { fontFamily }]}>준비물: 크레파스, 색종이</Text>
+          <Text style={[styles.date, { color: theme.text, fontFamily }]}>7/20(월)</Text>
+          <Text style={[styles.title, { color: theme.text, fontFamily }]}>🎨 미리보기 일정</Text>
+          <Text style={[styles.note, { color: theme.text, fontFamily }]}>준비물: 크레파스, 색종이</Text>
         </View>
       </View>
     </View>

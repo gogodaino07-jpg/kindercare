@@ -203,7 +203,7 @@ export default function UploadScreen() {
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     safeArea: { flex: 1 },
-    content: { padding: 20, paddingBottom: 12 },
+    content: { flexGrow: 1, justifyContent: 'center', padding: 20, paddingBottom: 12 },
     sourceRow: {
       flexDirection: 'row',
       gap: 12,

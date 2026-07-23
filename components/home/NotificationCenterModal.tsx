@@ -33,11 +33,9 @@ export default function NotificationCenterModal({ visible, onClose }: Notificati
   }, [isLocked]);
 
   return (
-    <Modal visible={visible} transparent onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={() => {}}>
-          <View style={styles.dragHandle} />
-
           <View style={styles.headerRow}>
             <Text style={styles.title}>알림 센터</Text>
             <View style={styles.headerActions}>
@@ -88,7 +86,7 @@ function NotificationRow({
             style={styles.coupangButton}
             onPress={() => openCoupangSearch(item.keyword!)}
           >
-            <Text style={styles.coupangButtonText}>🛒 쿠팡에서 구매</Text>
+            <Text style={styles.coupangButtonText}>🛒 Coupang에서 바로 구매</Text>
           </Pressable>
         ) : null}
       </View>
@@ -100,30 +98,25 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(20, 24, 22, 0.45)',
-      justifyContent: 'flex-end',
+      backgroundColor: 'rgba(20, 24, 22, 0.15)',
+      alignItems: 'flex-end',
+      paddingTop: 68,
+      paddingRight: 16,
     },
     sheet: {
+      width: 320,
+      maxWidth: '86%',
+      maxHeight: '65%',
       backgroundColor: colors.skyBackground,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      padding: 20,
-      paddingBottom: 40,
-      height: '90%',
-    },
-    dragHandle: {
-      alignSelf: 'center',
-      width: 40,
-      height: 5,
-      borderRadius: 3,
-      backgroundColor: colors.border,
-      marginBottom: 14,
+      borderRadius: 18,
+      padding: 16,
+      ...SHADOW,
     },
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 16,
+      marginBottom: 12,
     },
     title: {
       fontSize: 16,

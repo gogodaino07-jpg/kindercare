@@ -85,27 +85,33 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
                     </View>
                   )}
                   <Text style={styles.cardLabel}>{label}</Text>
-                  {isSelected ? <Text style={styles.checkIcon}>✓</Text> : null}
+                  <View style={styles.checkSlot}>
+                    {isSelected ? <Text style={styles.checkIcon}>✓</Text> : null}
+                  </View>
                 </Pressable>
-                <Pressable
-                  style={styles.editButton}
-                  onPress={() => {
-                    onClose();
-                    router.push({ pathname: '/child-profile', params: { childId: child.id } });
-                  }}
-                  accessibilityLabel="프로필 수정"
-                >
-                  <Text style={styles.editIcon}>✏️</Text>
-                </Pressable>
-                {isMainChild ? null : (
+                <View style={styles.actionIcons}>
                   <Pressable
-                    style={styles.deleteButton}
-                    onPress={() => handleDelete(child.id, label)}
-                    accessibilityLabel="프로필 삭제"
+                    style={styles.actionIconButton}
+                    onPress={() => {
+                      onClose();
+                      router.push({ pathname: '/child-profile', params: { childId: child.id } });
+                    }}
+                    accessibilityLabel="프로필 수정"
                   >
-                    <Text style={styles.deleteIcon}>🗑️</Text>
+                    <Text style={styles.editIcon}>✏️</Text>
                   </Pressable>
-                )}
+                  {isMainChild ? (
+                    <View style={styles.actionIconButton} />
+                  ) : (
+                    <Pressable
+                      style={styles.actionIconButton}
+                      onPress={() => handleDelete(child.id, label)}
+                      accessibilityLabel="프로필 삭제"
+                    >
+                      <Text style={styles.deleteIcon}>🗑️</Text>
+                    </Pressable>
+                  )}
+                </View>
               </View>
             );
           })}
@@ -187,20 +193,29 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '600',
       color: colors.textPrimary,
     },
+    checkSlot: {
+      width: 20,
+      alignItems: 'center',
+      marginLeft: 8,
+    },
     checkIcon: {
       fontSize: 16,
       color: colors.accent,
       fontWeight: '700',
-      marginLeft: 8,
     },
-    editButton: {
-      padding: 8,
+    actionIcons: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    actionIconButton: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     editIcon: {
       fontSize: 16,
-    },
-    deleteButton: {
-      padding: 8,
     },
     deleteIcon: {
       fontSize: 16,
