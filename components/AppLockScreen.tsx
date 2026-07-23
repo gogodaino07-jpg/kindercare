@@ -7,7 +7,14 @@ import Text from './common/AppText';
 
 const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'bio', '0', 'del'];
 
-export default function AppLockScreen() {
+interface AppLockScreenProps {
+  /** False while the boot splash is still covering the screen — the native
+   * biometric prompt renders above everything (including the splash), so
+   * auto-firing it early would break the required 스플래시 ➔ 잠금 화면 order. */
+  autoBiometricEnabled?: boolean;
+}
+
+export default function AppLockScreen({ autoBiometricEnabled = true }: AppLockScreenProps) {
   const colors = useThemeColors();
   const {
     method,
@@ -24,12 +31,16 @@ export default function AppLockScreen() {
   const canUseBiometric = biometricEnabled && biometricAvailable;
 
   useEffect(() => {
-    if (isLocked && canUseBiometric) {
+    if (isLocked && canUseBiometric && autoBiometricEnabled) {
       authenticateWithBiometric();
     }
-    // Trigger once whenever the screen becomes visible.
+    // Also re-fire if canUseBiometric/autoBiometricEnabled flips true after
+    // mount (e.g. on a cold app restart, biometricAvailable resolves
+    // asynchronously and can land after isLocked is already true, or the
+    // boot splash finishes after this screen is already mounted) —
+    // otherwise this never re-runs and the auto-prompt silently never fires.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLocked]);
+  }, [isLocked, canUseBiometric, autoBiometricEnabled]);
 
   useEffect(() => {
     if (!isLocked) {
@@ -112,8 +123,8 @@ export default function AppLockScreen() {
                       disabled={!canUseBiometric}
                     >
                       {canUseBiometric ? (
-                        <Text style={[styles.keyText, { color: colors.accent, fontSize: 20 }]}>
-                          지문
+                        <Text style={[styles.keyText, { color: colors.accent, fontSize: 26 }]}>
+                          👆
                         </Text>
                       ) : null}
                     </Pressable>

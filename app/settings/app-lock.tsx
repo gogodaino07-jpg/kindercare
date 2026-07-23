@@ -59,8 +59,8 @@ export default function AppLockSettingsScreen() {
   };
 
   const submitPin = () => {
-    if (pinInput.length < 4) {
-      Alert.alert('비밀번호 설정', '4자리 이상 숫자를 입력해주세요.');
+    if (pinInput.length !== 4) {
+      Alert.alert('비밀번호 설정', '4자리 숫자를 입력해주세요.');
       return;
     }
     if (stage.kind === 'password-first') {
@@ -124,20 +124,17 @@ export default function AppLockSettingsScreen() {
                     onChangeText={setPinInput}
                     secureTextEntry
                     keyboardType="number-pad"
-                    maxLength={6}
+                    maxLength={4}
                     autoFocus
-                    placeholder="4~6자리 숫자"
+                    placeholder="4자리 숫자 입력"
                     placeholderTextColor={colors.textSecondary}
                   />
                   <View style={styles.cardButtonRow}>
-                    <Pressable style={styles.cardButton} onPress={cancelSetup}>
-                      <Text style={[styles.cardButtonText, { color: colors.textSecondary }]}>취소</Text>
+                    <Pressable style={styles.cardButtonCancel} onPress={cancelSetup}>
+                      <Text style={styles.cardButtonCancelText}>취소</Text>
                     </Pressable>
-                    <Pressable
-                      style={[styles.cardButton, styles.cardButtonPrimary, { backgroundColor: colors.accent }]}
-                      onPress={submitPin}
-                    >
-                      <Text style={[styles.cardButtonText, { color: '#FFFFFF' }]}>
+                    <Pressable style={styles.cardButtonPrimary} onPress={submitPin}>
+                      <Text style={styles.cardButtonPrimaryText}>
                         {stage.kind === 'password-first' ? '다음' : '확인'}
                       </Text>
                     </Pressable>
@@ -149,9 +146,11 @@ export default function AppLockSettingsScreen() {
                     {stage.kind === 'pattern-first' ? '새 패턴 그리기' : '패턴 다시 그리기'}
                   </Text>
                   <PatternGrid colors={colors} showTrail onComplete={handlePatternComplete} />
-                  <Pressable style={styles.cardButton} onPress={cancelSetup}>
-                    <Text style={[styles.cardButtonText, { color: colors.textSecondary }]}>취소</Text>
-                  </Pressable>
+                  <View style={styles.cardButtonRow}>
+                    <Pressable style={styles.cardButtonCancel} onPress={cancelSetup}>
+                      <Text style={styles.cardButtonCancelText}>취소</Text>
+                    </Pressable>
+                  </View>
                 </>
               )}
             </View>
@@ -300,18 +299,33 @@ const styles = StyleSheet.create({
   },
   cardButtonRow: {
     flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingTop: 4,
   },
-  cardButton: {
+  cardButtonCancel: {
     flex: 1,
     paddingVertical: 14,
     alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: '#F1F3F5',
   },
-  cardButtonPrimary: {
-    borderBottomLeftRadius: 14,
-    borderBottomRightRadius: 14,
-  },
-  cardButtonText: {
+  cardButtonCancelText: {
     fontSize: 15,
     fontWeight: '700',
+    color: '#495057',
+  },
+  cardButtonPrimary: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: '#4A90E2',
+  },
+  cardButtonPrimaryText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

@@ -17,6 +17,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppLockScreen from '../components/AppLockScreen';
 import BootSplashOverlay from '../components/BootSplashOverlay';
+import { isExternalActionActive } from '../utils/externalAction';
 import { AlertProvider } from '../context/AlertContext';
 import { AppDataProvider, useAppData } from '../context/AppDataContext';
 import { AppLockProvider, useAppLock } from '../context/AppLockContext';
@@ -59,8 +60,12 @@ function ThemedNavigation() {
         backgroundedRef.current = true;
       } else if (nextState === 'active' && prevState !== 'active' && backgroundedRef.current) {
         backgroundedRef.current = false;
-        setShowBootSplash(true);
-        setTimeout(() => setShowBootSplash(false), BOOT_SPLASH_MS);
+        // A picker/contacts/GPS/external-link round trip also blips through
+        // 'background' — only replay the splash for a genuine app switch.
+        if (!isExternalActionActive()) {
+          setShowBootSplash(true);
+          setTimeout(() => setShowBootSplash(false), BOOT_SPLASH_MS);
+        }
       }
     });
     return () => subscription.remove();
@@ -137,9 +142,12 @@ function ThemedNavigation() {
         <Stack.Screen name="settings/font-size" options={{ title: '글자 크기 설정' }} />
         <Stack.Screen name="settings/chalkboard-theme" options={{ title: '칠판 테마 색상' }} />
         <Stack.Screen name="settings/theme" options={{ title: '테마' }} />
-        <Stack.Screen name="settings/app-lock" options={{ title: '앱 잠금' }} />
+        <Stack.Screen
+          name="settings/app-lock"
+          options={{ title: '앱 잠금', headerStyle: { backgroundColor: colors.skyBackground } }}
+        />
       </Stack>
-      <AppLockScreen />
+      <AppLockScreen autoBiometricEnabled={!showBootSplash} />
       {showBootSplash ? <BootSplashOverlay /> : null}
     </>
   );

@@ -1,3 +1,4 @@
+import { Stack } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -5,6 +6,7 @@ import BlackboardModal from '../components/home/BlackboardModal';
 import Text from '../components/common/AppText';
 import ScreenBackground from '../components/ScreenBackground';
 import { SHADOW, ThemeColors } from '../constants/theme';
+import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { Event } from '../types/models';
@@ -16,26 +18,31 @@ function monthLabel(isoDate: string): string {
 }
 
 export default function PastEventsScreen() {
-  const { events, selectedChild, deleteEvent } = useAppData();
+  const { events, selectedChild, deleteEvent, deleteEvents } = useAppData();
+  const { showAlert } = useAlert();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
 
-  const groups = useMemo(() => {
-    const past = events
-      .filter((e) => e.childId === selectedChild?.id && isPast(e.date))
-      .sort((a, b) => b.date.localeCompare(a.date));
+  const pastEvents = useMemo(
+    () =>
+      events
+        .filter((e) => e.childId === selectedChild?.id && isPast(e.date))
+        .sort((a, b) => b.date.localeCompare(a.date)),
+    [events, selectedChild]
+  );
 
+  const groups = useMemo(() => {
     const map = new Map<string, Event[]>();
-    for (const e of past) {
+    for (const e of pastEvents) {
       const key = monthLabel(e.date);
       const arr = map.get(key) ?? [];
       arr.push(e);
       map.set(key, arr);
     }
     return Array.from(map.entries());
-  }, [events, selectedChild]);
+  }, [pastEvents]);
 
   const handleDelete = (event: Event) => {
     Alert.alert('삭제할까요?', `"${event.title}" 기록을 지울까요?`, [
@@ -44,8 +51,34 @@ export default function PastEventsScreen() {
     ]);
   };
 
+  const handleDeleteAll = () => {
+    if (pastEvents.length === 0) return;
+    showAlert({
+      title: '전체 삭제',
+      message: '지난 일정을 모두 삭제하시겠습니까?',
+      buttons: [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: () => deleteEvents(pastEvents.map((e) => e.id)),
+        },
+      ],
+    });
+  };
+
   return (
     <ScreenBackground>
+      <Stack.Screen
+        options={{
+          headerRight: () =>
+            pastEvents.length > 0 ? (
+              <Pressable onPress={handleDeleteAll} hitSlop={8}>
+                <Text style={styles.deleteAllText}>전체 삭제</Text>
+              </Pressable>
+            ) : null,
+        }}
+      />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           {groups.length === 0 ? (
@@ -94,6 +127,12 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     safeArea: { flex: 1 },
     content: { padding: 20 },
+    deleteAllText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.tomorrowRed,
+      marginRight: 4,
+    },
     emptyText: {
       textAlign: 'center',
       color: colors.textSecondary,

@@ -6,6 +6,10 @@ import ChildSwitcherSheet from '../../components/home/ChildSwitcherSheet';
 import ScreenBackground from '../../components/ScreenBackground';
 import Text from '../../components/common/AppText';
 import { SHADOW } from '../../constants/theme';
+import { useAlert } from '../../context/AlertContext';
+import { useAppData } from '../../context/AppDataContext';
+import { useAppLock } from '../../context/AppLockContext';
+import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { THEME_MODE_LABELS, useTheme } from '../../context/ThemeContext';
 
 interface SettingsRow {
@@ -16,8 +20,35 @@ interface SettingsRow {
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { mode, colors } = useTheme();
+  const { mode, colors, setMode } = useTheme();
+  const { showAlert } = useAlert();
+  const { resetAllData } = useAppData();
+  const { resetLock } = useAppLock();
+  const { clearNotifications } = useNotificationCenter();
   const [childManagerOpen, setChildManagerOpen] = useState(false);
+
+  const handleWithdraw = () => {
+    showAlert({
+      title: '회원탈퇴',
+      message:
+        '정말 탈퇴하시겠습니까?\n등록된 아이 프로필, 일정, 가족키, 앱 잠금 설정 등 모든 데이터가 완전히 삭제되며 복구할 수 없습니다.',
+      buttons: [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '탈퇴',
+          style: 'destructive',
+          onPress: async () => {
+            await resetAllData();
+            await resetLock();
+            clearNotifications();
+            setMode('system');
+            router.dismissAll();
+            router.replace('/');
+          },
+        },
+      ],
+    });
+  };
 
   const groups: { title: string; rows: SettingsRow[] }[] = [
     {
@@ -83,6 +114,10 @@ export default function SettingsScreen() {
               </View>
             </View>
           ))}
+
+          <Pressable style={styles.withdrawButton} onPress={handleWithdraw}>
+            <Text style={[styles.withdrawText, { color: colors.tomorrowRed }]}>회원탈퇴</Text>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
       <ChildSwitcherSheet visible={childManagerOpen} onClose={() => setChildManagerOpen(false)} />
@@ -123,5 +158,15 @@ const styles = StyleSheet.create({
   },
   chevron: {
     fontSize: 18,
+  },
+  withdrawButton: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    marginTop: 4,
+  },
+  withdrawText: {
+    fontSize: 13,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

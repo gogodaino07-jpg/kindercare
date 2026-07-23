@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Image, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
+import { useAppLock } from '../../context/AppLockContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import Text from '../common/AppText';
 
@@ -16,8 +17,17 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
   const router = useRouter();
   const { children, selectedChild, selectChild, deleteChild } = useAppData();
   const { showAlert } = useAlert();
+  const { isLocked } = useAppLock();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  // Never let this sheet render on top of/behind the lock screen — the app
+  // may background/lock while it's open (e.g. gallery picker inside the
+  // child-profile edit flow reopens this sheet's parent screen).
+  useEffect(() => {
+    if (isLocked && visible) onClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLocked]);
 
   const mainChildId = children[0]?.id;
 

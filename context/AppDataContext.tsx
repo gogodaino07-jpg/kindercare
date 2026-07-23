@@ -47,6 +47,7 @@ interface AppDataContextValue {
   updateEventNote: (eventId: string, note: string) => void;
   updateEvent: (eventId: string, input: Partial<Omit<Event, 'id'>>) => void;
   deleteEvent: (eventId: string) => void;
+  deleteEvents: (eventIds: string[]) => void;
   addEvent: (input: Omit<Event, 'id'>) => void;
   addEvents: (inputs: Omit<Event, 'id'>[]) => void;
 
@@ -67,6 +68,9 @@ interface AppDataContextValue {
   // Home ad popup
   adDismissedDate: string | null;
   dismissAdForToday: () => void;
+
+  // Account deletion
+  resetAllData: () => Promise<void>;
 }
 
 const AppDataContext = createContext<AppDataContextValue | undefined>(undefined);
@@ -182,6 +186,11 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setEvents((prev) => prev.filter((e) => e.id !== eventId));
   };
 
+  const deleteEvents = (eventIds: string[]) => {
+    const idSet = new Set(eventIds);
+    setEvents((prev) => prev.filter((e) => !idSet.has(e.id)));
+  };
+
   const addEvent = (input: Omit<Event, 'id'>) => {
     setEvents((prev) => [...prev, { ...input, id: nextEventId() }]);
   };
@@ -196,6 +205,24 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
   const dismissAdForToday = () => {
     setAdDismissedDate(toISODate(new Date()));
+  };
+
+  // 회원탈퇴: wipes every piece of this app's persisted state and puts the
+  // in-memory data back to the same shape a fresh install would have, then
+  // the caller navigates back to onboarding.
+  const resetAllData = async () => {
+    await AsyncStorage.multiRemove([HAS_ONBOARDED_KEY, FONT_SIZE_KEY]).catch(() => {});
+    setHasOnboarded(false);
+    setFamilyKey(generateFamilyKey());
+    setFamilyMembers(seedFamilyMembers);
+    setChildProfiles(seedChildren);
+    setEvents(seedEvents);
+    setSelectedChildId(seedChildren[0]?.id);
+    setNotificationSettings(seedNotificationSettings);
+    setFontChoiceId(DEFAULT_FONT_ID);
+    setFontSizeChoiceState(DEFAULT_FONT_SIZE);
+    setChalkboardThemeId(DEFAULT_CHALKBOARD_THEME_ID);
+    setAdDismissedDate(null);
   };
 
   // Whenever the event list or the notification schedule preferences change,
@@ -228,6 +255,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     updateEventNote,
     updateEvent,
     deleteEvent,
+    deleteEvents,
     addEvent,
     addEvents,
 
@@ -244,6 +272,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
     adDismissedDate,
     dismissAdForToday,
+
+    resetAllData,
   };
 
   return <AppDataContext.Provider value={value}>{reactChildren}</AppDataContext.Provider>;

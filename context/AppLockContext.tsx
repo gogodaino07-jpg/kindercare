@@ -2,6 +2,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
+import { isExternalActionActive, setExternalActionActive } from '../utils/externalAction';
 
 export type LockMethod = 'none' | 'password' | 'pattern';
 
@@ -37,6 +38,7 @@ interface AppLockContextValue {
   unlock: () => void;
   authenticateWithBiometric: () => Promise<boolean>;
   setPickerActive: (active: boolean) => void;
+  resetLock: () => Promise<void>;
 }
 
 const AppLockContext = createContext<AppLockContextValue | undefined>(undefined);
@@ -70,11 +72,13 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
 
   const backgroundedRef = useRef(false);
   const authInProgressRef = useRef(false);
-  const pickerActiveRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
-  const setPickerActive = (active: boolean) => {
-    pickerActiveRef.current = active;
+  // Kept as the public API name for existing call sites (upload.tsx,
+  // child-profile.tsx) — now backed by the shared cross-cutting flag so
+  // boot-splash and ad-popup logic elsewhere can read the same state.
+  const setPickerActive = (value: boolean) => {
+    setExternalActionActive(value);
   };
 
   useEffect(() => {
@@ -102,10 +106,11 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
       } else if (nextState === 'active' && prevState !== 'active') {
         if (backgroundedRef.current) {
           backgroundedRef.current = false;
-          // A gallery/camera/document picker takes the app to 'background' too
-          // (the OS picker UI takes over), so skip the re-lock in that case —
+          // A gallery/camera/document/contacts picker, GPS lookup, or an
+          // external link (Coupang) all take the app to 'background' too
+          // (the OS/native UI takes over), so skip the re-lock in that case —
           // only a genuine app-switch/home-button exit should trigger it.
-          if (config.method !== 'none' && !authInProgressRef.current && !pickerActiveRef.current) {
+          if (config.method !== 'none' && !authInProgressRef.current && !isExternalActionActive()) {
             setIsLocked(true);
           }
         }
@@ -168,6 +173,12 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resetLock = async () => {
+    await SecureStore.deleteItemAsync(STORAGE_KEY).catch(() => {});
+    setConfig(DEFAULT_CONFIG);
+    setIsLocked(false);
+  };
+
   const value = useMemo<AppLockContextValue>(
     () => ({
       loaded,
@@ -185,6 +196,7 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
       unlock,
       authenticateWithBiometric,
       setPickerActive,
+      resetLock,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [loaded, config, isLocked, biometricAvailable]

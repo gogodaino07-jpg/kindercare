@@ -1,5 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
-import React, { useMemo, useState } from 'react';
+import * as Contacts from 'expo-contacts';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Linking,
@@ -16,13 +17,23 @@ import Text from '../../components/common/AppText';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
+import { useAppLock } from '../../context/AppLockContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { FamilyMember } from '../../types/models';
+import { markExternalActionBriefly, setExternalActionActive } from '../../utils/externalAction';
+
+function formatPhoneNumber(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 11);
+  if (digits.length < 4) return digits;
+  if (digits.length < 8) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
 
 export default function FamilyMembersScreen() {
   const { familyKey, familyMembers, removeMember, leaveFamily, regenerateFamilyKey, updateMemberPhone } =
     useAppData();
   const { showAlert } = useAlert();
+  const { isLocked } = useAppLock();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [displayedKey, setDisplayedKey] = useState(familyKey);
@@ -31,6 +42,15 @@ export default function FamilyMembersScreen() {
   const [phoneInput, setPhoneInput] = useState('');
 
   const self = familyMembers.find((m) => m.isOwner) ?? familyMembers[0];
+  const phoneModalMember = familyMembers.find((m) => m.id === phoneModalMemberId);
+
+  useEffect(() => {
+    if (isLocked && phoneModalMemberId) {
+      setPhoneModalMemberId(null);
+      setPhoneInput('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLocked]);
 
   const handleReissue = () => {
     const newKey = regenerateFamilyKey();
@@ -89,12 +109,40 @@ export default function FamilyMembersScreen() {
     closePhoneModal();
   };
 
+  const handleImportContact = async () => {
+    setExternalActionActive(true);
+    try {
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        showAlert({ title: '연락처 접근 권한이 필요해요', message: '설정에서 연락처 접근을 허용해주세요.' });
+        return;
+      }
+      const picked = await Contacts.Contact.presentPicker();
+      if (!picked) return;
+      const phones = await picked.getPhones();
+      const number = phones[0]?.number;
+      if (number) {
+        setPhoneInput(formatPhoneNumber(number));
+      }
+    } catch {
+      showAlert({ title: '연락처를 가져오지 못했어요', message: '잠시 후 다시 시도해주세요.' });
+    } finally {
+      setExternalActionActive(false);
+    }
+  };
+
   const handleCallOrEdit = (member: FamilyMember) => {
     showAlert({
       title: member.name,
       message: member.phone,
       buttons: [
-        { text: '전화 걸기', onPress: () => Linking.openURL(`tel:${member.phone}`) },
+        {
+          text: '전화 걸기',
+          onPress: () => {
+            markExternalActionBriefly();
+            Linking.openURL(`tel:${member.phone}`);
+          },
+        },
         { text: '번호 수정', onPress: () => openPhoneModal(member) },
         {
           text: '번호 삭제',
@@ -137,7 +185,7 @@ export default function FamilyMembersScreen() {
                 >
                   <Text style={styles.phoneIcon}>📞</Text>
                 </Pressable>
-              ) : (
+              ) : member.isOwner ? null : (
                 <Pressable
                   style={styles.phoneAddButton}
                   onPress={() => openPhoneModal(member)}
@@ -182,6 +230,11 @@ export default function FamilyMembersScreen() {
           <Pressable style={styles.phoneModalBackdrop} onPress={closePhoneModal} />
           <View style={styles.phoneModalCard}>
             <Text style={styles.phoneModalTitle}>전화번호 등록</Text>
+            {phoneModalMember && !phoneModalMember.isOwner ? (
+              <Pressable style={styles.importContactButton} onPress={handleImportContact}>
+                <Text style={styles.importContactButtonText}>📱 주소록에서 가져오기</Text>
+              </Pressable>
+            ) : null}
             <TextInput
               style={styles.phoneModalInput}
               value={phoneInput}
@@ -353,6 +406,19 @@ function createStyles(colors: ThemeColors) {
       color: colors.textPrimary,
       textAlign: 'center',
       marginBottom: 14,
+    },
+    importContactButton: {
+      alignSelf: 'center',
+      marginBottom: 14,
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: 999,
+      backgroundColor: '#EEF2F5',
+    },
+    importContactButtonText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.accent,
     },
     phoneModalInput: {
       backgroundColor: '#FFFFFF',

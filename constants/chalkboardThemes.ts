@@ -6,18 +6,18 @@ export interface ChalkboardTheme {
 }
 
 export const CHALKBOARD_THEMES: ChalkboardTheme[] = [
-  { id: 'default', label: '기본', frame: '#C9A87C', board: '#5C7A6E' },
-  { id: 'deepwood', label: '딥우드', frame: '#8A5A2B', board: '#2C4A3E' },
-  { id: 'pinkrose', label: '핑크로즈', frame: '#E8B4BC', board: '#6B4C5C' },
-  { id: 'lemonyellow', label: '레몬옐로우', frame: '#F0D080', board: '#33485C' },
-  { id: 'mint', label: '민트', frame: '#B8D8C8', board: '#3A3A3A' },
-  { id: 'coral', label: '코랄', frame: '#F0B090', board: '#4A3B35' },
-  { id: 'graydark', label: '그레이 다크모드', frame: '#9C9C9C', board: '#1E1E1E' },
-  { id: 'lavender', label: '라벤더', frame: '#D9C9EC', board: '#4A3B5C' },
-  { id: 'skyblue', label: '스카이블루', frame: '#B8D4E8', board: '#2A3F52' },
-  { id: 'peach', label: '피치', frame: '#F5C9A8', board: '#5C4030' },
-  { id: 'olive', label: '올리브', frame: '#C9C29A', board: '#3A3F2E' },
-  { id: 'rosegold', label: '로즈골드', frame: '#E8C4B8', board: '#5C2E3A' },
+  { id: 'default', label: '기본', frame: '#D4C3B3', board: '#6B8577' },
+  { id: 'deepwood', label: '딥우드', frame: '#B08968', board: '#3E5C4E' },
+  { id: 'pinkrose', label: '핑크로즈', frame: '#E8C4C9', board: '#7A5C69' },
+  { id: 'lemonyellow', label: '레몬옐로우', frame: '#EDDCA8', board: '#435A6E' },
+  { id: 'mint', label: '민트', frame: '#C9E0D2', board: '#4A4A4A' },
+  { id: 'coral', label: '코랄', frame: '#EFC4AE', board: '#5A473F' },
+  { id: 'graydark', label: '그레이 다크모드', frame: '#B5B5B5', board: '#2A2A2A' },
+  { id: 'lavender', label: '라벤더', frame: '#DED0EC', board: '#5A4A6E' },
+  { id: 'skyblue', label: '스카이블루', frame: '#C7DCEA', board: '#3A4F60' },
+  { id: 'peach', label: '피치', frame: '#F0D2BB', board: '#6B4E3C' },
+  { id: 'olive', label: '올리브', frame: '#D3CDAE', board: '#474D3C' },
+  { id: 'rosegold', label: '로즈골드', frame: '#EAD0C8', board: '#6B3E48' },
 ];
 
 export const DEFAULT_CHALKBOARD_THEME_ID = 'default';

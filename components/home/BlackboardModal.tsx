@@ -5,6 +5,7 @@ import { CHALKBOARD_THEMES } from '../../constants/chalkboardThemes';
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
 import { ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
+import { useAppLock } from '../../context/AppLockContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { Event } from '../../types/models';
@@ -21,10 +22,16 @@ interface BlackboardModalProps {
 export default function BlackboardModal({ event, onClose, readOnly }: BlackboardModalProps) {
   const { updateEventNote, fontChoiceId, fontSizeChoice, chalkboardThemeId } = useAppData();
   const { showToast } = useToast();
+  const { isLocked } = useAppLock();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [editing, setEditing] = useState(false);
   const [draftNote, setDraftNote] = useState('');
+
+  useEffect(() => {
+    if (isLocked && event) onClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLocked]);
 
   const theme =
     CHALKBOARD_THEMES.find((t) => t.id === chalkboardThemeId) ?? CHALKBOARD_THEMES[0];
@@ -51,15 +58,6 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
       <View style={styles.overlay}>
         <View style={[styles.frame, { backgroundColor: theme.frame }]}>
           <View style={styles.iconRow}>
-            {readOnly ? null : (
-              <Pressable
-                onPress={() => setEditing((prev) => !prev)}
-                accessibilityLabel="준비물 수정"
-                style={styles.iconButton}
-              >
-                <Text style={styles.icon}>✏️</Text>
-              </Pressable>
-            )}
             <Pressable onPress={onClose} accessibilityLabel="닫기" style={styles.iconButton}>
               <Text style={styles.icon}>✕</Text>
             </Pressable>
@@ -103,6 +101,16 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
               </>
             )}
           </View>
+
+          {!readOnly && !editing ? (
+            <Pressable
+              style={styles.editButton}
+              onPress={() => setEditing(true)}
+              accessibilityLabel="일정 수정"
+            >
+              <Text style={styles.editButtonText}>✏️ 일정 수정</Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </Modal>
@@ -113,7 +121,7 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(20, 24, 22, 0.55)',
+      backgroundColor: 'rgba(30, 41, 59, 0.6)',
       alignItems: 'center',
       justifyContent: 'center',
       padding: 28,
@@ -189,6 +197,19 @@ function createStyles(colors: ThemeColors) {
     },
     coupangButtonText: {
       fontSize: 12,
+      fontWeight: '700',
+      color: colors.chalkboardText,
+    },
+    editButton: {
+      alignSelf: 'center',
+      marginTop: 14,
+      paddingHorizontal: 18,
+      paddingVertical: 10,
+      borderRadius: 999,
+      backgroundColor: 'rgba(255,255,255,0.15)',
+    },
+    editButtonText: {
+      fontSize: 14,
       fontWeight: '700',
       color: colors.chalkboardText,
     },

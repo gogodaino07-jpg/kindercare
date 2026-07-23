@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useState } from 'react';
 import { WEEKDAY_KO, toISODate } from '../utils/date';
+import { withExternalAction } from '../utils/externalAction';
 import { describeWeatherCode } from '../utils/weatherCode';
 
 export interface WeatherDay {
@@ -101,7 +102,10 @@ export function useWeeklyWeather() {
     setLoading(true);
     setError(null);
     try {
-      const result = await fetchWeeklyWeather();
+      // The permission prompt / GPS fix briefly blips AppState to
+      // inactive/background on some platforms — suppress the lock/splash
+      // replay that would otherwise fire the instant we get a fix back.
+      const result = await withExternalAction(fetchWeeklyWeather);
       cachedResult = result;
       cachedAt = Date.now();
       setDays(result.days);

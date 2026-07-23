@@ -41,10 +41,12 @@ export default function ChildProfileScreen() {
   const [name, setName] = useState(editingChild?.name ?? '');
   const [age, setAge] = useState<ChildAge | null>(editingChild?.age ?? null);
   const [className, setClassName] = useState(editingChild?.className ?? '');
+  const [attemptedSave, setAttemptedSave] = useState(false);
 
   const nameValid = name.trim().length > 0;
   const classNameValid = className.trim().length > 0;
   const canSave = nameValid && !!age && classNameValid;
+  const showErrors = attemptedSave && !canSave;
 
   const openCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -90,6 +92,7 @@ export default function ChildProfileScreen() {
 
   const handleSave = () => {
     if (!canSave || !age) {
+      setAttemptedSave(true);
       return;
     }
     const input = {
@@ -127,19 +130,21 @@ export default function ChildProfileScreen() {
           <View style={styles.field}>
             <Text style={styles.label}>이름 *</Text>
             <TextInput
-              style={[styles.input, !nameValid && styles.inputInvalid]}
+              style={[styles.input, attemptedSave && !nameValid && styles.inputInvalid]}
               value={name}
               onChangeText={setName}
               maxLength={10}
               placeholder="이름을 입력해주세요"
               placeholderTextColor={colors.textSecondary}
             />
-            {!nameValid ? <Text style={styles.errorText}>이름을 입력해주세요</Text> : null}
+            {attemptedSave && !nameValid ? (
+              <Text style={styles.errorText}>이름을 입력해주세요</Text>
+            ) : null}
           </View>
 
           <View style={styles.field}>
             <Text style={styles.label}>나이 *</Text>
-            <View style={[styles.chipRow, !age && styles.chipRowInvalid]}>
+            <View style={styles.chipRow}>
               {AGE_OPTIONS.map((option) => (
                 <Pressable
                   key={option}
@@ -152,34 +157,35 @@ export default function ChildProfileScreen() {
                 </Pressable>
               ))}
             </View>
-            {!age ? <Text style={styles.errorText}>나이를 선택해주세요</Text> : null}
+            {attemptedSave && !age ? (
+              <Text style={styles.errorText}>나이를 선택해주세요</Text>
+            ) : null}
           </View>
 
           <View style={styles.field}>
             <Text style={styles.label}>반 이름 *</Text>
             <TextInput
-              style={[styles.input, !classNameValid && styles.inputInvalid]}
+              style={[styles.input, attemptedSave && !classNameValid && styles.inputInvalid]}
               value={className}
               onChangeText={setClassName}
               placeholder="예: 병아리반"
               placeholderTextColor={colors.textSecondary}
             />
-            {!classNameValid ? (
+            {attemptedSave && !classNameValid ? (
               <Text style={styles.errorText}>반 이름을 입력해주세요</Text>
             ) : null}
           </View>
         </ScrollView>
 
-        {!canSave ? (
+        {showErrors ? (
           <Text style={styles.summaryErrorText}>
             이름, 나이, 반 이름을 모두 입력해야 저장할 수 있어요
           </Text>
         ) : null}
 
         <Pressable
-          style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
+          style={[styles.saveButton, !canSave && attemptedSave && styles.saveButtonDisabled]}
           onPress={handleSave}
-          disabled={!canSave}
         >
           <Text style={styles.saveButtonText}>저장</Text>
         </Pressable>
@@ -289,12 +295,6 @@ function createStyles(colors: ThemeColors) {
       flexWrap: 'wrap',
       gap: 8,
       borderRadius: 12,
-    },
-    chipRowInvalid: {
-      borderWidth: 1.5,
-      borderColor: colors.tomorrowRed,
-      padding: 6,
-      margin: -6,
     },
     chip: {
       paddingVertical: 10,

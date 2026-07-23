@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
+import { useAppLock } from '../../context/AppLockContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { NotificationCenterItem, useNotificationCenter } from '../../context/NotificationCenterContext';
 import { openCoupangSearch } from '../../utils/coupang';
@@ -22,20 +23,33 @@ function formatTimestamp(iso: string): string {
 
 export default function NotificationCenterModal({ visible, onClose }: NotificationCenterModalProps) {
   const { notifications, clearNotifications } = useNotificationCenter();
+  const { isLocked } = useAppLock();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  useEffect(() => {
+    if (isLocked && visible) onClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLocked]);
 
   return (
     <Modal visible={visible} transparent onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={() => {}}>
+          <View style={styles.dragHandle} />
+
           <View style={styles.headerRow}>
             <Text style={styles.title}>알림 센터</Text>
-            {notifications.length > 0 ? (
-              <Pressable onPress={clearNotifications}>
-                <Text style={styles.clearText}>전체 삭제</Text>
+            <View style={styles.headerActions}>
+              {notifications.length > 0 ? (
+                <Pressable onPress={clearNotifications} hitSlop={8}>
+                  <Text style={styles.clearText}>전체 삭제</Text>
+                </Pressable>
+              ) : null}
+              <Pressable onPress={onClose} accessibilityLabel="닫기" hitSlop={8}>
+                <Text style={styles.closeIcon}>✕</Text>
               </Pressable>
-            ) : null}
+            </View>
           </View>
 
           {notifications.length === 0 ? (
@@ -95,7 +109,15 @@ function createStyles(colors: ThemeColors) {
       borderTopRightRadius: 24,
       padding: 20,
       paddingBottom: 40,
-      maxHeight: '75%',
+      height: '90%',
+    },
+    dragHandle: {
+      alignSelf: 'center',
+      width: 40,
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: colors.border,
+      marginBottom: 14,
     },
     headerRow: {
       flexDirection: 'row',
@@ -104,13 +126,22 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 16,
     },
     title: {
-      fontSize: 15,
+      fontSize: 16,
       fontWeight: '700',
       color: colors.textPrimary,
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
     },
     clearText: {
       fontSize: 12,
       fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    closeIcon: {
+      fontSize: 16,
       color: colors.textSecondary,
     },
     emptyText: {
@@ -120,7 +151,7 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 24,
     },
     list: {
-      flexGrow: 0,
+      flex: 1,
     },
     card: {
       flexDirection: 'row',
