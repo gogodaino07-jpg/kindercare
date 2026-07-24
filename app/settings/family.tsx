@@ -103,11 +103,11 @@ export default function FamilyMembersScreen() {
     setPhoneInput('');
   };
 
+  const phoneValid = /^010-\d{4}-\d{4}$/.test(phoneInput);
+
   const savePhone = () => {
-    if (!phoneModalMemberId) return;
-    const trimmed = phoneInput.trim();
-    if (!trimmed) return;
-    updateMemberPhone(phoneModalMemberId, trimmed);
+    if (!phoneModalMemberId || !phoneValid) return;
+    updateMemberPhone(phoneModalMemberId, phoneInput);
     closePhoneModal();
   };
 
@@ -244,10 +244,10 @@ export default function FamilyMembersScreen() {
             <TextInput
               style={styles.phoneModalInput}
               value={phoneInput}
-              onChangeText={setPhoneInput}
+              onChangeText={(text) => setPhoneInput(formatPhoneNumber(text))}
               placeholder="010-0000-0000"
               placeholderTextColor={colors.textSecondary}
-              keyboardType="phone-pad"
+              keyboardType="number-pad"
               maxLength={13}
               autoFocus
             />
@@ -256,9 +256,9 @@ export default function FamilyMembersScreen() {
                 <Text style={styles.phoneModalCancelText}>취소</Text>
               </Pressable>
               <Pressable
-                style={[styles.phoneModalSaveButton, !phoneInput.trim() && styles.phoneModalSaveButtonDisabled]}
+                style={[styles.phoneModalSaveButton, !phoneValid && styles.phoneModalSaveButtonDisabled]}
                 onPress={savePhone}
-                disabled={!phoneInput.trim()}
+                disabled={!phoneValid}
               >
                 <Text style={styles.phoneModalSaveText}>저장</Text>
               </Pressable>

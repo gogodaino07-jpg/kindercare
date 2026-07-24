@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Text from '../common/AppText';
@@ -28,6 +29,7 @@ export default function EventListSection({
   refreshing,
   onRefresh,
 }: EventListSectionProps) {
+  const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
@@ -45,6 +47,12 @@ export default function EventListSection({
     <View style={styles.container}>
       {tomorrowEvents.length > 0 && (
         <View style={styles.stickyBlock}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>🎒 내일의 준비물 콕콕!</Text>
+            <Pressable onPress={() => router.push('/calendar')} hitSlop={8}>
+              <Text style={styles.sectionLink}>전체보기 ›</Text>
+            </Pressable>
+          </View>
           {tomorrowEvents.map((event) => (
             <EventCard
               key={event.id}
@@ -73,7 +81,7 @@ export default function EventListSection({
               : group.events;
           return (
             <View key={group.date} style={styles.dateGroup}>
-              <Text style={styles.dateGroupHeader}>{formatMD(group.date)}</Text>
+              <Text style={styles.dateGroupHeader}>💌 {formatMD(group.date)} 소식</Text>
               {visibleEvents.map((event) => (
                 <EventCard key={event.id} event={event} onPress={() => onEventPress(event)} />
               ))}
@@ -103,6 +111,22 @@ function createStyles(colors: ThemeColors) {
     },
     stickyBlock: {
       paddingTop: 4,
+    },
+    sectionHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    sectionTitle: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: colors.textPrimary,
+    },
+    sectionLink: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.accent,
     },
     scroll: {
       flex: 1,

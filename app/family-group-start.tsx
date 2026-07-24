@@ -18,12 +18,12 @@ export default function FamilyGroupStartScreen() {
 
   const handleCreateNew = () => {
     regenerateFamilyKey();
-    router.push({ pathname: '/verify-phone', params: { flow: 'create' } });
+    router.push({ pathname: '/google-signin', params: { flow: 'create' } });
   };
 
   const handleJoin = (_code: string) => {
     setShowJoinModal(false);
-    router.push({ pathname: '/verify-phone', params: { flow: 'join' } });
+    router.push({ pathname: '/google-signin', params: { flow: 'join' } });
   };
 
   return (

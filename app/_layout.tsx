@@ -123,7 +123,7 @@ function ThemedNavigation() {
         <Stack.Screen name="splash" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="family-group-start" options={{ headerShown: false }} />
-        <Stack.Screen name="verify-phone" options={{ headerShown: false }} />
+        <Stack.Screen name="google-signin" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding-child-setup" options={{ headerShown: false }} />
         <Stack.Screen name="calendar" options={{ title: '캘린더' }} />
         <Stack.Screen name="add-event" options={{ title: '일정 추가' }} />

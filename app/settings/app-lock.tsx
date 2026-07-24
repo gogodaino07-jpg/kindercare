@@ -1,5 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Text from '../../components/common/AppText';
@@ -26,7 +25,6 @@ type SetupStage =
 export default function AppLockSettingsScreen() {
   const { colors } = useTheme();
   const { showToast } = useToast();
-  const { reset } = useLocalSearchParams<{ reset?: string }>();
   const {
     method,
     hasSecret,
@@ -40,17 +38,6 @@ export default function AppLockSettingsScreen() {
 
   const [stage, setStage] = useState<SetupStage>({ kind: 'idle' });
   const [pinInput, setPinInput] = useState('');
-
-  // Arriving here via the lock screen's '비밀번호/패턴을 잊으셨나요?' ➔
-  // identity-verification flow — jump straight into re-setting the same
-  // lock method the user already had, instead of the plain settings list.
-  useEffect(() => {
-    if (reset === '1') {
-      setStage({ kind: method === 'pattern' ? 'pattern-first' : 'password-first' });
-      setPinInput('');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reset]);
 
   const startSetup = (target: LockMethod) => {
     if (target === 'none') {

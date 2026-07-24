@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { AppState, Image, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
@@ -39,6 +39,16 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
     onClose();
   };
 
+  // Never leave this sheet open behind the app when the user switches away.
+  useEffect(() => {
+    if (!visible) return;
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'background' || nextState === 'inactive') handleClose();
+    });
+    return () => subscription.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
   const mainChildId = children[0]?.id;
 
   // Selected child always leads the list; everyone else follows in
@@ -72,7 +82,7 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
             <Text style={styles.title}>아이 전환·관리</Text>
             <View style={styles.headerActions}>
               <Pressable onPress={() => setEditMode((prev) => !prev)} hitSlop={8}>
-                <Text style={styles.headerActionText}>{editMode ? '완료' : '수정'}</Text>
+                <Text style={styles.headerActionText}>{editMode ? '완료' : '편집'}</Text>
               </Pressable>
               <Pressable onPress={handleClose} accessibilityLabel="닫기" hitSlop={8}>
                 <Text style={styles.closeIcon}>✕</Text>
@@ -93,6 +103,7 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
                 <Pressable
                   style={styles.cardMain}
                   onPress={() => {
+                    if (editMode) return;
                     selectChild(child.id);
                     onClose();
                   }}
@@ -105,31 +116,31 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
                     </View>
                   )}
                   <Text style={styles.cardLabel}>{label}</Text>
-                  <View style={styles.checkSlot}>
-                    {isSelected ? <Text style={styles.checkIcon}>✓</Text> : null}
-                  </View>
+                  {!editMode ? (
+                    <View style={styles.checkSlot}>
+                      {isSelected ? <Text style={styles.checkIcon}>✓</Text> : null}
+                    </View>
+                  ) : null}
                 </Pressable>
                 {editMode ? (
-                  <View style={styles.actionIcons}>
+                  <View style={styles.pillActions}>
                     <Pressable
-                      style={styles.actionIconButton}
+                      style={styles.pillButton}
                       onPress={() => {
                         onClose();
                         router.push({ pathname: '/child-profile', params: { childId: child.id } });
                       }}
                       accessibilityLabel="프로필 수정"
                     >
-                      <Text style={styles.editIcon}>✏️</Text>
+                      <Text style={styles.pillButtonText}>수정</Text>
                     </Pressable>
-                    {isMainChild ? (
-                      <View style={styles.actionIconButton} />
-                    ) : (
+                    {isMainChild ? null : (
                       <Pressable
-                        style={styles.actionIconButton}
+                        style={[styles.pillButton, styles.pillButtonDestructive]}
                         onPress={() => handleDelete(child.id, label)}
                         accessibilityLabel="프로필 삭제"
                       >
-                        <Text style={styles.deleteIcon}>🗑️</Text>
+                        <Text style={styles.pillButtonDestructiveText}>삭제</Text>
                       </Pressable>
                     )}
                   </View>
@@ -243,22 +254,29 @@ function createStyles(colors: ThemeColors) {
       color: colors.accent,
       fontWeight: '900',
     },
-    actionIcons: {
+    pillActions: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 4,
+      gap: 8,
     },
-    actionIconButton: {
-      width: 32,
-      height: 32,
-      alignItems: 'center',
-      justifyContent: 'center',
+    pillButton: {
+      paddingVertical: 7,
+      paddingHorizontal: 14,
+      borderRadius: 999,
+      backgroundColor: '#EEF2F5',
     },
-    editIcon: {
-      fontSize: 16,
+    pillButtonText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.textPrimary,
     },
-    deleteIcon: {
-      fontSize: 16,
+    pillButtonDestructive: {
+      backgroundColor: '#FDECEA',
+    },
+    pillButtonDestructiveText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.tomorrowRed,
     },
     addButton: {
       marginTop: 14,

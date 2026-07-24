@@ -19,6 +19,17 @@ interface EventCardProps {
   onPress: () => void;
 }
 
+// A small rotating pastel palette for the left icon badge, picked
+// deterministically per card so the list reads lively without flickering
+// between re-renders.
+const ICON_PASTELS = ['#EAF4FB', '#FDECEE', '#FFF3E0', '#EAF7EF', '#F1EAFB'];
+
+function pastelFor(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return ICON_PASTELS[hash % ICON_PASTELS.length];
+}
+
 export default function EventCard({
   event,
   dateBadgeText,
@@ -35,20 +46,25 @@ export default function EventCard({
   // of `wrapNote` (that prop only relaxes wrapping for the 준비물 case).
   const subtitle = event.note || event.memo;
   const subtitleIsMemo = !event.note && !!event.memo;
+  const icon = event.icon || '📌';
 
   return (
     <Pressable
       style={[styles.card, highlighted && styles.cardHighlighted]}
       onPress={onPress}
     >
-      {dateBadgeText ? (
-        <View style={[styles.dateBadge, highlighted && styles.dateBadgeHighlighted]}>
-          <Text style={[styles.dateBadgeText, highlighted && styles.dateBadgeTextHighlighted]}>
-            {dateBadgeText}
-          </Text>
-        </View>
-      ) : null}
+      <Text style={styles.watermark}>{icon}</Text>
+      <View style={[styles.iconBadge, { backgroundColor: pastelFor(event.id) }]}>
+        <Text style={styles.iconBadgeText}>{icon}</Text>
+      </View>
       <View style={styles.body}>
+        {dateBadgeText ? (
+          <View style={[styles.dateBadge, highlighted && styles.dateBadgeHighlighted]}>
+            <Text style={[styles.dateBadgeText, highlighted && styles.dateBadgeTextHighlighted]}>
+              {dateBadgeText}
+            </Text>
+          </View>
+        ) : null}
         <Text style={styles.title}>{event.title}</Text>
         {subtitle ? (
           <Text style={styles.note} numberOfLines={subtitleIsMemo ? 1 : wrapNote ? undefined : 1}>
@@ -80,27 +96,48 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 16,
       padding: 14,
       marginBottom: 10,
+      overflow: 'hidden',
     },
     cardHighlighted: {
-      backgroundColor: colors.tomorrowRedBg,
+      borderWidth: 1.5,
+      borderColor: '#F9C4CE',
+    },
+    watermark: {
+      position: 'absolute',
+      right: -6,
+      bottom: -14,
+      fontSize: 56,
+      opacity: 0.06,
+    },
+    iconBadge: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    iconBadgeText: {
+      fontSize: 18,
     },
     dateBadge: {
+      alignSelf: 'flex-start',
       backgroundColor: '#EEF2F5',
       borderRadius: 999,
       paddingHorizontal: 10,
-      paddingVertical: 5,
-      marginRight: 12,
+      paddingVertical: 3,
+      marginBottom: 4,
     },
     dateBadgeHighlighted: {
-      backgroundColor: colors.tomorrowRed,
+      backgroundColor: '#FFE0E6',
     },
     dateBadgeText: {
-      fontSize: 12,
-      fontWeight: '600',
+      fontSize: 11,
+      fontWeight: '700',
       color: colors.textSecondary,
     },
     dateBadgeTextHighlighted: {
-      color: '#FFFFFF',
+      color: '#E85D75',
     },
     body: {
       flex: 1,

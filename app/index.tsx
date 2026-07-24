@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AdPopupModal from '../components/home/AdPopupModal';
 import BlackboardModal from '../components/home/BlackboardModal';
@@ -54,7 +54,7 @@ export default function HomeScreen() {
     const timer = setTimeout(() => {
       adShownRef.current = true;
       setAdPopupVisible(true);
-    }, 1800);
+    }, 1500);
     return () => clearTimeout(timer);
   }, [isLocked]);
 
@@ -74,19 +74,21 @@ export default function HomeScreen() {
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <HomeHeader
-          selectedChild={selectedChild}
-          onPressChild={() => setSwitcherOpen(true)}
-          onPressNotifications={() => setNotificationCenterOpen(true)}
-          hasUnreadNotifications={hasUnread}
-        />
-        <WeeklyWeatherStrip
-          days={weather.days}
-          loading={weather.loading}
-          error={weather.error}
-          retry={weather.retry}
-          usingFallbackLocation={weather.usingFallbackLocation}
-        />
+        <View style={styles.topCurve}>
+          <HomeHeader
+            selectedChild={selectedChild}
+            onPressChild={() => setSwitcherOpen(true)}
+            onPressNotifications={() => setNotificationCenterOpen(true)}
+            hasUnreadNotifications={hasUnread}
+          />
+          <WeeklyWeatherStrip
+            days={weather.days}
+            loading={weather.loading}
+            error={weather.error}
+            retry={weather.retry}
+            usingFallbackLocation={weather.usingFallbackLocation}
+          />
+        </View>
         {isEmpty ? (
           <ScrollView
             contentContainerStyle={styles.emptyScrollContent}
@@ -119,6 +121,12 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+  },
+  topCurve: {
+    backgroundColor: '#FFFFFF',
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    paddingBottom: 6,
   },
   emptyScrollContent: {
     flexGrow: 1,

@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { BackHandler, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import BlackboardModal from '../components/home/BlackboardModal';
 import Text from '../components/common/AppText';
 import ScreenBackground from '../components/ScreenBackground';
@@ -12,15 +12,17 @@ import { useThemeColors } from '../context/ThemeContext';
 import { Event } from '../types/models';
 import { formatMD, isPast, parseISODate } from '../utils/date';
 
-function monthLabel(isoDate: string): string {
+function dateGroupLabel(isoDate: string): string {
   const date = parseISODate(isoDate);
-  return `${date.getFullYear()}년 ${date.getMonth() + 1}월`;
+  const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 (${weekday})`;
 }
 
 export default function PastEventsScreen() {
   const { events, selectedChild, deleteEvents } = useAppData();
   const { showAlert } = useAlert();
   const colors = useThemeColors();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
@@ -35,13 +37,14 @@ export default function PastEventsScreen() {
     [events, selectedChild]
   );
 
+  // Grouped by exact date (not month) and kept in the same date-descending
+  // order as `pastEvents` above.
   const groups = useMemo(() => {
     const map = new Map<string, Event[]>();
     for (const e of pastEvents) {
-      const key = monthLabel(e.date);
-      const arr = map.get(key) ?? [];
+      const arr = map.get(e.date) ?? [];
       arr.push(e);
-      map.set(key, arr);
+      map.set(e.date, arr);
     }
     return Array.from(map.entries());
   }, [pastEvents]);
@@ -122,19 +125,29 @@ export default function PastEventsScreen() {
                 </Pressable>
               )
             : undefined,
+          headerRight: editMode
+            ? () => (
+                <Pressable onPress={exitEditMode} hitSlop={8}>
+                  <Text style={styles.headerCancelText}>취소</Text>
+                </Pressable>
+              )
+            : undefined,
         }}
       />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView
-          contentContainerStyle={[styles.content, editMode && styles.contentEditMode]}
+          contentContainerStyle={[
+            styles.content,
+            editMode && { paddingBottom: 96 + insets.bottom },
+          ]}
         >
           {groups.length === 0 ? (
             <Text style={styles.emptyText}>지난 일정이 없어요</Text>
           ) : (
-            groups.map(([month, monthEvents], groupIdx) => (
-              <View key={month} style={styles.monthGroup}>
-                <View style={styles.monthHeaderRow}>
-                  <Text style={styles.monthLabel}>{month}</Text>
+            groups.map(([date, dateEvents], groupIdx) => (
+              <View key={date} style={styles.dateGroup}>
+                <View style={styles.dateHeaderRow}>
+                  <Text style={styles.dateLabel}>{dateGroupLabel(date)}</Text>
                   {groupIdx === 0 ? (
                     <Pressable onPress={handleHeaderButtonPress} hitSlop={8}>
                       <Text style={styles.selectButtonText}>
@@ -143,7 +156,7 @@ export default function PastEventsScreen() {
                     </Pressable>
                   ) : null}
                 </View>
-                {monthEvents.map((event) => {
+                {dateEvents.map((event) => {
                   const selected = selectedIds.has(event.id);
                   return (
                     <Pressable
@@ -173,7 +186,7 @@ export default function PastEventsScreen() {
       </SafeAreaView>
 
       {editMode ? (
-        <View style={styles.bottomBarWrap}>
+        <View style={[styles.bottomBarWrap, { paddingBottom: 16 + insets.bottom }]}>
           <Pressable
             style={[styles.bottomBar, selectedIds.size === 0 && styles.bottomBarDisabled]}
             onPress={handleDeleteSelected}
@@ -197,27 +210,32 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     safeArea: { flex: 1 },
     content: { padding: 20 },
-    contentEditMode: { paddingBottom: 96 },
     headerBackIcon: {
       fontSize: 26,
       fontWeight: '700',
       color: '#1E293B',
       marginLeft: 4,
     },
+    headerCancelText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#1E293B',
+      marginRight: 4,
+    },
     emptyText: {
       textAlign: 'center',
       color: colors.textSecondary,
       marginTop: 40,
     },
-    monthGroup: { marginBottom: 20 },
-    monthHeaderRow: {
+    dateGroup: { marginBottom: 18 },
+    dateHeaderRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       marginBottom: 10,
     },
-    monthLabel: {
-      fontSize: 14,
+    dateLabel: {
+      fontSize: 13,
       fontWeight: '700',
       color: colors.textSecondary,
     },
@@ -278,7 +296,6 @@ function createStyles(colors: ThemeColors) {
       right: 0,
       bottom: 0,
       paddingHorizontal: 20,
-      paddingBottom: 16,
       paddingTop: 8,
       backgroundColor: colors.skyBackground,
     },

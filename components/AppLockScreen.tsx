@@ -1,8 +1,6 @@
-import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import FingerprintIcon from './common/FingerprintIcon';
-import IdentityVerifyModal from './settings/IdentityVerifyModal';
 import PatternGrid from './settings/PatternGrid';
 import { serializePattern, useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
@@ -20,7 +18,6 @@ interface AppLockScreenProps {
 }
 
 export default function AppLockScreen({ autoBiometricEnabled = true }: AppLockScreenProps) {
-  const router = useRouter();
   const colors = useThemeColors();
   const {
     method,
@@ -34,16 +31,7 @@ export default function AppLockScreen({ autoBiometricEnabled = true }: AppLockSc
   } = useAppLock();
   const [input, setInput] = useState('');
   const [error, setError] = useState(false);
-  const [verifyModalVisible, setVerifyModalVisible] = useState(false);
   const canUseBiometric = biometricEnabled && biometricAvailable;
-
-  const handleForgotPress = () => setVerifyModalVisible(true);
-
-  const handleVerified = () => {
-    setVerifyModalVisible(false);
-    unlock();
-    router.push({ pathname: '/settings/app-lock', params: { reset: '1' } });
-  };
 
   useEffect(() => {
     if (isLocked && canUseBiometric && autoBiometricEnabled) {
@@ -163,19 +151,7 @@ export default function AppLockScreen({ autoBiometricEnabled = true }: AppLockSc
             ) : null}
           </>
         )}
-
-        <Pressable style={styles.forgotButton} onPress={handleForgotPress}>
-          <Text style={[styles.forgotButtonText, { color: colors.textSecondary }]}>
-            {method === 'password' ? '비밀번호를 잊으셨나요?' : '패턴을 잊으셨나요?'}
-          </Text>
-        </Pressable>
       </View>
-
-      <IdentityVerifyModal
-        visible={verifyModalVisible}
-        onClose={() => setVerifyModalVisible(false)}
-        onVerified={handleVerified}
-      />
     </View>
   );
 }
@@ -242,15 +218,5 @@ const styles = StyleSheet.create({
   bioButtonText: {
     fontSize: 15,
     fontWeight: '700',
-  },
-  forgotButton: {
-    marginTop: 18,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  forgotButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
   },
 });

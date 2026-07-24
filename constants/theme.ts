@@ -21,7 +21,7 @@ export interface ThemeColors {
 }
 
 export const LIGHT_COLORS: ThemeColors = {
-  skyBackground: '#EAF4FB',
+  skyBackground: '#F3F5F9',
   cloud: '#FFFFFF',
   cardWhite: '#FFFFFF',
   textPrimary: '#2B3A45',

@@ -1,7 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
 import Text from '../components/common/AppText';
@@ -31,6 +31,7 @@ export default function AddEventScreen() {
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
   const [memo, setMemo] = useState('');
+  const [notifyDayBefore, setNotifyDayBefore] = useState(true);
   const [titleError, setTitleError] = useState(false);
 
   const handleSave = () => {
@@ -44,6 +45,7 @@ export default function AddEventScreen() {
       title: title.trim(),
       note: note.trim() || undefined,
       memo: memo.trim() || undefined,
+      notifyDayBefore,
       childId: selectedChild.id,
       source: 'manual',
       icon: '📌',
@@ -129,6 +131,16 @@ export default function AddEventScreen() {
             placeholderTextColor={colors.textSecondary}
             multiline
           />
+
+          <View style={styles.notifyRow}>
+            <Text style={styles.notifyLabel}>🔔 등원 전날 저녁 8시 알림 받기</Text>
+            <Switch
+              value={notifyDayBefore}
+              onValueChange={setNotifyDayBefore}
+              trackColor={{ true: colors.accent, false: colors.border }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
         </ScrollView>
 
         <Pressable style={styles.saveButton} onPress={handleSave}>
@@ -188,6 +200,24 @@ function createStyles(colors: ThemeColors) {
     multilineInput: {
       minHeight: 80,
       textAlignVertical: 'top',
+    },
+    notifyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.cardWhite,
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      marginTop: 20,
+      ...SHADOW,
+    },
+    notifyLabel: {
+      flex: 1,
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginRight: 12,
     },
     errorText: {
       color: colors.tomorrowRed,

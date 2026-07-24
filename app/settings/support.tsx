@@ -67,29 +67,36 @@ export default function SupportScreen() {
             />
             <Text style={styles.atSign}>@</Text>
             {domainOption === 'custom' ? (
-              <TextInput
-                style={[styles.input, styles.emailDomainInput]}
-                value={customDomain}
-                onChangeText={setCustomDomain}
-                placeholder="도메인 입력"
-                placeholderTextColor={colors.textSecondary}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+              <View style={[styles.input, styles.emailDomainInput, styles.domainCustomRow]}>
+                <TextInput
+                  style={styles.domainCustomInput}
+                  value={customDomain}
+                  onChangeText={setCustomDomain}
+                  placeholder="도메인 입력"
+                  placeholderTextColor={colors.textSecondary}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <Pressable
+                  onPress={() => setDomainMenuOpen(true)}
+                  accessibilityLabel="도메인 선택"
+                  hitSlop={8}
+                >
+                  <Text style={styles.chevron}>⌄</Text>
+                </Pressable>
+              </View>
             ) : (
-              <View style={[styles.input, styles.emailDomainInput, styles.domainDisplay]}>
+              <Pressable
+                style={[styles.input, styles.emailDomainInput, styles.domainDisplay]}
+                onPress={() => setDomainMenuOpen(true)}
+                accessibilityLabel="도메인 선택"
+              >
                 <Text style={styles.domainDisplayText} numberOfLines={1}>
                   {domainOption}
                 </Text>
-              </View>
+                <Text style={styles.chevron}>⌄</Text>
+              </Pressable>
             )}
-            <Pressable
-              style={styles.domainMenuButton}
-              onPress={() => setDomainMenuOpen(true)}
-              accessibilityLabel="도메인 선택"
-            >
-              <Text style={styles.chevron}>▾</Text>
-            </Pressable>
           </View>
 
           <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>문의 내용</Text>
@@ -191,22 +198,31 @@ function createStyles(colors: ThemeColors) {
       flex: 1,
     },
     domainDisplay: {
-      justifyContent: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
     },
     domainDisplayText: {
+      flexShrink: 1,
       fontSize: 14,
       color: colors.textPrimary,
     },
-    domainMenuButton: {
-      width: 32,
-      height: 32,
+    domainCustomRow: {
+      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      marginLeft: 4,
+      justifyContent: 'space-between',
+    },
+    domainCustomInput: {
+      flex: 1,
+      fontSize: 14,
+      color: colors.textPrimary,
+      padding: 0,
     },
     chevron: {
       fontSize: 14,
+      fontWeight: '700',
       color: colors.textSecondary,
+      marginLeft: 6,
     },
     contentBox: {
       backgroundColor: '#F1F3F5',

@@ -22,10 +22,29 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { mode, colors, setMode } = useTheme();
   const { showAlert } = useAlert();
-  const { resetAllData } = useAppData();
+  const { resetAllData, googleAccount, signOutGoogle } = useAppData();
   const { resetLock } = useAppLock();
   const { clearNotifications } = useNotificationCenter();
   const [childManagerOpen, setChildManagerOpen] = useState(false);
+
+  const handleLogout = () => {
+    showAlert({
+      title: '로그아웃',
+      message: '구글 계정 연동을 해제할까요?',
+      buttons: [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '로그아웃',
+          style: 'destructive',
+          onPress: () => {
+            signOutGoogle();
+            router.dismissAll();
+            router.replace('/onboarding');
+          },
+        },
+      ],
+    });
+  };
 
   const handleWithdraw = () => {
     showAlert({
@@ -53,6 +72,17 @@ export default function SettingsScreen() {
   };
 
   const groups: { title: string; rows: SettingsRow[] }[] = [
+    {
+      title: '계정',
+      rows: [
+        {
+          label: googleAccount ? `🔵 ${googleAccount.name}` : '연동된 계정 없음',
+          subtitle: googleAccount?.email,
+          onPress: () => {},
+        },
+        { label: '로그아웃', onPress: handleLogout },
+      ],
+    },
     {
       title: '아이',
       rows: [

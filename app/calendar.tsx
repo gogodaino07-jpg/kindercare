@@ -254,7 +254,7 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       justifyContent: 'center',
       gap: 20,
-      marginTop: 6,
+      marginTop: 0,
       marginBottom: 8,
     },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },

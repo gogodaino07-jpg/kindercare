@@ -15,7 +15,7 @@ import {
   seedFamilyMembers,
   seedNotificationSettings,
 } from '../data/seed';
-import { Child, Event, FamilyMember, NotificationSettings } from '../types/models';
+import { Child, Event, FamilyMember, GoogleAccount, NotificationSettings } from '../types/models';
 import { toISODate } from '../utils/date';
 import { withExternalAction } from '../utils/externalAction';
 import { scheduleEventNotifications } from '../utils/notifications';
@@ -23,6 +23,7 @@ import { scheduleEventNotifications } from '../utils/notifications';
 const HAS_ONBOARDED_KEY = 'kindercare_has_onboarded';
 const FONT_SIZE_KEY = 'kindercare_font_size';
 const EVENTS_KEY = 'kindercare_events';
+const GOOGLE_ACCOUNT_KEY = 'kindercare_google_account';
 
 interface AppDataContextValue {
   // Onboarding / family group
@@ -73,6 +74,11 @@ interface AppDataContextValue {
 
   // Account deletion
   resetAllData: () => Promise<void>;
+
+  // Google sign-in (mocked — real OAuth is deferred to a future contract)
+  googleAccount: GoogleAccount | null;
+  signInWithGoogle: () => Promise<GoogleAccount>;
+  signOutGoogle: () => void;
 }
 
 const AppDataContext = createContext<AppDataContextValue | undefined>(undefined);
@@ -99,6 +105,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const [fontSizeChoice, setFontSizeChoiceState] = useState<FontSizeChoice>(DEFAULT_FONT_SIZE);
   const [chalkboardThemeId, setChalkboardThemeId] = useState(DEFAULT_CHALKBOARD_THEME_ID);
   const [adDismissedDate, setAdDismissedDate] = useState<string | null>(null);
+  const [googleAccount, setGoogleAccount] = useState<GoogleAccount | null>(null);
 
   // Restore the "already onboarded" / font-size choice / registered events
   // made in a previous session so relaunching (or force-quitting) the app
@@ -109,8 +116,9 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       AsyncStorage.getItem(HAS_ONBOARDED_KEY),
       AsyncStorage.getItem(FONT_SIZE_KEY),
       AsyncStorage.getItem(EVENTS_KEY),
+      AsyncStorage.getItem(GOOGLE_ACCOUNT_KEY),
     ])
-      .then(([storedOnboarded, storedFontSize, storedEvents]) => {
+      .then(([storedOnboarded, storedFontSize, storedEvents, storedGoogleAccount]) => {
         if (storedOnboarded === 'true') setHasOnboarded(true);
         if (
           storedFontSize &&
@@ -124,6 +132,13 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
             if (Array.isArray(parsed)) setEvents(parsed);
           } catch {
             // Ignore corrupt storage — keep the seeded events.
+          }
+        }
+        if (storedGoogleAccount) {
+          try {
+            setGoogleAccount(JSON.parse(storedGoogleAccount));
+          } catch {
+            // Ignore corrupt storage.
           }
         }
       })
@@ -230,11 +245,33 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setAdDismissedDate(toISODate(new Date()));
   };
 
+  // Mocked Google OAuth handshake — real Google Sign-In requires a
+  // configured OAuth client (Cloud Console + SHA-1/bundle ID), deferred to a
+  // future contract. Same simulated-integration convention as the app's
+  // other mocked flows (AI analysis, Coupang, etc).
+  const signInWithGoogle = async (): Promise<GoogleAccount> => {
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    const account: GoogleAccount = { email: 'parent.kindercare@gmail.com', name: '보호자' };
+    setGoogleAccount(account);
+    AsyncStorage.setItem(GOOGLE_ACCOUNT_KEY, JSON.stringify(account)).catch(() => {});
+    return account;
+  };
+
+  const signOutGoogle = () => {
+    setGoogleAccount(null);
+    AsyncStorage.removeItem(GOOGLE_ACCOUNT_KEY).catch(() => {});
+  };
+
   // 회원탈퇴: wipes every piece of this app's persisted state and puts the
   // in-memory data back to the same shape a fresh install would have, then
   // the caller navigates back to onboarding.
   const resetAllData = async () => {
-    await AsyncStorage.multiRemove([HAS_ONBOARDED_KEY, FONT_SIZE_KEY, EVENTS_KEY]).catch(() => {});
+    await AsyncStorage.multiRemove([
+      HAS_ONBOARDED_KEY,
+      FONT_SIZE_KEY,
+      EVENTS_KEY,
+      GOOGLE_ACCOUNT_KEY,
+    ]).catch(() => {});
     setHasOnboarded(false);
     setFamilyKey(generateFamilyKey());
     setFamilyMembers(seedFamilyMembers);
@@ -246,6 +283,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setFontSizeChoiceState(DEFAULT_FONT_SIZE);
     setChalkboardThemeId(DEFAULT_CHALKBOARD_THEME_ID);
     setAdDismissedDate(null);
+    setGoogleAccount(null);
   };
 
   // Whenever the event list or the notification schedule preferences change,
@@ -301,6 +339,10 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     dismissAdForToday,
 
     resetAllData,
+
+    googleAccount,
+    signInWithGoogle,
+    signOutGoogle,
   };
 
   return <AppDataContext.Provider value={value}>{reactChildren}</AppDataContext.Provider>;

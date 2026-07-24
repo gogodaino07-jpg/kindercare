@@ -12,7 +12,7 @@ export default function UploadButton() {
 
   return (
     <Pressable style={styles.button} onPress={() => router.push('/upload')}>
-      <Text style={styles.buttonText}>가정통신문 업로드</Text>
+      <Text style={styles.buttonText}>📤 우리 아이 가정통신문 올리기</Text>
     </Pressable>
   );
 }
@@ -24,14 +24,14 @@ function createStyles(colors: ThemeColors) {
       marginTop: 8,
       marginBottom: 16,
       backgroundColor: colors.accent,
-      borderRadius: 16,
+      borderRadius: 999,
       paddingVertical: 16,
       alignItems: 'center',
       ...SHADOW,
     },
     buttonText: {
       color: '#FFFFFF',
-      fontSize: 16,
+      fontSize: 15,
       fontWeight: '700',
     },
   });

@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { AppState, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAppLock } from '../../context/AppLockContext';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -35,6 +35,17 @@ export default function NotificationCenterModal({ visible, onClose }: Notificati
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLocked]);
 
+  // Never leave this popover open behind the app when the user switches
+  // away — closes on both 'background' and 'inactive' (iOS briefly reports
+  // 'inactive' for the app-switcher/control-center transition too).
+  useEffect(() => {
+    if (!visible) return;
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'background' || nextState === 'inactive') onClose();
+    });
+    return () => subscription.remove();
+  }, [visible, onClose]);
+
   // Tapping a notification immediately removes it and jumps straight to the
   // related schedule on the calendar — there's no separate "read" resting
   // state to preserve once the user has acted on it.
@@ -65,7 +76,7 @@ export default function NotificationCenterModal({ visible, onClose }: Notificati
           </View>
 
           {notifications.length === 0 ? (
-            <Text style={styles.emptyText}>아직 받은 알림이 없어요</Text>
+            <Text style={styles.emptyText}>모든 유치원 소식을 확인했어요! 🐣</Text>
           ) : (
             <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
               {notifications.map((item) => (
@@ -132,7 +143,8 @@ function createStyles(colors: ThemeColors) {
     sheet: {
       width: 380,
       maxWidth: '92%',
-      maxHeight: '78%',
+      height: '68%',
+      maxHeight: '70%',
       backgroundColor: colors.skyBackground,
       borderRadius: 20,
       padding: 18,

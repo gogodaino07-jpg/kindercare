@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { WeatherDay } from '../../hooks/useWeeklyWeather';
+import { describeGuideTip } from '../../utils/weatherCode';
 import WeatherDayCard from './WeatherDayCard';
 import Text from '../common/AppText';
 
@@ -23,6 +24,7 @@ export default function WeeklyWeatherStrip({
 }: WeeklyWeatherStripProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const todayLabel = days?.find((d) => d.isToday)?.label;
 
   if (loading && !days) {
     return (
@@ -63,6 +65,11 @@ export default function WeeklyWeatherStrip({
           위치 권한이 없어 서울 기준으로 보여드리고 있어요
         </Text>
       ) : null}
+      {todayLabel ? (
+        <View style={styles.tipBadge}>
+          <Text style={styles.tipBadgeText}>{describeGuideTip(todayLabel)}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -82,6 +89,20 @@ function createStyles(colors: ThemeColors) {
       color: colors.textSecondary,
       marginLeft: 20,
       marginBottom: 6,
+    },
+    tipBadge: {
+      alignSelf: 'flex-start',
+      backgroundColor: '#EAF4FB',
+      borderRadius: 999,
+      marginHorizontal: 20,
+      marginBottom: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    tipBadgeText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.accent,
     },
     statusContainer: {
       height: 88,

@@ -23,27 +23,37 @@ export default function HomeHeader({
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const childLabel = selectedChild
-    ? [selectedChild.name, `${selectedChild.age}세`, selectedChild.className]
-        .filter(Boolean)
-        .join(' · ')
+  const nameLine = selectedChild
+    ? [selectedChild.name, `${selectedChild.age}세`].filter(Boolean).join(' · ')
     : '등록된 아이가 없어요';
 
   return (
     <View style={styles.container}>
       <View style={styles.centerArea}>
         <Pressable style={styles.childButton} onPress={onPressChild}>
-          {selectedChild?.photoUri ? (
-            <Image source={{ uri: selectedChild.photoUri }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarIcon}>🧒</Text>
+          <View style={styles.avatarSlot}>
+            {selectedChild?.photoUri ? (
+              <Image source={{ uri: selectedChild.photoUri }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarIcon}>🐥</Text>
+              </View>
+            )}
+            <View style={styles.onlineDot} />
+          </View>
+          <View style={styles.labelColumn}>
+            <View style={styles.nameLineRow}>
+              <Text style={styles.nameLineText} numberOfLines={1}>
+                {nameLine}
+              </Text>
+              <Text style={styles.chevron}>∨</Text>
             </View>
-          )}
-          <Text style={styles.childLabel} numberOfLines={1}>
-            {childLabel}
-          </Text>
-          <Text style={styles.chevron}>▾</Text>
+            {selectedChild?.className ? (
+              <Text style={styles.classLineText} numberOfLines={1}>
+                {selectedChild.className}
+              </Text>
+            ) : null}
+          </View>
         </Pressable>
       </View>
       <View style={styles.rightActions}>
@@ -74,6 +84,8 @@ export default function HomeHeader({
   );
 }
 
+const ICON_BUTTON_SIZE = 44;
+
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
@@ -90,41 +102,65 @@ function createStyles(colors: ThemeColors) {
     childButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
       backgroundColor: colors.cardWhite,
-      paddingVertical: 14,
-      paddingHorizontal: 22,
-      borderRadius: 20,
+      height: ICON_BUTTON_SIZE,
+      paddingHorizontal: 12,
+      borderRadius: ICON_BUTTON_SIZE / 2,
+      alignSelf: 'flex-start',
+      maxWidth: '100%',
       ...SHADOW,
     },
-    avatar: {
-      width: 34,
-      height: 34,
-      borderRadius: 17,
+    avatarSlot: {
       marginRight: 10,
     },
+    avatar: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+    },
     avatarPlaceholder: {
-      width: 34,
-      height: 34,
-      borderRadius: 17,
-      backgroundColor: '#EEF2F5',
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: '#FFF3E0',
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 10,
     },
     avatarIcon: {
       fontSize: 18,
     },
-    childLabel: {
+    onlineDot: {
+      position: 'absolute',
+      bottom: -1,
+      right: -1,
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: '#4CAF6D',
+      borderWidth: 2,
+      borderColor: colors.cardWhite,
+    },
+    labelColumn: {
       flexShrink: 1,
-      textAlign: 'center',
-      fontSize: 16,
-      fontWeight: '600',
+    },
+    nameLineRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    nameLineText: {
+      flexShrink: 1,
+      fontSize: 15,
+      fontWeight: '700',
       color: colors.textPrimary,
-      marginRight: 6,
+      marginRight: 4,
+    },
+    classLineText: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      marginTop: 1,
     },
     chevron: {
-      fontSize: 12,
+      fontSize: 11,
       color: colors.textSecondary,
     },
     rightActions: {
@@ -132,9 +168,9 @@ function createStyles(colors: ThemeColors) {
       gap: 8,
     },
     iconButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: ICON_BUTTON_SIZE,
+      height: ICON_BUTTON_SIZE,
+      borderRadius: ICON_BUTTON_SIZE / 2,
       backgroundColor: colors.cardWhite,
       alignItems: 'center',
       justifyContent: 'center',

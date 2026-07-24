@@ -55,7 +55,7 @@ export async function scheduleEventNotifications(
     const dayBefore = new Date(eventDate);
     dayBefore.setDate(dayBefore.getDate() - 1);
     const dayBeforeTrigger = withTime(dayBefore, settings.dayBeforeTime);
-    if (dayBeforeTrigger.getTime() > Date.now()) {
+    if (event.notifyDayBefore !== false && dayBeforeTrigger.getTime() > Date.now()) {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: `내일 일정: ${event.title}`,

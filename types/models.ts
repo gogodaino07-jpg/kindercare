@@ -17,6 +17,8 @@ export interface Event {
   note?: string;
   /** 메모 — free-form notes, kept separate from 준비물. */
   memo?: string;
+  /** 등원 전날 저녁 알림 수신 여부 — defaults to true when unset. */
+  notifyDayBefore?: boolean;
   childId: string;
   /** 'ai' = 가정통신문 업로드 → AI 확인 화면에서 저장된 일정, 'manual' = 캘린더에서 직접 추가 */
   source: 'ai' | 'manual';
@@ -50,4 +52,9 @@ export interface UploadedDoc {
   uri: string;
   kind: 'image' | 'file';
   name?: string;
+}
+
+export interface GoogleAccount {
+  email: string;
+  name: string;
 }
