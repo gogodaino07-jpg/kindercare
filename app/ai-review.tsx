@@ -11,6 +11,7 @@ import { useThemeColors } from '../context/ThemeContext';
 import { generateMockAIEvents } from '../data/mockAIResult';
 import { Event } from '../types/models';
 import { formatMD, parseISODate, startOfDay } from '../utils/date';
+import { takePendingAnalysisResult } from '../utils/pendingAnalysisResult';
 
 interface DraftEvent extends Omit<Event, 'id'> {
   localId: string;
@@ -33,9 +34,14 @@ export default function AIReviewScreen() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const [draftEvents, setDraftEvents] = useState<DraftEvent[]>(() =>
-    generateMockAIEvents(selectedChild).map((e, i) => ({ ...e, localId: `draft-${i}` }))
-  );
+  const [draftEvents, setDraftEvents] = useState<DraftEvent[]>(() => {
+    // Real Gemini analysis result handed off from upload.tsx takes priority;
+    // only fall back to the mock set for direct/testing navigation to this
+    // screen without going through an actual upload+analyze first.
+    const pending = takePendingAnalysisResult();
+    const source = pending ?? generateMockAIEvents(selectedChild);
+    return source.map((e, i) => ({ ...e, localId: `draft-${i}` }));
+  });
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
 

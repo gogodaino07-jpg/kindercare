@@ -2,7 +2,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
 import Text from '../components/common/AppText';
@@ -11,13 +11,15 @@ import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
-import { generateMockAIEvents, isSimilarEvent } from '../data/mockAIResult';
-import { UploadedDoc } from '../types/models';
+import { isSimilarEvent } from '../data/mockAIResult';
+import { Event, UploadedDoc } from '../types/models';
 import {
   DAILY_ANALYSIS_LIMIT,
   consumeAnalysisUse,
   getRemainingAnalysisCount,
 } from '../utils/aiUsageLimit';
+import { GeminiAnalysisError, analyzeDocumentsWithGemini } from '../utils/geminiAnalysis';
+import { setPendingAnalysisResult } from '../utils/pendingAnalysisResult';
 
 const MAX_DOCS = 5;
 
@@ -30,6 +32,7 @@ export default function UploadScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [docs, setDocs] = useState<UploadedDoc[]>([]);
   const [remainingAnalyses, setRemainingAnalyses] = useState(DAILY_ANALYSIS_LIMIT);
+  const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
     getRemainingAnalysisCount().then(setRemainingAnalyses);
@@ -109,7 +112,8 @@ export default function UploadScreen() {
     setDocs((prev) => prev.filter((d) => d.id !== id));
   };
 
-  const goToAnalysis = () => {
+  const goToAnalysis = (result: Omit<Event, 'id'>[]) => {
+    setPendingAnalysisResult(result);
     showToast('업로드가 완료되었습니다.');
     router.push('/ai-review');
   };
@@ -125,23 +129,39 @@ export default function UploadScreen() {
       );
       return;
     }
+
+    setAnalyzing(true);
+    let result: Awaited<ReturnType<typeof analyzeDocumentsWithGemini>>;
+    try {
+      result = await analyzeDocumentsWithGemini(docs, selectedChild);
+    } catch (err) {
+      const message =
+        err instanceof GeminiAnalysisError
+          ? err.message
+          : '문서 분석 중 문제가 발생했어요. 다시 시도해주세요.';
+      Alert.alert('분석 실패', message);
+      setAnalyzing(false);
+      return;
+    }
+    setAnalyzing(false);
+
+    // Only consume today's free-use count once analysis actually succeeded —
+    // a failed request shouldn't burn the user's quota.
     setRemainingAnalyses(await consumeAnalysisUse());
 
-    const mockResult = generateMockAIEvents(selectedChild);
-    const hasDuplicate = mockResult.some((mockEvent) =>
+    const hasDuplicate = result.some((newEvent) =>
       events.some(
-        (existing) =>
-          existing.childId === mockEvent.childId && isSimilarEvent(existing, mockEvent)
+        (existing) => existing.childId === newEvent.childId && isSimilarEvent(existing, newEvent)
       )
     );
     if (hasDuplicate) {
       Alert.alert('비슷한 일정이 이미 있어요', '그래도 계속 진행할까요?', [
         { text: '취소', style: 'cancel' },
-        { text: '계속 진행', onPress: goToAnalysis },
+        { text: '계속 진행', onPress: () => goToAnalysis(result) },
       ]);
       return;
     }
-    goToAnalysis();
+    goToAnalysis(result);
   };
 
   return (
@@ -192,8 +212,19 @@ export default function UploadScreen() {
         <Text style={styles.usageText}>
           오늘 남은 횟수: {remainingAnalyses}/{DAILY_ANALYSIS_LIMIT}회
         </Text>
-        <Pressable style={styles.analyzeButton} onPress={handleAnalyze}>
-          <Text style={styles.analyzeButtonText}>AI로 내용 분석하기</Text>
+        <Pressable
+          style={[styles.analyzeButton, analyzing && styles.analyzeButtonDisabled]}
+          onPress={handleAnalyze}
+          disabled={analyzing}
+        >
+          {analyzing ? (
+            <View style={styles.analyzeLoadingRow}>
+              <ActivityIndicator color="#FFFFFF" />
+              <Text style={styles.analyzeButtonText}>문서를 분석하고 있어요…</Text>
+            </View>
+          ) : (
+            <Text style={styles.analyzeButtonText}>AI로 내용 분석하기</Text>
+          )}
         </Pressable>
       </SafeAreaView>
     </ScreenBackground>
@@ -278,6 +309,14 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 16,
       alignItems: 'center',
       ...SHADOW,
+    },
+    analyzeButtonDisabled: {
+      opacity: 0.7,
+    },
+    analyzeLoadingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
     },
     analyzeButtonText: {
       color: '#FFFFFF',
