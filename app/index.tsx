@@ -43,18 +43,19 @@ export default function HomeScreen() {
   // are reflected immediately instead of showing a stale snapshot.
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
 
-  // The ad popup shows exactly once per full app launch: ~1.8s after Home is
-  // settled and unlocked (not immediately on entry). If the app is still
-  // behind the lock screen when Home mounts, wait for unlock before starting
-  // that delay — it must never be able to render on top of / behind the lock
-  // screen. It deliberately does NOT re-trigger on every background→foreground
-  // resume (Home stays mounted across those), only on a genuine fresh launch.
+  // The ad popup shows exactly once per full app launch: exactly 1s after
+  // Home is settled and unlocked (not immediately on entry). If the app is
+  // still behind the lock screen when Home mounts, wait for unlock before
+  // starting that delay — it must never be able to render on top of / behind
+  // the lock screen. It deliberately does NOT re-trigger on every
+  // background→foreground resume (Home stays mounted across those), only on
+  // a genuine fresh launch.
   useEffect(() => {
     if (isLocked || adShownRef.current) return;
     const timer = setTimeout(() => {
       adShownRef.current = true;
       setAdPopupVisible(true);
-    }, 1500);
+    }, 1000);
     return () => clearTimeout(timer);
   }, [isLocked]);
 

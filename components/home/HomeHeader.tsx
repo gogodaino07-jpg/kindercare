@@ -104,10 +104,9 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
       backgroundColor: colors.cardWhite,
       height: ICON_BUTTON_SIZE,
-      paddingHorizontal: 12,
+      width: '100%',
+      paddingHorizontal: 14,
       borderRadius: ICON_BUTTON_SIZE / 2,
-      alignSelf: 'flex-start',
-      maxWidth: '100%',
       ...SHADOW,
     },
     avatarSlot: {
