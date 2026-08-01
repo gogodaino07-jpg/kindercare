@@ -18,6 +18,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import PhotoCropModal from '../components/child-profile/PhotoCropModal';
 import PhotoSourceSheet from '../components/child-profile/PhotoSourceSheet';
 import ScreenBackground from '../components/ScreenBackground';
+import CoupangBanner from '../components/common/CoupangBanner';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
@@ -28,7 +29,6 @@ import { ChildAge } from '../types/models';
 import { stripInvalidCharacters } from '../utils/validation';
 
 const AGE_OPTIONS: ChildAge[] = [3, 4, 5, 6, 7];
-const COUPANG_LINK = 'https://link.coupang.com/a/fHdMU98clE';
 
 export default function ChildProfileScreen() {
   const router = useRouter();
@@ -156,27 +156,7 @@ export default function ChildProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Coupang Banner - Positioned exactly like Calendar */}
-      <TouchableOpacity
-        style={styles.adBannerContainer}
-        activeOpacity={0.9}
-        onPress={() => Linking.openURL(COUPANG_LINK).catch(() => {})}
-      >
-        <View style={styles.adDecoCircle1} />
-        <View style={styles.adDecoCircle2} />
-        <View style={styles.adContent}>
-          <View style={styles.adLeftContent}>
-            <Text style={styles.adIconEmoji}>🎁</Text>
-            <View style={styles.adTextGroup}>
-              <Text style={styles.adSubText}>놓치면 후회하는 특가!</Text>
-              <Text style={styles.adMainText}>국민 육아템 세일전</Text>
-            </View>
-          </View>
-          <View style={styles.adButton}>
-            <Text style={styles.adButtonText}>바로가기 🚀</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
+      <CoupangBanner style={styles.adBanner} />
 
       <PhotoSourceSheet
         visible={showSourceSheet}
@@ -291,63 +271,12 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     saveButtonDisabled: { backgroundColor: '#94A3B8', opacity: 0.6 },
     saveButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
-    adBannerContainer: {
+    adBanner: {
       position: 'absolute',
       bottom: 24 + bottomInset,
       left: 20,
       right: 20,
-      backgroundColor: '#297FCA',
-      borderRadius: 20,
-      overflow: 'hidden',
-      ...SHADOW,
-      shadowColor: '#297FCA',
-      shadowOpacity: 0.4,
-      elevation: 6,
       zIndex: 100,
     },
-    adDecoCircle1: {
-      position: 'absolute',
-      top: -40,
-      right: -20,
-      width: 120,
-      height: 120,
-      borderRadius: 60,
-      backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    },
-    adDecoCircle2: {
-      position: 'absolute',
-      bottom: -30,
-      left: -20,
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    },
-    adContent: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 16,
-    },
-    adLeftContent: { flexDirection: 'row', alignItems: 'center' },
-    adIconEmoji: { fontSize: 32, marginRight: 14 },
-    adTextGroup: { flexDirection: 'column' },
-    adSubText: { fontSize: 12, fontWeight: '900', color: '#FDE047', marginBottom: 4 },
-    adMainText: { fontSize: 16, fontWeight: '900', color: '#FFFFFF' },
-    adButton: {
-      backgroundColor: '#FFFFFF',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderRadius: 14,
-      flexDirection: 'row',
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    adButtonText: { color: '#297FCA', fontSize: 14, fontWeight: '900' }
   });
 }

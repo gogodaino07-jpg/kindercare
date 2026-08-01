@@ -30,14 +30,22 @@ export default function EventListSection({
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [isLaterExpanded, setIsLaterExpanded] = useState(false);
+  const [isMainExpanded, setIsMainExpanded] = useState(false);
 
   const isToday = displayType === 'TODAY';
   const themeColor = isToday ? colors.accent : colors.blue500;
   const themeBg = isToday ? colors.gray50 : colors.lightBlueBg;
 
+  const visibleMainEvents = isMainExpanded || mainEvents.length <= 2
+    ? mainEvents
+    : mainEvents.slice(0, 2);
+
   const visibleLaterEvents = isLaterExpanded
     ? featuredLaterEvents
     : featuredLaterEvents.slice(0, 2);
+
+  const remainingMainCount = mainEvents.length - 2;
+  const hasMoreMain = mainEvents.length > 2;
 
   const remainingCount = featuredLaterEvents.length - 2;
   const hasMore = featuredLaterEvents.length > 2;
@@ -62,32 +70,50 @@ export default function EventListSection({
             mainEvents.length >= 2 && { maxHeight: 260 }
           ]}>
             <View style={styles.cardHeader}>
-              <View style={[styles.tomorrowBadge, { backgroundColor: themeColor }]}>
-                <Text style={styles.tomorrowBadgeText}>{displayType}</Text>
+              <View style={styles.headerLeftGroup}>
+                <View style={[styles.tomorrowBadge, { backgroundColor: themeColor }]}>
+                  <Text style={styles.tomorrowBadgeText}>{displayType}</Text>
+                </View>
+                <Text style={[styles.cardHeaderText, { color: themeColor }]}>
+                  {isToday ? '오늘' : '내일'} 챙겨야 할 것들
+                </Text>
               </View>
-              <Text style={[styles.cardHeaderText, { color: themeColor }]}>
-                {isToday ? '오늘' : '내일'} 챙겨야 할 것들
-              </Text>
+
+              {!isToday && hasMoreMain && (
+                <TouchableOpacity
+                  onPress={() => onEventPress(mainEvents[0])}
+                  style={styles.mainToggleButton}
+                >
+                  <Text style={[styles.mainMoreText, { color: themeColor }]}>
+                    더보기
+                  </Text>
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={18}
+                    color={themeColor}
+                  />
+                </TouchableOpacity>
+              )}
             </View>
 
             <ScrollView
               nestedScrollEnabled={true}
               showsVerticalScrollIndicator={false}
             >
-              {mainEvents.map((event, idx) => (
+              {mainEvents.slice(0, 2).map((event, idx) => (
                 <React.Fragment key={`${event.id}-${isToday}`}>
                   <EventCard
                     event={event}
                     dateBadgeText={formatMD(event.date)}
                     isPlanned={true}
                     highlighted={true}
-                    initiallyExpanded={true}
+                    initiallyExpanded={idx === 0}
                     themeColor={themeColor}
                     showCoupangButton={!isToday}
                     hideCheckbox={false}
                     onPress={() => onEventPress(event)}
                   />
-                  {idx < mainEvents.length - 1 && <View style={[styles.divider, { backgroundColor: isToday ? '#E5EDFF' : '#EDE9FE' }]} />}
+                  {idx < Math.min(mainEvents.length, 2) - 1 && <View style={[styles.divider, { backgroundColor: isToday ? '#E5EDFF' : '#EDE9FE' }]} />}
                 </React.Fragment>
               ))}
               {mainEvents.length === 0 && (
@@ -110,14 +136,14 @@ export default function EventListSection({
               {hasMore && (
                 <TouchableOpacity
                   style={styles.toggleButton}
-                  onPress={() => setIsLaterExpanded(!isLaterExpanded)}
+                  onPress={() => onEventPress(featuredLaterEvents[0])}
                   activeOpacity={0.7}
                 >
-                  {!isLaterExpanded && (
-                    <Text style={styles.moreText}>{remainingCount}개 더보기</Text>
-                  )}
+                  <Text style={styles.moreText}>
+                    더보기
+                  </Text>
                   <MaterialIcons
-                    name={isLaterExpanded ? "expand-less" : "expand-more"}
+                    name="chevron-right"
                     size={18}
                     color={colors.gray500}
                   />
@@ -126,7 +152,7 @@ export default function EventListSection({
             </View>
 
             <Animated.View layout={LinearTransition}>
-              {visibleLaterEvents.map((event, idx) => (
+              {featuredLaterEvents.slice(0, 2).map((event, idx) => (
                 <Animated.View
                   key={event.id}
                   entering={idx >= 2 ? FadeInUp.duration(400).springify() : undefined}
@@ -140,9 +166,10 @@ export default function EventListSection({
                     highlighted={false}
                     showCoupangButton={true}
                     hideCheckbox={true}
+                    hideExpandButton={true}
                     onPress={() => onEventPress(event)}
                   />
-                  {idx < visibleLaterEvents.length - 1 && (
+                  {idx < Math.min(featuredLaterEvents.length, 2) - 1 && (
                     <View style={[styles.divider, { backgroundColor: colors.gray100, marginVertical: 6 }]} />
                   )}
                 </Animated.View>
@@ -206,9 +233,23 @@ function createStyles(colors: ThemeColors) {
     cardHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      justifyContent: 'space-between',
       marginBottom: 8,
       paddingLeft: 4,
+    },
+    headerLeftGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    mainToggleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+    },
+    mainMoreText: {
+      fontSize: 12,
+      fontWeight: '800',
     },
     tomorrowBadge: {
       paddingHorizontal: 8,

@@ -9,6 +9,7 @@ import {
   StatusBar,
   Platform,
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../../components/common/AppText';
 import { useAlert } from '../../context/AlertContext';
@@ -47,17 +48,24 @@ export default function SettingsScreen() {
     onPress,
     showDivider = true,
     isProfile = false,
-    highlightSubtitle = false
+    highlightSubtitle = false,
+    rightElement
   }: {
     title: string;
     subtitle?: string;
     onPress?: () => void;
     showDivider?: boolean;
     isProfile?: boolean;
-    highlightSubtitle?: boolean
+    highlightSubtitle?: boolean;
+    rightElement?: React.ReactNode;
   }) => (
     <View>
-      <TouchableOpacity style={styles.cardItem} activeOpacity={0.7} onPress={onPress}>
+      <TouchableOpacity
+        style={styles.cardItem}
+        activeOpacity={onPress ? 0.7 : 1}
+        onPress={onPress}
+        disabled={!onPress}
+      >
         <View style={{ flex: 1 }}>
           {isProfile ? (
             <>
@@ -78,7 +86,11 @@ export default function SettingsScreen() {
             </>
           )}
         </View>
-        <Text style={styles.arrowIcon}>›</Text>
+        {rightElement ? (
+          rightElement
+        ) : (
+          <Text style={styles.arrowIcon}>›</Text>
+        )}
       </TouchableOpacity>
       {showDivider && <View style={styles.divider} />}
     </View>
@@ -130,7 +142,6 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.skyBackground }]}>
-      <StatusBar barStyle={resolvedScheme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.skyBackground} />
       <View style={[styles.container, { backgroundColor: colors.skyBackground }]}>
 
         {/* 스크롤 영역 */}
@@ -164,9 +175,28 @@ export default function SettingsScreen() {
           <SettingSection emoji="🎨" title="디스플레이 설정">
             <SettingItem
               title="테마"
-              subtitle={THEME_MODE_LABELS[mode]}
-              highlightSubtitle={true}
-              onPress={() => router.push('/settings/theme')}
+              rightElement={
+                <View style={styles.radioGroup}>
+                  <TouchableOpacity
+                    style={styles.radioItem}
+                    onPress={() => setMode('light')}
+                  >
+                    <View style={[styles.radioCircle, mode === 'light' && styles.radioCircleSelected]}>
+                      {mode === 'light' && <MaterialIcons name="check" size={14} color="#FFFFFF" />}
+                    </View>
+                    <Text style={[styles.radioText, mode === 'light' && styles.radioTextSelected]}>라이트</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.radioItem}
+                    onPress={() => setMode('dark')}
+                  >
+                    <View style={[styles.radioCircle, mode === 'dark' && styles.radioCircleSelected]}>
+                      {mode === 'dark' && <MaterialIcons name="check" size={14} color="#FFFFFF" />}
+                    </View>
+                    <Text style={[styles.radioText, mode === 'dark' && styles.radioTextSelected]}>다크</Text>
+                  </TouchableOpacity>
+                </View>
+              }
             />
             <SettingItem title="글씨체 설정" onPress={() => router.push('/settings/font')} />
             <SettingItem title="글자 크기 설정" onPress={() => router.push('/settings/font-size')} showDivider={false} />
@@ -290,6 +320,39 @@ function createStyles(colors: any) {
     },
     highlightText: {
       color: colors.accent,
+    },
+    radioGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+    },
+    radioItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    radioCircle: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      borderWidth: 1.5,
+      borderColor: colors.border, // Pale grey/blue border
+      backgroundColor: 'transparent',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    radioCircleSelected: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accent,
+    },
+    radioText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    radioTextSelected: {
+      color: colors.textPrimary,
+      fontWeight: 'bold',
     },
     arrowIcon: {
       fontSize: 20,

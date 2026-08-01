@@ -21,6 +21,7 @@ interface EventCardProps {
   wrapNote?: boolean;
   /** Removes the checkbox and click-to-check behavior, showing a simple dot instead. */
   hideCheckbox?: boolean;
+  hideExpandButton?: boolean;
   initiallyExpanded?: boolean;
   onPress: () => void;
 }
@@ -34,6 +35,7 @@ export default function EventCard({
   showCoupangButton,
   wrapNote,
   hideCheckbox,
+  hideExpandButton = false,
   initiallyExpanded = false,
   onPress,
 }: EventCardProps) {
@@ -81,7 +83,7 @@ export default function EventCard({
           <Text style={styles.title} numberOfLines={1}>{event.title}</Text>
         </View>
 
-        {hasItems && (
+        {hasItems && !hideExpandButton && (
           <TouchableOpacity
             style={styles.expandButton}
             onPress={() => setIsExpanded(!isExpanded)}
@@ -96,7 +98,7 @@ export default function EventCard({
         )}
       </TouchableOpacity>
 
-      {isExpanded && (
+      {isExpanded && !hideExpandButton && (
         <View style={styles.checklist}>
           {items.map((item, idx) => {
             const isChecked = checkedItems.has(idx);

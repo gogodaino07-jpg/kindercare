@@ -239,7 +239,12 @@ export default function UploadScreen() {
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ title: '가정통신문 업로드' }} />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        scrollEnabled={docs.length > 0}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        bounces={false}
+      >
 
         <View style={styles.mainContainer}>
 
@@ -316,27 +321,25 @@ export default function UploadScreen() {
             <View style={styles.slotSection}>
               <Text style={styles.countLabel}>업로드된 파일 {docs.length} / {MAX_DOCS}</Text>
               <View style={styles.gridContainer}>
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <View key={`slot-${i}`} style={styles.slotWrapper}>
-                    {i < docs.length ? (
-                      <View style={styles.imageThumb}>
-                        {docs[i].kind === 'image' ? (
-                          <Image source={{ uri: docs[i].uri }} style={styles.imageThumbImg} />
-                        ) : (
-                          <View style={styles.fileSlotPlaceholder}>
-                            <Text style={styles.fileSlotIcon}>📄</Text>
-                            <Text style={styles.fileSlotText} numberOfLines={1}>{docs[i].name || '파일'}</Text>
-                          </View>
-                        )}
-                        <TouchableOpacity style={styles.removeBadge} onPress={() => removeDoc(docs[i].id)}>
-                          <Text style={styles.removeBadgeText}>✕</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <View style={styles.emptySlot}>
-                        <Text style={styles.emptySlotIcon}>+</Text>
-                      </View>
-                    )}
+                {docs.map((doc) => (
+                  <View key={doc.id} style={styles.slotWrapper}>
+                    <View style={styles.imageThumb}>
+                      {doc.kind === 'image' ? (
+                        <Image source={{ uri: doc.uri }} style={styles.imageThumbImg} />
+                      ) : (
+                        <View style={styles.fileSlotPlaceholder}>
+                          <Text style={styles.fileSlotIcon}>📄</Text>
+                          <Text style={styles.fileSlotText} numberOfLines={1}>{doc.name || '파일'}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <TouchableOpacity
+                      style={styles.removeBadge}
+                      activeOpacity={0.7}
+                      onPress={() => removeDoc(doc.id)}
+                    >
+                      <Text style={styles.removeBadgeText}>✕</Text>
+                    </TouchableOpacity>
                   </View>
                 ))}
               </View>
@@ -551,13 +554,16 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     slotWrapper: {
       width: '17%',
       aspectRatio: 1,
+      position: 'relative', // Necessary for absolute remove badge
     },
     imageThumb: {
       width: '100%',
       height: '100%',
       borderRadius: 12,
       overflow: 'hidden',
-      backgroundColor: colors.cardWhite,
+      backgroundColor: 'rgba(255, 255, 255, 0.6)', // Semi-transparent white
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.3)',
       ...SHADOW,
     },
     imageThumbImg: {
@@ -569,35 +575,23 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       alignItems: 'center',
       justifyContent: 'center',
       padding: 2,
+      backgroundColor: 'rgba(255, 255, 255, 0.4)', // Consistent semi-transparent bg
     },
     fileSlotIcon: { fontSize: 18, marginBottom: 2 },
     fileSlotText: { fontSize: 8, color: colors.textPrimary, textAlign: 'center' },
-    emptySlot: {
-      width: '100%',
-      height: '100%',
-      borderRadius: 12,
-      borderWidth: 1.5,
-      borderColor: colors.border,
-      borderStyle: 'dashed',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    emptySlotIcon: {
-      fontSize: 20,
-      color: colors.border,
-      fontWeight: '300',
-    },
     removeBadge: {
       position: 'absolute',
-      top: -4,
-      right: -4,
-      width: 18,
-      height: 18,
-      borderRadius: 9,
-      backgroundColor: 'rgba(0,0,0,0.6)',
+      top: -6,
+      right: -6,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 10,
+      zIndex: 50,
+      borderWidth: 1.5,
+      borderColor: '#FFFFFF',
     },
     removeBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' },
     bottomActionContainer: {

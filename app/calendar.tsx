@@ -11,14 +11,13 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import BlackboardModal from '../components/home/BlackboardModal';
+import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
 import EventCard from '../components/home/EventCard';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { WEEKDAY_KO, parseISODate, toISODate, formatMD } from '../utils/date';
-
-const COUPANG_LINK = 'https://link.coupang.com/a/fHdMU98clE';
 
 const DOT_COLORS = {
   ai: '#3B82F6',
@@ -168,13 +167,15 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     scheduleSection: {
       marginTop: 16,
-      paddingHorizontal: 60, // Slim card width
+      paddingHorizontal: 16,
+      flex: 1,
     },
     dateHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       marginBottom: 16,
       marginLeft: 4,
+      paddingHorizontal: 44,
     },
     scheduleDateText: {
       fontSize: 15,
@@ -226,8 +227,13 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       fontSize: 13,
       color: colors.textSecondary,
     },
+    eventListContainer: {
+      maxHeight: 320,
+    },
     eventList: {
       gap: 8,
+      paddingHorizontal: 44,
+      paddingBottom: 80,
     },
     eventCardWrapper: {
       backgroundColor: colors.cardWhite,
@@ -262,84 +268,12 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       fontWeight: '300',
       marginTop: -2,
     },
-    adBannerContainer: {
+    adBanner: {
       position: 'absolute',
       bottom: 24 + bottomInset,
       left: 20,
       right: 20,
-      backgroundColor: '#297FCA',
-      borderRadius: 20,
-      overflow: 'hidden',
-      ...SHADOW,
-      shadowColor: '#297FCA',
-      shadowOpacity: 0.4,
-      elevation: 6,
     },
-    adDecoCircle1: {
-      position: 'absolute',
-      top: -40,
-      right: -20,
-      width: 120,
-      height: 120,
-      borderRadius: 60,
-      backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    },
-    adDecoCircle2: {
-      position: 'absolute',
-      bottom: -30,
-      left: -20,
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    },
-    adContent: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 16,
-    },
-    adLeftContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    adIconEmoji: {
-      fontSize: 32,
-      marginRight: 14,
-    },
-    adTextGroup: {
-      flexDirection: 'column',
-    },
-    adSubText: {
-      fontSize: 12,
-      fontWeight: '900',
-      color: '#FDE047',
-      marginBottom: 4,
-    },
-    adMainText: {
-      fontSize: 16,
-      fontWeight: '900',
-      color: '#FFFFFF',
-    },
-    adButton: {
-      backgroundColor: '#FFFFFF',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderRadius: 14,
-      flexDirection: 'row',
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    adButtonText: {
-      color: '#297FCA',
-      fontSize: 14,
-      fontWeight: '900',
-    }
   });
 }
 
@@ -410,10 +344,6 @@ export default function CalendarScreen() {
     setSelectedDate(todayISO);
   };
 
-  const handleCoupangPress = () => {
-    Linking.openURL(COUPANG_LINK).catch((err) => console.error('Failed to open Coupang link:', err));
-  };
-
   const selectedDateObj = selectedDate ? parseISODate(selectedDate) : new Date();
   const weekdayLabel = WEEKDAY_KO[selectedDateObj.getDay()];
 
@@ -429,7 +359,6 @@ export default function CalendarScreen() {
           ),
         }}
       />
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
 
       {/* Fixed Calendar Card */}
       <View style={styles.calendarCard}>
@@ -520,16 +449,16 @@ export default function CalendarScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.scheduleSection}>
-          <View style={styles.dateHeader}>
-            <Text style={styles.scheduleDateText}>{selectedDate}</Text>
-            <View style={styles.dayBadge}>
-              <Text style={styles.dayBadgeText}>{weekdayLabel}요일</Text>
-            </View>
+      <View style={styles.scheduleSection}>
+        <View style={styles.dateHeader}>
+          <Text style={styles.scheduleDateText}>{selectedDate}</Text>
+          <View style={styles.dayBadge}>
+            <Text style={styles.dayBadgeText}>{weekdayLabel}요일</Text>
           </View>
+        </View>
 
-          {selectedDateEvents.length === 0 ? (
+        {selectedDateEvents.length === 0 ? (
+          <View style={{ paddingHorizontal: 44 }}>
             <View style={styles.emptyStateCard}>
               <View style={styles.emptyIconContainer}>
                 <Text style={styles.emptyIcon}>☁️</Text>
@@ -537,23 +466,27 @@ export default function CalendarScreen() {
               <Text style={styles.emptyTitle}>이 날짜엔 일정이 없어요</Text>
               <Text style={styles.emptySubtitle}>새로운 일정을 추가해 보세요!</Text>
             </View>
-          ) : (
-            <View style={styles.eventList}>
-              {selectedDateEvents.map((e) => (
-                <View key={e.id} style={styles.eventCardWrapper}>
-                  <EventCard
-                    event={e}
-                    showCoupangButton
-                    wrapNote
-                    hideCheckbox
-                    onPress={() => router.push({ pathname: '/edit-event', params: { id: e.id } })}
-                  />
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-      </ScrollView>
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.eventListContainer}
+            contentContainerStyle={styles.eventList}
+            showsVerticalScrollIndicator={false}
+          >
+            {selectedDateEvents.map((e) => (
+              <View key={e.id} style={styles.eventCardWrapper}>
+                <EventCard
+                  event={e}
+                  showCoupangButton
+                  wrapNote
+                  hideCheckbox
+                  onPress={() => router.push({ pathname: '/edit-event', params: { id: e.id } })}
+                />
+              </View>
+            ))}
+          </ScrollView>
+        )}
+      </View>
 
       {/* Floating Action Button */}
       <View style={styles.fabContainer}>
@@ -566,27 +499,7 @@ export default function CalendarScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Coupang Banner */}
-      <TouchableOpacity
-        style={styles.adBannerContainer}
-        activeOpacity={0.9}
-        onPress={handleCoupangPress}
-      >
-        <View style={styles.adDecoCircle1} />
-        <View style={styles.adDecoCircle2} />
-        <View style={styles.adContent}>
-          <View style={styles.adLeftContent}>
-            <Text style={styles.adIconEmoji}>🎁</Text>
-            <View style={styles.adTextGroup}>
-              <Text style={styles.adSubText}>놓치면 후회하는 특가!</Text>
-              <Text style={styles.adMainText}>국민 육아템 세일전</Text>
-            </View>
-          </View>
-          <View style={styles.adButton}>
-            <Text style={styles.adButtonText}>바로가기 🚀</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
+      <CoupangBanner style={styles.adBanner} />
 
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
     </SafeAreaView>

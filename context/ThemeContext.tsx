@@ -13,6 +13,7 @@ interface ThemeContextValue {
   setMode: (mode: ThemeMode) => void;
   resolvedScheme: ResolvedScheme;
   colors: ThemeColors;
+  loaded: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -20,12 +21,14 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme();
   const [mode, setModeState] = useState<ThemeMode>('system');
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((stored) => {
       if (stored === 'light' || stored === 'dark' || stored === 'system') {
         setModeState(stored);
       }
+      setLoaded(true);
     });
   }, []);
 
@@ -38,8 +41,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const colors = resolvedScheme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
 
   const value = useMemo<ThemeContextValue>(
-    () => ({ mode, setMode, resolvedScheme, colors }),
-    [mode, resolvedScheme, colors]
+    () => ({ mode, setMode, resolvedScheme, colors, loaded }),
+    [mode, resolvedScheme, colors, loaded]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

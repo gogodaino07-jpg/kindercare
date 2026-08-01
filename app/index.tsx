@@ -12,6 +12,7 @@ import HomeHeader from '../components/home/HomeHeader';
 import NotificationCenterModal from '../components/home/NotificationCenterModal';
 import WeeklyWeatherStrip from '../components/home/WeeklyWeatherStrip';
 import ScreenBackground from '../components/ScreenBackground';
+import CoupangBanner from '../components/common/CoupangBanner';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
@@ -20,8 +21,6 @@ import { useThemeColors } from '../context/ThemeContext';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
 import Text from '../components/common/AppText';
-
-const COUPANG_LINK = 'https://link.coupang.com/a/fHdMU98clE';
 
 function createStyles(colors: ThemeColors, bottomInset: number) {
   return StyleSheet.create({
@@ -38,94 +37,29 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     contentPadding: {
       flex: 1,
       paddingTop: 0,
-      paddingBottom: 260 + bottomInset, // Increased to ensure scroll space for both fixed sections
+      paddingBottom: 120 + bottomInset,
       zIndex: 10,
+    },
+    upcomingLayer: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: '56%', // Fixed top position to prevent pushing up
+      zIndex: 20, // Higher than supplies list to overlay
     },
     fixedContentLayer: {
       position: 'absolute',
       left: 0,
       right: 0,
-      bottom: 110 + bottomInset, // Adjust based on 쿠팡배너(adBannerContainer) height
-      zIndex: 1,
+      bottom: 110 + bottomInset,
+      zIndex: 25, // Above other layers to ensure touchability
     },
-    adBannerContainer: {
+    adBanner: {
       position: 'absolute',
       bottom: 24 + bottomInset,
       left: 20,
       right: 20,
-      backgroundColor: '#297FCA',
-      borderRadius: 20,
-      overflow: 'hidden',
-      ...SHADOW,
-      shadowColor: '#297FCA',
-      shadowOpacity: 0.4,
-      elevation: 6,
     },
-    adDecoCircle1: {
-      position: 'absolute',
-      top: -40,
-      right: -20,
-      width: 120,
-      height: 120,
-      borderRadius: 60,
-      backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    },
-    adDecoCircle2: {
-      position: 'absolute',
-      bottom: -30,
-      left: -20,
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    },
-    adContent: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 16,
-    },
-    adLeftContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    adIconEmoji: {
-      fontSize: 32,
-      marginRight: 14,
-    },
-    adTextGroup: {
-      flexDirection: 'column',
-    },
-    adSubText: {
-      fontSize: 12,
-      fontWeight: '900',
-      color: '#FDE047',
-      marginBottom: 4,
-    },
-    adMainText: {
-      fontSize: 16,
-      fontWeight: '900',
-      color: '#FFFFFF',
-    },
-    adButton: {
-      backgroundColor: colors.cardWhite,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderRadius: 14,
-      flexDirection: 'row',
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    adButtonText: {
-      color: '#297FCA',
-      fontSize: 14,
-      fontWeight: '900',
-    }
   });
 }
 
@@ -202,7 +136,7 @@ export default function HomeScreen() {
             )}
           </View>
 
-          <View style={styles.fixedContentLayer} pointerEvents="box-none">
+          <View style={styles.upcomingLayer} pointerEvents="box-none">
             <EventListSection
               mainEvents={upcoming.mainEvents}
               featuredLaterEvents={upcoming.featuredLaterEvents}
@@ -210,31 +144,15 @@ export default function HomeScreen() {
               onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
               hideSupplies={true}
             />
+          </View>
+
+          <View style={styles.fixedContentLayer} pointerEvents="box-none">
             <AiScanSection />
           </View>
         </View>
       </SafeAreaView>
 
-      <TouchableOpacity
-        style={styles.adBannerContainer}
-        activeOpacity={0.9}
-        onPress={() => Linking.openURL(COUPANG_LINK).catch((err) => console.error('Failed to open Coupang link:', err))}
-      >
-        <View style={styles.adDecoCircle1} />
-        <View style={styles.adDecoCircle2} />
-        <View style={styles.adContent}>
-          <View style={styles.adLeftContent}>
-            <Text style={styles.adIconEmoji}>🎁</Text>
-            <View style={styles.adTextGroup}>
-              <Text style={styles.adSubText}>놓치면 후회하는 특가!</Text>
-              <Text style={styles.adMainText}>국민 육아템 세일전</Text>
-            </View>
-          </View>
-          <View style={styles.adButton}>
-            <Text style={styles.adButtonText}>바로가기 🚀</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
+      <CoupangBanner style={styles.adBanner} />
 
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />

@@ -86,11 +86,6 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsBooting(false), BOOT_SPLASH_MS);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     loadConfig().then((loadedConfig) => {
       setConfig(loadedConfig);
       setIsLocked(loadedConfig.method !== 'none');
@@ -103,6 +98,11 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
       })
       .then((enrolled) => setBiometricAvailable(!!enrolled))
       .catch(() => setBiometricAvailable(false));
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsBooting(false), BOOT_SPLASH_MS);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
