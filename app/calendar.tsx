@@ -1,20 +1,29 @@
-import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useMemo, useState, useEffect } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  StatusBar,
+  Linking
+} from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import BlackboardModal from '../components/home/BlackboardModal';
 import Text from '../components/common/AppText';
 import EventCard from '../components/home/EventCard';
-import ScreenBackground from '../components/ScreenBackground';
-import { SHADOW, ThemeColors } from '../constants/theme';
+import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
-import { WEEKDAY_KO, parseISODate, toISODate } from '../utils/date';
+import { WEEKDAY_KO, parseISODate, toISODate, formatMD } from '../utils/date';
+
+const COUPANG_LINK = 'https://link.coupang.com/a/fHdMU98clE';
 
 const DOT_COLORS = {
-  ai: '#2E4374',
-  review: '#E08A2E',
-  manual: '#E48AA6',
+  ai: '#3B82F6',
+  review: '#F59E0B',
+  manual: '#F43F5E',
 };
 
 function dotColorFor(source: 'ai' | 'manual', needsReview?: boolean): string {
@@ -23,40 +32,338 @@ function dotColorFor(source: 'ai' | 'manual', needsReview?: boolean): string {
   return DOT_COLORS.ai;
 }
 
+function createStyles(colors: ThemeColors, bottomInset: number) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.skyBackground,
+    },
+    scrollContent: {
+      paddingBottom: 220 + bottomInset,
+    },
+    calendarCard: {
+      backgroundColor: colors.cardWhite,
+      borderRadius: 28,
+      marginHorizontal: 16,
+      marginTop: -32,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...SHADOW,
+      shadowOpacity: 0.04,
+      elevation: 3,
+    },
+    monthSelector: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      marginBottom: 8,
+    },
+    arrowButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.gray100,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    arrowIcon: {
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+    monthText: {
+      fontSize: 17,
+      fontWeight: 'bold',
+      color: colors.textPrimary,
+    },
+    weekDaysRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginBottom: 4,
+    },
+    weekDayText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      width: 40,
+      textAlign: 'center',
+    },
+    sundayText: {
+      color: '#FB7185',
+    },
+    saturdayText: {
+      color: '#818CF8',
+    },
+    daysGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    dayCellContainer: {
+      width: '14.28%',
+      height: 38, // Restoration of recommended height
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 2,
+    },
+    dayCell: {
+      width: 32, // Restoration of recommended larger circle
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 16,
+    },
+    dayCellSelected: {
+      backgroundColor: colors.tomorrowRedBg,
+      borderWidth: 1,
+      borderColor: colors.tomorrowRed,
+    },
+    dayCellToday: {
+      backgroundColor: colors.lightBlueBg,
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    dayText: {
+      fontSize: 14, // Restoration of recommended font size
+      color: colors.textPrimary,
+      fontWeight: '500',
+    },
+    dotRow: {
+      flexDirection: 'row',
+      marginTop: 1,
+      gap: 2,
+      height: 3.5, // Slightly refined height
+      justifyContent: 'center',
+    },
+    dot: {
+      width: 3.5, // Restoration of recommended crisp size
+      height: 3.5,
+      borderRadius: 1.75,
+    },
+    legendContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 12,
+      paddingTop: 10,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      gap: 20,
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    legendDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    legendText: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.textSecondary,
+    },
+    scheduleSection: {
+      marginTop: 16,
+      paddingHorizontal: 60, // Slim card width
+    },
+    dateHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+      marginLeft: 4,
+    },
+    scheduleDateText: {
+      fontSize: 15,
+      fontWeight: 'bold',
+      color: colors.textPrimary,
+      marginRight: 8,
+    },
+    dayBadge: {
+      backgroundColor: colors.gray100,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    dayBadgeText: {
+      fontSize: 11,
+      fontWeight: 'bold',
+      color: colors.textSecondary,
+    },
+    emptyStateCard: {
+      backgroundColor: colors.cardWhite,
+      opacity: 0.8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 20,
+      paddingVertical: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyIconContainer: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.gray100,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 12,
+    },
+    emptyIcon: {
+      fontSize: 24,
+      opacity: 0.8,
+    },
+    emptyTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginBottom: 4,
+    },
+    emptySubtitle: {
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
+    eventList: {
+      gap: 8,
+    },
+    eventCardWrapper: {
+      backgroundColor: colors.cardWhite,
+      borderRadius: 16,
+      padding: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...SHADOW,
+      shadowOpacity: 0.03,
+    },
+    fabContainer: {
+      position: 'absolute',
+      bottom: 104 + bottomInset, // Above the common ad banner
+      right: 20,
+      zIndex: 100,
+    },
+    fabButton: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: '#000000', // Black FAB
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...SHADOW,
+      shadowColor: '#000',
+      shadowOpacity: 0.2,
+      elevation: 6,
+    },
+    fabPlus: {
+      color: '#FFFFFF',
+      fontSize: 32,
+      fontWeight: '300',
+      marginTop: -2,
+    },
+    adBannerContainer: {
+      position: 'absolute',
+      bottom: 24 + bottomInset,
+      left: 20,
+      right: 20,
+      backgroundColor: '#297FCA',
+      borderRadius: 20,
+      overflow: 'hidden',
+      ...SHADOW,
+      shadowColor: '#297FCA',
+      shadowOpacity: 0.4,
+      elevation: 6,
+    },
+    adDecoCircle1: {
+      position: 'absolute',
+      top: -40,
+      right: -20,
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    },
+    adDecoCircle2: {
+      position: 'absolute',
+      bottom: -30,
+      left: -20,
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    },
+    adContent: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+    },
+    adLeftContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    adIconEmoji: {
+      fontSize: 32,
+      marginRight: 14,
+    },
+    adTextGroup: {
+      flexDirection: 'column',
+    },
+    adSubText: {
+      fontSize: 12,
+      fontWeight: '900',
+      color: '#FDE047',
+      marginBottom: 4,
+    },
+    adMainText: {
+      fontSize: 16,
+      fontWeight: '900',
+      color: '#FFFFFF',
+    },
+    adButton: {
+      backgroundColor: '#FFFFFF',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    adButtonText: {
+      color: '#297FCA',
+      fontSize: 14,
+      fontWeight: '900',
+    }
+  });
+}
+
 export default function CalendarScreen() {
   const router = useRouter();
   const { date: dateParam } = useLocalSearchParams<{ date?: string }>();
   const { events, selectedChild } = useAppData();
+  const insets = useSafeAreaInsets();
   const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
+
   const [monthCursor, setMonthCursor] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(toISODate(new Date()));
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [, forceRefresh] = useState(0);
 
-  // Deep-link entry from a notification-center tap: jump straight to that
-  // event's month/date instead of wherever the calendar was last showing.
   useEffect(() => {
     if (!dateParam) return;
     const parsed = parseISODate(dateParam);
     setMonthCursor(new Date(parsed.getFullYear(), parsed.getMonth(), 1));
     setSelectedDate(dateParam);
   }, [dateParam]);
-
-  // Re-sync the selected date's event list whenever this screen regains focus
-  // (e.g. after adding an event elsewhere and navigating back). Deferred a
-  // frame so the forced re-render doesn't land mid-push-transition — doing
-  // it synchronously on focus caused a ~0.5s layout jump/overlap while the
-  // screen slide animation was still running.
-  useFocusEffect(
-    useCallback(() => {
-      const frame = requestAnimationFrame(() => forceRefresh((n) => n + 1));
-      return () => cancelAnimationFrame(frame);
-    }, [])
-  );
 
   const todayISO = toISODate(new Date());
   const childEvents = useMemo(
@@ -74,10 +381,7 @@ export default function CalendarScreen() {
     const list: (string | null)[] = [];
     for (let i = 0; i < startWeekday; i++) list.push(null);
     for (let d = 1; d <= daysInMonth; d++) list.push(toISODate(new Date(year, month, d)));
-    // Always pad to a fixed 6-row grid (42 cells) so the legend row below
-    // doesn't shift up/down between 5-week and 6-week months.
-    const WEEKS = 6;
-    while (list.length < WEEKS * 7) list.push(null);
+    while (list.length % 7 !== 0) list.push(null);
     return list;
   }, [monthCursor]);
 
@@ -99,50 +403,92 @@ export default function CalendarScreen() {
   const goToNextMonth = () =>
     setMonthCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
 
+  const goToToday = () => {
+    const now = new Date();
+    const todayISO = toISODate(now);
+    setMonthCursor(new Date(now.getFullYear(), now.getMonth(), 1));
+    setSelectedDate(todayISO);
+  };
+
+  const handleCoupangPress = () => {
+    Linking.openURL(COUPANG_LINK).catch((err) => console.error('Failed to open Coupang link:', err));
+  };
+
+  const selectedDateObj = selectedDate ? parseISODate(selectedDate) : new Date();
+  const weekdayLabel = WEEKDAY_KO[selectedDateObj.getDay()];
+
   return (
-    <ScreenBackground>
-      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <View style={styles.content}>
-          <View style={styles.monthNav}>
-            <Pressable onPress={goToPrevMonth} style={styles.navButton}>
-              <Text style={styles.navButtonText}>◀</Text>
-            </Pressable>
-            <Text style={styles.monthLabel}>
-              {monthCursor.getFullYear()}년 {monthCursor.getMonth() + 1}월
+    <SafeAreaView style={styles.safeArea}>
+      <Stack.Screen
+        options={{
+          title: '캘린더',
+          headerRight: () => (
+            <TouchableOpacity onPress={goToToday} style={{ marginRight: 16 }}>
+              <MaterialCommunityIcons name="calendar-today" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
+          ),
+        }}
+      />
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+
+      {/* Fixed Calendar Card */}
+      <View style={styles.calendarCard}>
+        <View style={styles.monthSelector}>
+          <TouchableOpacity style={styles.arrowButton} onPress={goToPrevMonth}>
+            <Text style={styles.arrowIcon}>◀</Text>
+          </TouchableOpacity>
+          <Text style={styles.monthText}>
+            {monthCursor.getFullYear()}년 {monthCursor.getMonth() + 1}월
+          </Text>
+          <TouchableOpacity style={styles.arrowButton} onPress={goToNextMonth}>
+            <Text style={styles.arrowIcon}>▶</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.weekDaysRow}>
+          {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => (
+            <Text
+              key={idx}
+              style={[
+                styles.weekDayText,
+                idx === 0 && styles.sundayText,
+                idx === 6 && styles.saturdayText
+              ]}
+            >
+              {day}
             </Text>
-            <Pressable onPress={goToNextMonth} style={styles.navButton}>
-              <Text style={styles.navButtonText}>▶</Text>
-            </Pressable>
-          </View>
+          ))}
+        </View>
 
-          <View style={styles.weekdayRow}>
-            {WEEKDAY_KO.map((w) => (
-              <Text key={w} style={styles.weekdayText}>
-                {w}
-              </Text>
-            ))}
-          </View>
+        <View style={styles.daysGrid}>
+          {cells.map((iso, index) => {
+            if (!iso) return <View key={`pad-${index}`} style={styles.dayCellContainer} />;
 
-          <View style={styles.grid}>
-            {cells.map((iso, idx) => {
-              if (!iso) return <View key={`pad-${idx}`} style={styles.cell} />;
-              const dayEvents = eventsByDate.get(iso) ?? [];
-              const isToday = iso === todayISO;
-              const isSelected = iso === selectedDate;
-              const dayNum = Number(iso.split('-')[2]);
-              return (
-                <Pressable
-                  key={iso}
+            const isSelected = iso === selectedDate;
+            const isToday = iso === todayISO;
+            const dayNum = iso.split('-')[2].replace(/^0/, '');
+            const dayEvents = eventsByDate.get(iso) ?? [];
+
+            return (
+              <View key={iso} style={styles.dayCellContainer}>
+                <TouchableOpacity
                   style={[
-                    styles.cell,
-                    isToday && styles.cellToday,
-                    isSelected && styles.cellSelected,
+                    styles.dayCell,
+                    isSelected && styles.dayCellSelected,
+                    isToday && !isSelected && styles.dayCellToday
                   ]}
+                  activeOpacity={0.7}
                   onPress={() => setSelectedDate(iso)}
                 >
-                  <Text style={[styles.cellText, isToday && styles.cellTextToday]}>{dayNum}</Text>
+                  <Text style={[
+                    styles.dayText,
+                    isSelected && styles.dayTextSelected,
+                    isToday && !isSelected && styles.dayTextToday
+                  ]}>
+                    {dayNum}
+                  </Text>
                   <View style={styles.dotRow}>
-                    {dayEvents.slice(0, 3).map((e) => (
+                    {dayEvents.slice(0, 2).map((e) => (
                       <View
                         key={e.id}
                         style={[
@@ -152,132 +498,97 @@ export default function CalendarScreen() {
                       />
                     ))}
                   </View>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <View style={styles.legendRow}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.ai }]} />
-              <Text style={styles.legendText}>유치원 일정</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.review }]} />
-              <Text style={styles.legendText}>확인 필요</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.manual }]} />
-              <Text style={styles.legendText}>일정 등록</Text>
-            </View>
-          </View>
-
-          {selectedDate ? (
-            <View style={styles.selectedDateSection}>
-              <Text style={styles.selectedDateLabel}>{selectedDate}</Text>
-              {selectedDateEvents.length === 0 ? (
-                <Text style={styles.noEventText}>이 날짜엔 일정이 없어요</Text>
-              ) : (
-                <ScrollView
-                  style={styles.eventScroll}
-                  showsVerticalScrollIndicator={false}
-                >
-                  {selectedDateEvents.map((e) => (
-                    <EventCard
-                      key={e.id}
-                      event={e}
-                      showCoupangButton
-                      wrapNote
-                      onPress={() => setSelectedEventId(e.id)}
-                    />
-                  ))}
-                </ScrollView>
-              )}
-            </View>
-          ) : null}
+                </TouchableOpacity>
+              </View>
+            );
+          })}
         </View>
 
-        <Pressable
-          style={styles.addButton}
-          onPress={() =>
-            router.push({ pathname: '/add-event', params: { date: selectedDate ?? todayISO } })
-          }
+        <View style={styles.legendContainer}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.ai }]} />
+            <Text style={styles.legendText}>유치원 일정</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.review }]} />
+            <Text style={styles.legendText}>확인 필요</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.manual }]} />
+            <Text style={styles.legendText}>일정 등록</Text>
+          </View>
+        </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.scheduleSection}>
+          <View style={styles.dateHeader}>
+            <Text style={styles.scheduleDateText}>{selectedDate}</Text>
+            <View style={styles.dayBadge}>
+              <Text style={styles.dayBadgeText}>{weekdayLabel}요일</Text>
+            </View>
+          </View>
+
+          {selectedDateEvents.length === 0 ? (
+            <View style={styles.emptyStateCard}>
+              <View style={styles.emptyIconContainer}>
+                <Text style={styles.emptyIcon}>☁️</Text>
+              </View>
+              <Text style={styles.emptyTitle}>이 날짜엔 일정이 없어요</Text>
+              <Text style={styles.emptySubtitle}>새로운 일정을 추가해 보세요!</Text>
+            </View>
+          ) : (
+            <View style={styles.eventList}>
+              {selectedDateEvents.map((e) => (
+                <View key={e.id} style={styles.eventCardWrapper}>
+                  <EventCard
+                    event={e}
+                    showCoupangButton
+                    wrapNote
+                    hideCheckbox
+                    onPress={() => router.push({ pathname: '/edit-event', params: { id: e.id } })}
+                  />
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Floating Action Button */}
+      <View style={styles.fabContainer}>
+        <TouchableOpacity
+          style={styles.fabButton}
+          activeOpacity={0.8}
+          onPress={() => router.push({ pathname: '/add-event', params: { date: selectedDate ?? todayISO } })}
         >
-          <Text style={styles.addButtonText}>+ 일정 추가</Text>
-        </Pressable>
-      </SafeAreaView>
+          <Text style={styles.fabPlus}>+</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Coupang Banner */}
+      <TouchableOpacity
+        style={styles.adBannerContainer}
+        activeOpacity={0.9}
+        onPress={handleCoupangPress}
+      >
+        <View style={styles.adDecoCircle1} />
+        <View style={styles.adDecoCircle2} />
+        <View style={styles.adContent}>
+          <View style={styles.adLeftContent}>
+            <Text style={styles.adIconEmoji}>🎁</Text>
+            <View style={styles.adTextGroup}>
+              <Text style={styles.adSubText}>놓치면 후회하는 특가!</Text>
+              <Text style={styles.adMainText}>국민 육아템 세일전</Text>
+            </View>
+          </View>
+          <View style={styles.adButton}>
+            <Text style={styles.adButtonText}>바로가기 🚀</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
-    </ScreenBackground>
+    </SafeAreaView>
   );
-}
-
-const CELL_SIZE = `${100 / 7}%` as const;
-
-function createStyles(colors: ThemeColors) {
-  return StyleSheet.create({
-    safeArea: { flex: 1 },
-    content: { flex: 1, padding: 16, paddingBottom: 12 },
-    monthNav: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 16,
-    },
-    navButton: { paddingHorizontal: 16 },
-    navButtonText: { fontSize: 16, color: colors.textPrimary },
-    monthLabel: { fontSize: 17, fontWeight: '700', color: colors.textPrimary, minWidth: 130, textAlign: 'center' },
-    weekdayRow: { flexDirection: 'row' },
-    weekdayText: {
-      width: CELL_SIZE,
-      textAlign: 'center',
-      fontSize: 12,
-      fontWeight: '700',
-      color: colors.textSecondary,
-      marginBottom: 6,
-    },
-    grid: { flexDirection: 'row', flexWrap: 'wrap' },
-    cell: {
-      width: CELL_SIZE,
-      aspectRatio: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: 20,
-      marginBottom: 4,
-    },
-    cellToday: { backgroundColor: '#A9D8F5' },
-    cellSelected: { borderWidth: 2, borderColor: colors.accent },
-    cellText: { fontSize: 13, color: colors.textPrimary },
-    cellTextToday: { fontWeight: '800', color: colors.accent },
-    dotRow: { flexDirection: 'row', marginTop: 3, gap: 2, height: 6 },
-    dot: { width: 5, height: 5, borderRadius: 3 },
-    legendRow: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: 20,
-      marginTop: 0,
-      marginBottom: 8,
-    },
-    legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    legendDot: { width: 9, height: 9, borderRadius: 5 },
-    legendText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-    selectedDateSection: { flex: 1, marginTop: 20 },
-    selectedDateLabel: {
-      fontSize: 13,
-      fontWeight: '700',
-      color: colors.textSecondary,
-      marginBottom: 8,
-    },
-    eventScroll: { flex: 1 },
-    noEventText: { fontSize: 13, color: colors.textSecondary },
-    addButton: {
-      marginHorizontal: 20,
-      marginBottom: 16,
-      backgroundColor: colors.accent,
-      borderRadius: 16,
-      paddingVertical: 16,
-      alignItems: 'center',
-      ...SHADOW,
-    },
-    addButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
-  });
 }

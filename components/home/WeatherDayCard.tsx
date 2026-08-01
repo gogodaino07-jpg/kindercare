@@ -13,21 +13,40 @@ export default function WeatherDayCard({ day }: WeatherDayCardProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  const badgeText = day.isToday ? '오늘' : day.weekdayLabel.split('(')[1].replace(')', '');
+  const displayDate = day.weekdayLabel;
+
   return (
-    <View style={styles.wrapper}>
-      {day.isToday ? (
-        <View style={styles.todayBadge}>
-          <Text style={styles.todayBadgeText}>오늘</Text>
-        </View>
-      ) : (
-        <View style={styles.todayBadgeSpacer} />
-      )}
-      <View style={[styles.card, day.isToday && styles.cardToday]}>
-        <Text style={[styles.weekday, day.isTomorrow && styles.weekdayTomorrow]}>
-          {day.weekdayLabel}
+    <View style={styles.container}>
+      <View style={[
+        styles.card,
+        day.isToday ? styles.todayCard : styles.futureCard
+      ]}>
+        <Text style={[
+          styles.dateText,
+          day.isToday ? styles.todayText : styles.futureDateText
+        ]}>
+          {displayDate}
         </Text>
         <Text style={styles.emoji}>{day.emoji}</Text>
-        <Text style={[styles.tempMax, day.isToday && styles.tempMaxToday]}>{day.tempMax}°</Text>
+        <Text style={[
+          styles.tempText,
+          day.isToday ? styles.todayText : styles.futureTempText
+        ]}>
+          {day.tempMax}°
+        </Text>
+      </View>
+
+      <View style={[
+        styles.badge,
+        day.isToday ? styles.todayBadge : styles.futureBadge
+      ]}>
+        <Text style={[
+          styles.badgeText,
+          day.isToday ? styles.todayBadgeText : styles.futureBadgeText
+        ]}>
+          {badgeText}
+        </Text>
       </View>
     </View>
   );
@@ -35,57 +54,74 @@ export default function WeatherDayCard({ day }: WeatherDayCardProps) {
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    wrapper: {
-      width: 56,
+    container: {
+      width: 68, // Adjusted: slightly smaller than original 72
+      height: 114, // Adjusted: slightly smaller than original 120
       alignItems: 'center',
-      marginRight: 6,
     },
-    todayBadge: {
-      backgroundColor: '#DCEBFB',
+    card: {
+      width: 68, // Adjusted
+      height: 98, // Adjusted: slightly smaller than original 104
+      marginTop: 10,
+      borderRadius: 18,
+      borderWidth: 1,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 2,
+    },
+    todayCard: {
+      borderColor: colors.blue500,
+    },
+    futureCard: {
+      borderColor: colors.gray100,
+    },
+    dateText: {
+      fontSize: 11, // Reduced from 12
+      marginBottom: 0,
+    },
+    todayText: {
+      color: colors.blue500,
+      fontWeight: '600',
+    },
+    futureDateText: {
+      color: colors.gray600,
+    },
+    emoji: {
+      fontSize: 24, // Reduced from 28
+      marginVertical: 0,
+    },
+    tempText: {
+      fontSize: 13, // Reduced from 14
+      fontWeight: '700',
+    },
+    futureTempText: {
+      color: colors.gray500,
+      fontWeight: '500',
+    },
+    badge: {
+      position: 'absolute',
+      top: 0,
+      zIndex: 10,
       borderRadius: 999,
       paddingHorizontal: 8,
       paddingVertical: 2,
-      marginBottom: 4,
+    },
+    todayBadge: {
+      backgroundColor: colors.blue500,
+    },
+    futureBadge: {
+      backgroundColor: colors.gray100,
+    },
+    badgeText: {
+      fontSize: 11,
+      fontWeight: '700',
     },
     todayBadgeText: {
-      fontSize: 10,
-      fontWeight: '800',
-      color: colors.accent,
+      color: '#FFFFFF',
     },
-    todayBadgeSpacer: {
-      height: 17,
-    },
-    card: {
-      width: '100%',
-      alignItems: 'center',
-      paddingVertical: 10,
-      borderRadius: 14,
-    },
-    cardToday: {
-      backgroundColor: colors.cardWhite,
-      ...SHADOW,
-    },
-    weekday: {
-      fontSize: 11,
-      color: colors.textSecondary,
-      marginBottom: 4,
-    },
-    weekdayTomorrow: {
-      color: colors.accent,
-      fontWeight: '700',
-    },
-    emoji: {
-      fontSize: 20,
-      marginBottom: 4,
-    },
-    tempMax: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: colors.textPrimary,
-      lineHeight: 15,
-    },
-    tempMaxToday: {
-      color: colors.accent,
+    futureBadgeText: {
+      color: colors.gray500,
     },
   });
 }

@@ -1,3 +1,4 @@
+import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { BackHandler, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -8,9 +9,10 @@ import ScreenBackground from '../components/ScreenBackground';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
+import { useNotificationCenter } from '../context/NotificationCenterContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { Event } from '../types/models';
-import { formatMD, isPast, parseISODate } from '../utils/date';
+import { formatMD, isPast, parseISODate, toISODate } from '../utils/date';
 
 function dateGroupLabel(isoDate: string): string {
   const date = parseISODate(isoDate);
@@ -19,8 +21,9 @@ function dateGroupLabel(isoDate: string): string {
 }
 
 export default function PastEventsScreen() {
-  const { events, selectedChild, deleteEvents } = useAppData();
+  const { events, selectedChild, deleteEvents, addEvent } = useAppData();
   const { showAlert } = useAlert();
+  const { addNotification } = useNotificationCenter();
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -114,6 +117,47 @@ export default function PastEventsScreen() {
     setSelectedEventId(event.id);
   };
 
+  const handleTestNotification = async () => {
+    addNotification({
+      title: '🕰️ 지난 일정 알림 테스트',
+      body: '지난 일정도 알림으로 꼼꼼하게 챙겨보세요!',
+    });
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (selectedChild) {
+      console.log('🧪 Triggering test event addition...');
+      // addEvent is not async in the interface, but it calls pushEventToCloud internally.
+      // We can't await it here unless we change the interface.
+      // But we can add a log to see it happening.
+      addEvent({
+        date: toISODate(yesterday),
+        title: '🧪 알림 테스트용 일정',
+        note: '테스트용 준비물',
+        childId: selectedChild.id,
+        source: 'manual',
+        icon: '🧪',
+      });
+    }
+
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        await Notifications.requestPermissionsAsync();
+      }
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '킨더케어 지난 일정 테스트',
+          body: '지난 일정 화면에서 보낸 테스트 알림입니다.',
+        },
+        trigger: null,
+      });
+    } catch (e) {
+      console.warn('Failed to fire test notification:', e);
+    }
+  };
+
   return (
     <ScreenBackground>
       <Stack.Screen
@@ -131,13 +175,23 @@ export default function PastEventsScreen() {
                   <Text style={styles.headerCancelText}>취소</Text>
                 </Pressable>
               )
-            : undefined,
+            : () => (
+                <Pressable
+                  style={styles.iconButton}
+                  onPress={handleTestNotification}
+                  accessibilityLabel="알림 테스트"
+                  hitSlop={8}
+                >
+                  <Text style={styles.headerIcon}>🧪</Text>
+                </Pressable>
+              ),
         }}
       />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView
           contentContainerStyle={[
             styles.content,
+            groups.length === 0 && { flexGrow: 1, justifyContent: 'center' },
             editMode && { paddingBottom: 96 + insets.bottom },
           ]}
         >
@@ -186,7 +240,7 @@ export default function PastEventsScreen() {
       </SafeAreaView>
 
       {editMode ? (
-        <View style={[styles.bottomBarWrap, { paddingBottom: 16 + insets.bottom }]}>
+        <View style={[styles.bottomBarWrap, { bottom: 24 + insets.bottom }]}>
           <Pressable
             style={[styles.bottomBar, selectedIds.size === 0 && styles.bottomBarDisabled]}
             onPress={handleDeleteSelected}
@@ -213,19 +267,27 @@ function createStyles(colors: ThemeColors) {
     headerBackIcon: {
       fontSize: 26,
       fontWeight: '700',
-      color: '#1E293B',
+      color: colors.textPrimary,
       marginLeft: 4,
     },
     headerCancelText: {
       fontSize: 14,
       fontWeight: '700',
-      color: '#1E293B',
+      color: colors.textPrimary,
       marginRight: 4,
+    },
+    iconButton: {
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerIcon: {
+      fontSize: 22,
     },
     emptyText: {
       textAlign: 'center',
       color: colors.textSecondary,
-      marginTop: 40,
     },
     dateGroup: { marginBottom: 18 },
     dateHeaderRow: {
@@ -254,7 +316,7 @@ function createStyles(colors: ThemeColors) {
       ...SHADOW,
     },
     dateBadge: {
-      backgroundColor: '#EEF2F5',
+      backgroundColor: colors.gray100,
       borderRadius: 999,
       paddingHorizontal: 10,
       paddingVertical: 5,
@@ -288,19 +350,16 @@ function createStyles(colors: ThemeColors) {
     radioMark: {
       fontSize: 12,
       fontWeight: '800',
-      color: '#FFFFFF',
+      color: colors.cardWhite,
     },
     bottomBarWrap: {
       position: 'absolute',
       left: 0,
       right: 0,
-      bottom: 0,
       paddingHorizontal: 20,
-      paddingTop: 8,
-      backgroundColor: colors.skyBackground,
     },
     bottomBar: {
-      backgroundColor: colors.accent,
+      backgroundColor: colors.gray900,
       borderRadius: 16,
       paddingVertical: 16,
       alignItems: 'center',
@@ -310,7 +369,7 @@ function createStyles(colors: ThemeColors) {
       opacity: 0.4,
     },
     bottomBarText: {
-      color: '#FFFFFF',
+      color: colors.cardWhite,
       fontSize: 15,
       fontWeight: '700',
     },

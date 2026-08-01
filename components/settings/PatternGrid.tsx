@@ -37,7 +37,12 @@ export default function PatternGrid({ colors, showTrail, onComplete, size = 240 
   onCompleteRef.current = onComplete;
 
   const handleTouch = (evt: GestureResponderEvent) => {
-    const { locationX, locationY } = evt.nativeEvent;
+    let { locationX, locationY } = evt.nativeEvent;
+
+    // Clamp coordinates to stay within the grid boundaries
+    locationX = Math.max(0, Math.min(size, locationX));
+    locationY = Math.max(0, Math.min(size, locationY));
+
     setDragPoint({ x: locationX, y: locationY });
     for (let i = 0; i < centers.length; i += 1) {
       if (pathRef.current.includes(i)) continue;
@@ -117,6 +122,7 @@ export default function PatternGrid({ colors, showTrail, onComplete, size = 240 
         return (
           <View
             key={i}
+            pointerEvents="none"
             style={[
               styles.dot,
               {

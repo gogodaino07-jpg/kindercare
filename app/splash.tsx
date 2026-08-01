@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Text from '../components/common/AppText';
 import { ThemeColors } from '../constants/theme';
@@ -8,24 +8,29 @@ import { useThemeColors } from '../context/ThemeContext';
 
 export default function SplashScreen() {
   const router = useRouter();
+  const { hasOnboarded, googleAccount, onboardingLoaded } = useAppData();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    if (!onboardingLoaded) return;
+
+    // onboardingLoaded가 완료되면 즉시 분기 처리합니다.
+    // 실제 3초 대기는 전역 BootSplashOverlay가 담당하므로 중복 타이머를 제거합니다.
+    if (hasOnboarded && googleAccount) {
+      router.replace('/');
+    } else {
       router.replace('/onboarding');
-    }, 1600);
-    return () => clearTimeout(timer);
-  }, [router]);
+    }
+  }, [router, onboardingLoaded, hasOnboarded, googleAccount]);
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.logoCircle}>
-        <Text style={styles.logoIcon}>🐥</Text>
-      </View>
-      <Text style={styles.logoText}>
-        kinder<Text style={styles.logoTextAccent}>care</Text>
-      </Text>
+      <Image
+        source={require('../assets/splash_logo.gif')}
+        style={styles.logoImage}
+        resizeMode="contain"
+      />
       <Text style={styles.tagline}>우리 아이 유치원 소식, 놓치지 마세요</Text>
     </SafeAreaView>
   );
@@ -35,36 +40,20 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.peachOrange,
+      backgroundColor: '#FEF9F0', // Matched to the provided logo's background color
       alignItems: 'center',
       justifyContent: 'center',
     },
-    logoCircle: {
-      width: 96,
-      height: 96,
-      borderRadius: 48,
-      backgroundColor: colors.creamBeigeCard,
-      alignItems: 'center',
-      justifyContent: 'center',
+    logoImage: {
+      width: 240,
+      height: 240,
       marginBottom: 20,
     },
-    logoIcon: {
-      fontSize: 48,
-    },
-    logoText: {
-      fontSize: 32,
-      fontWeight: '800',
-      color: '#FFFFFF',
-      letterSpacing: 0.5,
-    },
-    logoTextAccent: {
-      color: colors.coralPink,
-    },
     tagline: {
-      marginTop: 10,
+      marginTop: -10,
       fontSize: 14,
-      fontWeight: '600',
-      color: 'rgba(255,255,255,0.9)',
+      fontWeight: '700',
+      color: '#71717A',
     },
   });
 }

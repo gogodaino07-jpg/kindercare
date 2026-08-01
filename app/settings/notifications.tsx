@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, View } from 'react-native';
-import { Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, Switch, View, Pressable } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenBackground from '../../components/ScreenBackground';
 import Text from '../../components/common/AppText';
 import TimeWheelPicker, { formatTimeOfDay } from '../../components/settings/TimeWheelPicker';
@@ -15,6 +14,7 @@ import { scheduleEventNotifications } from '../../utils/notifications';
 export default function NotificationSettingsScreen() {
   const { notificationSettings, updateNotificationSettings, events } = useAppData();
   const { showToast } = useToast();
+  const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [draft, setDraft] = useState(notificationSettings);
@@ -24,9 +24,6 @@ export default function NotificationSettingsScreen() {
     setSaving(true);
     updateNotificationSettings(draft);
     try {
-      // Requesting notification permissions can briefly blip AppState on
-      // some platforms — suppress the lock/splash replay that would
-      // otherwise fire the instant the permission dialog closes.
       await withExternalAction(() => scheduleEventNotifications(events, draft));
     } finally {
       setSaving(false);
@@ -36,7 +33,7 @@ export default function NotificationSettingsScreen() {
 
   return (
     <ScreenBackground>
-      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.row}>
             <Text style={styles.rowLabel}>알림 받기</Text>
@@ -44,11 +41,11 @@ export default function NotificationSettingsScreen() {
               value={draft.enabled}
               onValueChange={(enabled) => setDraft((prev) => ({ ...prev, enabled }))}
               trackColor={{ true: colors.accent, false: colors.border }}
-              thumbColor="#FFFFFF"
+              thumbColor={colors.cardWhite}
             />
           </View>
 
-          {draft.enabled ? (
+          {draft.enabled && (
             <>
               <Text style={styles.sectionLabel}>
                 전날 알림 시간 · {formatTimeOfDay(draft.dayBeforeTime)}
@@ -68,11 +65,11 @@ export default function NotificationSettingsScreen() {
                     setDraft((prev) => ({ ...prev, sameDayEnabled }))
                   }
                   trackColor={{ true: colors.accent, false: colors.border }}
-                  thumbColor="#FFFFFF"
+                  thumbColor={colors.cardWhite}
                 />
               </View>
 
-              {draft.sameDayEnabled ? (
+              {draft.sameDayEnabled && (
                 <>
                   <Text style={styles.sectionLabel}>
                     당일 알림 시간 · {formatTimeOfDay(draft.sameDayTime)}
@@ -84,14 +81,21 @@ export default function NotificationSettingsScreen() {
                     />
                   </View>
                 </>
-              ) : null}
+              )}
             </>
-          ) : null}
+          )}
         </ScrollView>
 
-        <Pressable style={styles.saveButton} onPress={handleSave} disabled={saving}>
-          <Text style={styles.saveButtonText}>{saving ? '저장 중...' : '저장'}</Text>
-        </Pressable>
+        {/* Absolute positioned button to match Upload screen layout */}
+        <View style={[styles.buttonContainer, { bottom: 24 + insets.bottom }]}>
+          <Pressable
+            style={[styles.saveButton, saving && { opacity: 0.7 }]}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            <Text style={styles.saveButtonText}>{saving ? '저장 중...' : '저장'}</Text>
+          </Pressable>
+        </View>
       </SafeAreaView>
     </ScreenBackground>
   );
@@ -100,7 +104,7 @@ export default function NotificationSettingsScreen() {
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     safeArea: { flex: 1 },
-    content: { padding: 20 },
+    content: { padding: 20, paddingBottom: 120 },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -111,33 +115,17 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 16,
       ...SHADOW,
     },
-    rowLabel: {
-      fontSize: 15,
-      fontWeight: '600',
-      color: colors.textPrimary,
-    },
-    sectionLabel: {
-      fontSize: 13,
-      fontWeight: '700',
-      color: colors.textSecondary,
-      marginBottom: 8,
-    },
-    pickerWrap: {
-      marginBottom: 24,
-    },
+    rowLabel: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+    sectionLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8 },
+    pickerWrap: { marginBottom: 24 },
+    buttonContainer: { position: 'absolute', left: 20, right: 20 },
     saveButton: {
-      marginHorizontal: 20,
-      marginBottom: 16,
-      backgroundColor: colors.accent,
+      backgroundColor: colors.gray900,
       borderRadius: 16,
       paddingVertical: 16,
       alignItems: 'center',
       ...SHADOW,
     },
-    saveButtonText: {
-      color: '#FFFFFF',
-      fontSize: 16,
-      fontWeight: '700',
-    },
+    saveButtonText: { color: colors.cardWhite, fontSize: 16, fontWeight: '700' },
   });
 }

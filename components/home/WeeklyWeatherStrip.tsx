@@ -1,3 +1,4 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { ThemeColors } from '../../constants/theme';
@@ -24,14 +25,21 @@ export default function WeeklyWeatherStrip({
 }: WeeklyWeatherStripProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const todayLabel = days?.find((d) => d.isToday)?.label;
+  const todayDay = days?.find((d) => d.isToday);
+  const todayLabel = todayDay?.label;
 
   if (loading && !days) {
     return (
       <View style={styles.wrapper}>
-        <View style={styles.statusContainer}>
-          <ActivityIndicator color={colors.accent} />
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {[1, 2, 3, 4, 5].map((i) => (
+            <View key={i} style={styles.skeletonCard} />
+          ))}
+        </ScrollView>
       </View>
     );
   }
@@ -60,15 +68,18 @@ export default function WeeklyWeatherStrip({
           <WeatherDayCard key={day.date} day={day} />
         ))}
       </ScrollView>
+
+      {todayLabel ? (
+        <View style={styles.summaryBox}>
+          <MaterialIcons name="cloud" size={20} color={colors.blue500} />
+          <Text style={styles.summaryText}>{describeGuideTip(todayLabel)}</Text>
+        </View>
+      ) : null}
+
       {usingFallbackLocation ? (
         <Text style={styles.fallbackNotice}>
           위치 권한이 없어 서울 기준으로 보여드리고 있어요
         </Text>
-      ) : null}
-      {todayLabel ? (
-        <View style={styles.tipBadge}>
-          <Text style={styles.tipBadgeText}>{describeGuideTip(todayLabel)}</Text>
-        </View>
       ) : null}
     </View>
   );
@@ -77,48 +88,56 @@ export default function WeeklyWeatherStrip({
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     wrapper: {
-      position: 'relative',
+      paddingBottom: 4,
     },
     scrollContent: {
-      paddingHorizontal: 20,
-      paddingTop: 2,
-      paddingBottom: 8,
+      paddingHorizontal: 16,
+      gap: 12,
+    },
+    summaryBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.lightBlueBg,
+      borderWidth: 1,
+      borderColor: colors.blue100,
+      borderRadius: 12,
+      marginHorizontal: 16,
+      marginTop: 8, // Adjusted: slightly reduced from original 16
+      padding: 12,
+    },
+    summaryText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.blue500,
+      marginLeft: 8,
     },
     fallbackNotice: {
       fontSize: 11,
-      color: colors.textSecondary,
-      marginLeft: 20,
-      marginBottom: 6,
-    },
-    tipBadge: {
-      alignSelf: 'flex-start',
-      backgroundColor: '#EAF4FB',
-      borderRadius: 999,
-      marginHorizontal: 20,
-      marginBottom: 10,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-    },
-    tipBadgeText: {
-      fontSize: 11,
-      fontWeight: '600',
-      color: colors.accent,
+      color: colors.gray400,
+      marginLeft: 16,
+      marginTop: 6,
     },
     statusContainer: {
-      height: 88,
+      height: 120,
       alignItems: 'center',
       justifyContent: 'center',
       flexDirection: 'row',
     },
     errorText: {
-      color: colors.textSecondary,
+      color: colors.gray500,
       fontSize: 13,
       marginRight: 8,
     },
     retryText: {
-      color: colors.accent,
+      color: colors.blue500,
       fontSize: 13,
       fontWeight: '600',
+    },
+    skeletonCard: {
+      width: 68, // Adjusted
+      height: 98, // Adjusted
+      backgroundColor: colors.gray100,
+      borderRadius: 18,
     },
   });
 }

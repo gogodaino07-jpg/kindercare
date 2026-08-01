@@ -25,7 +25,7 @@ const SEOUL_COORDS = { latitude: 37.5665, longitude: 126.978 };
 // Module-level cache so repeated Home mounts within the session don't refetch.
 let cachedResult: WeatherResult | null = null;
 let cachedAt = 0;
-const CACHE_TTL_MS = 30 * 60 * 1000;
+const CACHE_TTL_MS = 60 * 60 * 1000;
 /** Background auto-refresh cadence — manual refresh is now pull-to-refresh only. */
 const AUTO_REFRESH_MS = 60 * 60 * 1000;
 
@@ -35,7 +35,20 @@ async function resolveCoords(): Promise<{ coords: { latitude: number; longitude:
     if (status !== 'granted') {
       return { coords: SEOUL_COORDS, usingFallback: true };
     }
-    const position = await Location.getCurrentPositionAsync({});
+
+    // Try to get the last known location first for near-instant results.
+    const lastKnown = await Location.getLastKnownPositionAsync({});
+    if (lastKnown) {
+      return {
+        coords: { latitude: lastKnown.coords.latitude, longitude: lastKnown.coords.longitude },
+        usingFallback: false,
+      };
+    }
+
+    // Fall back to current position with Balanced accuracy (faster than High).
+    const position = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
     return {
       coords: { latitude: position.coords.latitude, longitude: position.coords.longitude },
       usingFallback: false,

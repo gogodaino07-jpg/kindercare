@@ -24,7 +24,13 @@ export async function withExternalAction<T>(action: () => Promise<T>): Promise<T
   try {
     return await action();
   } finally {
-    setExternalActionActive(false);
+    // Add a 1s grace period before clearing the flag — this ensures that
+    // if the app switches back to 'active' right as the action finishes
+    // (common when a Google Sign-In popup closes), the AppState listener
+    // still sees the flag as true and suppresses the boot splash/lock.
+    setTimeout(() => {
+      setExternalActionActive(false);
+    }, 1000);
   }
 }
 

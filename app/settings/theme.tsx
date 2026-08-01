@@ -12,7 +12,7 @@ export default function ThemeSettingsScreen() {
   const { mode, setMode, colors } = useTheme();
 
   return (
-    <ScreenBackground style={{ backgroundColor: colors.skyBackground }}>
+    <ScreenBackground>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <View style={styles.content}>
           {OPTIONS.map((option) => {

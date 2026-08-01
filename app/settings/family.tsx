@@ -8,11 +8,12 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenBackground from '../../components/ScreenBackground';
 import Text from '../../components/common/AppText';
 import { SHADOW, ThemeColors } from '../../constants/theme';
@@ -32,13 +33,21 @@ function formatPhoneNumber(raw: string): string {
 
 export default function FamilyMembersScreen() {
   const { title: titleParam } = useLocalSearchParams<{ title?: string }>();
+  const isManagementMode = titleParam === '구성원 관리';
+  const isReissueMode = titleParam === '키 재발급';
+
   const { familyKey, familyMembers, removeMember, leaveFamily, regenerateFamilyKey, updateMemberPhone } =
     useAppData();
   const { showAlert } = useAlert();
   const { isLocked } = useAppLock();
+  const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [displayedKey, setDisplayedKey] = useState(familyKey);
+
+  useEffect(() => {
+    setDisplayedKey(familyKey);
+  }, [familyKey]);
   const [copied, setCopied] = useState(false);
   const [phoneModalMemberId, setPhoneModalMemberId] = useState<string | null>(null);
   const [phoneInput, setPhoneInput] = useState('');
@@ -157,67 +166,83 @@ export default function FamilyMembersScreen() {
   };
 
   return (
-    <ScreenBackground>
+    <ScreenBackground hidePattern={true}>
       <Stack.Screen options={{ title: titleParam ?? '가족 계정' }} />
-      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <View style={styles.content}>
-          <Text style={styles.sectionLabel}>가족 키</Text>
-          <View style={styles.keyCard}>
-            <Text style={styles.keyText}>{displayedKey}</Text>
-            <Pressable style={styles.copyButton} onPress={handleCopy} accessibilityLabel="키 복사">
-              <Text style={styles.copyButtonText}>{copied ? '✓ 복사됨' : '📋 복사하기'}</Text>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <ScrollView contentContainerStyle={styles.content}>
+          {isReissueMode && (
+            <>
+              <Text style={styles.sectionLabel}>가족 키</Text>
+              <View style={styles.keyCard}>
+                <Text style={styles.keyText}>{displayedKey}</Text>
+                <Pressable
+                  style={styles.copyButton}
+                  onPress={handleCopy}
+                  accessibilityLabel="키 복사"
+                >
+                  <Text style={styles.copyButtonText}>{copied ? '✓ 복사됨' : '📋 복사하기'}</Text>
+                </Pressable>
+              </View>
+            </>
+          )}
+
+          {isManagementMode && (
+            <>
+              <Text style={styles.sectionLabel}>구성원</Text>
+              {familyMembers.map((member) => (
+                <View key={member.id} style={styles.memberCard}>
+                  <View style={styles.memberAvatar}>
+                    <Text style={styles.memberAvatarText}>{member.name[0]}</Text>
+                  </View>
+                  <View style={styles.memberInfo}>
+                    <Text style={styles.memberName}>{member.name}</Text>
+                    {member.isOwner ? <Text style={styles.ownerBadge}>소유자</Text> : null}
+                  </View>
+
+                  {member.phone ? (
+                    <Pressable
+                      style={styles.phoneIconButton}
+                      onPress={() => handleCallOrEdit(member)}
+                      accessibilityLabel={`${member.name} 전화`}
+                    >
+                      <Text style={styles.phoneIcon}>📞</Text>
+                    </Pressable>
+                  ) : member.isOwner ? null : (
+                    <Pressable
+                      style={styles.phoneAddButton}
+                      onPress={() => openPhoneModal(member)}
+                      accessibilityLabel={`${member.name} 전화번호 추가`}
+                    >
+                      <Text style={styles.phoneAddButtonText}>+ 전화번호</Text>
+                    </Pressable>
+                  )}
+
+                  {self?.isOwner && !member.isOwner ? (
+                    <Pressable
+                      style={styles.actionButton}
+                      onPress={() => handleRemove(member.id, member.name)}
+                    >
+                      <Text style={styles.actionButtonText}>내보내기</Text>
+                    </Pressable>
+                  ) : null}
+                  {!self?.isOwner && member.id === self?.id ? (
+                    <Pressable style={styles.actionButton} onPress={() => handleLeave(member.id)}>
+                      <Text style={styles.actionButtonText}>그룹 나가기</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ))}
+            </>
+          )}
+        </ScrollView>
+
+        {isReissueMode && (
+          <View style={[styles.buttonContainer, { bottom: 24 + insets.bottom }]}>
+            <Pressable style={styles.reissueButton} onPress={handleReissue}>
+              <Text style={styles.reissueButtonText}>키 재발급</Text>
             </Pressable>
           </View>
-
-          <Text style={styles.sectionLabel}>구성원</Text>
-          {familyMembers.map((member) => (
-            <View key={member.id} style={styles.memberCard}>
-              <View style={styles.memberAvatar}>
-                <Text style={styles.memberAvatarText}>{member.name[0]}</Text>
-              </View>
-              <View style={styles.memberInfo}>
-                <Text style={styles.memberName}>{member.name}</Text>
-                {member.isOwner ? <Text style={styles.ownerBadge}>소유자</Text> : null}
-              </View>
-
-              {member.phone ? (
-                <Pressable
-                  style={styles.phoneIconButton}
-                  onPress={() => handleCallOrEdit(member)}
-                  accessibilityLabel={`${member.name} 전화`}
-                >
-                  <Text style={styles.phoneIcon}>📞</Text>
-                </Pressable>
-              ) : member.isOwner ? null : (
-                <Pressable
-                  style={styles.phoneAddButton}
-                  onPress={() => openPhoneModal(member)}
-                  accessibilityLabel={`${member.name} 전화번호 추가`}
-                >
-                  <Text style={styles.phoneAddButtonText}>+ 전화번호</Text>
-                </Pressable>
-              )}
-
-              {self?.isOwner && !member.isOwner ? (
-                <Pressable
-                  style={styles.actionButton}
-                  onPress={() => handleRemove(member.id, member.name)}
-                >
-                  <Text style={styles.actionButtonText}>내보내기</Text>
-                </Pressable>
-              ) : null}
-              {!self?.isOwner && member.id === self?.id ? (
-                <Pressable style={styles.actionButton} onPress={() => handleLeave(member.id)}>
-                  <Text style={styles.actionButtonText}>그룹 나가기</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          ))}
-
-          <Pressable style={styles.reissueButton} onPress={handleReissue}>
-            <Text style={styles.reissueButtonText}>키 재발급</Text>
-          </Pressable>
-        </View>
+        )}
       </SafeAreaView>
 
       <Modal
@@ -273,7 +298,7 @@ export default function FamilyMembersScreen() {
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     safeArea: { flex: 1 },
-    content: { padding: 20 },
+    content: { padding: 20, paddingBottom: 120 },
     sectionLabel: {
       fontSize: 13,
       fontWeight: '700',
@@ -299,7 +324,7 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 6,
       paddingHorizontal: 14,
       borderRadius: 999,
-      backgroundColor: '#EEF2F5',
+      backgroundColor: colors.gray50,
     },
     copyButtonText: {
       fontSize: 12,
@@ -319,7 +344,7 @@ function createStyles(colors: ThemeColors) {
       width: 36,
       height: 36,
       borderRadius: 18,
-      backgroundColor: '#EEF2F5',
+      backgroundColor: colors.gray50,
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: 12,
@@ -345,7 +370,7 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 6,
       paddingHorizontal: 10,
       borderRadius: 999,
-      backgroundColor: '#EEF2F5',
+      backgroundColor: colors.gray50,
       marginRight: 8,
     },
     phoneAddButtonText: {
@@ -357,7 +382,7 @@ function createStyles(colors: ThemeColors) {
       width: 30,
       height: 30,
       borderRadius: 15,
-      backgroundColor: '#EAF6EE',
+      backgroundColor: colors.green50,
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: 8,
@@ -369,7 +394,7 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 6,
       paddingHorizontal: 12,
       borderRadius: 999,
-      backgroundColor: '#FDECEA',
+      backgroundColor: colors.tomorrowRedBg,
     },
     actionButtonText: {
       fontSize: 12,
@@ -377,17 +402,23 @@ function createStyles(colors: ThemeColors) {
       color: colors.tomorrowRed,
     },
     reissueButton: {
-      marginTop: 24,
-      paddingVertical: 14,
+      paddingVertical: 16,
       alignItems: 'center',
-      borderRadius: 14,
-      backgroundColor: colors.cardWhite,
+      borderRadius: 16,
+      backgroundColor: colors.gray900, // Dynamic black/white
       ...SHADOW,
     },
     reissueButtonText: {
-      fontSize: 14,
+      fontSize: 16,
       fontWeight: '700',
-      color: colors.textPrimary,
+      color: colors.cardWhite,
+    },
+    buttonContainer: {
+      position: 'absolute',
+      left: 20,
+      right: 20,
+      zIndex: 100,
+      elevation: 5,
     },
     phoneModalOverlay: {
       flex: 1,
@@ -397,7 +428,7 @@ function createStyles(colors: ThemeColors) {
     },
     phoneModalBackdrop: {
       ...StyleSheet.absoluteFill,
-      backgroundColor: 'rgba(20, 24, 22, 0.5)',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     phoneModalCard: {
       width: '100%',
@@ -420,7 +451,7 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 8,
       paddingHorizontal: 14,
       borderRadius: 999,
-      backgroundColor: '#EEF2F5',
+      backgroundColor: colors.gray50,
     },
     importContactButtonText: {
       fontSize: 13,
@@ -428,13 +459,13 @@ function createStyles(colors: ThemeColors) {
       color: colors.accent,
     },
     phoneModalInput: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.gray50,
       borderRadius: 12,
       paddingHorizontal: 14,
       paddingVertical: 12,
       fontSize: 15,
       color: colors.textPrimary,
-      borderWidth: 1.5,
+      borderWidth: 1,
       borderColor: colors.border,
     },
     phoneModalButtonRow: {
@@ -460,7 +491,7 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 13,
       alignItems: 'center',
       borderRadius: 14,
-      backgroundColor: colors.accent,
+      backgroundColor: colors.gray900,
     },
     phoneModalSaveButtonDisabled: {
       opacity: 0.4,
@@ -468,7 +499,7 @@ function createStyles(colors: ThemeColors) {
     phoneModalSaveText: {
       fontSize: 15,
       fontWeight: '700',
-      color: '#FFFFFF',
+      color: colors.cardWhite,
     },
   });
 }

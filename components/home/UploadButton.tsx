@@ -22,7 +22,7 @@ function createStyles(colors: ThemeColors) {
     button: {
       marginHorizontal: 20,
       marginTop: 8,
-      marginBottom: 16,
+      marginBottom: 8, // 하단 마진 다시 추가
       backgroundColor: colors.accent,
       borderRadius: 999,
       paddingVertical: 16,

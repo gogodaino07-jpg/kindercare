@@ -16,10 +16,12 @@ export interface NotificationCenterItem {
 interface NotificationCenterContextValue {
   notifications: NotificationCenterItem[];
   hasUnread: boolean;
+  unreadCount: number;
   addNotification: (input: Omit<NotificationCenterItem, 'id' | 'createdAt' | 'read'>) => void;
   removeNotification: (id: string) => void;
   markRead: (id: string) => void;
   clearNotifications: () => void;
+  refreshNotifications: () => Promise<void>;
 }
 
 const STORAGE_KEY = 'kindercare_notification_center';
@@ -71,11 +73,33 @@ export function NotificationCenterProvider({ children }: { children: React.React
 
   const clearNotifications = () => setNotifications([]);
 
+  const refreshNotifications = async () => {
+    try {
+      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) setNotifications(parsed);
+      }
+    } catch (e) {
+      console.error('Failed to refresh notifications:', e);
+    }
+  };
+
   const hasUnread = useMemo(() => notifications.some((n) => !n.read), [notifications]);
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
 
   const value = useMemo<NotificationCenterContextValue>(
-    () => ({ notifications, hasUnread, addNotification, removeNotification, markRead, clearNotifications }),
-    [notifications, hasUnread]
+    () => ({
+      notifications,
+      hasUnread,
+      unreadCount,
+      addNotification,
+      removeNotification,
+      markRead,
+      clearNotifications,
+      refreshNotifications,
+    }),
+    [notifications, hasUnread, unreadCount]
   );
 
   return (

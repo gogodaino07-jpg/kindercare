@@ -49,6 +49,10 @@ export default function FamilyGroupStartScreen() {
             <Text style={styles.secondaryCardSubtitle}>가족에게 받은 코드를 입력해요</Text>
           </View>
         </Pressable>
+
+        <Pressable style={styles.reloginButton} onPress={() => router.push({ pathname: '/google-signin', params: { flow: 'relogin' } })}>
+          <Text style={styles.reloginText}>이미 계정이 있으신가요? <Text style={styles.reloginLink}>재로그인</Text></Text>
+        </Pressable>
       </View>
 
       <JoinCodeModal
@@ -104,5 +108,19 @@ function createStyles(colors: ThemeColors) {
     secondaryCardTitle: { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
     secondaryCardSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
     cardTextArea: { flex: 1 },
+    reloginButton: {
+      marginTop: 28,
+      alignItems: 'center',
+      paddingVertical: 10,
+    },
+    reloginText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    reloginLink: {
+      fontWeight: '800',
+      color: colors.accent,
+      textDecorationLine: 'underline',
+    },
   });
 }

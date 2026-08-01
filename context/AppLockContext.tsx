@@ -4,7 +4,9 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { AppState, AppStateStatus } from 'react-native';
 import { isExternalActionActive, setExternalActionActive } from '../utils/externalAction';
 
-export type LockMethod = 'none' | 'password' | 'pattern';
+export type LockMethod = 'none' | 'pin' | 'password' | 'pattern';
+
+export const BOOT_SPLASH_MS = 3000;
 
 interface StoredLockConfig {
   method: LockMethod;
@@ -30,6 +32,7 @@ interface AppLockContextValue {
   showPatternEnabled: boolean;
   biometricAvailable: boolean;
   isLocked: boolean;
+  isBooting: boolean;
   setLockMethod: (method: LockMethod, secret?: string | null) => Promise<void>;
   changeSecret: (secret: string) => Promise<void>;
   verifySecret: (input: string) => boolean;
@@ -68,6 +71,7 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
   const [loaded, setLoaded] = useState(false);
   const [config, setConfig] = useState<StoredLockConfig>(DEFAULT_CONFIG);
   const [isLocked, setIsLocked] = useState(false);
+  const [isBooting, setIsBooting] = useState(true);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
 
   const backgroundedRef = useRef(false);
@@ -80,6 +84,11 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
   const setPickerActive = (value: boolean) => {
     setExternalActionActive(value);
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsBooting(false), BOOT_SPLASH_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     loadConfig().then((loadedConfig) => {
@@ -106,6 +115,7 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
       } else if (nextState === 'active' && prevState !== 'active') {
         if (backgroundedRef.current) {
           backgroundedRef.current = false;
+
           // A gallery/camera/document/contacts picker, GPS lookup, or an
           // external link (Coupang) all take the app to 'background' too
           // (the OS/native UI takes over), so skip the re-lock in that case —
@@ -188,6 +198,7 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
       showPatternEnabled: config.showPatternEnabled,
       biometricAvailable,
       isLocked,
+      isBooting,
       setLockMethod,
       changeSecret,
       verifySecret,
@@ -199,7 +210,7 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
       resetLock,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [loaded, config, isLocked, biometricAvailable]
+    [loaded, config, isLocked, isBooting, biometricAvailable]
   );
 
   return <AppLockContext.Provider value={value}>{children}</AppLockContext.Provider>;

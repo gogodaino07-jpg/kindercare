@@ -6,6 +6,7 @@ import PermissionModal from '../components/onboarding/PermissionModal';
 import Text from '../components/common/AppText';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
 import { SHADOW, ThemeColors } from '../constants/theme';
+import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { ChildAge } from '../types/models';
@@ -28,6 +29,7 @@ function formatBirthdate(date: Date): string {
 export default function OnboardingChildSetupScreen() {
   const router = useRouter();
   const { addChild, completeOnboarding } = useAppData();
+  const { showAlert } = useAlert();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -216,7 +218,7 @@ function createStyles(colors: ThemeColors) {
     completeButton: {
       marginHorizontal: 24,
       marginBottom: 24,
-      backgroundColor: colors.textPrimary,
+      backgroundColor: colors.coralPink,
       borderRadius: 16,
       paddingVertical: 16,
       alignItems: 'center',

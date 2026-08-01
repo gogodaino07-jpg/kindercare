@@ -1,104 +1,163 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
+import Animated, { FadeInUp, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import Text from '../common/AppText';
-import { ThemeColors } from '../../constants/theme';
+import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
-import { EventDateGroup } from '../../hooks/useUpcomingEvents';
 import { Event } from '../../types/models';
 import { formatMD } from '../../utils/date';
 import EventCard from './EventCard';
 
 interface EventListSectionProps {
-  tomorrowEvents: Event[];
-  laterGroups: EventDateGroup[];
+  mainEvents: Event[];
+  featuredLaterEvents: Event[];
+  displayType: 'TODAY' | 'TOMORROW';
   onEventPress: (event: Event) => void;
-  refreshing?: boolean;
-  onRefresh?: () => void;
+  hideSupplies?: boolean;
+  hideUpcoming?: boolean;
 }
 
-// Same-date groups with this many events or more collapse behind a
-// '더보기' toggle so a busy day doesn't push every other date off-screen.
-const COLLAPSE_THRESHOLD = 3;
-const COLLAPSED_PREVIEW_COUNT = 2;
-
 export default function EventListSection({
-  tomorrowEvents,
-  laterGroups,
+  mainEvents,
+  featuredLaterEvents,
+  displayType,
   onEventPress,
-  refreshing,
-  onRefresh,
+  hideSupplies = false,
+  hideUpcoming = false,
 }: EventListSectionProps) {
-  const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const [isLaterExpanded, setIsLaterExpanded] = useState(false);
 
-  const toggleExpanded = (date: string) => {
-    setExpandedDates((prev) => {
-      const next = new Set(prev);
-      if (next.has(date)) next.delete(date);
-      else next.add(date);
-      return next;
-    });
-  };
+  const isToday = displayType === 'TODAY';
+  const themeColor = isToday ? colors.accent : colors.blue500;
+  const themeBg = isToday ? colors.gray50 : colors.lightBlueBg;
+
+  const visibleLaterEvents = isLaterExpanded
+    ? featuredLaterEvents
+    : featuredLaterEvents.slice(0, 2);
+
+  const remainingCount = featuredLaterEvents.length - 2;
+  const hasMore = featuredLaterEvents.length > 2;
 
   return (
     <View style={styles.container}>
-      {tomorrowEvents.length > 0 && (
-        <View style={styles.stickyBlock}>
+      {!hideSupplies && (
+        <>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>🎒 내일의 준비물 콕콕!</Text>
-            <Pressable onPress={() => router.push('/calendar')} hitSlop={8}>
-              <Text style={styles.sectionLink}>전체보기 ›</Text>
-            </Pressable>
-          </View>
-          {tomorrowEvents.map((event) => (
-            <EventCard
-              key={event.id}
-              event={event}
-              dateBadgeText="내일"
-              highlighted
-              onPress={() => onEventPress(event)}
-            />
-          ))}
-        </View>
-      )}
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} /> : undefined
-        }
-      >
-        {laterGroups.map((group) => {
-          const collapsible = group.events.length >= COLLAPSE_THRESHOLD;
-          const expanded = expandedDates.has(group.date);
-          const visibleEvents =
-            collapsible && !expanded
-              ? group.events.slice(0, COLLAPSED_PREVIEW_COUNT)
-              : group.events;
-          return (
-            <View key={group.date} style={styles.dateGroup}>
-              <Text style={styles.dateGroupHeader}>💌 {formatMD(group.date)} 소식</Text>
-              {visibleEvents.map((event) => (
-                <EventCard key={event.id} event={event} onPress={() => onEventPress(event)} />
-              ))}
-              {collapsible ? (
-                <Pressable
-                  style={styles.toggleButton}
-                  onPress={() => toggleExpanded(group.date)}
-                >
-                  <Text style={styles.toggleButtonText}>
-                    {expanded ? '▲ 접기' : `▼ 일정 ${group.events.length}개 더보기`}
-                  </Text>
-                </Pressable>
-              ) : null}
+            <View style={styles.titleRow}>
+              <View style={styles.iconBox}>
+                <MaterialIcons name="shopping-bag" size={20} color="#FFFFFF" />
+              </View>
+              <Text style={styles.sectionTitle}>준비물 챙기기</Text>
             </View>
-          );
-        })}
-      </ScrollView>
+          </View>
+
+          {/* Main Card (Today or Tomorrow) */}
+          <View style={[
+            styles.mainCard,
+            { backgroundColor: themeBg, borderLeftColor: themeColor, borderColor: isToday ? '#E5EDFF' : '#EDE9FE' },
+            mainEvents.length >= 2 && { maxHeight: 260 }
+          ]}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.tomorrowBadge, { backgroundColor: themeColor }]}>
+                <Text style={styles.tomorrowBadgeText}>{displayType}</Text>
+              </View>
+              <Text style={[styles.cardHeaderText, { color: themeColor }]}>
+                {isToday ? '오늘' : '내일'} 챙겨야 할 것들
+              </Text>
+            </View>
+
+            <ScrollView
+              nestedScrollEnabled={true}
+              showsVerticalScrollIndicator={false}
+            >
+              {mainEvents.map((event, idx) => (
+                <React.Fragment key={`${event.id}-${isToday}`}>
+                  <EventCard
+                    event={event}
+                    dateBadgeText={formatMD(event.date)}
+                    isPlanned={true}
+                    highlighted={true}
+                    initiallyExpanded={true}
+                    themeColor={themeColor}
+                    showCoupangButton={!isToday}
+                    hideCheckbox={false}
+                    onPress={() => onEventPress(event)}
+                  />
+                  {idx < mainEvents.length - 1 && <View style={[styles.divider, { backgroundColor: isToday ? '#E5EDFF' : '#EDE9FE' }]} />}
+                </React.Fragment>
+              ))}
+              {mainEvents.length === 0 && (
+                <Text style={styles.emptyText}>챙길 준비물이 없어요 😊</Text>
+              )}
+            </ScrollView>
+          </View>
+        </>
+      )}
+
+      {/* Featured Later Events (Next 3 days) - Separated from the main card */}
+      {!hideUpcoming && (
+        featuredLaterEvents.length > 0 ? (
+          <View style={styles.laterSection}>
+            <View style={styles.laterHeader}>
+              <View style={styles.laterTitleRow}>
+                <MaterialIcons name="event-note" size={18} color={colors.textSecondary} />
+                <Text style={styles.laterSectionTitle}>다가오는 일정</Text>
+              </View>
+              {hasMore && (
+                <TouchableOpacity
+                  style={styles.toggleButton}
+                  onPress={() => setIsLaterExpanded(!isLaterExpanded)}
+                  activeOpacity={0.7}
+                >
+                  {!isLaterExpanded && (
+                    <Text style={styles.moreText}>{remainingCount}개 더보기</Text>
+                  )}
+                  <MaterialIcons
+                    name={isLaterExpanded ? "expand-less" : "expand-more"}
+                    size={18}
+                    color={colors.gray500}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <Animated.View layout={LinearTransition}>
+              {visibleLaterEvents.map((event, idx) => (
+                <Animated.View
+                  key={event.id}
+                  entering={idx >= 2 ? FadeInUp.duration(400).springify() : undefined}
+                  exiting={FadeOutUp}
+                  style={styles.laterItemWrapper}
+                >
+                  <EventCard
+                    event={event}
+                    dateBadgeText={formatMD(event.date)}
+                    isPlanned={true}
+                    highlighted={false}
+                    showCoupangButton={true}
+                    hideCheckbox={true}
+                    onPress={() => onEventPress(event)}
+                  />
+                  {idx < visibleLaterEvents.length - 1 && (
+                    <View style={[styles.divider, { backgroundColor: colors.gray100, marginVertical: 6 }]} />
+                  )}
+                </Animated.View>
+              ))}
+            </Animated.View>
+          </View>
+        ) : (
+          <View style={styles.placeholderContainer}>
+            <View style={styles.placeholderInner}>
+              <MaterialIcons name="event-note" size={20} color={colors.gray300} />
+              <Text style={styles.placeholderText}>다가올 일정은 오후 10시 이후에 나타납니다.</Text>
+            </View>
+          </View>
+        )
+      )}
     </View>
   );
 }
@@ -106,11 +165,8 @@ export default function EventListSection({
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
-      flex: 1,
       paddingHorizontal: 20,
-    },
-    stickyBlock: {
-      paddingTop: 4,
+      marginTop: 4,
     },
     sectionHeaderRow: {
       flexDirection: 'row',
@@ -118,43 +174,121 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'space-between',
       marginBottom: 8,
     },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    iconBox: {
+      backgroundColor: colors.tomorrowRed,
+      padding: 6,
+      borderRadius: 12,
+      ...SHADOW,
+      elevation: 2,
+    },
     sectionTitle: {
-      fontSize: 15,
-      fontWeight: '800',
+      fontSize: 18,
+      fontWeight: 'bold',
       color: colors.textPrimary,
+      letterSpacing: -0.5,
     },
-    sectionLink: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: colors.accent,
+    mainCard: {
+      borderRadius: 20,
+      borderWidth: 1,
+      borderLeftWidth: 6,
+      padding: 12,
+      ...SHADOW,
+      shadowColor: '#000',
+      shadowOpacity: 0.05,
+      elevation: 3,
+      borderColor: colors.border,
     },
-    scroll: {
-      flex: 1,
-    },
-    scrollContent: {
-      paddingBottom: 24,
-    },
-    dateGroup: {
-      marginBottom: 4,
-    },
-    dateGroupHeader: {
-      fontSize: 13,
-      fontWeight: '700',
-      color: colors.textSecondary,
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
       marginBottom: 8,
-      marginTop: 4,
+      paddingLeft: 4,
+    },
+    tomorrowBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    tomorrowBadgeText: {
+      color: '#FFFFFF',
+      fontSize: 11,
+      fontWeight: 'bold',
+      letterSpacing: 0.5,
+    },
+    cardHeaderText: {
+      fontSize: 14,
+      fontWeight: 'bold',
+    },
+    laterSection: {
+      marginTop: 12,
+      paddingHorizontal: 4,
+    },
+    laterHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    laterTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    laterSectionTitle: {
+      fontSize: 15, // Increased from 13
+      fontWeight: '800',
+      color: colors.textSecondary,
     },
     toggleButton: {
-      alignSelf: 'center',
-      paddingVertical: 8,
-      paddingHorizontal: 14,
-      marginTop: 2,
-      marginBottom: 6,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
     },
-    toggleButtonText: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: colors.accent,
+    moreText: {
+      fontSize: 12, // Increased from 11
+      fontWeight: '800',
+      color: colors.gray600,
+    },
+    laterItemWrapper: {
+      marginBottom: 4, // Increased from 2
+    },
+    divider: {
+      height: 1,
+    },
+    emptyText: {
+      textAlign: 'center',
+      color: colors.gray400,
+      paddingVertical: 12,
+      fontSize: 13,
+    },
+    placeholderContainer: {
+      marginTop: 12,
+      paddingHorizontal: 4,
+      height: 75, // Increased from 60
+      justifyContent: 'center',
+    },
+    placeholderInner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.gray50,
+      borderRadius: 14,
+      padding: 16, // Increased from 12
+      gap: 10,
+      borderWidth: 1.5,
+      borderColor: colors.gray200,
+      borderStyle: 'dashed',
+    },
+    placeholderText: {
+      fontSize: 13, // Increased from 12
+      color: colors.gray500,
+      fontWeight: '600',
     },
   });
 }
+

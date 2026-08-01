@@ -9,7 +9,7 @@ import { toISODate } from './date';
  * it's only appropriate for personal/testing use, not a public release.
  */
 const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-3-flash-preview';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 export class GeminiAnalysisError extends Error {}
@@ -39,21 +39,37 @@ async function docToInlinePart(doc: UploadedDoc) {
 }
 
 function buildPrompt(todayISO: string, child: Child): string {
-  return `당신은 유치원/어린이집에서 발행한 가정통신문을 분석하는 도우미입니다.
-첨부된 이미지/문서는 하나 이상의 가정통신문입니다. 문서 안에서 학부모가 챙겨야 할 일정(행사, 준비물, 제출 마감일 등)을 모두 찾아 JSON으로 추출해주세요.
+  return `당신은 유치원/어린이집 가정통신문 전문 분석가입니다.
+제공된 이미지에서 학부모가 캘린더에 등록하고 관리해야 할 모든 일정과 정보를 추출하세요.
 
-오늘 날짜: ${todayISO}
-대상 아이: ${child.name ?? '아이'} (${child.age}세, ${child.className ?? '반 정보 없음'})
+[대상 아이 정보]
+- 이름: ${child.name ?? '아이'}
+- 연령: ${child.age}세
+- 소속 반: ${child.className ?? '반 정보 없음'} (이 반에 해당하거나 전체 대상인 일정만 추출하세요)
 
-규칙:
-- date는 반드시 "YYYY-MM-DD" 형식의 절대 날짜로 변환하세요. "이번주 금요일", "다음달 초"처럼 상대적인 표현이 있으면 오늘 날짜를 기준으로 계산하세요. 연도 표기가 없으면 오늘 날짜의 연도를 사용하세요.
-- title은 15자 이내의 간결한 일정 제목으로 작성하세요.
-- note에는 준비물이 있다면 쉼표로 구분해 적어주세요. 없으면 생략하세요.
-- memo에는 유의사항이나 추가 설명이 있다면 적어주세요. 없으면 생략하세요.
-- icon은 일정 성격에 어울리는 이모지 1개를 추천하세요 (예: 소풍=🚌, 준비물=🎒, 병원=🏥, 사진=📷, 생일=🎂).
-- 날짜나 내용이 불명확하거나 문서 화질 때문에 추정한 경우 needsReview를 true로 하고 reviewReason에 이유를 짧게 한국어로 적어주세요.
-- 문서에서 일정을 찾을 수 없으면 events를 빈 배열로 반환하세요.
-- 절대 문서에 없는 내용을 지어내지 마세요.`;
+[현재 기준 날짜]
+- 오늘: ${todayISO}
+
+[추출 규칙]
+1. 날짜 처리:
+   - "YYYY-MM-DD" 형식으로 작성하세요.
+   - 연도 정보가 없으면 ${todayISO}의 연도를 따릅니다.
+   - "이번 주 목요일" 같은 표현은 기준 날짜로부터 계산하세요.
+   - 기간 일정(예: 10일~12일)은 시작일과 종료일을 각각 개별 일정으로 분리하거나, 가장 중요한 날(행사 당일)을 기준으로 하나만 추출하세요.
+
+2. 필터링:
+   - 아이의 '소속 반' 정보가 통신문에 언급되어 있다면, 다른 반의 일정은 제외하고 이 아이와 관련된 일정만 추출하세요.
+   - 단순 안내 사항보다는 '행사', '준비물', '제출물', '휴원일' 등 행동이 필요한 항목 위주로 추출하세요.
+
+3. 필드 작성:
+   - title: 15자 이내 (예: "여름 소풍", "생일 파티")
+   - note: 반드시 챙겨야 할 준비물 (없으면 생략)
+   - memo: 시간(예: 9시까지 등원), 장소, 복장, 혹은 주의사항을 요약 (없으면 생략)
+   - icon: 성격에 맞는 이모지 1개
+
+4. 신뢰도:
+   - 확실하지 않은 날짜나 내용은 'needsReview: true'로 표시하고 이유를 'reviewReason'에 적으세요.
+   - 절대 없는 내용을 지어내지 마세요.`;
 }
 
 const RESPONSE_SCHEMA = {
@@ -124,17 +140,21 @@ export async function analyzeDocumentsWithGemini(
   }
 
   if (!response.ok) {
-    let message = `문서 분석에 실패했어요 (${response.status}).`;
+    let message = `문서 분석에 실패했어요 (HTTP ${response.status})`;
     try {
       const errJson = await response.json();
-      if (errJson?.error?.message) message = `문서 분석에 실패했어요: ${errJson.error.message}`;
-    } catch {
-      // Keep the generic status-code message above.
+      console.error('Gemini API Error Detail:', JSON.stringify(errJson, null, 2));
+      if (errJson?.error?.message) {
+        message = `Gemini 오류: ${errJson.error.message}`;
+      }
+    } catch (e) {
+      console.error('Failed to parse Gemini error JSON', e);
     }
     throw new GeminiAnalysisError(message);
   }
 
   const json = await response.json();
+  console.log('Gemini API Success Response:', JSON.stringify(json, null, 2));
   const rawText: string | undefined = json?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!rawText) {
     throw new GeminiAnalysisError('분석 결과를 읽지 못했어요. 다시 시도해주세요.');

@@ -111,8 +111,9 @@ function createStyles(colors: ThemeColors) {
       width: '100%',
       maxWidth: 340,
       backgroundColor: colors.cardWhite,
-      borderRadius: 22,
-      padding: 22,
+      borderRadius: 28,
+      paddingHorizontal: 24,
+      paddingVertical: 18,
       ...SHADOW,
     },
     icon: {
@@ -121,21 +122,22 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 8,
     },
     title: {
-      fontSize: 16,
+      fontSize: 17,
       fontWeight: '800',
       color: colors.textPrimary,
       textAlign: 'center',
       marginBottom: 8,
     },
     message: {
-      fontSize: 13,
+      fontSize: 14,
       color: colors.textSecondary,
       textAlign: 'center',
-      lineHeight: 19,
+      lineHeight: 22,
       marginBottom: 8,
+      paddingHorizontal: 4,
     },
     messageLast: {
-      marginBottom: 18,
+      marginBottom: 14,
     },
     warningMessage: {
       fontSize: 13,
@@ -163,7 +165,7 @@ function createStyles(colors: ThemeColors) {
       flex: 1,
     },
     buttonPrimary: {
-      backgroundColor: colors.coralPink,
+      backgroundColor: colors.accent,
     },
     buttonDestructive: {
       backgroundColor: colors.tomorrowRed,
@@ -171,7 +173,7 @@ function createStyles(colors: ThemeColors) {
     buttonOutline: {
       backgroundColor: 'transparent',
       borderWidth: 1.5,
-      borderColor: colors.border,
+      borderColor: colors.accent,
     },
     buttonTextPrimary: {
       color: '#FFFFFF',
@@ -179,7 +181,7 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '700',
     },
     buttonTextOutline: {
-      color: colors.textSecondary,
+      color: colors.accent,
       fontSize: 15,
       fontWeight: '700',
     },

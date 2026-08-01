@@ -40,3 +40,21 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# IDE
+.idea/
+*.iml
+app/.idea/
+
+# Gemini Artifacts
+.artifacts/
+
+# Firebase configuration (Sensitive)
+google-services.json
+
+# Build files
+android/build/
+app/build/
+build/
+.cxx/
+app/.cxx/

@@ -4,17 +4,22 @@
     "slug": "kindercare",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo_icon.jpg",
     "scheme": "kindercare",
     "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#FEF9F0"
+    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "package": "com.kindercare.app",
+      "package": "com.kindeerecare.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
+        "foregroundImage": "./assets/logo_icon.jpg",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
@@ -49,8 +54,8 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
-          "color": "#4A90D9"
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#FEF9F0"
         }
       ],
       "@react-native-community/datetimepicker",
@@ -60,7 +65,8 @@
         {
           "faceIDPermission": "지문/얼굴 인식으로 앱 잠금을 해제하기 위해 필요해요."
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true

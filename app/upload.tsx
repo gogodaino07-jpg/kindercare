@@ -1,12 +1,25 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack, useRouter } from 'expo-router';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Easing,
+  Image,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
 import Text from '../components/common/AppText';
 import { SHADOW, ThemeColors } from '../constants/theme';
+import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
@@ -26,30 +39,77 @@ const MAX_DOCS = 5;
 export default function UploadScreen() {
   const router = useRouter();
   const { selectedChild, events } = useAppData();
+  const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
   const { showToast } = useToast();
+  const insets = useSafeAreaInsets();
   const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
+
   const [docs, setDocs] = useState<UploadedDoc[]>([]);
   const [remainingAnalyses, setRemainingAnalyses] = useState(DAILY_ANALYSIS_LIMIT);
   const [analyzing, setAnalyzing] = useState(false);
 
+  // Animations
+  const robotAnim = useRef(new Animated.Value(0)).current;
+  const scanAnim = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     getRemainingAnalysisCount().then(setRemainingAnalyses);
+
+    // Robot floating animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(robotAnim, {
+          toValue: -12,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(robotAnim, {
+          toValue: 0,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Scan line animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanAnim, {
+          toValue: 85,
+          duration: 1800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scanAnim, {
+          toValue: 0,
+          duration: 1800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
   }, []);
 
   const addDoc = (doc: UploadedDoc) => {
     if (docs.length >= MAX_DOCS) {
-      Alert.alert('최대 5장까지 업로드할 수 있어요');
+      showToast('최대 5장까지 첨부할 수 있어요');
       return;
     }
     setDocs((prev) => [...prev, doc]);
   };
 
   const handleTakePhoto = async () => {
+    if (docs.length >= MAX_DOCS) {
+      showToast('최대 5장까지 첨부할 수 있어요');
+      return;
+    }
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('카메라 권한이 필요해요');
+      showAlert({ title: '권한 필요', message: '카메라 권한이 필요해요' });
       return;
     }
     setPickerActive(true);
@@ -64,9 +124,13 @@ export default function UploadScreen() {
   };
 
   const handlePickGallery = async () => {
+    if (docs.length >= MAX_DOCS) {
+      showToast('최대 5장까지 첨부할 수 있어요');
+      return;
+    }
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('사진첩 권한이 필요해요');
+      showAlert({ title: '권한 필요', message: '사진첩 권한이 필요해요' });
       return;
     }
     setPickerActive(true);
@@ -88,6 +152,10 @@ export default function UploadScreen() {
   };
 
   const handlePickFile = async () => {
+    if (docs.length >= MAX_DOCS) {
+      showToast('최대 5장까지 첨부할 수 있어요');
+      return;
+    }
     setPickerActive(true);
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -120,13 +188,14 @@ export default function UploadScreen() {
 
   const handleAnalyze = async () => {
     if (docs.length === 0) {
-      Alert.alert('먼저 사진이나 파일을 올려주세요');
+      showAlert({ title: '알림', message: '먼저 사진이나 파일을 올려주세요' });
       return;
     }
     if (remainingAnalyses <= 0) {
-      Alert.alert(
-        '오늘의 무료 AI 분석 기회(3회)를 모두 소진하셨습니다. 내일 다시 시도해주세요!'
-      );
+      showAlert({
+        title: '사용량 초과',
+        message: '오늘의 무료 AI 분석 기회(3회)를 모두 소진하셨습니다. 내일 다시 시도해주세요!',
+      });
       return;
     }
 
@@ -139,14 +208,12 @@ export default function UploadScreen() {
         err instanceof GeminiAnalysisError
           ? err.message
           : '문서 분석 중 문제가 발생했어요. 다시 시도해주세요.';
-      Alert.alert('분석 실패', message);
+      showAlert({ title: '분석 실패', message });
       setAnalyzing(false);
       return;
     }
     setAnalyzing(false);
 
-    // Only consume today's free-use count once analysis actually succeeded —
-    // a failed request shouldn't burn the user's quota.
     setRemainingAnalyses(await consumeAnalysisUse());
 
     const hasDuplicate = result.some((newEvent) =>
@@ -155,67 +222,143 @@ export default function UploadScreen() {
       )
     );
     if (hasDuplicate) {
-      Alert.alert('비슷한 일정이 이미 있어요', '그래도 계속 진행할까요?', [
-        { text: '취소', style: 'cancel' },
-        { text: '계속 진행', onPress: () => goToAnalysis(result) },
-      ]);
+      showAlert({
+        title: '비슷한 일정이 이미 있어요',
+        message: '그래도 계속 진행할까요?',
+        buttons: [
+          { text: '취소', style: 'cancel' },
+          { text: '계속 진행', onPress: () => goToAnalysis(result) },
+        ],
+      });
       return;
     }
     goToAnalysis(result);
   };
 
   return (
-    <ScreenBackground>
-      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.sourceRow}>
-            <Pressable style={styles.sourceButton} onPress={handleTakePhoto}>
-              <Text style={styles.sourceIcon}>📷</Text>
-              <Text style={styles.sourceLabel}>사진 찍기</Text>
-            </Pressable>
-            <Pressable style={styles.sourceButton} onPress={handlePickGallery}>
-              <Text style={styles.sourceIcon}>🖼️</Text>
-              <Text style={styles.sourceLabel}>갤러리</Text>
-            </Pressable>
-            <Pressable style={styles.sourceButton} onPress={handlePickFile}>
-              <Text style={styles.sourceIcon}>📄</Text>
-              <Text style={styles.sourceLabel}>파일</Text>
-            </Pressable>
+    <SafeAreaView style={styles.safeArea}>
+      <Stack.Screen options={{ title: '가정통신문 업로드' }} />
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
+        <View style={styles.mainContainer}>
+
+          {/* 1. Upload Options Row */}
+          <View style={styles.uploadOptionsRow}>
+            <TouchableOpacity style={styles.optionCard} activeOpacity={0.7} onPress={handleTakePhoto}>
+              <View style={[styles.iconCircle, { backgroundColor: '#EFF6FF' }]}>
+                <Text style={styles.iconEmoji}>📸</Text>
+              </View>
+              <Text style={styles.optionText}>사진 찍기</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.optionCard} activeOpacity={0.7} onPress={handlePickGallery}>
+              <View style={[styles.iconCircle, { backgroundColor: '#ECFDF5' }]}>
+                <Text style={styles.iconEmoji}>🖼️</Text>
+              </View>
+              <Text style={styles.optionText}>갤러리</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.optionCard} activeOpacity={0.7} onPress={handlePickFile}>
+              <View style={[styles.iconCircle, { backgroundColor: '#FAF5FF' }]}>
+                <Text style={styles.iconEmoji}>📁</Text>
+              </View>
+              <Text style={styles.optionText}>파일</Text>
+            </TouchableOpacity>
           </View>
 
-          <Text style={styles.countLabel}>{docs.length} / {MAX_DOCS}</Text>
+          {/* 2. AI Illustration Area */}
+          <View style={styles.illustrationContainer}>
+            <View style={styles.bgBlueCircle} />
+            <View style={styles.innerWhiteCircle} />
 
-          <View style={styles.docGrid}>
-            {docs.map((doc) =>
-              doc.kind === 'image' ? (
-                <View key={doc.id} style={styles.imageThumb}>
-                  <Image source={{ uri: doc.uri }} style={styles.imageThumbImg} />
-                  <Pressable style={styles.removeBadge} onPress={() => removeDoc(doc.id)}>
-                    <Text style={styles.removeBadgeText}>✕</Text>
-                  </Pressable>
-                </View>
-              ) : (
-                <View key={doc.id} style={styles.fileCard}>
-                  <Text style={styles.fileIcon}>📄</Text>
-                  <Text style={styles.fileName} numberOfLines={1}>
-                    {doc.name ?? '파일'}
-                  </Text>
-                  <Pressable style={styles.removeBadge} onPress={() => removeDoc(doc.id)}>
-                    <Text style={styles.removeBadgeText}>✕</Text>
-                  </Pressable>
-                </View>
-              )
-            )}
+            <View style={styles.illustCenter}>
+              {/* Document Card */}
+              <View style={styles.documentCard}>
+                <View style={styles.docHeaderLine} />
+                <View style={[styles.docLine, { width: '85%' }]} />
+                <View style={styles.docLine} />
+                <View style={styles.docLine} />
+                <View style={[styles.docLine, { width: '80%', marginTop: 8 }]} />
+
+                {/* Scanning Line */}
+                <Animated.View style={[
+                  styles.scanningLine,
+                  { transform: [{ translateY: scanAnim }] }
+                ]} />
+              </View>
+
+              {/* Floating Robot */}
+              <Animated.View style={[
+                styles.robotContainer,
+                { transform: [{ translateY: robotAnim }] }
+              ]}>
+                <Text style={styles.robotEmoji}>🤖</Text>
+              </Animated.View>
+
+              <Text style={styles.sparkleIcon}>✨</Text>
+              <Text style={styles.lightbulbIcon}>💡</Text>
+            </View>
           </View>
-        </ScrollView>
 
-        <Text style={styles.usageText}>
-          오늘 남은 횟수: {remainingAnalyses}/{DAILY_ANALYSIS_LIMIT}회
-        </Text>
-        <Pressable
-          style={[styles.analyzeButton, analyzing && styles.analyzeButtonDisabled]}
+          {/* 3. Text Info (Shown only when empty) */}
+          {docs.length === 0 && (
+            <>
+              <Text style={styles.mainTitle}>가정통신문을 분석해 드릴게요!</Text>
+              <Text style={styles.subDescription}>
+                사진 찍기, 갤러리, 파일 중{'\n'}편하신 걸로 올려주세요 ☺️
+              </Text>
+            </>
+          )}
+
+          {/* 4. Uploaded Files Slot Grid (Shown only when files exist) */}
+          {docs.length > 0 && (
+            <View style={styles.slotSection}>
+              <Text style={styles.countLabel}>업로드된 파일 {docs.length} / {MAX_DOCS}</Text>
+              <View style={styles.gridContainer}>
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <View key={`slot-${i}`} style={styles.slotWrapper}>
+                    {i < docs.length ? (
+                      <View style={styles.imageThumb}>
+                        {docs[i].kind === 'image' ? (
+                          <Image source={{ uri: docs[i].uri }} style={styles.imageThumbImg} />
+                        ) : (
+                          <View style={styles.fileSlotPlaceholder}>
+                            <Text style={styles.fileSlotIcon}>📄</Text>
+                            <Text style={styles.fileSlotText} numberOfLines={1}>{docs[i].name || '파일'}</Text>
+                          </View>
+                        )}
+                        <TouchableOpacity style={styles.removeBadge} onPress={() => removeDoc(docs[i].id)}>
+                          <Text style={styles.removeBadgeText}>✕</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <View style={styles.emptySlot}>
+                        <Text style={styles.emptySlotIcon}>+</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+        </View>
+      </ScrollView>
+
+      {/* 5. Bottom Action Area (Floating) */}
+      <View style={[styles.bottomActionContainer, { bottom: 24 + insets.bottom }]}>
+        <View style={styles.countBadge}>
+          <Text style={styles.countBadgeText}>
+            오늘 남은 횟수 : <Text style={styles.countBadgeHighlight}>{remainingAnalyses}/{DAILY_ANALYSIS_LIMIT}회</Text>
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.analyzeButton, (analyzing || docs.length === 0) && styles.analyzeButtonDisabled]}
+          activeOpacity={0.8}
           onPress={handleAnalyze}
-          disabled={analyzing}
+          disabled={analyzing || docs.length === 0}
         >
           {analyzing ? (
             <View style={styles.analyzeLoadingRow}>
@@ -223,95 +366,281 @@ export default function UploadScreen() {
               <Text style={styles.analyzeButtonText}>문서를 분석하고 있어요…</Text>
             </View>
           ) : (
-            <Text style={styles.analyzeButtonText}>AI로 내용 분석하기</Text>
+            <Text style={styles.analyzeButtonText}>✨ AI로 내용 분석하기</Text>
           )}
-        </Pressable>
-      </SafeAreaView>
-    </ScreenBackground>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
 
-function createStyles(colors: ThemeColors) {
+function createStyles(colors: ThemeColors, bottomInset: number) {
   return StyleSheet.create({
-    safeArea: { flex: 1 },
-    content: { flexGrow: 1, justifyContent: 'center', padding: 20, paddingBottom: 12 },
-    sourceRow: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    sourceButton: {
+    safeArea: {
       flex: 1,
+      backgroundColor: colors.skyBackground,
+    },
+    scrollContent: {
+      paddingBottom: 280 + bottomInset,
+    },
+    mainContainer: {
+      paddingHorizontal: 20,
+      paddingTop: 32,
+      alignItems: 'center',
+    },
+    uploadOptionsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+      marginBottom: 40,
+    },
+    optionCard: {
+      width: '31%',
       aspectRatio: 1,
       backgroundColor: colors.cardWhite,
-      borderRadius: 16,
+      borderRadius: 24,
       alignItems: 'center',
       justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
       ...SHADOW,
+      shadowOpacity: 0.03,
+      elevation: 2,
     },
-    sourceIcon: { fontSize: 28, marginBottom: 6 },
-    sourceLabel: { fontSize: 13, fontWeight: '600', color: colors.textPrimary },
-    countLabel: {
-      marginTop: 20,
-      marginBottom: 8,
-      fontSize: 12,
+    iconCircle: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 10,
+    },
+    iconEmoji: {
+      fontSize: 22,
+    },
+    optionText: {
+      fontSize: 13,
+      fontWeight: 'bold',
+      color: colors.textPrimary,
+    },
+    illustrationContainer: {
+      width: 220,
+      height: 220,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 24,
+    },
+    bgBlueCircle: {
+      position: 'absolute',
+      width: '100%',
+      height: '100%',
+      backgroundColor: colors.accent,
+      opacity: 0.2,
+      borderRadius: 110,
+    },
+    innerWhiteCircle: {
+      position: 'absolute',
+      width: '80%',
+      height: '80%',
+      backgroundColor: colors.lightBlueBg,
+      borderRadius: 90,
+      borderWidth: 1,
+      borderColor: colors.cardWhite,
+    },
+    illustCenter: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%',
+      height: '100%',
+    },
+    robotContainer: {
+      position: 'absolute',
+      top: 15,
+      zIndex: 20,
+    },
+    robotEmoji: {
+      fontSize: 60,
+    },
+    documentCard: {
+      position: 'absolute',
+      bottom: 20,
+      backgroundColor: colors.cardWhite,
+      padding: 14,
+      borderRadius: 16,
+      width: 100,
+      height: 130,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...SHADOW,
+      shadowOpacity: 0.06,
+      elevation: 4,
+      gap: 6,
+      overflow: 'hidden',
+      zIndex: 10,
+    },
+    docHeaderLine: {
+      height: 5,
+      backgroundColor: colors.accent,
+      opacity: 0.3,
+      borderRadius: 3,
+      width: '60%',
+      marginBottom: 4,
+    },
+    docLine: {
+      height: 7,
+      backgroundColor: colors.gray100,
+      borderRadius: 4,
+      width: '100%',
+    },
+    scanningLine: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: 12,
+      height: 4,
+      backgroundColor: colors.accent,
+      shadowColor: colors.accent,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 1,
+      shadowRadius: 6,
+      elevation: 4,
+      zIndex: 20,
+    },
+    sparkleIcon: {
+      position: 'absolute',
+      top: 30,
+      left: 15,
+      fontSize: 22,
+    },
+    lightbulbIcon: {
+      position: 'absolute',
+      bottom: 40,
+      right: 15,
+      fontSize: 26,
+    },
+    mainTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.textPrimary,
+      marginBottom: 6,
+      textAlign: 'center',
+    },
+    subDescription: {
+      fontSize: 14,
       color: colors.textSecondary,
-      textAlign: 'right',
+      textAlign: 'center',
+      lineHeight: 22,
     },
-    docGrid: {
+    slotSection: {
+      width: '100%',
+      marginTop: 32,
+      alignItems: 'center',
+    },
+    countLabel: {
+      marginBottom: 12,
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    gridContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 10,
+      gap: 12,
+      justifyContent: 'center',
+    },
+    slotWrapper: {
+      width: '17%',
+      aspectRatio: 1,
     },
     imageThumb: {
-      width: 90,
-      height: 90,
+      width: '100%',
+      height: '100%',
       borderRadius: 12,
       overflow: 'hidden',
+      backgroundColor: colors.cardWhite,
+      ...SHADOW,
     },
     imageThumbImg: {
       width: '100%',
       height: '100%',
     },
-    fileCard: {
-      width: '100%',
-      flexDirection: 'row',
+    fileSlotPlaceholder: {
+      flex: 1,
       alignItems: 'center',
-      backgroundColor: colors.cardWhite,
-      borderRadius: 12,
-      padding: 12,
-      ...SHADOW,
+      justifyContent: 'center',
+      padding: 2,
     },
-    fileIcon: { fontSize: 20, marginRight: 8 },
-    fileName: { flex: 1, fontSize: 13, color: colors.textPrimary },
-    removeBadge: {
-      position: 'absolute',
-      top: 4,
-      right: 4,
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: 'rgba(0,0,0,0.55)',
+    fileSlotIcon: { fontSize: 18, marginBottom: 2 },
+    fileSlotText: { fontSize: 8, color: colors.textPrimary, textAlign: 'center' },
+    emptySlot: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
       alignItems: 'center',
       justifyContent: 'center',
     },
-    removeBadgeText: { color: '#FFFFFF', fontSize: 11 },
-    usageText: {
-      textAlign: 'center',
+    emptySlotIcon: {
+      fontSize: 20,
+      color: colors.border,
+      fontWeight: '300',
+    },
+    removeBadge: {
+      position: 'absolute',
+      top: -4,
+      right: -4,
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10,
+    },
+    removeBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' },
+    bottomActionContainer: {
+      position: 'absolute',
+      bottom: 24 + bottomInset,
+      left: 20,
+      right: 20,
+      alignItems: 'center',
+    },
+    countBadge: {
+      backgroundColor: colors.lightBlueBg,
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 12,
+    },
+    countBadgeText: {
       fontSize: 12,
-      color: colors.textSecondary,
-      marginBottom: 8,
+      fontWeight: 'bold',
+      color: colors.accent,
+    },
+    countBadgeHighlight: {
+      color: colors.accent,
+      fontWeight: '900',
     },
     analyzeButton: {
-      marginHorizontal: 20,
-      marginBottom: 16,
-      backgroundColor: colors.accent,
-      borderRadius: 16,
+      width: '100%',
+      flexDirection: 'row',
+      backgroundColor: colors.gray900,
       paddingVertical: 16,
+      borderRadius: 18,
       alignItems: 'center',
+      justifyContent: 'center',
       ...SHADOW,
+      shadowColor: colors.gray900,
+      shadowOpacity: 0.3,
+      elevation: 5,
     },
     analyzeButtonDisabled: {
-      opacity: 0.7,
+      backgroundColor: '#94A3B8',
+      opacity: 0.6,
     },
     analyzeLoadingRow: {
       flexDirection: 'row',
@@ -321,7 +650,7 @@ function createStyles(colors: ThemeColors) {
     analyzeButtonText: {
       color: '#FFFFFF',
       fontSize: 16,
-      fontWeight: '700',
+      fontWeight: 'bold',
     },
   });
 }

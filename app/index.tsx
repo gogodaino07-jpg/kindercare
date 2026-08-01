@@ -1,113 +1,241 @@
-import { Redirect } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Redirect, useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, View, TouchableOpacity, Linking } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdPopupModal from '../components/home/AdPopupModal';
+import AiScanSection from '../components/home/AiScanSection';
 import BlackboardModal from '../components/home/BlackboardModal';
 import ChildSwitcherSheet from '../components/home/ChildSwitcherSheet';
 import EmptyState from '../components/home/EmptyState';
 import EventListSection from '../components/home/EventListSection';
 import HomeHeader from '../components/home/HomeHeader';
 import NotificationCenterModal from '../components/home/NotificationCenterModal';
-import UploadButton from '../components/home/UploadButton';
 import WeeklyWeatherStrip from '../components/home/WeeklyWeatherStrip';
 import ScreenBackground from '../components/ScreenBackground';
+import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
 import { useNotificationCenter } from '../context/NotificationCenterContext';
+import { useThemeColors } from '../context/ThemeContext';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
+import Text from '../components/common/AppText';
+
+const COUPANG_LINK = 'https://link.coupang.com/a/fHdMU98clE';
+
+function createStyles(colors: ThemeColors, bottomInset: number) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+    },
+    mainContainer: {
+      flex: 1,
+    },
+    topCurve: {
+      backgroundColor: colors.cardWhite,
+      paddingBottom: 0,
+    },
+    contentPadding: {
+      flex: 1,
+      paddingTop: 0,
+      paddingBottom: 260 + bottomInset, // Increased to ensure scroll space for both fixed sections
+      zIndex: 10,
+    },
+    fixedContentLayer: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 110 + bottomInset, // Adjust based on 쿠팡배너(adBannerContainer) height
+      zIndex: 1,
+    },
+    adBannerContainer: {
+      position: 'absolute',
+      bottom: 24 + bottomInset,
+      left: 20,
+      right: 20,
+      backgroundColor: '#297FCA',
+      borderRadius: 20,
+      overflow: 'hidden',
+      ...SHADOW,
+      shadowColor: '#297FCA',
+      shadowOpacity: 0.4,
+      elevation: 6,
+    },
+    adDecoCircle1: {
+      position: 'absolute',
+      top: -40,
+      right: -20,
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    },
+    adDecoCircle2: {
+      position: 'absolute',
+      bottom: -30,
+      left: -20,
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    },
+    adContent: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+    },
+    adLeftContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    adIconEmoji: {
+      fontSize: 32,
+      marginRight: 14,
+    },
+    adTextGroup: {
+      flexDirection: 'column',
+    },
+    adSubText: {
+      fontSize: 12,
+      fontWeight: '900',
+      color: '#FDE047',
+      marginBottom: 4,
+    },
+    adMainText: {
+      fontSize: 16,
+      fontWeight: '900',
+      color: '#FFFFFF',
+    },
+    adButton: {
+      backgroundColor: colors.cardWhite,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    adButtonText: {
+      color: '#297FCA',
+      fontSize: 14,
+      fontWeight: '900',
+    }
+  });
+}
 
 export default function HomeScreen() {
-  const { hasOnboarded, selectedChild, events } = useAppData();
-  const { isLocked } = useAppLock();
-  const { hasUnread } = useNotificationCenter();
-  const { tomorrowEvents, laterGroups, isEmpty } = useUpcomingEvents();
+  const router = useRouter();
+  const { hasOnboarded, selectedChild, events, googleAccount, onboardingLoaded } = useAppData();
+  const { isLocked, isBooting } = useAppLock();
+  const { unreadCount } = useNotificationCenter();
+  const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
+  const upcoming = useUpcomingEvents();
   const weather = useWeeklyWeather();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [adPopupVisible, setAdPopupVisible] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const adShownRef = useRef(false);
 
-  // Pull-to-refresh refetches weather immediately — manual per-strip refresh
-  // icon was removed in favor of this. Background auto-refresh (1hr) runs
-  // independently inside useWeeklyWeather.
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await weather.retry();
-    setRefreshing(false);
-  };
-  // Look up the live event by id each render so edits made in the modal (updateEventNote)
-  // are reflected immediately instead of showing a stale snapshot.
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
 
-  // The ad popup shows exactly once per full app launch: exactly 1s after
-  // Home is settled and unlocked (not immediately on entry). If the app is
-  // still behind the lock screen when Home mounts, wait for unlock before
-  // starting that delay — it must never be able to render on top of / behind
-  // the lock screen. It deliberately does NOT re-trigger on every
-  // background→foreground resume (Home stays mounted across those), only on
-  // a genuine fresh launch.
   useEffect(() => {
-    if (isLocked || adShownRef.current) return;
+    if (isLocked || isBooting || adShownRef.current) return;
     const timer = setTimeout(() => {
       adShownRef.current = true;
       setAdPopupVisible(true);
     }, 1000);
     return () => clearTimeout(timer);
-  }, [isLocked]);
+  }, [isLocked, isBooting]);
 
-  // Force the popup closed immediately if a re-lock happens while it's open.
   useEffect(() => {
     if (isLocked) setAdPopupVisible(false);
   }, [isLocked]);
 
-  // Hardware back handling (go back a screen vs. exit the app) is registered once,
-  // app-wide, in app/_layout.tsx — it always checks the live navigation depth there,
-  // so it doesn't need to be duplicated or scoped to this screen's focus state.
+  if (!onboardingLoaded) {
+    return null;
+  }
 
-  if (!hasOnboarded) {
+  if (!hasOnboarded || !googleAccount) {
     return <Redirect href="/splash" />;
   }
 
   return (
     <ScreenBackground>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <View style={styles.topCurve}>
-          <HomeHeader
-            selectedChild={selectedChild}
-            onPressChild={() => setSwitcherOpen(true)}
-            onPressNotifications={() => setNotificationCenterOpen(true)}
-            hasUnreadNotifications={hasUnread}
-          />
-          <WeeklyWeatherStrip
-            days={weather.days}
-            loading={weather.loading}
-            error={weather.error}
-            retry={weather.retry}
-            usingFallbackLocation={weather.usingFallbackLocation}
-          />
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.mainContainer}>
+          <View style={styles.topCurve}>
+            <HomeHeader
+              selectedChild={selectedChild}
+              onPressChild={() => setSwitcherOpen(true)}
+              onPressNotifications={() => setNotificationCenterOpen(true)}
+              unreadCount={unreadCount}
+            />
+            <WeeklyWeatherStrip
+              days={weather.days}
+              loading={weather.loading}
+              error={weather.error}
+              retry={weather.retry}
+              usingFallbackLocation={weather.usingFallbackLocation}
+            />
+          </View>
+
+          <View style={styles.contentPadding} pointerEvents="box-none">
+            {upcoming.isEmpty ? (
+              <EmptyState />
+            ) : (
+              <EventListSection
+                mainEvents={upcoming.mainEvents}
+                featuredLaterEvents={upcoming.featuredLaterEvents}
+                displayType={upcoming.displayType}
+                onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
+                hideUpcoming={true}
+              />
+            )}
+          </View>
+
+          <View style={styles.fixedContentLayer} pointerEvents="box-none">
+            <EventListSection
+              mainEvents={upcoming.mainEvents}
+              featuredLaterEvents={upcoming.featuredLaterEvents}
+              displayType={upcoming.displayType}
+              onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
+              hideSupplies={true}
+            />
+            <AiScanSection />
+          </View>
         </View>
-        {isEmpty ? (
-          <ScrollView
-            contentContainerStyle={styles.emptyScrollContent}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-          >
-            <EmptyState />
-          </ScrollView>
-        ) : (
-          <EventListSection
-            tomorrowEvents={tomorrowEvents}
-            laterGroups={laterGroups}
-            onEventPress={(event) => setSelectedEventId(event.id)}
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-          />
-        )}
-        <UploadButton />
       </SafeAreaView>
+
+      <TouchableOpacity
+        style={styles.adBannerContainer}
+        activeOpacity={0.9}
+        onPress={() => Linking.openURL(COUPANG_LINK).catch((err) => console.error('Failed to open Coupang link:', err))}
+      >
+        <View style={styles.adDecoCircle1} />
+        <View style={styles.adDecoCircle2} />
+        <View style={styles.adContent}>
+          <View style={styles.adLeftContent}>
+            <Text style={styles.adIconEmoji}>🎁</Text>
+            <View style={styles.adTextGroup}>
+              <Text style={styles.adSubText}>놓치면 후회하는 특가!</Text>
+              <Text style={styles.adMainText}>국민 육아템 세일전</Text>
+            </View>
+          </View>
+          <View style={styles.adButton}>
+            <Text style={styles.adButtonText}>바로가기 🚀</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
       <NotificationCenterModal
@@ -118,18 +246,3 @@ export default function HomeScreen() {
     </ScreenBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  topCurve: {
-    backgroundColor: '#FFFFFF',
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-    paddingBottom: 6,
-  },
-  emptyScrollContent: {
-    flexGrow: 1,
-  },
-});

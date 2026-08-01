@@ -1,7 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View, KeyboardAvoidingView, TouchableOpacity, Linking } from 'react-native';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View, KeyboardAvoidingView, TouchableOpacity, Linking, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
 import Text from '../components/common/AppText';
@@ -12,9 +12,7 @@ import { useToast } from '../context/ToastContext';
 import { formatMD, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
 import { stripInvalidCharacters } from '../utils/validation';
 
-const COUPANG_LINK = 'https://link.coupang.com/a/fHdMU98clE';
 const TITLE_MAX_LENGTH = 20;
-const NOTE_MAX_LENGTH = 50;
 const MEMO_MAX_LENGTH = 200;
 
 function createStyles(colors: ThemeColors, bottomInset: number) {
@@ -42,6 +40,12 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     headerSubtitle: {
       fontSize: 14,
       color: colors.textSecondary,
+    },
+    deleteButton: {
+      padding: 4,
+    },
+    deleteIcon: {
+      fontSize: 20,
     },
     formCard: {
       backgroundColor: colors.cardWhite,
@@ -175,13 +179,13 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     fabContainer: {
       position: 'absolute',
-      bottom: 24 + bottomInset, // Moved to match notifications.tsx
+      bottom: 24 + bottomInset,
       left: 20,
       right: 20,
       zIndex: 100,
     },
     saveButton: {
-      backgroundColor: '#000000', // Changed to Black
+      backgroundColor: '#000000',
       paddingVertical: 18,
       borderRadius: 18,
       alignItems: 'center',
@@ -203,22 +207,35 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
   });
 }
 
-export default function AddEventScreen() {
+export default function EditEventScreen() {
   const router = useRouter();
-  const { selectedChild, addEvent } = useAppData();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { events, updateEvent, deleteEvent } = useAppData();
   const { showToast } = useToast();
-  const { date: dateParam } = useLocalSearchParams<{ date?: string }>();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
 
-  const [date, setDate] = useState(() => (dateParam ? parseISODate(dateParam) : new Date()));
+  const existingEvent = useMemo(() => events.find(e => e.id === id), [events, id]);
+
+  const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(Platform.OS === 'web');
   const [title, setTitle] = useState('');
   const [itemInput, setItemInput] = useState('');
   const [items, setItems] = useState<string[]>([]);
   const [memo, setMemo] = useState('');
   const [titleError, setTitleError] = useState(false);
+
+  useEffect(() => {
+    if (existingEvent) {
+      setDate(parseISODate(existingEvent.date));
+      setTitle(existingEvent.title);
+      setItems(existingEvent.note ? existingEvent.note.split(', ').filter(Boolean) : []);
+      setMemo(existingEvent.memo ?? '');
+    } else {
+      router.back();
+    }
+  }, [existingEvent, router]);
 
   const addItem = () => {
     const trimmed = itemInput.trim();
@@ -235,50 +252,81 @@ export default function AddEventScreen() {
     setItems(items.filter((i) => i !== target));
   };
 
-  const handleSave = () => {
+  const handleUpdate = () => {
     if (!title.trim()) {
       setTitleError(true);
       return;
     }
-    if (!selectedChild) return;
+    if (!id) return;
 
     const noteString = items.join(', ');
 
-    addEvent({
+    updateEvent(id, {
       date: toISODate(date),
       title: title.trim(),
       note: noteString || undefined,
       memo: memo.trim() || undefined,
-      notifyDayBefore: true,
-      childId: selectedChild.id,
-      source: 'manual',
-      icon: '📌',
     });
-    showToast('저장이 완료되었습니다.');
+    showToast('수정이 완료되었습니다.');
     router.back();
   };
 
-  const handleCoupangPress = () => {
-    Linking.openURL(COUPANG_LINK).catch((err) => console.error('Failed to open Coupang link:', err));
+  const confirmDelete = () => {
+    Alert.alert(
+      '일정 삭제',
+      '정말 이 일정을 삭제하시겠습니까?',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: () => {
+            if (id) {
+              deleteEvent(id);
+              showToast('일정이 삭제되었습니다.');
+              router.back();
+            }
+          }
+        },
+      ]
+    );
   };
 
-  const isSaveDisabled = !title.trim();
+  if (!existingEvent) return null;
+
+  const isChanged =
+    toISODate(date) !== existingEvent.date ||
+    title.trim() !== existingEvent.title ||
+    items.join(', ') !== (existingEvent.note ?? '') ||
+    memo.trim() !== (existingEvent.memo ?? '');
+
+  const isSaveDisabled = !title.trim() || !isChanged;
   const weekdayLabel = WEEKDAY_KO[date.getDay()];
 
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea}>
+        <Stack.Screen
+          options={{
+            title: '일정 수정',
+            headerRight: () => (
+              <TouchableOpacity style={styles.deleteButton} onPress={confirmDelete}>
+                <Text style={styles.deleteIcon}>🗑️</Text>
+              </TouchableOpacity>
+            ),
+          }}
+        />
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}
         >
-          <ScrollView
+            <ScrollView
             contentContainerStyle={styles.content}
             keyboardShouldPersistTaps="handled"
             style={{ overflow: 'visible' }}
           >
             <View style={styles.headerSection}>
-              <Text style={styles.headerSubtitle}>아이의 소중한 일정을 기록해 주세요 🐥</Text>
+              <Text style={styles.headerSubtitle}>수정할 내용을 입력해 주세요 🐥</Text>
             </View>
 
           <View style={styles.formCard}>
@@ -374,15 +422,14 @@ export default function AddEventScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Floating Action Button (Save) - Outside KeyboardAvoidingView for exact sync with calendar.tsx */}
       <View style={styles.fabContainer}>
         <TouchableOpacity
           style={[styles.saveButton, isSaveDisabled && styles.saveButtonDisabled]}
-          onPress={handleSave}
+          onPress={handleUpdate}
           disabled={isSaveDisabled}
           activeOpacity={0.8}
         >
-          <Text style={styles.saveButtonText}>일정 저장하기</Text>
+          <Text style={styles.saveButtonText}>수정 완료</Text>
         </TouchableOpacity>
       </View>
       </SafeAreaView>

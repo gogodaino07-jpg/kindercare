@@ -1,9 +1,11 @@
+import * as ScreenCapture from 'expo-screen-capture';
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import FingerprintIcon from './common/FingerprintIcon';
 import PatternGrid from './settings/PatternGrid';
 import { serializePattern, useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import Text from './common/AppText';
 
 // Standard phone-keypad order: del sits bottom-left, 0 center, fingerprint
@@ -15,10 +17,19 @@ interface AppLockScreenProps {
    * biometric prompt renders above everything (including the splash), so
    * auto-firing it early would break the required 스플래시 ➔ 잠금 화면 order. */
   autoBiometricEnabled?: boolean;
+  /** Callback for when the user successfully authenticates (used for settings entry). */
+  onVerified?: () => void;
+  /** If true, this screen is being used as a gate within another screen. */
+  isEmbedded?: boolean;
 }
 
-export default function AppLockScreen({ autoBiometricEnabled = true }: AppLockScreenProps) {
+export default function AppLockScreen({
+  autoBiometricEnabled = true,
+  onVerified,
+  isEmbedded = false
+}: AppLockScreenProps) {
   const colors = useThemeColors();
+  const { showToast } = useToast();
   const {
     method,
     isLocked,
@@ -33,30 +44,52 @@ export default function AppLockScreen({ autoBiometricEnabled = true }: AppLockSc
   const [error, setError] = useState(false);
   const canUseBiometric = biometricEnabled && biometricAvailable;
 
-  useEffect(() => {
-    if (isLocked && canUseBiometric && autoBiometricEnabled) {
-      authenticateWithBiometric();
-    }
-    // Also re-fire if canUseBiometric/autoBiometricEnabled flips true after
-    // mount (e.g. on a cold app restart, biometricAvailable resolves
-    // asynchronously and can land after isLocked is already true, or the
-    // boot splash finishes after this screen is already mounted) —
-    // otherwise this never re-runs and the auto-prompt silently never fires.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLocked, canUseBiometric, autoBiometricEnabled]);
+  const effectiveLocked = isEmbedded || isLocked;
 
   useEffect(() => {
-    if (!isLocked) {
+    if (effectiveLocked) {
+      ScreenCapture.preventScreenCaptureAsync();
+      const subscription = ScreenCapture.addScreenshotListener(() => {
+        showToast('이 앱에서는 화면 캡처를 사용 할 수 없어요.');
+      });
+      return () => {
+        subscription.remove();
+        ScreenCapture.allowScreenCaptureAsync();
+      };
+    }
+  }, [effectiveLocked]);
+
+  useEffect(() => {
+    if (effectiveLocked && canUseBiometric && autoBiometricEnabled) {
+      authenticateWithBiometric().then(success => {
+        if (success && isEmbedded) onVerified?.();
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveLocked, canUseBiometric, autoBiometricEnabled]);
+
+  useEffect(() => {
+    if (!effectiveLocked) {
       setInput('');
       setError(false);
     }
-  }, [isLocked]);
+  }, [effectiveLocked]);
 
-  if (!isLocked || method === 'none') return null;
+  if (!effectiveLocked || method === 'none') return null;
+
+  const handleSuccess = () => {
+    if (isEmbedded) {
+      onVerified?.();
+    } else {
+      unlock();
+    }
+  };
 
   const handlePress = (key: string) => {
     if (key === 'bio') {
-      authenticateWithBiometric();
+      authenticateWithBiometric().then(success => {
+        if (success && isEmbedded) onVerified?.();
+      });
       return;
     }
     if (key === 'del') {
@@ -67,12 +100,21 @@ export default function AppLockScreen({ autoBiometricEnabled = true }: AppLockSc
     const next = input + key;
     setInput(next);
     setError(false);
-    if (next.length >= 4) {
+
+    // For 'password' method, we might want to use the handleNext instead of auto-submit
+    // but for PIN (4 digits) we keep auto-submit.
+    if (method === 'pin' && next.length >= 4) {
       if (verifySecret(next)) {
-        unlock();
+        handleSuccess();
       } else {
         setError(true);
         setInput('');
+      }
+    } else if (method === 'password') {
+      // Password uses system keyboard usually, but this keypad is for PIN/Gate.
+      // If method is password, verifySecret still works.
+      if (next.length >= 4 && verifySecret(next)) {
+        handleSuccess();
       }
     }
   };
@@ -81,27 +123,41 @@ export default function AppLockScreen({ autoBiometricEnabled = true }: AppLockSc
     if (path.length < 4) return;
     const serialized = serializePattern(path);
     if (verifySecret(serialized)) {
-      unlock();
+      handleSuccess();
     } else {
       setError(true);
     }
   };
 
   return (
-    <View style={[styles.overlay, { backgroundColor: colors.skyBackground }]}>
+    <View style={[
+      styles.overlay,
+      { backgroundColor: colors.skyBackground },
+      isEmbedded && { position: 'relative', flex: 1, zIndex: 1 }
+    ]}>
       <View style={styles.content}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>
-          {method === 'password' ? '비밀번호를 입력해주세요' : '패턴을 그려주세요'}
+          {isEmbedded ? '현재 잠금을 해제해주세요' :
+            (method === 'pattern' ? '패턴을 그려주세요' : '비밀번호를 입력해주세요')}
         </Text>
         {error ? (
           <Text style={[styles.error, { color: colors.tomorrowRed }]}>
-            {method === 'password' ? '비밀번호가 일치하지 않아요' : '패턴이 일치하지 않아요'}
+            잠금 정보가 일치하지 않아요
           </Text>
         ) : (
           <View style={styles.error} />
         )}
 
-        {method === 'password' ? (
+        {method === 'pattern' ? (
+          <>
+            <PatternGrid colors={colors} showTrail={showPatternEnabled} onComplete={handlePatternComplete} />
+            {canUseBiometric ? (
+              <Pressable style={styles.bioButton} onPress={() => authenticateWithBiometric().then(s => s && isEmbedded && onVerified?.())}>
+                <Text style={[styles.bioButtonText, { color: colors.accent }]}>지문으로 잠금 해제</Text>
+              </Pressable>
+            ) : null}
+          </>
+        ) : (
           <>
             <View style={styles.dotsRow}>
               {Array.from({ length: 4 }, (_, i) => (
@@ -115,6 +171,10 @@ export default function AppLockScreen({ autoBiometricEnabled = true }: AppLockSc
                 />
               ))}
             </View>
+
+            {/* Password method in AppLockScreen usually means a gate/pin for quick entry.
+                If it's full password, we might need a text input, but for quick entry PIN is better.
+                We'll keep the keypad for both pin/password in the gate screen. */}
             <View style={styles.keypad}>
               {KEYPAD_KEYS.map((key, idx) => {
                 if (key === 'bio') {
@@ -140,15 +200,6 @@ export default function AppLockScreen({ autoBiometricEnabled = true }: AppLockSc
                 );
               })}
             </View>
-          </>
-        ) : (
-          <>
-            <PatternGrid colors={colors} showTrail={showPatternEnabled} onComplete={handlePatternComplete} />
-            {canUseBiometric ? (
-              <Pressable style={styles.bioButton} onPress={() => authenticateWithBiometric()}>
-                <Text style={[styles.bioButtonText, { color: colors.accent }]}>지문으로 잠금 해제</Text>
-              </Pressable>
-            ) : null}
           </>
         )}
       </View>

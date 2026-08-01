@@ -182,7 +182,7 @@ function createStyles(colors: ThemeColors) {
       marginHorizontal: 24,
       marginTop: 28,
       marginBottom: 24,
-      backgroundColor: colors.peachOrange,
+      backgroundColor: colors.coralPink,
       borderRadius: 16,
       paddingVertical: 16,
       alignItems: 'center',

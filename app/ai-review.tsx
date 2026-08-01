@@ -12,6 +12,7 @@ import { generateMockAIEvents } from '../data/mockAIResult';
 import { Event } from '../types/models';
 import { formatMD, parseISODate, startOfDay } from '../utils/date';
 import { takePendingAnalysisResult } from '../utils/pendingAnalysisResult';
+import { stripInvalidCharacters } from '../utils/validation';
 
 interface DraftEvent extends Omit<Event, 'id'> {
   localId: string;
@@ -107,7 +108,7 @@ export default function AIReviewScreen() {
 
   return (
     <ScreenBackground>
-      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView contentContainerStyle={styles.content}>
           {groups.map((group) => {
             const collapsed = group.events.length >= 2 && collapsedDates.has(group.date);
@@ -151,7 +152,7 @@ export default function AIReviewScreen() {
                               <TextInput
                                 style={styles.titleInput}
                                 value={ev.title}
-                                onChangeText={(text) => updateDraft(ev.localId, { title: text })}
+                                onChangeText={(text) => updateDraft(ev.localId, { title: stripInvalidCharacters(text) })}
                                 maxLength={TITLE_MAX_LENGTH}
                                 autoFocus
                               />
@@ -177,7 +178,7 @@ export default function AIReviewScreen() {
                             <TextInput
                               style={styles.noteInput}
                               value={ev.note ?? ''}
-                              onChangeText={(text) => updateDraft(ev.localId, { note: text })}
+                              onChangeText={(text) => updateDraft(ev.localId, { note: stripInvalidCharacters(text) })}
                               maxLength={NOTE_MAX_LENGTH}
                               placeholder="🎒 준비물을 적어주세요"
                               placeholderTextColor={colors.textSecondary}
@@ -185,7 +186,7 @@ export default function AIReviewScreen() {
                             <TextInput
                               style={styles.noteInput}
                               value={ev.memo ?? ''}
-                              onChangeText={(text) => updateDraft(ev.localId, { memo: text })}
+                              onChangeText={(text) => updateDraft(ev.localId, { memo: stripInvalidCharacters(text) })}
                               maxLength={MEMO_MAX_LENGTH}
                               placeholder="📝 메모 (선택 입력)"
                               placeholderTextColor={colors.textSecondary}
@@ -256,7 +257,7 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 10,
     },
     dateBadge: {
-      backgroundColor: '#EEF2F5',
+      backgroundColor: colors.gray100,
       borderRadius: 999,
       paddingHorizontal: 10,
       paddingVertical: 5,
@@ -297,9 +298,11 @@ function createStyles(colors: ThemeColors) {
       fontSize: 15,
       fontWeight: '600',
       color: colors.textPrimary,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.accent,
-      paddingVertical: 2,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      borderRadius: 8,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
     },
     trashButton: {
       padding: 6,
@@ -309,7 +312,7 @@ function createStyles(colors: ThemeColors) {
     },
     noteTag: {
       alignSelf: 'flex-start',
-      backgroundColor: '#EAF6EE',
+      backgroundColor: colors.green50,
       borderRadius: 8,
       paddingHorizontal: 8,
       paddingVertical: 3,
@@ -317,12 +320,12 @@ function createStyles(colors: ThemeColors) {
     },
     noteTagText: {
       fontSize: 12,
-      color: '#3A8455',
+      color: colors.green500,
       fontWeight: '600',
     },
     memoTag: {
       alignSelf: 'flex-start',
-      backgroundColor: '#EEF2F5',
+      backgroundColor: colors.gray100,
       borderRadius: 8,
       paddingHorizontal: 8,
       paddingVertical: 3,
@@ -336,18 +339,21 @@ function createStyles(colors: ThemeColors) {
     noteInput: {
       fontSize: 13,
       color: colors.textPrimary,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-      paddingVertical: 4,
-      marginTop: 6,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      marginTop: 8,
+      backgroundColor: colors.gray50,
     },
     reviewBadgeRow: {
       marginTop: 6,
     },
     reviewBadge: {
       alignSelf: 'flex-start',
-      backgroundColor: '#FFF3CD',
-      color: '#8A6A00',
+      backgroundColor: colors.orangeLight1,
+      color: colors.orange500,
       fontSize: 11,
       fontWeight: '700',
       borderRadius: 8,
@@ -375,7 +381,8 @@ function createStyles(colors: ThemeColors) {
     },
     saveButton: {
       marginHorizontal: 20,
-      marginBottom: 16,
+      marginTop: 8,
+      marginBottom: 8,
       backgroundColor: colors.accent,
       borderRadius: 16,
       paddingVertical: 16,

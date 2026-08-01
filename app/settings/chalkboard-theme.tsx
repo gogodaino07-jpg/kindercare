@@ -99,7 +99,7 @@ function createStyles(colors: ThemeColors) {
     },
     checkIcon: {
       position: 'absolute',
-      color: '#FFFFFF',
+      color: colors.cardWhite,
       fontWeight: '800',
       fontSize: 14,
     },

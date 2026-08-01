@@ -1,8 +1,11 @@
+import { MaterialIcons } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
-import { SHADOW, ThemeColors } from '../../constants/theme';
+import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
+import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { Child } from '../../types/models';
 import Text from '../common/AppText';
 
@@ -10,184 +13,188 @@ interface HomeHeaderProps {
   selectedChild: Child | undefined;
   onPressChild: () => void;
   onPressNotifications: () => void;
-  hasUnreadNotifications?: boolean;
+  unreadCount?: number;
 }
 
 export default function HomeHeader({
   selectedChild,
   onPressChild,
   onPressNotifications,
-  hasUnreadNotifications,
+  unreadCount = 0,
 }: HomeHeaderProps) {
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { addNotification } = useNotificationCenter();
+
+  const handleTestNotification = async () => {
+    addNotification({
+      title: '🔔 알림 테스트',
+      body: '새로운 유치원 소식이 도착했습니다! 확인해 보세요.',
+    });
+
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        await Notifications.requestPermissionsAsync();
+      }
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '킨더케어 알림 테스트',
+          body: '실제 알림이 이렇게 전달됩니다!',
+        },
+        trigger: null,
+      });
+    } catch (e) {
+      console.warn('Failed to fire test notification:', e);
+    }
+  };
 
   const nameLine = selectedChild
-    ? [selectedChild.name, `${selectedChild.age}세`].filter(Boolean).join(' · ')
+    ? [selectedChild.name, `${selectedChild.age}세`, selectedChild.className].filter(Boolean).join(' · ')
     : '등록된 아이가 없어요';
 
   return (
     <View style={styles.container}>
-      <View style={styles.centerArea}>
-        <Pressable style={styles.childButton} onPress={onPressChild}>
-          <View style={styles.avatarSlot}>
-            {selectedChild?.photoUri ? (
-              <Image source={{ uri: selectedChild.photoUri }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarIcon}>🐥</Text>
-              </View>
-            )}
-            <View style={styles.onlineDot} />
-          </View>
-          <View style={styles.labelColumn}>
-            <View style={styles.nameLineRow}>
-              <Text style={styles.nameLineText} numberOfLines={1}>
-                {nameLine}
-              </Text>
-              <Text style={styles.chevron}>∨</Text>
+      <Pressable style={styles.profileChip} onPress={onPressChild}>
+        <View style={styles.avatarContainer}>
+          {selectedChild?.photoUri ? (
+            <Image source={{ uri: selectedChild.photoUri }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarIcon}>🧒</Text>
             </View>
-            {selectedChild?.className ? (
-              <Text style={styles.classLineText} numberOfLines={1}>
-                {selectedChild.className}
-              </Text>
-            ) : null}
-          </View>
-        </Pressable>
-      </View>
+          )}
+        </View>
+        <Text style={styles.profileText} numberOfLines={1}>
+          {nameLine}
+        </Text>
+        <MaterialIcons name="keyboard-arrow-down" size={18} color={colors.gray400} />
+      </Pressable>
+
       <View style={styles.rightActions}>
         <Pressable
-          style={styles.iconButton}
+          style={[styles.actionButton, { backgroundColor: colors.green50 }]}
+          onPress={handleTestNotification}
+        >
+          <MaterialIcons name="science" size={20} color={colors.green500} />
+        </Pressable>
+
+        <Pressable
+          style={[styles.actionButton, { backgroundColor: colors.gray50 }]}
           onPress={onPressNotifications}
-          accessibilityLabel="알림 센터"
         >
-          <Text style={styles.icon}>🔔</Text>
-          {hasUnreadNotifications ? <View style={styles.unreadBadge} /> : null}
+          <MaterialIcons name="notifications" size={20} color={colors.gray500} />
+          {unreadCount > 0 ? (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadCountText}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Text>
+            </View>
+          ) : null}
         </Pressable>
+
         <Pressable
-          style={styles.iconButton}
+          style={[styles.actionButton, { backgroundColor: colors.gray50 }]}
           onPress={() => router.push('/calendar')}
-          accessibilityLabel="캘린더로 이동"
         >
-          <Text style={styles.icon}>📅</Text>
+          <MaterialIcons name="date-range" size={20} color={colors.gray500} />
         </Pressable>
+
         <Pressable
-          style={styles.iconButton}
+          style={[styles.actionButton, { backgroundColor: colors.gray50 }]}
           onPress={() => router.push('/settings')}
-          accessibilityLabel="설정으로 이동"
         >
-          <Text style={styles.icon}>⚙️</Text>
+          <MaterialIcons name="settings" size={20} color={colors.gray500} />
         </Pressable>
       </View>
     </View>
   );
 }
 
-const ICON_BUTTON_SIZE = 44;
+const ACTION_SIZE = 36;
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 20,
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
       paddingTop: 12,
-      paddingBottom: 8,
+      paddingBottom: 4,
     },
-    centerArea: {
-      flex: 1,
-      marginRight: 12,
-    },
-    childButton: {
+    profileChip: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.cardWhite,
-      height: ICON_BUTTON_SIZE,
-      width: '100%',
-      paddingHorizontal: 14,
-      borderRadius: ICON_BUTTON_SIZE / 2,
-      ...SHADOW,
+      backgroundColor: colors.gray50,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 999,
+      borderWidth: 1.5, // Increased thickness slightly
+      borderColor: colors.orangeBorder, // Pastel orange border as requested
+      flexShrink: 1,
+      marginRight: 8,
     },
-    avatarSlot: {
-      marginRight: 10,
+    avatarContainer: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: '#FEF9C3', // Warm yellow
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 8,
+      overflow: 'hidden',
     },
     avatar: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+      width: 28,
+      height: 28,
+      borderRadius: 14,
     },
     avatarPlaceholder: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: '#FFF3E0',
+      width: 28,
+      height: 28,
       alignItems: 'center',
       justifyContent: 'center',
     },
     avatarIcon: {
-      fontSize: 18,
+      fontSize: 16,
     },
-    onlineDot: {
-      position: 'absolute',
-      bottom: -1,
-      right: -1,
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      backgroundColor: '#4CAF6D',
-      borderWidth: 2,
-      borderColor: colors.cardWhite,
-    },
-    labelColumn: {
-      flexShrink: 1,
-    },
-    nameLineRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    nameLineText: {
-      flexShrink: 1,
+    profileText: {
       fontSize: 15,
       fontWeight: '700',
-      color: colors.textPrimary,
+      color: colors.gray800,
       marginRight: 4,
-    },
-    classLineText: {
-      fontSize: 11,
-      color: colors.textSecondary,
-      marginTop: 1,
-    },
-    chevron: {
-      fontSize: 11,
-      color: colors.textSecondary,
     },
     rightActions: {
       flexDirection: 'row',
       gap: 8,
     },
-    iconButton: {
-      width: ICON_BUTTON_SIZE,
-      height: ICON_BUTTON_SIZE,
-      borderRadius: ICON_BUTTON_SIZE / 2,
-      backgroundColor: colors.cardWhite,
+    actionButton: {
+      width: ACTION_SIZE,
+      height: ACTION_SIZE,
+      borderRadius: ACTION_SIZE / 2,
       alignItems: 'center',
       justifyContent: 'center',
-      ...SHADOW,
-    },
-    icon: {
-      fontSize: 20,
     },
     unreadBadge: {
       position: 'absolute',
-      top: 8,
-      right: 8,
-      width: 9,
-      height: 9,
-      borderRadius: 5,
+      top: -2,
+      right: -2,
+      minWidth: 16,
+      height: 16,
+      borderRadius: 8,
       backgroundColor: colors.tomorrowRed,
       borderWidth: 1.5,
       borderColor: colors.cardWhite,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 2,
+    },
+    unreadCountText: {
+      color: '#FFFFFF',
+      fontSize: 9,
+      fontWeight: '800',
     },
   });
 }
