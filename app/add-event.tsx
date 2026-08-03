@@ -238,24 +238,35 @@ export default function AddEventScreen() {
   const handleSave = () => {
     if (!title.trim()) {
       setTitleError(true);
+      showToast('일정 제목을 입력해 주세요.');
       return;
     }
-    if (!selectedChild) return;
+
+    if (!selectedChild) {
+      showToast('등록된 아이 정보가 없습니다. 아이 프로필을 먼저 설정해 주세요.');
+      console.warn('Attempted to save event without selectedChild');
+      return;
+    }
 
     const noteString = items.join(', ');
 
-    addEvent({
-      date: toISODate(date),
-      title: title.trim(),
-      note: noteString || undefined,
-      memo: memo.trim() || undefined,
-      notifyDayBefore: true,
-      childId: selectedChild.id,
-      source: 'manual',
-      icon: '📌',
-    });
-    showToast('저장이 완료되었습니다.');
-    router.back();
+    try {
+      addEvent({
+        date: toISODate(date),
+        title: title.trim(),
+        note: noteString || undefined,
+        memo: memo.trim() || undefined,
+        notifyDayBefore: true,
+        childId: selectedChild.id,
+        source: 'manual',
+        icon: '📌',
+      });
+      showToast('저장이 완료되었습니다.');
+      router.back();
+    } catch (error) {
+      console.error('Failed to save event:', error);
+      showToast('일정 저장 중 오류가 발생했습니다.');
+    }
   };
 
   const handleCoupangPress = () => {

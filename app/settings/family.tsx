@@ -168,7 +168,7 @@ export default function FamilyMembersScreen() {
   return (
     <ScreenBackground hidePattern={true}>
       <Stack.Screen options={{ title: titleParam ?? '가족 계정' }} />
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           {isReissueMode && (
             <>

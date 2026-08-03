@@ -16,7 +16,6 @@ import CoupangBanner from '../components/common/CoupangBanner';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
-import { useNotificationCenter } from '../context/NotificationCenterContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
@@ -67,7 +66,6 @@ export default function HomeScreen() {
   const router = useRouter();
   const { hasOnboarded, selectedChild, events, googleAccount, onboardingLoaded } = useAppData();
   const { isLocked, isBooting } = useAppLock();
-  const { unreadCount } = useNotificationCenter();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
@@ -75,7 +73,6 @@ export default function HomeScreen() {
   const weather = useWeeklyWeather();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
-  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [adPopupVisible, setAdPopupVisible] = useState(false);
   const adShownRef = useRef(false);
 
@@ -110,8 +107,6 @@ export default function HomeScreen() {
             <HomeHeader
               selectedChild={selectedChild}
               onPressChild={() => setSwitcherOpen(true)}
-              onPressNotifications={() => setNotificationCenterOpen(true)}
-              unreadCount={unreadCount}
             />
             <WeeklyWeatherStrip
               days={weather.days}
@@ -136,15 +131,17 @@ export default function HomeScreen() {
             )}
           </View>
 
-          <View style={styles.upcomingLayer} pointerEvents="box-none">
-            <EventListSection
-              mainEvents={upcoming.mainEvents}
-              featuredLaterEvents={upcoming.featuredLaterEvents}
-              displayType={upcoming.displayType}
-              onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
-              hideSupplies={true}
-            />
-          </View>
+          {!upcoming.isEmpty && (
+            <View style={styles.upcomingLayer} pointerEvents="box-none">
+              <EventListSection
+                mainEvents={upcoming.mainEvents}
+                featuredLaterEvents={upcoming.featuredLaterEvents}
+                displayType={upcoming.displayType}
+                onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
+                hideSupplies={true}
+              />
+            </View>
+          )}
 
           <View style={styles.fixedContentLayer} pointerEvents="box-none">
             <AiScanSection />
@@ -156,10 +153,6 @@ export default function HomeScreen() {
 
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
-      <NotificationCenterModal
-        visible={notificationCenterOpen}
-        onClose={() => setNotificationCenterOpen(false)}
-      />
       <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />
     </ScreenBackground>
   );

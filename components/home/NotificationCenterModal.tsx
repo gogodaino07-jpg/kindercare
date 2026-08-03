@@ -99,7 +99,12 @@ export default function NotificationCenterModal({ visible, onClose }: Notificati
 
           {notifications.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>모든 유치원 소식을 확인했어요! 🐣</Text>
+              <Image
+                source={require('../../assets/mailbox_empty.png')}
+                style={styles.emptyImage}
+                resizeMode="contain"
+              />
+              <Text style={styles.emptyText}>놓친 소식이 없어요.{"\n"}오늘 하루도 파이팅! 💛</Text>
             </View>
           ) : (
             <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
@@ -201,11 +206,19 @@ function createStyles(colors: ThemeColors, topInset: number) {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+      paddingBottom: 60,
+    },
+    emptyImage: {
+      width: 220,
+      height: 220,
+      marginBottom: 8,
     },
     emptyText: {
-      fontSize: 14,
+      fontSize: 20,
+      fontWeight: '800',
       color: colors.textSecondary,
       textAlign: 'center',
+      lineHeight: 28,
     },
     list: {
       flex: 1,

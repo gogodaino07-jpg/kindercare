@@ -22,6 +22,9 @@ export default function GoogleSignInScreen() {
     dataOwnerEmail,
     checkCloudDataExists,
     restoreDataFromCloud,
+    checkWithdrawalStatus,
+    cancelWithdrawal,
+    purgeCloudData,
   } = useAppData();
   const { showAlert } = useAlert();
   const { showToast } = useToast();
@@ -35,6 +38,58 @@ export default function GoogleSignInScreen() {
     setLoading(true);
     try {
       const account = await signInWithGoogle();
+
+      // [Withdrawal Check]
+      const withdrawalDateStr = await checkWithdrawalStatus(account.email);
+      if (withdrawalDateStr) {
+        const withdrawalDate = new Date(withdrawalDateStr);
+        const now = new Date();
+        const diffTime = now.getTime() - withdrawalDate.getTime();
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+        if (diffDays < 7) {
+          // Within 7 days: Recovery Option
+          const shouldRecover = await new Promise<boolean>((resolve) => {
+            showAlert({
+              title: '계정 복구',
+              message: '탈퇴 대기 중인 계정입니다. 탈퇴를 취소하고 모든 데이터를 복구하시겠습니까?',
+              buttons: [
+                {
+                  text: '취소',
+                  style: 'cancel',
+                  onPress: () => resolve(false),
+                },
+                {
+                  text: '복구',
+                  onPress: () => resolve(true),
+                },
+              ],
+            });
+          });
+
+          if (shouldRecover) {
+            setLoading(true);
+            await cancelWithdrawal(account.email);
+            showToast('✅ 계정이 성공적으로 복구되었습니다.');
+            // Proceed to the normal recovery/home logic below
+          } else {
+            await signOutGoogle();
+            setLoading(false);
+            return;
+          }
+        } else {
+          // After 7 days: Purge and Treat as New User
+          setLoading(true);
+          await purgeCloudData(account.email);
+          console.log('🗑️ Withdrawal grace period expired. Cloud data purged.');
+
+          // Since we just purged the data, we skip any further cloud data checks
+          // and move straight to child setup.
+          router.push('/onboarding-child-setup');
+          setLoading(false);
+          return;
+        }
+      }
 
       // [Strict User Separation]
       // In the 'relogin' flow, we verify if the signed-in account matches
@@ -114,6 +169,7 @@ export default function GoogleSignInScreen() {
       // Robust check for cancellation to prevent the error toast on back/cancel.
       const errorCode = String(e?.code || '');
       const errorMessage = String(e?.message || '').toLowerCase();
+      const errorString = String(e || '').toLowerCase();
 
       // [Extreme Cancel Detection]
       // Catch everything that looks like a user-initiated cancellation.
@@ -128,16 +184,19 @@ export default function GoogleSignInScreen() {
         errorCode === 'SIGN_IN_CANCELLED' ||
         errorMessage.includes('cancel') ||
         errorMessage.includes('cancelled') ||
-        errorMessage.includes('12501') ||
-        errorMessage.includes('user back') ||
         errorMessage.includes('dismiss') ||
         errorMessage.includes('닫기') ||
         errorMessage.includes('뒤로') ||
         errorMessage.includes('취소') ||
-        errorMessage.includes('sign_in_cancelled') ||
-        errorMessage.includes('user_cancelled') ||
-        errorMessage.includes('developer_error') ||
-        errorMessage.includes('user_back');
+        errorMessage.includes('사용자 취소') ||
+        errorMessage.includes('user_back') ||
+        errorMessage.includes('user back') ||
+        errorString.includes('cancel') ||
+        errorString.includes('back') ||
+        errorString.includes('dismiss') ||
+        errorString.includes('12501') ||
+        errorString.includes('13') ||
+        errorString.includes('10');
 
       if (!isCancel) {
         showToast('❌ 로그인 중 오류가 발생했습니다.');

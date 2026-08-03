@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { DEFAULT_CHALKBOARD_THEME_ID } from '../constants/chalkboardThemes';
@@ -14,12 +15,14 @@ import {
   generateFamilyKey,
   seedNotificationSettings,
 } from '../data/seed';
+import { isSimilarEvent } from '../data/mockAIResult';
 import { Child, Event, FamilyMember, GoogleAccount, NotificationSettings } from '../types/models';
 import { toISODate } from '../utils/date';
 import { withExternalAction } from '../utils/externalAction';
-import { db, firebaseAuth } from '../utils/firebase';
+import { getDb, getFirebaseAuth } from '../utils/firebase';
 import { scheduleEventNotifications } from '../utils/notifications';
 import { sanitizeData } from '../utils/validation';
+import { AIUsageLimitService } from '../features/newsletter-analysis';
 
 const HAS_ONBOARDED_KEY = 'kindercare_has_onboarded';
 const FONT_SIZE_KEY = 'kindercare_font_size';
@@ -59,7 +62,7 @@ interface AppDataContextValue {
   deleteEvent: (eventId: string) => void;
   deleteEvents: (eventIds: string[]) => void;
   addEvent: (input: Omit<Event, 'id'>) => void;
-  addEvents: (inputs: Omit<Event, 'id'>[]) => void;
+  addEvents: (inputs: Omit<Event, 'id'>[], options?: { replaceSimilar?: boolean }) => void;
 
   // Notifications
   notificationSettings: NotificationSettings;
@@ -81,6 +84,10 @@ interface AppDataContextValue {
 
   // Account deletion
   resetAllData: () => Promise<void>;
+  requestWithdrawal: () => Promise<void>;
+  cancelWithdrawal: (email: string) => Promise<void>;
+  purgeCloudData: (email: string) => Promise<void>;
+  checkWithdrawalStatus: (email: string) => Promise<string | null>; // Returns ISO date string or null
 
   // Data ownership
   dataOwnerEmail: string | null;
@@ -241,6 +248,13 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     AsyncStorage.setItem(SELECTED_CHILD_ID_KEY, selectedChildId).catch(() => {});
   }, [selectedChildId, onboardingLoaded]);
 
+  // Ensure we always have a selected child if one exists
+  useEffect(() => {
+    if (onboardingLoaded && childProfiles.length > 0 && !selectedChildId) {
+      setSelectedChildId(childProfiles[0].id);
+    }
+  }, [onboardingLoaded, childProfiles, selectedChildId]);
+
   // Persist family key
   useEffect(() => {
     if (!onboardingLoaded) return;
@@ -276,13 +290,17 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     console.log('🔄 Firestore Listener Started for:', email);
 
     // Listen to Children
-    const unsubChildren = db
+    const unsubChildren = getDb()
       .collection('users')
       .doc(email)
       .collection('children')
       .onSnapshot((snap) => {
         if (!snap) return;
-        const cloudChildren = snap.docs.map(doc => doc.data() as Child);
+        const cloudChildren = snap.docs.map(doc => {
+          const data = doc.data() as Child;
+          // Always reset photoUri on sync to prevent broken image links from other devices.
+          return { ...data, photoUri: undefined };
+        });
         console.log(`📥 Cloud Sync: Received ${cloudChildren.length} children`);
 
         // Trust cloud only if we've already done our initial sync-up check.
@@ -293,7 +311,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       }, (err) => console.error('❌ Firestore Children Listener Error:', err));
 
     // Listen to Events
-    const unsubEvents = db
+    const unsubEvents = getDb()
       .collection('users')
       .doc(email)
       .collection('events')
@@ -327,14 +345,14 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
         // Wait for Firebase Auth to be ready
         let retry = 0;
-        while (!firebaseAuth.currentUser && retry < 5) {
+        while (!getFirebaseAuth().currentUser && retry < 5) {
           console.log('⏳ Waiting for Firebase Auth session...');
           await new Promise(resolve => setTimeout(resolve, 500));
           retry++;
         }
 
-        const eventsSnap = await db.collection('users').doc(email).collection('events').limit(1).get();
-        const childrenSnap = await db.collection('users').doc(email).collection('children').limit(1).get();
+        const eventsSnap = await getDb().collection('users').doc(email).collection('events').limit(1).get();
+        const childrenSnap = await getDb().collection('users').doc(email).collection('children').limit(1).get();
 
         if (eventsSnap.empty && events.length > 0) {
           console.log(`📤 Pushing ${events.length} local events to cloud...`);
@@ -372,7 +390,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const syncUserToFirestore = async (account: GoogleAccount) => {
     try {
       console.log('📡 Syncing user to Firestore:', account.email);
-      const userRef = db.collection('users').doc(account.email);
+      const userRef = getDb().collection('users').doc(account.email);
       await userRef.set(sanitizeData({
         email: account.email,
         name: account.name,
@@ -388,7 +406,9 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const pushChildToCloud = async (email: string, child: Child) => {
     try {
       console.log('📡 Pushing child to cloud:', child.id);
-      await db.collection('users').doc(email).collection('children').doc(child.id).set(sanitizeData(child));
+      // Exclude local photoUri from cloud backup as it won't work on other devices.
+      const { photoUri, ...childData } = child;
+      await getDb().collection('users').doc(email).collection('children').doc(child.id).set(sanitizeData(childData));
       console.log('✅ Child push success');
     } catch (error) {
       console.error('❌ Firestore Push Child Error:', error);
@@ -398,7 +418,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const pushEventToCloud = async (email: string, event: Event) => {
     try {
       console.log('📡 Pushing event to cloud:', event.id);
-      await db.collection('users').doc(email).collection('events').doc(event.id).set(sanitizeData(event));
+      await getDb().collection('users').doc(email).collection('events').doc(event.id).set(sanitizeData(event));
       console.log('✅ Event push success');
     } catch (error) {
       console.error('❌ Firestore Push Event Error:', error);
@@ -408,7 +428,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const deleteChildFromCloud = async (email: string, childId: string) => {
     try {
       console.log('📡 Deleting child from cloud:', childId);
-      await db.collection('users').doc(email).collection('children').doc(childId).delete();
+      await getDb().collection('users').doc(email).collection('children').doc(childId).delete();
       console.log('✅ Child delete success');
     } catch (error) {
       console.error('❌ Firestore Delete Child Error:', error);
@@ -418,7 +438,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const deleteEventFromCloud = async (email: string, eventId: string) => {
     try {
       console.log('📡 Deleting event from cloud:', eventId);
-      await db.collection('users').doc(email).collection('events').doc(eventId).delete();
+      await getDb().collection('users').doc(email).collection('events').doc(eventId).delete();
       console.log('✅ Event delete success');
     } catch (error) {
       console.error('❌ Firestore Delete Event Error:', error);
@@ -427,7 +447,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
   const checkCloudDataExists = async (email: string): Promise<boolean> => {
     try {
-      const childrenSnap = await db.collection('users').doc(email).collection('children').limit(1).get();
+      const childrenSnap = await getDb().collection('users').doc(email).collection('children').limit(1).get();
       return !childrenSnap.empty;
     } catch (error) {
       console.error('Firestore Check Data Error:', error);
@@ -439,10 +459,14 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     try {
       console.log('🔄 Restoring data for:', email);
 
-      const childrenSnap = await db.collection('users').doc(email).collection('children').get();
-      const eventsSnap = await db.collection('users').doc(email).collection('events').get();
+      const childrenSnap = await getDb().collection('users').doc(email).collection('children').get();
+      const eventsSnap = await getDb().collection('users').doc(email).collection('events').get();
 
-      const cloudChildren = childrenSnap.docs.map(doc => doc.data() as Child);
+      const cloudChildren = childrenSnap.docs.map(doc => {
+        const data = doc.data() as Child;
+        // Always reset photoUri on restore to prevent broken image links from other devices.
+        return { ...data, photoUri: undefined };
+      });
       const cloudEvents = eventsSnap.docs.map(doc => doc.data() as Event);
 
       console.log(`📥 Restored ${cloudChildren.length} children and ${cloudEvents.length} events`);
@@ -589,12 +613,35 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
-  const addEvents = (inputs: Omit<Event, 'id'>[]) => {
-    const newEvents = inputs.map((input) => ({ ...input, id: nextEventId() }));
-    setEvents((prev) => [...prev, ...newEvents]);
-    if (googleAccount?.email) {
-      newEvents.forEach(e => pushEventToCloud(googleAccount.email!, e));
-    }
+  const addEvents = (inputs: Omit<Event, 'id'>[], options?: { replaceSimilar?: boolean }) => {
+    setEvents((prev) => {
+      let filteredPrev = prev;
+
+      if (options?.replaceSimilar) {
+        // Find existing events that are "similar" to any of the incoming ones
+        const idsToRemove = prev
+          .filter((ex) =>
+            inputs.some((nr) => nr.childId === ex.childId && isSimilarEvent(ex, nr))
+          )
+          .map((ex) => ex.id);
+
+        if (idsToRemove.length > 0) {
+          filteredPrev = prev.filter((e) => !idsToRemove.includes(e.id));
+          if (googleAccount?.email) {
+            idsToRemove.forEach((id) => deleteEventFromCloud(googleAccount.email!, id));
+          }
+        }
+      }
+
+      const newEvents = inputs.map((input) => ({ ...input, id: nextEventId() }));
+      const result = [...filteredPrev, ...newEvents];
+
+      if (googleAccount?.email) {
+        newEvents.forEach((e) => pushEventToCloud(googleAccount.email!, e));
+      }
+
+      return result;
+    });
   };
 
   const updateNotificationSettings = (input: Partial<NotificationSettings>) => {
@@ -624,7 +671,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
           // Firebase Auth link
           if (userInfo.data.idToken) {
             const googleCredential = auth.GoogleAuthProvider.credential(userInfo.data.idToken);
-            await firebaseAuth.signInWithCredential(googleCredential);
+            await getFirebaseAuth().signInWithCredential(googleCredential);
           }
 
           const account: GoogleAccount = {
@@ -669,6 +716,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
           code === '10' || code === '12500' ||
           msg.includes('cancel') || msg.includes('dismiss') || msg.includes('user back') ||
           msg.includes('뒤로') || msg.includes('취소') || msg.includes('닫기') ||
+          msg.includes('사용자 취소') ||
           msg.includes('sign_in_cancelled') || msg.includes('user_cancelled') ||
           msg.includes('developer_error')
         ) {
@@ -683,7 +731,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const signOutGoogle = async () => {
     try {
       await GoogleSignin.signOut();
-      await firebaseAuth.signOut();
+      await getFirebaseAuth().signOut();
       setGoogleAccount(null);
       AsyncStorage.removeItem(GOOGLE_ACCOUNT_KEY).catch(() => {});
     } catch (error) {
@@ -707,6 +755,9 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       DATA_OWNER_EMAIL_KEY,
       FAMILY_KEY_KEY,
     ]).catch(() => {});
+    if (googleAccount?.email) {
+      await AIUsageLimitService.resetUsage(googleAccount.email);
+    }
     setHasOnboarded(false);
     setFamilyKey(generateFamilyKey());
     setFamilyMembers([]);
@@ -720,6 +771,74 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setAdDismissedDate(null);
     setGoogleAccount(null);
     setDataOwnerEmail(null);
+  };
+
+  const requestWithdrawal = async () => {
+    if (googleAccount?.email) {
+      const email = googleAccount.email;
+      try {
+        console.log('📡 Requesting withdrawal for:', email);
+        await getDb().collection('users').doc(email).update({
+          withdrawalRequestedAt: new Date().toISOString(),
+        });
+        console.log('✅ Withdrawal requested successfully');
+      } catch (error) {
+        console.error('❌ Firestore Withdrawal Request Error:', error);
+        throw error;
+      }
+    }
+  };
+
+  const cancelWithdrawal = async (email: string) => {
+    try {
+      console.log('📡 Canceling withdrawal for:', email);
+      await getDb().collection('users').doc(email).update({
+        withdrawalRequestedAt: firestore.FieldValue.delete(),
+      });
+      console.log('✅ Withdrawal canceled successfully');
+    } catch (error) {
+      console.error('❌ Firestore Cancel Withdrawal Error:', error);
+    }
+  };
+
+  const purgeCloudData = async (email: string) => {
+    try {
+      console.log('📡 Purging all cloud data for:', email);
+
+      // Delete children collection
+      const childrenSnap = await getDb().collection('users').doc(email).collection('children').get();
+      const childDeletes = childrenSnap.docs.map(doc => doc.ref.delete());
+
+      // Delete events collection
+      const eventsSnap = await getDb().collection('users').doc(email).collection('events').get();
+      const eventDeletes = eventsSnap.docs.map(doc => doc.ref.delete());
+
+      // Reset user doc (keeping basic info but clearing withdrawal state)
+      const userReset = getDb().collection('users').doc(email).set({
+        email,
+        lastLogin: new Date().toISOString(),
+        hasOnboarded: false,
+        withdrawalRequestedAt: firestore.FieldValue.delete(),
+      }, { merge: true });
+
+      await Promise.all([...childDeletes, ...eventDeletes, userReset]);
+      console.log('✅ Cloud data purge complete');
+    } catch (error) {
+      console.error('❌ Firestore Purge Data Error:', error);
+    }
+  };
+
+  const checkWithdrawalStatus = async (email: string): Promise<string | null> => {
+    try {
+      const doc = await getDb().collection('users').doc(email).get();
+      if (doc.exists) {
+        return doc.data()?.withdrawalRequestedAt || null;
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ Firestore Check Withdrawal Status Error:', error);
+      return null;
+    }
   };
 
   // Whenever the event list or the notification schedule preferences change,
@@ -775,6 +894,10 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     dismissAdForToday,
 
     resetAllData,
+    requestWithdrawal,
+    cancelWithdrawal,
+    purgeCloudData,
+    checkWithdrawalStatus,
 
     dataOwnerEmail,
 

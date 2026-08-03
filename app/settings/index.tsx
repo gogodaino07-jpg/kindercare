@@ -24,7 +24,7 @@ export default function SettingsScreen() {
   const { mode, setMode, colors, resolvedScheme } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { showAlert } = useAlert();
-  const { resetAllData, googleAccount, signOutGoogle } = useAppData();
+  const { resetAllData, requestWithdrawal, googleAccount, signOutGoogle } = useAppData();
   const { resetLock } = useAppLock();
   const { clearNotifications } = useNotificationCenter();
 
@@ -121,19 +121,42 @@ export default function SettingsScreen() {
       icon: '⚠️',
       message: '정말 탈퇴하시겠습니까?',
       warningMessage:
-        '등록된 아이 프로필, 일정, 가족키, 앱 잠금 설정 등 모든 데이터가 완전히 삭제되며 복구할 수 없습니다.',
+        '7일의 유예기간이 제공됩니다. 유예기간 내에 재로그인하면 복구가 가능하지만, 7일이 지나면 모든 데이터가 완전히 삭제되어 복구할 수 없습니다.',
       buttons: [
         { text: '취소', style: 'cancel' },
         {
-          text: '탈퇴',
+          text: '탈퇴 요청',
           style: 'destructive',
           onPress: async () => {
-            await resetAllData();
-            await resetLock();
-            clearNotifications();
-            setMode('system');
-            router.dismissAll();
-            router.replace('/');
+            try {
+              await requestWithdrawal();
+
+              const finalizeWithdrawal = async () => {
+                await resetAllData();
+                await resetLock();
+                clearNotifications();
+                setMode('system');
+                router.dismissAll();
+                router.replace('/');
+              };
+
+              showAlert({
+                title: '탈퇴 요청 완료',
+                message: '탈퇴 요청이 정상적으로 접수되었습니다.\n\n7일 이내에 다시 로그인하시면 언제든 계정을 복구하실 수 있습니다.',
+                onDismiss: finalizeWithdrawal,
+                buttons: [
+                  {
+                    text: '확인',
+                    onPress: finalizeWithdrawal,
+                  },
+                ],
+              });
+            } catch (err) {
+              showAlert({
+                title: '오류 발생',
+                message: '탈퇴 요청 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+              });
+            }
           },
         },
       ],
@@ -209,7 +232,6 @@ export default function SettingsScreen() {
 
           {/* 기타 섹션 */}
           <SettingSection emoji="📎" title="기타">
-            <SettingItem title="지난 일정 모아보기" onPress={() => router.push('/past-events')} />
             <SettingItem title="고객센터 / 문의 및 의견 보내기" onPress={() => router.push('/settings/support')} showDivider={false} />
           </SettingSection>
 

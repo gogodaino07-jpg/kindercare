@@ -4,9 +4,10 @@ import { Image, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Text from '../components/common/AppText';
 import { ThemeColors } from '../constants/theme';
+import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 
-export default function SplashScreen() {
+export default function SplashPage() {
   const router = useRouter();
   const { hasOnboarded, googleAccount, onboardingLoaded } = useAppData();
   const colors = useThemeColors();
@@ -16,7 +17,6 @@ export default function SplashScreen() {
     if (!onboardingLoaded) return;
 
     // onboardingLoaded가 완료되면 즉시 분기 처리합니다.
-    // 실제 3초 대기는 전역 BootSplashOverlay가 담당하므로 중복 타이머를 제거합니다.
     if (hasOnboarded && googleAccount) {
       router.replace('/');
     } else {
@@ -40,7 +40,7 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#FEF9F0', // Matched to the provided logo's background color
+      backgroundColor: '#FEF9F0',
       alignItems: 'center',
       justifyContent: 'center',
     },

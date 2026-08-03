@@ -1,6 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useNavigation } from 'expo-router';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import {
   ActivityIndicator,
@@ -14,7 +14,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { RewardedAd, RewardedAdEventType, TestIds, useRewardedAd } from 'react-native-google-mobile-ads';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
 import Text from '../components/common/AppText';
@@ -27,21 +31,23 @@ import { useToast } from '../context/ToastContext';
 import { isSimilarEvent } from '../data/mockAIResult';
 import { Event, UploadedDoc } from '../types/models';
 import {
+  AIUsageLimitService,
+  AnalysisResultStore,
   DAILY_ANALYSIS_LIMIT,
-  consumeAnalysisUse,
-  getRemainingAnalysisCount,
-} from '../utils/aiUsageLimit';
-import { GeminiAnalysisError, analyzeDocumentsWithGemini } from '../utils/geminiAnalysis';
-import { setPendingAnalysisResult } from '../utils/pendingAnalysisResult';
+  GeminiAnalysisError,
+  GeminiAnalysisService,
+} from '../features/newsletter-analysis';
 
 const MAX_DOCS = 5;
 
 export default function UploadScreen() {
   const router = useRouter();
-  const { selectedChild, events } = useAppData();
+  const navigation = useNavigation();
+  const { selectedChild, events, googleAccount } = useAppData();
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
   const { showToast } = useToast();
+  const { width: windowWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
@@ -50,12 +56,88 @@ export default function UploadScreen() {
   const [remainingAnalyses, setRemainingAnalyses] = useState(DAILY_ANALYSIS_LIMIT);
   const [analyzing, setAnalyzing] = useState(false);
 
+  // Prevent accidental navigation during analysis
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (!analyzing) return;
+
+      e.preventDefault();
+
+      showAlert({
+        title: '분석 중단',
+        message: '분석을 중단하고 처음부터 다시 할까요? 아니면 마저 진행할까요?',
+        icon: '🤖',
+        onDismiss: () => {
+          // Hardware back button pressed while alert is visible
+          setAnalyzing(false);
+          AnalysisResultStore.clearPendingSession();
+          router.replace('/');
+        },
+        buttons: [
+          {
+            text: '중단하고 처음부터',
+            style: 'destructive',
+            onPress: () => {
+              setAnalyzing(false);
+              AnalysisResultStore.clearPendingSession();
+              navigation.dispatch(e.data.action);
+            },
+          },
+          { text: '마저 진행할게요', style: 'cancel' },
+        ],
+      });
+    });
+
+    return unsubscribe;
+  }, [navigation, analyzing]);
+
   // Animations
   const robotAnim = useRef(new Animated.Value(0)).current;
   const scanAnim = useRef(new Animated.Value(0)).current;
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const breathAnim = useRef(new Animated.Value(1)).current;
+
+  // Reset docs if coming back from an abandoned review session
+  useEffect(() => {
+    const unsub = navigation.addListener('focus', () => {
+      if (AnalysisResultStore.getResetUpload()) {
+        setDocs([]);
+        AnalysisResultStore.setResetUpload(false);
+      }
+    });
+    return unsub;
+  }, [navigation]);
 
   useEffect(() => {
-    getRemainingAnalysisCount().then(setRemainingAnalyses);
+    AIUsageLimitService.getRemainingCount(googleAccount?.email).then(setRemainingAnalyses);
+
+    // Check for pending analysis session from a previous app instance
+    const checkPendingSession = async () => {
+      const pending = await AnalysisResultStore.getPendingSession();
+      if (pending && pending.docs.length > 0) {
+        showAlert({
+          title: '분석 이어하기',
+          message: '이전에 완료되지 않은 분석 작업이 있습니다. 이어서 진행할까요?',
+          icon: '🤖',
+          buttons: [
+            {
+              text: '처음부터 하기',
+              style: 'cancel',
+              onPress: () => AnalysisResultStore.clearPendingSession(),
+            },
+            {
+              text: '네, 이어서 할게요',
+              onPress: () => {
+                setDocs(pending.docs);
+                // Trigger analysis with recovered data
+                performAnalysis(pending.docs, pending.child);
+              },
+            },
+          ]
+        });
+      }
+    };
+    checkPendingSession();
 
     // Robot floating animation
     Animated.loop(
@@ -87,6 +169,42 @@ export default function UploadScreen() {
         Animated.timing(scanAnim, {
           toValue: 0,
           duration: 1800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Button balloon floating animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: -6,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Robot balloon breathing animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(breathAnim, {
+          toValue: 1.05,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(breathAnim, {
+          toValue: 1,
+          duration: 1200,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
@@ -180,29 +298,31 @@ export default function UploadScreen() {
     setDocs((prev) => prev.filter((d) => d.id !== id));
   };
 
-  const goToAnalysis = (result: Omit<Event, 'id'>[]) => {
-    setPendingAnalysisResult(result);
-    showToast('업로드가 완료되었습니다.');
+  const goToAnalysis = (
+    uploadedDocs: UploadedDoc[],
+    result: Omit<Event, 'id'>[],
+    replaceSimilar: boolean = false
+  ) => {
+    AnalysisResultStore.setSession(uploadedDocs, result);
+    // Track if we should auto-delete existing similar events on save
+    if (replaceSimilar) {
+      const session = AnalysisResultStore.getSession();
+      if (session) session.shouldReplaceSimilar = true;
+    }
+    showToast('분석이 완료되었습니다.');
     router.push('/ai-review');
   };
 
-  const handleAnalyze = async () => {
-    if (docs.length === 0) {
-      showAlert({ title: '알림', message: '먼저 사진이나 파일을 올려주세요' });
-      return;
-    }
-    if (remainingAnalyses <= 0) {
-      showAlert({
-        title: '사용량 초과',
-        message: '오늘의 무료 AI 분석 기회(3회)를 모두 소진하셨습니다. 내일 다시 시도해주세요!',
-      });
-      return;
-    }
+  const performAnalysis = async (targetDocs: UploadedDoc[], targetChild: any) => {
+    if (targetDocs.length === 0 || !targetChild) return;
+
+    // Save pending session state before starting long-running analysis
+    await AnalysisResultStore.savePendingSession(targetDocs, targetChild);
 
     setAnalyzing(true);
-    let result: Awaited<ReturnType<typeof analyzeDocumentsWithGemini>>;
+    let result: Omit<Event, 'id'>[];
     try {
-      result = await analyzeDocumentsWithGemini(docs, selectedChild);
+      result = await GeminiAnalysisService.analyze(targetDocs, targetChild);
     } catch (err) {
       const message =
         err instanceof GeminiAnalysisError
@@ -214,26 +334,134 @@ export default function UploadScreen() {
     }
     setAnalyzing(false);
 
-    setRemainingAnalyses(await consumeAnalysisUse());
+    setRemainingAnalyses(await AIUsageLimitService.consume(googleAccount?.email));
 
-    const hasDuplicate = result.some((newEvent) =>
+    // Check for duplicate/similar events already in calendar
+    const duplicateResults = result.filter((newEvent) =>
       events.some(
         (existing) => existing.childId === newEvent.childId && isSimilarEvent(existing, newEvent)
       )
     );
-    if (hasDuplicate) {
+
+    if (duplicateResults.length > 0) {
       showAlert({
         title: '비슷한 일정이 이미 있어요',
-        message: '그래도 계속 진행할까요?',
+        message: `분석된 ${result.length}개 일정 중 ${duplicateResults.length}개가 이미 캘린더에 등록된 것 같아요. 어떻게 처리할까요?`,
+        icon: '📅',
         buttons: [
-          { text: '취소', style: 'cancel' },
-          { text: '계속 진행', onPress: () => goToAnalysis(result) },
+          {
+            text: '중복 제외하고 보기',
+            onPress: () => {
+              const filtered = result.filter(
+                (nr) =>
+                  !events.some(
+                    (ex) => ex.childId === nr.childId && isSimilarEvent(ex, nr)
+                  )
+              );
+              if (filtered.length === 0) {
+                showToast('모든 일정이 이미 등록되어 있어 리뷰할 내용이 없습니다.');
+                AnalysisResultStore.clearPendingSession();
+              } else {
+                goToAnalysis(targetDocs, filtered, false);
+              }
+            },
+          },
+          {
+            text: '기존 일정 덮어쓰기',
+            onPress: () => goToAnalysis(targetDocs, result, true),
+          },
+          {
+            text: '취소',
+            style: 'cancel',
+            onPress: () => AnalysisResultStore.clearPendingSession(),
+          },
         ],
       });
       return;
     }
-    goToAnalysis(result);
+    goToAnalysis(targetDocs, result);
   };
+
+  const handleAnalyze = async () => {
+    if (docs.length === 0) {
+      showAlert({ title: '알림', message: '먼저 사진이나 파일을 올려주세요' });
+      return;
+    }
+    if (remainingAnalyses <= 0) {
+      // This should ideally not be reachable now with the button replacement, but kept for safety
+      showAlert({
+        title: '사용량 초과',
+        message: '오늘의 무료 AI 분석 기회(3회)를 모두 소진하셨습니다. 광고를 보고 추가 기회를 얻으실 수 있습니다.',
+      });
+      return;
+    }
+    if (!selectedChild) {
+      showAlert({ title: '알림', message: '아이를 먼저 선택해주세요' });
+      return;
+    }
+
+    await performAnalysis(docs, selectedChild);
+  };
+
+  // AdMob Rewarded Ad logic with safety check for missing native modules
+  const adUnitId = process.env.EXPO_PUBLIC_AD_REWARDED_ID || (TestIds ? TestIds.REWARDED : '');
+
+  // Initialize hook only if library is loaded properly
+  const { isLoaded, isClosed, load, show, isRewarded } = useRewardedAd ? useRewardedAd(adUnitId, {
+    requestNonPersonalizedAdsOnly: true,
+  }) : { isLoaded: false, isClosed: false, load: () => {}, show: () => {}, isRewarded: false };
+
+  useEffect(() => {
+    if (load) load();
+  }, [load]);
+
+  useEffect(() => {
+    if (isRewarded) {
+      // Reward earned
+      showToast('🎁 보상이 지급되었습니다! 이제 분석이 가능합니다.');
+      setRemainingAnalyses(prev => prev + 1);
+    }
+    if (isClosed) {
+      // Reload ad for next time
+      load();
+    }
+  }, [isRewarded, isClosed, load]);
+
+  const handleWatchAd = () => {
+    if (isLoaded) {
+      show();
+    } else {
+      showToast('광고를 불러오는 중입니다. 잠시만 기다려 주세요.');
+      load();
+    }
+  };
+
+  const isUploadDisabled = analyzing || remainingAnalyses <= 0;
+
+  // Shimmer Animation for Ad Button
+  const shimmerAnim = useRef(new Animated.Value(-1)).current;
+  useEffect(() => {
+    if (remainingAnalyses === 0 && !analyzing) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(shimmerAnim, {
+            toValue: 1,
+            duration: 1500,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          }),
+          Animated.delay(1500),
+        ])
+      ).start();
+    } else {
+      shimmerAnim.setValue(-1);
+    }
+  }, [remainingAnalyses, analyzing]);
+
+  const shimmerTranslateX = shimmerAnim.interpolate({
+    inputRange: [-1, 1],
+    outputRange: [-windowWidth, windowWidth],
+  });
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -242,29 +470,48 @@ export default function UploadScreen() {
       <ScrollView
         scrollEnabled={docs.length > 0}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          docs.length === 0 && { paddingBottom: 0 }
+        ]}
         bounces={false}
+        overScrollMode="never"
       >
 
         <View style={styles.mainContainer}>
 
           {/* 1. Upload Options Row */}
           <View style={styles.uploadOptionsRow}>
-            <TouchableOpacity style={styles.optionCard} activeOpacity={0.7} onPress={handleTakePhoto}>
+            <TouchableOpacity
+              style={[styles.optionCard, isUploadDisabled && { opacity: 0.5 }]}
+              activeOpacity={0.7}
+              onPress={handleTakePhoto}
+              disabled={isUploadDisabled}
+            >
               <View style={[styles.iconCircle, { backgroundColor: '#EFF6FF' }]}>
                 <Text style={styles.iconEmoji}>📸</Text>
               </View>
               <Text style={styles.optionText}>사진 찍기</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.optionCard} activeOpacity={0.7} onPress={handlePickGallery}>
+            <TouchableOpacity
+              style={[styles.optionCard, isUploadDisabled && { opacity: 0.5 }]}
+              activeOpacity={0.7}
+              onPress={handlePickGallery}
+              disabled={isUploadDisabled}
+            >
               <View style={[styles.iconCircle, { backgroundColor: '#ECFDF5' }]}>
                 <Text style={styles.iconEmoji}>🖼️</Text>
               </View>
               <Text style={styles.optionText}>갤러리</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.optionCard} activeOpacity={0.7} onPress={handlePickFile}>
+            <TouchableOpacity
+              style={[styles.optionCard, isUploadDisabled && { opacity: 0.5 }]}
+              activeOpacity={0.7}
+              onPress={handlePickFile}
+              disabled={isUploadDisabled}
+            >
               <View style={[styles.iconCircle, { backgroundColor: '#FAF5FF' }]}>
                 <Text style={styles.iconEmoji}>📁</Text>
               </View>
@@ -298,6 +545,18 @@ export default function UploadScreen() {
                 styles.robotContainer,
                 { transform: [{ translateY: robotAnim }] }
               ]}>
+                <Animated.View style={[
+                  styles.robotBalloon,
+                  { transform: [{ scale: breathAnim }] }
+                ]}>
+                  <Text style={styles.robotBalloonText}>
+                    {docs.length > 0 ? '✨ 분석하기 누르기 가능!' : '가정통신문을 올려주세요'}
+                  </Text>
+                  <Text style={styles.robotUsageText}>
+                    오늘 남은 횟수: <Text style={styles.highlightCount}>{remainingAnalyses}</Text>회
+                  </Text>
+                  <View style={styles.robotBalloonArrow} />
+                </Animated.View>
                 <Text style={styles.robotEmoji}>🤖</Text>
               </Animated.View>
 
@@ -334,9 +593,10 @@ export default function UploadScreen() {
                       )}
                     </View>
                     <TouchableOpacity
-                      style={styles.removeBadge}
+                      style={[styles.removeBadge, analyzing && { opacity: 0.5 }]}
                       activeOpacity={0.7}
-                      onPress={() => removeDoc(doc.id)}
+                      onPress={() => !analyzing && removeDoc(doc.id)}
+                      disabled={analyzing}
                     >
                       <Text style={styles.removeBadgeText}>✕</Text>
                     </TouchableOpacity>
@@ -349,29 +609,70 @@ export default function UploadScreen() {
         </View>
       </ScrollView>
 
-      {/* 5. Bottom Action Area (Floating) */}
       <View style={[styles.bottomActionContainer, { bottom: 24 + insets.bottom }]}>
-        <View style={styles.countBadge}>
-          <Text style={styles.countBadgeText}>
-            오늘 남은 횟수 : <Text style={styles.countBadgeHighlight}>{remainingAnalyses}/{DAILY_ANALYSIS_LIMIT}회</Text>
-          </Text>
-        </View>
+        {docs.length > 0 && remainingAnalyses > 0 && (
+          <Animated.View style={[
+            styles.buttonBalloon,
+            { transform: [{ translateY: floatAnim }] }
+          ]}>
+            <Text style={styles.buttonBalloonText}>이제 분석을 시작해 볼까요? ✨</Text>
+            <View style={styles.buttonBalloonArrow} />
+          </Animated.View>
+        )}
 
-        <TouchableOpacity
-          style={[styles.analyzeButton, (analyzing || docs.length === 0) && styles.analyzeButtonDisabled]}
-          activeOpacity={0.8}
-          onPress={handleAnalyze}
-          disabled={analyzing || docs.length === 0}
-        >
-          {analyzing ? (
-            <View style={styles.analyzeLoadingRow}>
-              <ActivityIndicator color="#FFFFFF" />
-              <Text style={styles.analyzeButtonText}>문서를 분석하고 있어요…</Text>
-            </View>
-          ) : (
-            <Text style={styles.analyzeButtonText}>✨ AI로 내용 분석하기</Text>
-          )}
-        </TouchableOpacity>
+        {remainingAnalyses > 0 || analyzing ? (
+          <TouchableOpacity
+            style={[styles.analyzeButton, (analyzing || docs.length === 0) && styles.analyzeButtonDisabled]}
+            activeOpacity={0.8}
+            onPress={handleAnalyze}
+            disabled={analyzing || docs.length === 0}
+          >
+            {analyzing ? (
+              <View style={styles.analyzeLoadingRow}>
+                <ActivityIndicator color="#FFFFFF" />
+                <Text style={styles.analyzeButtonText}>문서를 분석하고 있어요…</Text>
+              </View>
+            ) : (
+              <Text style={styles.analyzeButtonText}>✨ AI로 내용 분석하기</Text>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.adButtonContainer}
+            activeOpacity={0.9}
+            onPress={handleWatchAd}
+          >
+            <LinearGradient
+              colors={['#EC4899', '#8B5CF6', '#6366F1']} // from-pink-500 via-purple-500 to-indigo-500
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.adGradient}
+            >
+              {/* Shimmer Effect */}
+              <Animated.View
+                style={[
+                  styles.shimmerOverlay,
+                  { transform: [{ translateX: shimmerTranslateX }] }
+                ]}
+              >
+                <LinearGradient
+                  colors={['transparent', 'rgba(255, 255, 255, 0.3)', 'transparent']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.shimmerGradient}
+                />
+              </Animated.View>
+
+              <View style={styles.adButtonContent}>
+                <View style={styles.adLeft}>
+                  <MaterialCommunityIcons name="play-circle" size={26} color="#FDE047" />
+                  <Text style={styles.adButtonText}>광고 보고 1회 무료 분석하기</Text>
+                </View>
+                <MaterialCommunityIcons name="chevron-right" size={24} color="#FFFFFF" />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -460,6 +761,51 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       position: 'absolute',
       top: 15,
       zIndex: 20,
+      alignItems: 'center',
+    },
+    robotBalloon: {
+      backgroundColor: colors.cardWhite,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 16,
+      marginBottom: 8,
+      ...SHADOW,
+      shadowOpacity: 0.1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      position: 'relative',
+    },
+    robotBalloonText: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: colors.accent,
+      textAlign: 'center',
+    },
+    robotUsageText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginTop: 2,
+      textAlign: 'center',
+    },
+    highlightCount: {
+      fontSize: 16,
+      fontWeight: '900',
+      color: colors.tomorrowRed,
+    },
+    robotBalloonArrow: {
+      position: 'absolute',
+      bottom: -8,
+      left: '50%',
+      marginLeft: -8,
+      width: 0,
+      height: 0,
+      borderLeftWidth: 8,
+      borderRightWidth: 8,
+      borderTopWidth: 8,
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+      borderTopColor: colors.cardWhite,
     },
     robotEmoji: {
       fontSize: 60,
@@ -601,23 +947,35 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       right: 20,
       alignItems: 'center',
     },
-    countBadge: {
-      backgroundColor: colors.lightBlueBg,
-      paddingHorizontal: 16,
-      paddingVertical: 6,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: colors.border,
-      marginBottom: 12,
+    buttonBalloon: {
+      backgroundColor: colors.accent,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 24,
+      marginBottom: 6, // Adjusted to keep arrow visible and close to button
+      ...SHADOW,
+      position: 'relative',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    countBadgeText: {
-      fontSize: 12,
-      fontWeight: 'bold',
-      color: colors.accent,
+    buttonBalloonText: {
+      color: '#FFFFFF',
+      fontSize: 15,
+      fontWeight: '800',
     },
-    countBadgeHighlight: {
-      color: colors.accent,
-      fontWeight: '900',
+    buttonBalloonArrow: {
+      position: 'absolute',
+      bottom: -7.5, // Tightly coupled with the balloon
+      left: '50%',
+      marginLeft: -8,
+      width: 0,
+      height: 0,
+      borderLeftWidth: 8,
+      borderRightWidth: 8,
+      borderTopWidth: 8,
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+      borderTopColor: colors.accent,
     },
     analyzeButton: {
       width: '100%',
@@ -645,6 +1003,47 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       color: '#FFFFFF',
       fontSize: 16,
       fontWeight: 'bold',
+    },
+    adButtonContainer: {
+      width: '100%',
+      height: 60,
+      borderRadius: 18,
+      overflow: 'hidden',
+      ...SHADOW,
+      shadowColor: '#8B5CF6',
+      shadowOpacity: 0.4,
+      elevation: 8,
+    },
+    adGradient: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    adButtonContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+    },
+    adLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    adButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '900', // font-extrabold
+    },
+    shimmerOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+    },
+    shimmerGradient: {
+      width: '50%',
+      height: '100%',
     },
   });
 }

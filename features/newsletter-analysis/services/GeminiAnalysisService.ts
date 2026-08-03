@@ -1,0 +1,269 @@
+import { EncodingType, readAsStringAsync } from 'expo-file-system/legacy';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { Child, Event, UploadedDoc } from '../../../types/models';
+import { toISODate } from '../../../utils/date';
+import { getVertexAIModel } from './firebaseAI';
+
+const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+const GEMINI_MODEL = 'gemini-3.6-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent`;
+
+const IS_PROD = process.env.EXPO_PUBLIC_APP_ENV === 'production';
+
+export class GeminiAnalysisError extends Error {}
+
+interface GeminiExtractedEvent {
+  date?: string;
+  title?: string;
+  note?: string;
+  memo?: string;
+  icon?: string;
+  needsReview?: boolean;
+  reviewReason?: string;
+}
+
+const RESPONSE_SCHEMA = {
+  type: 'object',
+  properties: {
+    events: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          date: { type: 'string' },
+          title: { type: 'string' },
+          note: { type: 'string' },
+          memo: { type: 'string' },
+          icon: { type: 'string' },
+          needsReview: { type: 'boolean' },
+          reviewReason: { type: 'string' },
+        },
+        required: ['date', 'title'],
+      },
+    },
+  },
+  required: ['events'],
+};
+
+export const GeminiAnalysisService = {
+  async analyze(docs: UploadedDoc[], child: Child): Promise<Omit<Event, 'id'>[]> {
+    if (IS_PROD) {
+      return this.analyzeWithVertexAI(docs, child);
+    }
+
+    if (!GEMINI_API_KEY) {
+      throw new GeminiAnalysisError(
+        'Gemini API 키가 설정되지 않았어요. .env의 EXPO_PUBLIC_GEMINI_API_KEY를 확인해주세요.'
+      );
+    }
+
+    const todayISO = toISODate(new Date());
+    const parts = await Promise.all(docs.map(async (doc) => {
+      const { base64, mimeType } = await this.getOptimizedBase64(doc);
+      return {
+        inline_data: {
+          mime_type: mimeType,
+          data: base64
+        }
+      };
+    }));
+
+    const body = {
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: this.buildPrompt(todayISO, child) }, ...parts],
+        },
+      ],
+      generation_config: {
+        response_mime_type: 'application/json',
+        response_schema: RESPONSE_SCHEMA,
+      },
+    };
+
+    let response: Response;
+    try {
+      response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      throw new GeminiAnalysisError('네트워크 연결을 확인해주세요.');
+    }
+
+    if (!response.ok) {
+      let message = `문서 분석에 실패했어요 (HTTP ${response.status})`;
+      try {
+        const errJson = await response.json();
+        console.error('[Gemini Error Body]:', JSON.stringify(errJson, null, 2));
+        if (response.status === 429) {
+          message = 'AI 분석 요청이 너무 많습니다. 1분만 기다렸다가 다시 시도해 주세요.';
+        } else if (errJson?.error?.message) {
+          message = `Gemini 오류: ${errJson.error.message}`;
+        }
+      } catch (e) {}
+      throw new GeminiAnalysisError(message);
+    }
+
+    const json = await response.json();
+    const rawText: string | undefined = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) {
+      throw new GeminiAnalysisError('분석 결과를 읽지 못했어요. 다시 시도해주세요.');
+    }
+
+    let parsed: { events?: GeminiExtractedEvent[] };
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      throw new GeminiAnalysisError('분석 결과 형식이 올바르지 않아요.');
+    }
+
+    const extracted = (parsed.events ?? []).filter(
+      (e): e is Required<Pick<GeminiExtractedEvent, 'date' | 'title'>> & GeminiExtractedEvent =>
+        !!e.date && !!e.title
+    );
+
+    if (extracted.length === 0) {
+      throw new GeminiAnalysisError('문서에서 일정을 찾지 못했어요. 더 선명한 사진으로 다시 시도해주세요.');
+    }
+
+    return extracted.map((e) => ({
+      date: e.date,
+      title: e.title.trim(),
+      note: e.note?.trim() || undefined,
+      memo: e.memo?.trim() || undefined,
+      childId: child.id,
+      source: 'ai' as const,
+      icon: e.icon?.trim() || '📌',
+      needsReview: e.needsReview || undefined,
+      reviewReason: e.reviewReason?.trim() || undefined,
+    }));
+  },
+
+  async analyzeWithVertexAI(docs: UploadedDoc[], child: Child): Promise<Omit<Event, 'id'>[]> {
+    try {
+      const model = getVertexAIModel();
+      const todayISO = toISODate(new Date());
+      const prompt = this.buildPrompt(todayISO, child);
+
+      const parts = await Promise.all(docs.map(async (doc) => {
+        const { base64, mimeType } = await this.getOptimizedBase64(doc);
+        return {
+          inlineData: {
+            mimeType,
+            data: base64,
+          }
+        };
+      }));
+
+      const result = await model.generateContent([prompt, ...parts]);
+      const response = await result.response;
+      const text = response.text();
+
+      const parsed: { events?: GeminiExtractedEvent[] } = JSON.parse(text);
+      const extracted = (parsed.events ?? []).filter(
+        (e): e is Required<Pick<GeminiExtractedEvent, 'date' | 'title'>> & GeminiExtractedEvent =>
+          !!e.date && !!e.title
+      );
+
+      if (extracted.length === 0) {
+        throw new GeminiAnalysisError('문서에서 일정을 찾지 못했어요.');
+      }
+
+      return extracted.map((e) => ({
+        date: e.date,
+        title: e.title.trim(),
+        note: e.note?.trim() || undefined,
+        memo: e.memo?.trim() || undefined,
+        childId: child.id,
+        source: 'ai' as const,
+        icon: e.icon?.trim() || '📌',
+        needsReview: e.needsReview || undefined,
+        reviewReason: e.reviewReason?.trim() || undefined,
+      }));
+    } catch (err: any) {
+      console.error('[VertexAI] Error:', err);
+      let message = err.message || '프로덕션 분석 엔진 오류가 발생했습니다.';
+      if (message.includes('429') || message.toLowerCase().includes('quota')) {
+        message = '현재 분석 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.';
+      }
+      throw new GeminiAnalysisError(message);
+    }
+  },
+
+  async getOptimizedBase64(doc: UploadedDoc): Promise<{ base64: string; mimeType: string }> {
+    let uri = doc.uri;
+    const mimeType = this.guessMimeType(doc);
+
+    // Optimize images before sending to AI (Resize for faster OCR and less token usage)
+    if (doc.kind === 'image' && !uri.endsWith('.pdf')) {
+      try {
+        const result = await manipulateAsync(
+          uri,
+          [{ resize: { width: 1200 } }],
+          { compress: 0.6, format: SaveFormat.JPEG } // Further compressed
+        );
+        uri = result.uri;
+      } catch (e) {
+        console.warn('Failed to optimize image for AI:', e);
+      }
+    }
+
+    const base64 = await readAsStringAsync(uri, { encoding: EncodingType.Base64 });
+    return { base64, mimeType };
+  },
+
+  guessMimeType(doc: UploadedDoc): string {
+    const lower = (doc.name ?? doc.uri).toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.heic') || lower.endsWith('.heif')) return 'image/heic';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.pdf')) return 'application/pdf';
+    return doc.kind === 'image' ? 'image/jpeg' : 'application/pdf';
+  },
+
+  buildPrompt(todayISO: string, child: Child): string {
+    return `당신은 유치원/어린이집 가정통신문 전문 분석가입니다.
+제공된 이미지에서 학부모가 캘린더에 등록하고 관리해야 할 모든 일정과 정보를 추출하세요.
+
+[분석 제 1원칙: 대상 아이 맞춤 분석]
+- 추출하는 모든 정보의 최우선 순위는 아래 [대상 아이 정보]와 일치하는 항목입니다.
+- 통신문에 여러 연령(예: 5세, 6세, 7세)이나 여러 반(예: 햇살반, 하늘반)의 정보가 섞여 있다면, 반드시 해당 아이와 관련된 내용만 선별하여 추출하세요. 다른 연령/반의 정보는 절대 포함하지 마십시오.
+
+[나이 및 반 판별 규칙]
+- 한국 유치원/어린이집의 나이 표기 방식을 이해하고 적용하세요.
+- "일상 나이(한국 나이)"와 "만 나이"가 혼용될 경우, 괄호 안이나 문맥상 명시된 일상 나이를 기준으로 반을 판별합니다.
+- 예시 A: "만 4세(6세) 해바라기반" ➡️ 6세 아이(4세반 아님)를 위한 정보로 간주.
+- 예시 B: "4세반, 5세반 친구들" ➡️ 4세반과 5세반 모두 포함.
+- 예시 C: "7세 형님반을 제외한 모든 유아(5, 6세)" ➡️ 5세, 6세 대상 정보로 간주.
+
+[대상 아이 정보]
+- 이름: ${child.name ?? '아이'}
+- 연령: ${child.age}세 (이 연령에 해당하는 정보만 추출)
+- 소속 반: ${child.className ?? '반 정보 없음'} (이 반에 명시적으로 해당하거나, '전체' 대상인 일정만 추출)
+
+[현재 기준 날짜]
+- 오늘: ${todayISO}
+
+[추출 규칙]
+1. 날짜 처리:
+   - "YYYY-MM-DD" 형식으로 작성하세요.
+   - 연도 정보가 없으면 ${todayISO}의 연도를 따릅니다.
+   - "이번 주 목요일" 같은 표현은 기준 날짜로부터 계산하세요.
+
+2. 필터링 및 우선순위:
+   - 아이의 '연령'이나 '소속 반'이 언급된 항목을 최우선으로 찾으세요.
+   - 단순 공지 사항보다는 '행사', '준비물', '제출물', '휴원일' 등 부모의 행동이 필요한 항목 위주로 추출하세요.
+
+3. 필드 작성:
+   - title: 15자 이내 (예: "여름 소풍", "6세 현장학습")
+   - note: 반드시 챙겨야 할 준비물 (없으면 생략)
+   - memo: 시간, 장소, 복장, 혹은 주의사항을 요약 (없으면 생략)
+   - icon: 성격에 맞는 이모지 1개
+
+4. 출력 및 신뢰도:
+   - 반드시 정해진 JSON 형식으로만 결괏값을 출력하세요. 불필요한 서술이나 설명은 절대 포함하지 마세요.
+   - 확실하지 않은 날짜나 내용은 'needsReview: true'로 표시하고 이유를 'reviewReason'에 적으세요.`;
+  }
+};

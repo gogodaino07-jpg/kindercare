@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatMD, toISODate } from '../utils/date';
 import { withExternalAction } from '../utils/externalAction';
 import { describeWeatherCode } from '../utils/weatherCode';
@@ -97,17 +97,30 @@ async function fetchWeeklyWeather(): Promise<WeatherResult> {
 }
 
 export function useWeeklyWeather() {
-  const [days, setDays] = useState<WeatherDay[] | null>(cachedResult?.days ?? null);
+  const [rawDays, setRawDays] = useState<WeatherDay[] | null>(cachedResult?.days ?? null);
   const [usingFallbackLocation, setUsingFallbackLocation] = useState(
     cachedResult?.usingFallbackLocation ?? false
   );
   const [loading, setLoading] = useState(!cachedResult);
   const [error, setError] = useState<string | null>(null);
 
+  // Compute live today/tomorrow status every time the component renders or rawDays changes
+  const days = useMemo(() => {
+    if (!rawDays) return null;
+    const todayISO = toISODate(new Date());
+    const tomorrowISO = toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+
+    return rawDays.map(d => ({
+      ...d,
+      isToday: d.date === todayISO,
+      isTomorrow: d.date === tomorrowISO,
+    }));
+  }, [rawDays]);
+
   const load = useCallback(async (force = false) => {
     const isFresh = cachedResult && Date.now() - cachedAt < CACHE_TTL_MS;
     if (isFresh && !force) {
-      setDays(cachedResult!.days);
+      setRawDays(cachedResult!.days);
       setUsingFallbackLocation(cachedResult!.usingFallbackLocation);
       setLoading(false);
       setError(null);
@@ -116,13 +129,10 @@ export function useWeeklyWeather() {
     setLoading(true);
     setError(null);
     try {
-      // The permission prompt / GPS fix briefly blips AppState to
-      // inactive/background on some platforms — suppress the lock/splash
-      // replay that would otherwise fire the instant we get a fix back.
       const result = await withExternalAction(fetchWeeklyWeather);
       cachedResult = result;
       cachedAt = Date.now();
-      setDays(result.days);
+      setRawDays(result.days);
       setUsingFallbackLocation(result.usingFallbackLocation);
     } catch (e) {
       setError(e instanceof Error ? e.message : '날씨 정보를 가져오지 못했어요');

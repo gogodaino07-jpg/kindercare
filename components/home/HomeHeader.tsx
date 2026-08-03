@@ -12,15 +12,11 @@ import Text from '../common/AppText';
 interface HomeHeaderProps {
   selectedChild: Child | undefined;
   onPressChild: () => void;
-  onPressNotifications: () => void;
-  unreadCount?: number;
 }
 
 export default function HomeHeader({
   selectedChild,
   onPressChild,
-  onPressNotifications,
-  unreadCount = 0,
 }: HomeHeaderProps) {
   const router = useRouter();
   const colors = useThemeColors();
@@ -78,20 +74,6 @@ export default function HomeHeader({
           onPress={handleTestNotification}
         >
           <MaterialIcons name="science" size={20} color={colors.green500} />
-        </Pressable>
-
-        <Pressable
-          style={[styles.actionButton, { backgroundColor: colors.gray50 }]}
-          onPress={onPressNotifications}
-        >
-          <MaterialIcons name="notifications" size={20} color={colors.gray500} />
-          {unreadCount > 0 ? (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadCountText}>
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </Text>
-            </View>
-          ) : null}
         </Pressable>
 
         <Pressable

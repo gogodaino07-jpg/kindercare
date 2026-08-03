@@ -18,6 +18,8 @@ interface AlertConfig {
   /** A second, bold red paragraph below `message` for irreversible-action warnings. */
   warningMessage?: string;
   buttons?: AlertButton[];
+  /** Optional callback when the alert is dismissed via hardware back button or other non-button interactions. */
+  onDismiss?: () => void;
 }
 
 interface AlertContextValue {
@@ -45,10 +47,16 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
     button.onPress?.();
   };
 
+  const handleDismiss = () => {
+    const onDismiss = config?.onDismiss;
+    setConfig(null);
+    onDismiss?.();
+  };
+
   return (
     <AlertContext.Provider value={{ showAlert }}>
       {children}
-      <Modal visible={!!config} transparent animationType="fade" onRequestClose={() => setConfig(null)}>
+      <Modal visible={!!config} transparent animationType="fade" onRequestClose={handleDismiss}>
         <View style={styles.overlay}>
           {config ? (
             <View style={styles.card}>

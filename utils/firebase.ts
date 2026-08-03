@@ -4,17 +4,24 @@ import firestore from '@react-native-firebase/firestore';
 /**
  * Firebase Auth instance
  */
-export const firebaseAuth = auth();
+let _firebaseAuth: any = null;
+export const getFirebaseAuth = () => {
+  if (!_firebaseAuth) _firebaseAuth = auth();
+  return _firebaseAuth;
+};
 
 /**
  * Firestore instance
  */
-export const db = firestore();
+let _db: any = null;
+export const getDb = () => {
+  if (!_db) _db = firestore();
+  return _db;
+};
 
 /**
  * Firestore Collection References
  */
 export const collections = {
-  users: () => db.collection('users'),
-  // Add other collections here as needed
+  users: () => getDb().collection('users'),
 };

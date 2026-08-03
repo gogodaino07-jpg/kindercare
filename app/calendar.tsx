@@ -6,9 +6,13 @@ import {
   View,
   TouchableOpacity,
   StatusBar,
-  Linking
+  Linking,
+  Dimensions,
+  TextInput
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import BlackboardModal from '../components/home/BlackboardModal';
 import CoupangBanner from '../components/common/CoupangBanner';
@@ -24,6 +28,59 @@ const DOT_COLORS = {
   review: '#F59E0B',
   manual: '#F43F5E',
 };
+
+const SearchHeader = React.memo(({
+  query,
+  setQuery,
+  colors,
+}: {
+  query: string;
+  setQuery: (q: string) => void;
+  colors: ThemeColors;
+}) => {
+  const inputRef = React.useRef<TextInput>(null);
+  const [internalQuery, setInternalQuery] = React.useState(query);
+
+  React.useEffect(() => {
+    // Small delay to ensure the header is rendered and ready for focus
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Sync internal state with external query only when search is cleared/reset from outside
+  React.useEffect(() => {
+    if (query === '') {
+      setInternalQuery('');
+    }
+  }, [query]);
+
+  // Debounce the parent update to prevent splitting Korean chars due to heavy re-renders
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setQuery(internalQuery);
+    }, 200);
+    return () => clearTimeout(handler);
+  }, [internalQuery, setQuery]);
+
+  return (
+    <TextInput
+      ref={inputRef}
+      style={{
+        fontSize: 16,
+        color: colors.textPrimary,
+        width: Dimensions.get('window').width - 120,
+        height: 40,
+      }}
+      placeholder="일정, 준비물, 메모 검색"
+      placeholderTextColor={colors.textSecondary}
+      value={internalQuery}
+      onChangeText={setInternalQuery}
+      returnKeyType="search"
+    />
+  );
+});
 
 function dotColorFor(source: 'ai' | 'manual', needsReview?: boolean): string {
   if (needsReview) return DOT_COLORS.review;
@@ -274,6 +331,32 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       left: 20,
       right: 20,
     },
+    searchResultsContainer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: colors.skyBackground,
+      zIndex: 200,
+    },
+    searchList: {
+      padding: 16,
+      gap: 12,
+    },
+    searchResultDate: {
+      fontSize: 12,
+      fontWeight: 'bold',
+      color: colors.textSecondary,
+      marginBottom: 4,
+      marginLeft: 4,
+    },
+    noResults: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: 100,
+    },
   });
 }
 
@@ -291,6 +374,9 @@ export default function CalendarScreen() {
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(toISODate(new Date()));
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!dateParam) return;
@@ -329,6 +415,16 @@ export default function CalendarScreen() {
     return map;
   }, [childEvents]);
 
+  const filteredSearchResults = useMemo(() => {
+    if (!isSearching || searchQuery.trim() === '') return [];
+    const query = searchQuery.toLowerCase();
+    return childEvents.filter(e =>
+      e.title.toLowerCase().includes(query) ||
+      (e.note && e.note.toLowerCase().includes(query)) ||
+      (e.memo && e.memo.toLowerCase().includes(query))
+    ).sort((a, b) => b.date.localeCompare(a.date));
+  }, [childEvents, isSearching, searchQuery]);
+
   const selectedDateEvents = selectedDate ? eventsByDate.get(selectedDate) ?? [] : [];
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
 
@@ -347,107 +443,183 @@ export default function CalendarScreen() {
   const selectedDateObj = selectedDate ? parseISODate(selectedDate) : new Date();
   const weekdayLabel = WEEKDAY_KO[selectedDateObj.getDay()];
 
+  // Swipe Gestures for Month Navigation
+  const swipeLeft = Gesture.Fling()
+    .direction(Directions.LEFT)
+    .onStart(() => {
+      runOnJS(goToNextMonth)();
+    });
+
+  const swipeRight = Gesture.Fling()
+    .direction(Directions.RIGHT)
+    .onStart(() => {
+      runOnJS(goToPrevMonth)();
+    });
+
+  const swipeGesture = Gesture.Race(swipeLeft, swipeRight);
+
+  const handleSearchResultPress = (event: typeof childEvents[0]) => {
+    setIsSearching(false);
+    setSearchQuery('');
+    setMonthCursor(new Date(parseISODate(event.date).getFullYear(), parseISODate(event.date).getMonth(), 1));
+    setSelectedDate(event.date);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen
         options={{
-          title: '캘린더',
+          title: isSearching ? '' : '캘린더',
+          headerTitle: isSearching ? () => (
+            <SearchHeader
+              query={searchQuery}
+              setQuery={setSearchQuery}
+              colors={colors}
+            />
+          ) : undefined,
           headerRight: () => (
-            <TouchableOpacity onPress={goToToday} style={{ marginRight: 16 }}>
-              <MaterialCommunityIcons name="calendar-today" size={24} color={colors.textPrimary} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16, gap: 16 }}>
+              <TouchableOpacity onPress={() => {
+                if (isSearching) {
+                  setIsSearching(false);
+                  setSearchQuery('');
+                } else {
+                  setIsSearching(true);
+                }
+              }}>
+                <MaterialCommunityIcons
+                  name={isSearching ? "close" : "magnify"}
+                  size={24}
+                  color={colors.textPrimary}
+                />
+              </TouchableOpacity>
+              {!isSearching && (
+                <TouchableOpacity onPress={goToToday}>
+                  <MaterialCommunityIcons name="calendar-today" size={24} color={colors.textPrimary} />
+                </TouchableOpacity>
+              )}
+            </View>
           ),
         }}
       />
 
-      {/* Fixed Calendar Card */}
-      <View style={styles.calendarCard}>
-        <View style={styles.monthSelector}>
-          <TouchableOpacity style={styles.arrowButton} onPress={goToPrevMonth}>
-            <Text style={styles.arrowIcon}>◀</Text>
-          </TouchableOpacity>
-          <Text style={styles.monthText}>
-            {monthCursor.getFullYear()}년 {monthCursor.getMonth() + 1}월
-          </Text>
-          <TouchableOpacity style={styles.arrowButton} onPress={goToNextMonth}>
-            <Text style={styles.arrowIcon}>▶</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.weekDaysRow}>
-          {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => (
-            <Text
-              key={idx}
-              style={[
-                styles.weekDayText,
-                idx === 0 && styles.sundayText,
-                idx === 6 && styles.saturdayText
-              ]}
-            >
-              {day}
-            </Text>
-          ))}
-        </View>
-
-        <View style={styles.daysGrid}>
-          {cells.map((iso, index) => {
-            if (!iso) return <View key={`pad-${index}`} style={styles.dayCellContainer} />;
-
-            const isSelected = iso === selectedDate;
-            const isToday = iso === todayISO;
-            const dayNum = iso.split('-')[2].replace(/^0/, '');
-            const dayEvents = eventsByDate.get(iso) ?? [];
-
-            return (
-              <View key={iso} style={styles.dayCellContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.dayCell,
-                    isSelected && styles.dayCellSelected,
-                    isToday && !isSelected && styles.dayCellToday
-                  ]}
-                  activeOpacity={0.7}
-                  onPress={() => setSelectedDate(iso)}
-                >
-                  <Text style={[
-                    styles.dayText,
-                    isSelected && styles.dayTextSelected,
-                    isToday && !isSelected && styles.dayTextToday
-                  ]}>
-                    {dayNum}
-                  </Text>
-                  <View style={styles.dotRow}>
-                    {dayEvents.slice(0, 2).map((e) => (
-                      <View
-                        key={e.id}
-                        style={[
-                          styles.dot,
-                          { backgroundColor: dotColorFor(e.source, e.needsReview) },
-                        ]}
-                      />
-                    ))}
+      {isSearching && (
+        <View style={styles.searchResultsContainer}>
+          {searchQuery.trim() !== '' && filteredSearchResults.length === 0 ? (
+            <View style={styles.noResults}>
+              <Text style={styles.emptySubtitle}>검색 결과가 없습니다.</Text>
+            </View>
+          ) : (
+            <ScrollView contentContainerStyle={styles.searchList} keyboardShouldPersistTaps="handled">
+              {filteredSearchResults.map((e) => (
+                <View key={e.id}>
+                  <Text style={styles.searchResultDate}>{e.date}</Text>
+                  <View style={styles.eventCardWrapper}>
+                    <EventCard
+                      event={e}
+                      showCoupangButton
+                      wrapNote
+                      hideCheckbox
+                      onPress={() => handleSearchResultPress(e)}
+                    />
                   </View>
-                </TouchableOpacity>
-              </View>
-            );
-          })}
+                </View>
+              ))}
+            </ScrollView>
+          )}
         </View>
+      )}
 
-        <View style={styles.legendContainer}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.ai }]} />
-            <Text style={styles.legendText}>유치원 일정</Text>
+      {/* Fixed Calendar Card */}
+      <GestureDetector gesture={swipeGesture}>
+        <View style={styles.calendarCard}>
+          <View style={styles.monthSelector}>
+            <TouchableOpacity style={styles.arrowButton} onPress={goToPrevMonth}>
+              <Text style={styles.arrowIcon}>◀</Text>
+            </TouchableOpacity>
+            <Text style={styles.monthText}>
+              {monthCursor.getFullYear()}년 {monthCursor.getMonth() + 1}월
+            </Text>
+            <TouchableOpacity style={styles.arrowButton} onPress={goToNextMonth}>
+              <Text style={styles.arrowIcon}>▶</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.review }]} />
-            <Text style={styles.legendText}>확인 필요</Text>
+
+          <View style={styles.weekDaysRow}>
+            {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => (
+              <Text
+                key={idx}
+                style={[
+                  styles.weekDayText,
+                  idx === 0 && styles.sundayText,
+                  idx === 6 && styles.saturdayText
+                ]}
+              >
+                {day}
+              </Text>
+            ))}
           </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.manual }]} />
-            <Text style={styles.legendText}>일정 등록</Text>
+
+          <View style={styles.daysGrid}>
+            {cells.map((iso, index) => {
+              if (!iso) return <View key={`pad-${index}`} style={styles.dayCellContainer} />;
+
+              const isSelected = iso === selectedDate;
+              const isToday = iso === todayISO;
+              const dayNum = iso.split('-')[2].replace(/^0/, '');
+              const dayEvents = eventsByDate.get(iso) ?? [];
+
+              return (
+                <View key={iso} style={styles.dayCellContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.dayCell,
+                      isSelected && styles.dayCellSelected,
+                      isToday && !isSelected && styles.dayCellToday
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => setSelectedDate(iso)}
+                  >
+                    <Text style={[
+                      styles.dayText,
+                      isSelected && styles.dayTextSelected,
+                      isToday && !isSelected && styles.dayTextToday
+                    ]}>
+                      {dayNum}
+                    </Text>
+                    <View style={styles.dotRow}>
+                      {dayEvents.slice(0, 2).map((e) => (
+                        <View
+                          key={e.id}
+                          style={[
+                            styles.dot,
+                            { backgroundColor: dotColorFor(e.source, e.needsReview) },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </View>
+
+          <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.ai }]} />
+              <Text style={styles.legendText}>유치원 일정</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.review }]} />
+              <Text style={styles.legendText}>확인 필요</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.manual }]} />
+              <Text style={styles.legendText}>일정 등록</Text>
+            </View>
           </View>
         </View>
-      </View>
+      </GestureDetector>
 
       <View style={styles.scheduleSection}>
         <View style={styles.dateHeader}>

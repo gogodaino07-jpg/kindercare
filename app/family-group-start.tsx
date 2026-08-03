@@ -18,7 +18,7 @@ export default function FamilyGroupStartScreen() {
 
   const handleCreateNew = () => {
     regenerateFamilyKey();
-    router.push({ pathname: '/google-signin', params: { flow: 'create' } });
+    router.push('/family-create');
   };
 
   const handleJoin = (_code: string) => {

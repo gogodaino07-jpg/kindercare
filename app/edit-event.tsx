@@ -255,20 +255,26 @@ export default function EditEventScreen() {
   const handleUpdate = () => {
     if (!title.trim()) {
       setTitleError(true);
+      showToast('일정 제목을 입력해 주세요.');
       return;
     }
     if (!id) return;
 
     const noteString = items.join(', ');
 
-    updateEvent(id, {
-      date: toISODate(date),
-      title: title.trim(),
-      note: noteString || undefined,
-      memo: memo.trim() || undefined,
-    });
-    showToast('수정이 완료되었습니다.');
-    router.back();
+    try {
+      updateEvent(id, {
+        date: toISODate(date),
+        title: title.trim(),
+        note: noteString || undefined,
+        memo: memo.trim() || undefined,
+      });
+      showToast('수정이 완료되었습니다.');
+      router.back();
+    } catch (error) {
+      console.error('Failed to update event:', error);
+      showToast('일정 수정 중 오류가 발생했습니다.');
+    }
   };
 
   const confirmDelete = () => {

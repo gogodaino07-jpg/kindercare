@@ -45,7 +45,7 @@ export default function SupportScreen() {
 
   return (
     <ScreenBackground>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.sectionLabel}>답변받을 이메일</Text>
           <View style={styles.emailRow}>

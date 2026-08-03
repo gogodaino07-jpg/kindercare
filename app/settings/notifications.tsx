@@ -33,7 +33,7 @@ export default function NotificationSettingsScreen() {
 
   return (
     <ScreenBackground>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.row}>
             <Text style={styles.rowLabel}>알림 받기</Text>

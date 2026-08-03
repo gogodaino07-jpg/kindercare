@@ -17,6 +17,9 @@
     "android": {
       "package": "com.kindeerecare.app",
       "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMobileAdsAppId": "ca-app-pub-4231795240337411~8399519719"
+      },
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/logo_icon.jpg",
@@ -66,7 +69,15 @@
           "faceIDPermission": "지문/얼굴 인식으로 앱 잠금을 해제하기 위해 필요해요."
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-4231795240337411~8399519719",
+          "iosAppId": "ca-app-pub-4231795240337411~8399519719",
+          "userTrackingUsageDescription": "맞춤형 광고를 제공하기 위해 사용됩니다."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
