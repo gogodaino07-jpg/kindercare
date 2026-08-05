@@ -44,8 +44,8 @@ export default function EventListSection({
     ? featuredLaterEvents
     : featuredLaterEvents.slice(0, 2);
 
-  const remainingMainCount = mainEvents.length - 2;
-  const hasMoreMain = mainEvents.length > 2;
+  const remainingMainCount = mainEvents.length - 1;
+  const hasMoreMain = mainEvents.length > 1;
 
   const remainingCount = featuredLaterEvents.length - 2;
   const hasMore = featuredLaterEvents.length > 2;
@@ -67,7 +67,6 @@ export default function EventListSection({
           <View style={[
             styles.mainCard,
             { backgroundColor: themeBg, borderLeftColor: themeColor, borderColor: isToday ? '#E5EDFF' : '#EDE9FE' },
-            mainEvents.length >= 2 && { maxHeight: 260 }
           ]}>
             <View style={styles.cardHeader}>
               <View style={styles.headerLeftGroup}>
@@ -96,30 +95,29 @@ export default function EventListSection({
               )}
             </View>
 
-            <ScrollView
-              nestedScrollEnabled={true}
-              showsVerticalScrollIndicator={false}
-            >
-              {mainEvents.slice(0, 2).map((event, idx) => (
-                <React.Fragment key={`${event.id}-${isToday}`}>
-                  <EventCard
-                    event={event}
-                    dateBadgeText={formatMD(event.date)}
-                    isPlanned={true}
-                    highlighted={true}
-                    initiallyExpanded={idx === 0}
-                    themeColor={themeColor}
-                    showCoupangButton={!isToday}
-                    hideCheckbox={false}
-                    onPress={() => onEventPress(event)}
-                  />
-                  {idx < Math.min(mainEvents.length, 2) - 1 && <View style={[styles.divider, { backgroundColor: isToday ? '#E5EDFF' : '#EDE9FE' }]} />}
-                </React.Fragment>
-              ))}
-              {mainEvents.length === 0 && (
+            {mainEvents.length > 0 ? (
+              <View style={styles.cardBody}>
+                {mainEvents.slice(0, 1).map((event, idx) => (
+                  <React.Fragment key={`${event.id}-${isToday}`}>
+                    <EventCard
+                      event={event}
+                      dateBadgeText={formatMD(event.date)}
+                      isPlanned={true}
+                      highlighted={true}
+                      initiallyExpanded={true}
+                      themeColor={themeColor}
+                      showCoupangButton={!isToday}
+                      hideCheckbox={false}
+                      onPress={() => onEventPress(event)}
+                    />
+                  </React.Fragment>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>챙길 준비물이 없어요 😊</Text>
-              )}
-            </ScrollView>
+              </View>
+            )}
           </View>
         </>
       )}
@@ -229,6 +227,15 @@ function createStyles(colors: ThemeColors) {
       shadowOpacity: 0.05,
       elevation: 3,
       borderColor: colors.border,
+      height: 220, // Fixed height for consistency
+    },
+    cardBody: {
+      flex: 1,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     cardHeader: {
       flexDirection: 'row',

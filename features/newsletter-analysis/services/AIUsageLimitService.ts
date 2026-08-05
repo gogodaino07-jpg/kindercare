@@ -34,6 +34,19 @@ export const AIUsageLimitService = {
     } catch {}
   },
 
+  async provideAdReward(userId?: string): Promise<number> {
+    const usage = await this.readTodayUsage(userId);
+    const nextRecord: UsageRecord = {
+      date: usage.date,
+      count: Math.max(0, usage.count - 1), // Decrease usage count to increase remaining
+    };
+    try {
+      const key = userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY;
+      await AsyncStorage.setItem(key, JSON.stringify(nextRecord));
+    } catch {}
+    return Math.max(0, DAILY_ANALYSIS_LIMIT - nextRecord.count);
+  },
+
   async readTodayUsage(userId?: string): Promise<UsageRecord> {
     const today = toISODate(new Date());
     try {

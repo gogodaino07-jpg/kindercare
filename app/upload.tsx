@@ -53,7 +53,7 @@ export default function UploadScreen() {
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
 
   const [docs, setDocs] = useState<UploadedDoc[]>([]);
-  const [remainingAnalyses, setRemainingAnalyses] = useState(DAILY_ANALYSIS_LIMIT);
+  const [remainingAnalyses, setRemainingAnalyses] = useState<number | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
 
   // Prevent accidental navigation during analysis
@@ -332,9 +332,9 @@ export default function UploadScreen() {
       setAnalyzing(false);
       return;
     }
+    const count = await AIUsageLimitService.consume(googleAccount?.email);
+    setRemainingAnalyses(count);
     setAnalyzing(false);
-
-    setRemainingAnalyses(await AIUsageLimitService.consume(googleAccount?.email));
 
     // Check for duplicate/similar events already in calendar
     const duplicateResults = result.filter((newEvent) =>
@@ -387,7 +387,7 @@ export default function UploadScreen() {
       showAlert({ title: '알림', message: '먼저 사진이나 파일을 올려주세요' });
       return;
     }
-    if (remainingAnalyses <= 0) {
+    if (remainingAnalyses !== null && remainingAnalyses <= 0) {
       // This should ideally not be reachable now with the button replacement, but kept for safety
       showAlert({
         title: '사용량 초과',
@@ -419,13 +419,13 @@ export default function UploadScreen() {
     if (isRewarded) {
       // Reward earned
       showToast('🎁 보상이 지급되었습니다! 이제 분석이 가능합니다.');
-      setRemainingAnalyses(prev => prev + 1);
+      AIUsageLimitService.provideAdReward(googleAccount?.email).then(setRemainingAnalyses);
     }
     if (isClosed) {
       // Reload ad for next time
       load();
     }
-  }, [isRewarded, isClosed, load]);
+  }, [isRewarded, isClosed, load, googleAccount?.email]);
 
   const handleWatchAd = () => {
     if (isLoaded) {
@@ -436,7 +436,7 @@ export default function UploadScreen() {
     }
   };
 
-  const isUploadDisabled = analyzing || remainingAnalyses <= 0;
+  const isUploadDisabled = analyzing || (remainingAnalyses !== null && remainingAnalyses <= 0);
 
   // Shimmer Animation for Ad Button
   const shimmerAnim = useRef(new Animated.Value(-1)).current;
@@ -553,7 +553,7 @@ export default function UploadScreen() {
                     {docs.length > 0 ? '✨ 분석하기 누르기 가능!' : '가정통신문을 올려주세요'}
                   </Text>
                   <Text style={styles.robotUsageText}>
-                    오늘 남은 횟수: <Text style={styles.highlightCount}>{remainingAnalyses}</Text>회
+                    오늘 남은 횟수: <Text style={styles.highlightCount}>{remainingAnalyses ?? '-'}</Text>회
                   </Text>
                   <View style={styles.robotBalloonArrow} />
                 </Animated.View>
@@ -610,7 +610,7 @@ export default function UploadScreen() {
       </ScrollView>
 
       <View style={[styles.bottomActionContainer, { bottom: 24 + insets.bottom }]}>
-        {docs.length > 0 && remainingAnalyses > 0 && (
+        {docs.length > 0 && remainingAnalyses !== null && remainingAnalyses > 0 && (
           <Animated.View style={[
             styles.buttonBalloon,
             { transform: [{ translateY: floatAnim }] }
@@ -620,7 +620,11 @@ export default function UploadScreen() {
           </Animated.View>
         )}
 
-        {remainingAnalyses > 0 || analyzing ? (
+        {remainingAnalyses === null ? (
+          <View style={[styles.analyzeButton, styles.analyzeButtonDisabled]}>
+            <ActivityIndicator color="#FFFFFF" />
+          </View>
+        ) : remainingAnalyses > 0 || analyzing ? (
           <TouchableOpacity
             style={[styles.analyzeButton, (analyzing || docs.length === 0) && styles.analyzeButtonDisabled]}
             activeOpacity={0.8}
