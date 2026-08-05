@@ -35,23 +35,16 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     contentPadding: {
       flex: 1,
-      paddingTop: 0,
-      paddingBottom: 120 + bottomInset,
-      zIndex: 10,
     },
-    upcomingLayer: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      top: '56%', // Fixed top position to prevent pushing up
-      zIndex: 20, // Higher than supplies list to overlay
+    scrollContainer: {
+      paddingBottom: 220 + bottomInset, // Space for fixed bottom banners
     },
     fixedContentLayer: {
       position: 'absolute',
       left: 0,
       right: 0,
       bottom: 110 + bottomInset,
-      zIndex: 25, // Above other layers to ensure touchability
+      zIndex: 25,
     },
     adBanner: {
       position: 'absolute',
@@ -117,7 +110,12 @@ export default function HomeScreen() {
             />
           </View>
 
-          <View style={styles.contentPadding} pointerEvents="box-none">
+          <ScrollView
+            style={styles.contentPadding}
+            contentContainerStyle={styles.scrollContainer}
+            showsVerticalScrollIndicator={false}
+            bounces={true}
+          >
             {upcoming.isEmpty ? (
               <EmptyState />
             ) : (
@@ -126,22 +124,9 @@ export default function HomeScreen() {
                 featuredLaterEvents={upcoming.featuredLaterEvents}
                 displayType={upcoming.displayType}
                 onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
-                hideUpcoming={true}
               />
             )}
-          </View>
-
-          {!upcoming.isEmpty && (
-            <View style={styles.upcomingLayer} pointerEvents="box-none">
-              <EventListSection
-                mainEvents={upcoming.mainEvents}
-                featuredLaterEvents={upcoming.featuredLaterEvents}
-                displayType={upcoming.displayType}
-                onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
-                hideSupplies={true}
-              />
-            </View>
-          )}
+          </ScrollView>
 
           <View style={styles.fixedContentLayer} pointerEvents="box-none">
             <AiScanSection />

@@ -274,7 +274,7 @@ function createStyles(colors: ThemeColors) {
       fontWeight: 'bold',
     },
     laterSection: {
-      marginTop: 12,
+      marginTop: 24, // Increased from 12 to provide clear separation
       paddingHorizontal: 4,
     },
     laterHeader: {
