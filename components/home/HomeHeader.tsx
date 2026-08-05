@@ -46,13 +46,9 @@ export default function HomeHeader({
     }
   };
 
-  const nameLine = selectedChild
-    ? [selectedChild.name, `${selectedChild.age}세`, selectedChild.className].filter(Boolean).join(' · ')
-    : '등록된 아이가 없어요';
-
   return (
     <View style={styles.container}>
-      <Pressable style={styles.profileChip} onPress={onPressChild}>
+      <Pressable style={styles.profileSection} onPress={onPressChild}>
         <View style={styles.avatarContainer}>
           {selectedChild?.photoUri ? (
             <Image source={{ uri: selectedChild.photoUri }} style={styles.avatar} />
@@ -62,10 +58,19 @@ export default function HomeHeader({
             </View>
           )}
         </View>
-        <Text style={styles.profileText} numberOfLines={1}>
-          {nameLine}
-        </Text>
-        <MaterialIcons name="keyboard-arrow-down" size={18} color={colors.gray400} />
+        <View style={styles.infoColumn}>
+          <View style={styles.nameRow}>
+            <Text style={styles.nameText} numberOfLines={1}>
+              {selectedChild?.name ?? '아이를 등록해주세요'}
+            </Text>
+            <MaterialIcons name="keyboard-arrow-down" size={20} color={colors.gray400} />
+          </View>
+          {selectedChild && (
+            <Text style={styles.subInfoText}>
+              {[ `${selectedChild.age}세`, selectedChild.className].filter(Boolean).join(' · ')}
+            </Text>
+          )}
+        </View>
       </Pressable>
 
       <View style={styles.rightActions}>
@@ -103,50 +108,59 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 16,
-      paddingTop: 12,
-      paddingBottom: 4,
+      paddingTop: 16,
+      paddingBottom: 8,
     },
-    profileChip: {
+    profileSection: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.gray50,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 999,
-      borderWidth: 1.5, // Increased thickness slightly
-      borderColor: colors.orangeBorder, // Pastel orange border as requested
       flexShrink: 1,
-      marginRight: 8,
     },
     avatarContainer: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       backgroundColor: '#FEF9C3', // Warm yellow
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 8,
+      marginRight: 10,
       overflow: 'hidden',
+      borderWidth: 1.5,
+      borderColor: colors.orangeBorder,
     },
     avatar: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
     },
     avatarPlaceholder: {
-      width: 28,
-      height: 28,
+      width: 44,
+      height: 44,
       alignItems: 'center',
       justifyContent: 'center',
     },
     avatarIcon: {
-      fontSize: 16,
+      fontSize: 24,
     },
-    profileText: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: colors.gray800,
-      marginRight: 4,
+    infoColumn: {
+      justifyContent: 'center',
+    },
+    nameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+    },
+    nameText: {
+      fontSize: 17,
+      fontWeight: '900',
+      color: colors.gray900,
+      letterSpacing: -0.5,
+    },
+    subInfoText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginTop: 1,
     },
     rightActions: {
       flexDirection: 'row',
