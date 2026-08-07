@@ -1,6 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { Pressable, StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
 import { ThemeColors, SHADOW } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Event } from '../../types/models';
@@ -193,12 +193,12 @@ function createStyles(colors: ThemeColors, themeColor: string) {
     dateBadgeText: {
       fontSize: 13, // Premium font size
       fontWeight: '700',
-      color: colors.accent,
+      color: themeColor,
     },
     title: {
       fontSize: 16, // Premium font size
       fontWeight: 'bold',
-      color: colors.textPrimary,
+      color: colors.gray900,
     },
     expandButton: {
       padding: 4,
@@ -246,7 +246,7 @@ function createStyles(colors: ThemeColors, themeColor: string) {
     noteText: {
       fontSize: 16,
       fontWeight: '500',
-      color: colors.textPrimary,
+      color: colors.gray900,
     },
     noteTextChecked: {
       color: colors.textSecondary,
@@ -278,16 +278,16 @@ function createStyles(colors: ThemeColors, themeColor: string) {
     },
     bullet: {
       fontSize: 16,
-      color: '#94A3B8',
+      color: colors.gray400,
       marginRight: 8,
     },
     bulletText: {
       fontSize: 15,
-      color: '#475569',
+      color: colors.gray900,
     },
     memoText: {
       fontSize: 14,
-      color: '#64748B',
+      color: colors.textSecondary,
       paddingLeft: 4,
     },
   });

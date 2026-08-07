@@ -23,7 +23,9 @@ export default function FamilyGroupStartScreen() {
 
   const handleJoin = (_code: string) => {
     setShowJoinModal(false);
-    router.push({ pathname: '/google-signin', params: { flow: 'join' } });
+    // Since we are already logged in from the onboarding screen,
+    // we can proceed directly to child setup.
+    router.push('/onboarding-child-setup');
   };
 
   return (
@@ -50,9 +52,6 @@ export default function FamilyGroupStartScreen() {
           </View>
         </Pressable>
 
-        <Pressable style={styles.reloginButton} onPress={() => router.push({ pathname: '/google-signin', params: { flow: 'relogin' } })}>
-          <Text style={styles.reloginText}>이미 계정이 있으신가요? <Text style={styles.reloginLink}>재로그인</Text></Text>
-        </Pressable>
       </View>
 
       <JoinCodeModal

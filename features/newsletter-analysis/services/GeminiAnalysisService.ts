@@ -6,7 +6,7 @@ import { getVertexAIModel } from './firebaseAI';
 
 const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 const GEMINI_MODEL = 'gemini-3.6-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const IS_PROD = process.env.EXPO_PUBLIC_APP_ENV === 'production';
 
@@ -96,13 +96,15 @@ export const GeminiAnalysisService = {
       let message = `문서 분석에 실패했어요 (HTTP ${response.status})`;
       try {
         const errJson = await response.json();
-        console.error('[Gemini Error Body]:', JSON.stringify(errJson, null, 2));
+        console.error('[Gemini API Error Detail]:', JSON.stringify(errJson, null, 2));
         if (response.status === 429) {
           message = 'AI 분석 요청이 너무 많습니다. 1분만 기다렸다가 다시 시도해 주세요.';
         } else if (errJson?.error?.message) {
-          message = `Gemini 오류: ${errJson.error.message}`;
+          message = `Gemini 오류 (${response.status}): ${errJson.error.message}`;
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error('[Gemini API Parse Error]:', e);
+      }
       throw new GeminiAnalysisError(message);
     }
 

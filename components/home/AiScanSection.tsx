@@ -43,6 +43,7 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       paddingHorizontal: 16,
+      marginTop: 12, // Added spacing between sections
     },
     card: {
       borderRadius: 22,
@@ -91,21 +92,21 @@ function createStyles(colors: ThemeColors) {
     },
     description: {
       fontSize: 12, // Increased
-      color: colors.gray600,
+      color: colors.gray900,
       fontWeight: '600',
     },
     uploadButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.cardWhite,
       paddingHorizontal: 14,
       paddingVertical: 10,
       borderRadius: 12,
       borderWidth: 1.5,
-      borderColor: '#FED7AA',
+      borderColor: colors.orangeBorder,
       gap: 6,
       elevation: 2,
-      shadowColor: '#FED7AA',
+      shadowColor: colors.orangeBorder,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.15,
       shadowRadius: 3,

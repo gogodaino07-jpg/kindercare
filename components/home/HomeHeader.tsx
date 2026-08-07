@@ -23,29 +23,6 @@ export default function HomeHeader({
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { addNotification } = useNotificationCenter();
 
-  const handleTestNotification = async () => {
-    addNotification({
-      title: '🔔 알림 테스트',
-      body: '새로운 유치원 소식이 도착했습니다! 확인해 보세요.',
-    });
-
-    try {
-      const { status } = await Notifications.getPermissionsAsync();
-      if (status !== 'granted') {
-        await Notifications.requestPermissionsAsync();
-      }
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '킨더케어 알림 테스트',
-          body: '실제 알림이 이렇게 전달됩니다!',
-        },
-        trigger: null,
-      });
-    } catch (e) {
-      console.warn('Failed to fire test notification:', e);
-    }
-  };
-
   return (
     <View style={styles.container}>
       <Pressable style={styles.profileSection} onPress={onPressChild}>
@@ -75,24 +52,17 @@ export default function HomeHeader({
 
       <View style={styles.rightActions}>
         <Pressable
-          style={[styles.actionButton, { backgroundColor: colors.green50 }]}
-          onPress={handleTestNotification}
-        >
-          <MaterialIcons name="science" size={20} color={colors.green500} />
-        </Pressable>
-
-        <Pressable
-          style={[styles.actionButton, { backgroundColor: colors.gray50 }]}
+          style={[styles.actionButton, { backgroundColor: colors.gray100 }]}
           onPress={() => router.push('/calendar')}
         >
-          <MaterialIcons name="date-range" size={20} color={colors.gray500} />
+          <MaterialIcons name="date-range" size={20} color={colors.textPrimary} />
         </Pressable>
 
         <Pressable
-          style={[styles.actionButton, { backgroundColor: colors.gray50 }]}
+          style={[styles.actionButton, { backgroundColor: colors.gray100 }]}
           onPress={() => router.push('/settings')}
         >
-          <MaterialIcons name="settings" size={20} color={colors.gray500} />
+          <MaterialIcons name="settings" size={20} color={colors.textPrimary} />
         </Pressable>
       </View>
     </View>
@@ -120,7 +90,7 @@ function createStyles(colors: ThemeColors) {
       width: 44,
       height: 44,
       borderRadius: 22,
-      backgroundColor: '#FEF9C3', // Warm yellow
+      backgroundColor: colors.orangeLight2,
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: 10,

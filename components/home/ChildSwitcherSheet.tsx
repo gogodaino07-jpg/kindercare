@@ -285,7 +285,7 @@ function createStyles(colors: ThemeColors, topInset: number) {
     title: {
       fontSize: 16,
       fontWeight: '700',
-      color: colors.textPrimary,
+      color: colors.gray900,
     },
     headerActions: {
       flexDirection: 'row',
@@ -311,7 +311,7 @@ function createStyles(colors: ThemeColors, topInset: number) {
       ...SHADOW,
     },
     cardSelected: {
-      backgroundColor: '#E4F0FB',
+      backgroundColor: colors.lightBlueBg,
     },
     cardMain: {
       flex: 1,
@@ -329,7 +329,7 @@ function createStyles(colors: ThemeColors, topInset: number) {
       width: 52,
       height: 52,
       borderRadius: 26,
-      backgroundColor: '#EEF2F5',
+      backgroundColor: colors.gray100,
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: 14,
@@ -341,7 +341,7 @@ function createStyles(colors: ThemeColors, topInset: number) {
       flex: 1,
       fontSize: 16,
       fontWeight: '600',
-      color: colors.textPrimary,
+      color: colors.gray900,
     },
     checkSlot: {
       width: 26,
@@ -362,15 +362,15 @@ function createStyles(colors: ThemeColors, topInset: number) {
       paddingVertical: 7,
       paddingHorizontal: 14,
       borderRadius: 999,
-      backgroundColor: '#EEF2F5',
+      backgroundColor: colors.gray100,
     },
     pillButtonText: {
       fontSize: 12,
       fontWeight: '700',
-      color: colors.textPrimary,
+      color: colors.gray900,
     },
     pillButtonDestructive: {
-      backgroundColor: '#FDECEA',
+      backgroundColor: colors.tomorrowRedBg,
     },
     pillButtonDestructiveText: {
       fontSize: 12,

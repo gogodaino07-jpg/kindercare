@@ -15,7 +15,8 @@ export default function FamilyCreateScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const handleNext = () => {
-    router.push({ pathname: '/google-signin', params: { flow: 'create' } });
+    // Already logged in from onboarding screen.
+    router.push('/onboarding-child-setup');
   };
 
   return (
@@ -42,10 +43,7 @@ export default function FamilyCreateScreen() {
         <View style={styles.spacer} />
 
         <Pressable style={styles.nextButton} onPress={handleNext}>
-          <View style={styles.googleLogoWrapper}>
-            <GoogleLogo size={20} />
-          </View>
-          <Text style={styles.nextButtonText}>Google 계정으로 시작하기</Text>
+          <Text style={styles.nextButtonText}>다음</Text>
         </Pressable>
       </View>
     </OnboardingBackground>

@@ -606,10 +606,15 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   };
 
   const addEvent = (input: Omit<Event, 'id'>) => {
-    const newEvent = { ...input, id: nextEventId() };
-    setEvents((prev) => [...prev, newEvent]);
-    if (googleAccount?.email) {
-      pushEventToCloud(googleAccount.email, newEvent);
+    try {
+      const newEvent = { ...input, id: nextEventId() };
+      setEvents((prev) => [...prev, newEvent]);
+      if (googleAccount?.email) {
+        pushEventToCloud(googleAccount.email, newEvent);
+      }
+    } catch (error) {
+      console.error('❌ addEvent error:', error);
+      throw error;
     }
   };
 

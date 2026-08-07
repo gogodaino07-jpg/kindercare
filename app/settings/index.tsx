@@ -304,7 +304,7 @@ function createStyles(colors: any) {
     },
     divider: {
       height: 1,
-      backgroundColor: colors.gray50,
+      backgroundColor: colors.border,
       marginHorizontal: 12,
     },
     profileNameRow: {
@@ -358,7 +358,7 @@ function createStyles(colors: any) {
       height: 22,
       borderRadius: 11,
       borderWidth: 1.5,
-      borderColor: colors.border, // Pale grey/blue border
+      borderColor: colors.gray400,
       backgroundColor: 'transparent',
       alignItems: 'center',
       justifyContent: 'center',
@@ -386,7 +386,7 @@ function createStyles(colors: any) {
     },
     withdrawText: {
       fontSize: 14,
-      color: '#EF4444', // Alert Red
+      color: colors.tomorrowRed,
       fontWeight: '700',
       textDecorationLine: 'underline',
     },

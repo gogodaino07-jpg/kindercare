@@ -35,22 +35,17 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     contentPadding: {
       flex: 1,
+      paddingBottom: 180, // Increased to provide a better gap above the ad banner
     },
     scrollContainer: {
-      paddingBottom: 220 + bottomInset, // Space for fixed bottom banners
-    },
-    fixedContentLayer: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 110 + bottomInset,
-      zIndex: 25,
+      paddingBottom: 150 + bottomInset,
     },
     adBanner: {
       position: 'absolute',
-      bottom: 24 + bottomInset,
-      left: 20,
-      right: 20,
+      bottom: 12 + bottomInset,
+      left: 0,
+      right: 0,
+      zIndex: 100,
     },
   });
 }
@@ -110,12 +105,7 @@ export default function HomeScreen() {
             />
           </View>
 
-          <ScrollView
-            style={styles.contentPadding}
-            contentContainerStyle={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
-            bounces={true}
-          >
+          <View style={styles.contentPadding}>
             {upcoming.isEmpty ? (
               <EmptyState />
             ) : (
@@ -126,10 +116,6 @@ export default function HomeScreen() {
                 onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
               />
             )}
-          </ScrollView>
-
-          <View style={styles.fixedContentLayer} pointerEvents="box-none">
-            <AiScanSection />
           </View>
         </View>
       </SafeAreaView>

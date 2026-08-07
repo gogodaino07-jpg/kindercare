@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
-import { useThemeColors } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface ScreenBackgroundProps {
   children: React.ReactNode;
@@ -10,12 +10,12 @@ interface ScreenBackgroundProps {
 
 /** Pale sky-blue background with a couple of faint cloud shapes near the top, used app-wide for a unified tone. */
 export default function ScreenBackground({ children, style, hidePattern = false }: ScreenBackgroundProps) {
-  const colors = useThemeColors();
+  const { colors, resolvedScheme } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <View style={[styles.container, style]}>
-      {!hidePattern && (
+      {!hidePattern && resolvedScheme === 'light' && (
         <View pointerEvents="none" style={styles.cloudLayer}>
           <View style={[styles.cloud, styles.cloudLarge]} />
           <View style={[styles.cloud, styles.cloudMedium]} />

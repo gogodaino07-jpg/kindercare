@@ -212,7 +212,10 @@ export default function AddEventScreen() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
 
-  const [date, setDate] = useState(() => (dateParam ? parseISODate(dateParam) : new Date()));
+  const [date, setDate] = useState(() => {
+    const dateStr = Array.isArray(dateParam) ? dateParam[0] : dateParam;
+    return dateStr ? parseISODate(dateStr) : new Date();
+  });
   const [showPicker, setShowPicker] = useState(Platform.OS === 'web');
   const [title, setTitle] = useState('');
   const [itemInput, setItemInput] = useState('');
@@ -251,20 +254,22 @@ export default function AddEventScreen() {
     const noteString = items.join(', ');
 
     try {
-      addEvent({
+      const eventData = {
         date: toISODate(date),
         title: title.trim(),
         note: noteString || undefined,
         memo: memo.trim() || undefined,
         notifyDayBefore: true,
         childId: selectedChild.id,
-        source: 'manual',
+        source: 'manual' as const,
         icon: '📌',
-      });
+      };
+      console.log('[AddEvent] Saving event:', eventData);
+      addEvent(eventData);
       showToast('저장이 완료되었습니다.');
       router.back();
     } catch (error) {
-      console.error('Failed to save event:', error);
+      console.error('[AddEvent] Failed to save event:', error);
       showToast('일정 저장 중 오류가 발생했습니다.');
     }
   };

@@ -34,12 +34,12 @@ function createStyles(colors: ThemeColors) {
     title: {
       fontSize: 17,
       fontWeight: '700',
-      color: colors.textPrimary,
+      color: colors.gray900,
       marginBottom: 8,
     },
     subtitle: {
       fontSize: 14,
-      color: colors.textSecondary,
+      color: colors.gray900,
       textAlign: 'center',
       lineHeight: 20,
     },

@@ -53,7 +53,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             { backgroundColor: colors.textPrimary, opacity, transform: [{ translateY }] },
           ]}
         >
-          <Text style={styles.text}>{message}</Text>
+          <Text style={[styles.text, { color: colors.cardWhite }]}>{message}</Text>
         </Animated.View>
       ) : null}
     </ToastContext.Provider>

@@ -108,12 +108,12 @@ function createStyles(colors: ThemeColors) {
     summaryText: {
       fontSize: 15,
       fontWeight: '600',
-      color: colors.blue500,
+      color: colors.gray900,
       marginLeft: 8,
     },
     fallbackNotice: {
       fontSize: 11,
-      color: colors.gray400,
+      color: colors.gray900,
       marginLeft: 16,
       marginTop: 6,
     },

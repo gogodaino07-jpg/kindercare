@@ -209,13 +209,14 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
 
 export default function EditEventScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id: idParam } = useLocalSearchParams<{ id: string }>();
   const { events, updateEvent, deleteEvent } = useAppData();
   const { showToast } = useToast();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
 
+  const id = Array.isArray(idParam) ? idParam[0] : idParam;
   const existingEvent = useMemo(() => events.find(e => e.id === id), [events, id]);
 
   const [date, setDate] = useState(new Date());

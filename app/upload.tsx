@@ -14,11 +14,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
-  useWindowDimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { RewardedAd, RewardedAdEventType, TestIds, useRewardedAd } from 'react-native-google-mobile-ads';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
 import Text from '../components/common/AppText';
@@ -33,7 +30,6 @@ import { Event, UploadedDoc } from '../types/models';
 import {
   AIUsageLimitService,
   AnalysisResultStore,
-  DAILY_ANALYSIS_LIMIT,
   GeminiAnalysisError,
   GeminiAnalysisService,
 } from '../features/newsletter-analysis';
@@ -47,7 +43,6 @@ export default function UploadScreen() {
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
   const { showToast } = useToast();
-  const { width: windowWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
@@ -309,7 +304,7 @@ export default function UploadScreen() {
       const session = AnalysisResultStore.getSession();
       if (session) session.shouldReplaceSimilar = true;
     }
-    showToast('분석이 완료되었습니다.');
+    showToast('분석 완료하였습니다');
     router.push('/ai-review');
   };
 
@@ -388,10 +383,17 @@ export default function UploadScreen() {
       return;
     }
     if (remainingAnalyses !== null && remainingAnalyses <= 0) {
-      // This should ideally not be reachable now with the button replacement, but kept for safety
       showAlert({
-        title: '사용량 초과',
-        message: '오늘의 무료 AI 분석 기회(3회)를 모두 소진하셨습니다. 광고를 보고 추가 기회를 얻으실 수 있습니다.',
+        title: '무료 횟수 소진',
+        message: '이번 달 무료 횟수(3회)를 모두 사용했어요.\n유료 플랜으로 전환하시면 무제한으로 이용하실 수 있습니다.',
+        icon: '💎',
+        buttons: [
+          { text: '확인', style: 'cancel' },
+          {
+            text: '유료 플랜 안내 (준비중)',
+            onPress: () => showToast('유료 플랜 기능을 준비 중입니다.')
+          },
+        ],
       });
       return;
     }
@@ -403,65 +405,7 @@ export default function UploadScreen() {
     await performAnalysis(docs, selectedChild);
   };
 
-  // AdMob Rewarded Ad logic with safety check for missing native modules
-  const adUnitId = process.env.EXPO_PUBLIC_AD_REWARDED_ID || (TestIds ? TestIds.REWARDED : '');
-
-  // Initialize hook only if library is loaded properly
-  const { isLoaded, isClosed, load, show, isRewarded } = useRewardedAd ? useRewardedAd(adUnitId, {
-    requestNonPersonalizedAdsOnly: true,
-  }) : { isLoaded: false, isClosed: false, load: () => {}, show: () => {}, isRewarded: false };
-
-  useEffect(() => {
-    if (load) load();
-  }, [load]);
-
-  useEffect(() => {
-    if (isRewarded) {
-      // Reward earned
-      showToast('🎁 보상이 지급되었습니다! 이제 분석이 가능합니다.');
-      AIUsageLimitService.provideAdReward(googleAccount?.email).then(setRemainingAnalyses);
-    }
-    if (isClosed) {
-      // Reload ad for next time
-      load();
-    }
-  }, [isRewarded, isClosed, load, googleAccount?.email]);
-
-  const handleWatchAd = () => {
-    if (isLoaded) {
-      show();
-    } else {
-      showToast('광고를 불러오는 중입니다. 잠시만 기다려 주세요.');
-      load();
-    }
-  };
-
-  const isUploadDisabled = analyzing || (remainingAnalyses !== null && remainingAnalyses <= 0);
-
-  // Shimmer Animation for Ad Button
-  const shimmerAnim = useRef(new Animated.Value(-1)).current;
-  useEffect(() => {
-    if (remainingAnalyses === 0 && !analyzing) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(shimmerAnim, {
-            toValue: 1,
-            duration: 1500,
-            easing: Easing.linear,
-            useNativeDriver: true,
-          }),
-          Animated.delay(1500),
-        ])
-      ).start();
-    } else {
-      shimmerAnim.setValue(-1);
-    }
-  }, [remainingAnalyses, analyzing]);
-
-  const shimmerTranslateX = shimmerAnim.interpolate({
-    inputRange: [-1, 1],
-    outputRange: [-windowWidth, windowWidth],
-  });
+  const isUploadDisabled = analyzing;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -550,10 +494,14 @@ export default function UploadScreen() {
                   { transform: [{ scale: breathAnim }] }
                 ]}>
                   <Text style={styles.robotBalloonText}>
-                    {docs.length > 0 ? '✨ 분석하기 누르기 가능!' : '가정통신문을 올려주세요'}
+                    {remainingAnalyses === 0
+                      ? '이번 달 무료 횟수를 다 썼어요'
+                      : docs.length > 0
+                        ? '✨ 분석하기 누르기 가능!'
+                        : '가정통신문을 올려주세요'}
                   </Text>
                   <Text style={styles.robotUsageText}>
-                    오늘 남은 횟수: <Text style={styles.highlightCount}>{remainingAnalyses ?? '-'}</Text>회
+                    이번 달 무료 횟수: <Text style={styles.highlightCount}>{remainingAnalyses ?? '-'}</Text>회 남음
                   </Text>
                   <View style={styles.robotBalloonArrow} />
                 </Animated.View>
@@ -622,9 +570,9 @@ export default function UploadScreen() {
 
         {remainingAnalyses === null ? (
           <View style={[styles.analyzeButton, styles.analyzeButtonDisabled]}>
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color={colors.cardWhite} />
           </View>
-        ) : remainingAnalyses > 0 || analyzing ? (
+        ) : (
           <TouchableOpacity
             style={[styles.analyzeButton, (analyzing || docs.length === 0) && styles.analyzeButtonDisabled]}
             activeOpacity={0.8}
@@ -633,48 +581,12 @@ export default function UploadScreen() {
           >
             {analyzing ? (
               <View style={styles.analyzeLoadingRow}>
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={colors.cardWhite} />
                 <Text style={styles.analyzeButtonText}>문서를 분석하고 있어요…</Text>
               </View>
             ) : (
               <Text style={styles.analyzeButtonText}>✨ AI로 내용 분석하기</Text>
             )}
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={styles.adButtonContainer}
-            activeOpacity={0.9}
-            onPress={handleWatchAd}
-          >
-            <LinearGradient
-              colors={['#EC4899', '#8B5CF6', '#6366F1']} // from-pink-500 via-purple-500 to-indigo-500
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.adGradient}
-            >
-              {/* Shimmer Effect */}
-              <Animated.View
-                style={[
-                  styles.shimmerOverlay,
-                  { transform: [{ translateX: shimmerTranslateX }] }
-                ]}
-              >
-                <LinearGradient
-                  colors={['transparent', 'rgba(255, 255, 255, 0.3)', 'transparent']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.shimmerGradient}
-                />
-              </Animated.View>
-
-              <View style={styles.adButtonContent}>
-                <View style={styles.adLeft}>
-                  <MaterialCommunityIcons name="play-circle" size={26} color="#FDE047" />
-                  <Text style={styles.adButtonText}>광고 보고 1회 무료 분석하기</Text>
-                </View>
-                <MaterialCommunityIcons name="chevron-right" size={24} color="#FFFFFF" />
-              </View>
-            </LinearGradient>
           </TouchableOpacity>
         )}
       </View>
@@ -1004,50 +916,9 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       gap: 10,
     },
     analyzeButtonText: {
-      color: '#FFFFFF',
+      color: colors.cardWhite,
       fontSize: 16,
       fontWeight: 'bold',
-    },
-    adButtonContainer: {
-      width: '100%',
-      height: 60,
-      borderRadius: 18,
-      overflow: 'hidden',
-      ...SHADOW,
-      shadowColor: '#8B5CF6',
-      shadowOpacity: 0.4,
-      elevation: 8,
-    },
-    adGradient: {
-      flex: 1,
-      justifyContent: 'center',
-    },
-    adButtonContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 20,
-    },
-    adLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-    },
-    adButtonText: {
-      color: '#FFFFFF',
-      fontSize: 16,
-      fontWeight: '900', // font-extrabold
-    },
-    shimmerOverlay: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-    },
-    shimmerGradient: {
-      width: '50%',
-      height: '100%',
     },
   });
 }

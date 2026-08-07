@@ -65,7 +65,7 @@ function createStyles(colors: ThemeColors) {
       marginTop: 10,
       borderRadius: 18,
       borderWidth: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.cardWhite,
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: 2,
@@ -74,18 +74,18 @@ function createStyles(colors: ThemeColors) {
       borderColor: colors.blue500,
     },
     futureCard: {
-      borderColor: colors.gray100,
+      borderColor: colors.border,
     },
     dateText: {
       fontSize: 11, // Reduced from 12
       marginBottom: 0,
     },
     todayText: {
-      color: colors.blue500,
+      color: colors.gray900,
       fontWeight: '600',
     },
     futureDateText: {
-      color: colors.gray600,
+      color: colors.gray900,
     },
     emoji: {
       fontSize: 24, // Reduced from 28
@@ -94,9 +94,10 @@ function createStyles(colors: ThemeColors) {
     tempText: {
       fontSize: 13, // Reduced from 14
       fontWeight: '700',
+      color: colors.gray900,
     },
     futureTempText: {
-      color: colors.gray500,
+      color: colors.gray900,
       fontWeight: '500',
     },
     badge: {
@@ -116,12 +117,13 @@ function createStyles(colors: ThemeColors) {
     badgeText: {
       fontSize: 11,
       fontWeight: '700',
+      color: colors.gray900,
     },
     todayBadgeText: {
       color: '#FFFFFF',
     },
     futureBadgeText: {
-      color: colors.gray500,
+      color: colors.gray900,
     },
   });
 }

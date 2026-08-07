@@ -95,7 +95,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       backgroundColor: colors.skyBackground,
     },
     scrollContent: {
-      paddingBottom: 220 + bottomInset,
+      paddingBottom: 180 + bottomInset,
     },
     calendarCard: {
       backgroundColor: colors.cardWhite,
@@ -303,7 +303,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     fabContainer: {
       position: 'absolute',
-      bottom: 104 + bottomInset, // Above the common ad banner
+      bottom: 110 + bottomInset, // Increased from 95 to avoid overlap with ad banner
       right: 20,
       zIndex: 100,
     },
@@ -311,25 +311,26 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       width: 56,
       height: 56,
       borderRadius: 28,
-      backgroundColor: '#000000', // Black FAB
+      backgroundColor: colors.textPrimary,
       alignItems: 'center',
       justifyContent: 'center',
       ...SHADOW,
-      shadowColor: '#000',
+      shadowColor: colors.textPrimary,
       shadowOpacity: 0.2,
       elevation: 6,
     },
     fabPlus: {
-      color: '#FFFFFF',
+      color: colors.cardWhite,
       fontSize: 32,
       fontWeight: '300',
       marginTop: -2,
     },
     adBanner: {
       position: 'absolute',
-      bottom: 24 + bottomInset,
-      left: 20,
-      right: 20,
+      bottom: 12 + bottomInset,
+      left: 0,
+      right: 0,
+      zIndex: 100,
     },
     searchResultsContainer: {
       position: 'absolute',
@@ -380,9 +381,11 @@ export default function CalendarScreen() {
 
   useEffect(() => {
     if (!dateParam) return;
-    const parsed = parseISODate(dateParam);
+    const dateStr = Array.isArray(dateParam) ? dateParam[0] : dateParam;
+    if (!dateStr) return;
+    const parsed = parseISODate(dateStr);
     setMonthCursor(new Date(parsed.getFullYear(), parsed.getMonth(), 1));
-    setSelectedDate(dateParam);
+    setSelectedDate(dateStr);
   }, [dateParam]);
 
   const todayISO = toISODate(new Date());

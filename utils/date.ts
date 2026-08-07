@@ -2,7 +2,13 @@ export const WEEKDAY_KO = ['일', '월', '화', '수', '목', '금', '토'] as c
 
 /** Parses an ISO "YYYY-MM-DD" string as a local-time Date (avoids UTC day-shift). */
 export function parseISODate(isoDate: string): Date {
-  const [year, month, day] = isoDate.split('-').map(Number);
+  if (!isoDate || typeof isoDate !== 'string') return new Date();
+  const parts = isoDate.split('-');
+  if (parts.length !== 3) return new Date();
+
+  const [year, month, day] = parts.map(Number);
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return new Date();
+
   return new Date(year, month - 1, day);
 }
 

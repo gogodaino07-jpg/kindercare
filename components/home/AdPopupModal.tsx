@@ -137,7 +137,7 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
     },
     closeButtonText: {
-      color: '#FFFFFF',
+      color: colors.cardWhite,
       fontSize: 15,
       fontWeight: '700',
     },
