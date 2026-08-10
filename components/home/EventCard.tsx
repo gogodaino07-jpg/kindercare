@@ -1,6 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
+import { Pressable, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { ThemeColors, SHADOW } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Event } from '../../types/models';
@@ -108,6 +109,7 @@ export default function EventCard({
           style={styles.checklistScroll}
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled={true}
+          disallowInterruption={true}
         >
           <View style={styles.checklist}>
             {items.map((item, idx) => {

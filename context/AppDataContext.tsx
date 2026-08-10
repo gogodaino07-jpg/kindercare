@@ -513,8 +513,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
         AsyncStorage.setItem(EVENTS_KEY, JSON.stringify(cloudEvents)),
         AsyncStorage.setItem(CHILDREN_KEY, JSON.stringify(finalChildren)),
       ];
-      if (mergedChildren.length > 0) {
-        persistOps.push(AsyncStorage.setItem(SELECTED_CHILD_ID_KEY, mergedChildren[0].id));
+      if (finalChildren.length > 0) {
+        persistOps.push(AsyncStorage.setItem(SELECTED_CHILD_ID_KEY, finalChildren[0].id));
       }
       await Promise.all(persistOps);
 
