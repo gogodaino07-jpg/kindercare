@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { login as kakaoLogin, logout as kakaoLogout, getProfile as getKakaoProfile } from '@react-native-seoul/kakao-login';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { DEFAULT_CHALKBOARD_THEME_ID } from '../constants/chalkboardThemes';
 import {
@@ -101,6 +102,10 @@ interface AppDataContextValue {
   googleAccount: GoogleAccount | null;
   signInWithGoogle: () => Promise<GoogleAccount>;
   signOutGoogle: () => void;
+
+  // Kakao sign-in
+  signInWithKakao: () => Promise<GoogleAccount>;
+  signOutKakao: () => void;
 }
 
 const AppDataContext = createContext<AppDataContextValue | undefined>(undefined);
@@ -792,6 +797,55 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
+  const signInWithKakao = async (): Promise<GoogleAccount> => {
+    try {
+      console.log('📡 Starting Kakao Sign-In...');
+      const token = await kakaoLogin();
+      if (!token) throw new Error('Kakao login failed - no token');
+
+      const profile = await getKakaoProfile();
+      if (!profile || !profile.email) {
+        throw new Error('Kakao profile is missing email');
+      }
+
+      const account: GoogleAccount = {
+        email: profile.email,
+        name: profile.nickname ?? '사용자'
+      };
+
+      setGoogleAccount(account);
+      await AsyncStorage.setItem(GOOGLE_ACCOUNT_KEY, JSON.stringify(account));
+
+      if (hasOnboarded) {
+        await syncUserToFirestore(account, 'kakao');
+      }
+
+      // Initialize family members if empty
+      setFamilyMembers((prev) => {
+        if (prev.length === 0) {
+          return [{ id: `member-${Date.now()}`, name: '나', isOwner: true }];
+        }
+        return prev;
+      });
+
+      console.log('✅ Kakao Sign-In Success:', account.email);
+      return account;
+    } catch (error: any) {
+      console.error('Kakao Sign-In Error:', error);
+      throw error;
+    }
+  };
+
+  const signOutKakao = async () => {
+    try {
+      await kakaoLogout();
+      setGoogleAccount(null);
+      AsyncStorage.removeItem(GOOGLE_ACCOUNT_KEY).catch(() => {});
+    } catch (error) {
+      console.error('Kakao Sign-Out Error:', error);
+    }
+  };
+
   // 회원탈퇴: wipes every piece of this app's persisted state and puts the
   // in-memory data back to the same shape a fresh install would have, then
   // the caller navigates back to onboarding.
@@ -973,6 +1027,9 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     googleAccount,
     signInWithGoogle,
     signOutGoogle,
+
+    signInWithKakao,
+    signOutKakao,
   };
 
   return <AppDataContext.Provider value={value}>{reactChildren}</AppDataContext.Provider>;
