@@ -177,6 +177,15 @@ export default function GoogleSignInScreen() {
           router.replace('/');
           return;
         }
+
+        // [Fix] 이미 계정이 있는 경로(relogin)로 들어왔으나, 데이터가 없는 신규 계정인 경우 차단
+        if (!hasCloudData && !hasChild) {
+          showToast('가입 한 계정이 아닙니다');
+          await signOutGoogle();
+          setLoading(false);
+          return;
+        }
+
         router.push('/onboarding-child-setup');
         return;
       }

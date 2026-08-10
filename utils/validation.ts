@@ -22,6 +22,10 @@ export function isValidCoupangKeyword(text: string | undefined | null): boolean 
   const isPureNumber = /^[0-9., ]+$/.test(trimmed);
   if (isPureNumber) return false;
 
+  // 5. Filter out non-purchase items common in kindergarten
+  const blacklistedKeywords = ['제출', '통장', '교재', '안내문', '봉투', '원복', '활동복', '가방', '성적표', '카드'];
+  if (blacklistedKeywords.some(k => trimmed.includes(k))) return false;
+
   return true;
 }
 

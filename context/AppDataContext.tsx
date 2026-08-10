@@ -646,28 +646,51 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const addEvents = (inputs: Omit<Event, 'id'>[], options?: { replaceSimilar?: boolean }) => {
     setEvents((prev) => {
       let filteredPrev = prev;
+      let newEventsToPush: Omit<Event, 'id'>[] = [];
 
       if (options?.replaceSimilar) {
         // Find existing events that are "similar" to any of the incoming ones
-        const idsToRemove = prev
-          .filter((ex) =>
-            inputs.some((nr) => nr.childId === ex.childId && isSimilarEvent(ex, nr))
-          )
-          .map((ex) => ex.id);
+        const inputsToProcess = [...inputs];
 
-        if (idsToRemove.length > 0) {
+        const existingSimilarOnes = prev.filter((ex) =>
+          inputsToProcess.some((nr) => nr.childId === ex.childId && isSimilarEvent(ex, nr))
+        );
+
+        if (existingSimilarOnes.length > 0) {
+          const idsToRemove = existingSimilarOnes.map(ex => ex.id);
           filteredPrev = prev.filter((e) => !idsToRemove.includes(e.id));
+
           if (googleAccount?.email) {
             idsToRemove.forEach((id) => deleteEventFromCloud(googleAccount.email!, id));
           }
+
+          // Merge old data into new events
+          const processedInputs = inputsToProcess.map(newEv => {
+            const oldEv = existingSimilarOnes.find(ex => ex.childId === newEv.childId && isSimilarEvent(ex, newEv));
+            if (oldEv) {
+              return {
+                ...newEv,
+                // Preserve custom manual edits if they exist
+                memo: oldEv.memo || newEv.memo,
+                notifyDayBefore: oldEv.notifyDayBefore ?? newEv.notifyDayBefore,
+                // If the new AI scan found a different date, we naturally take the new date (repositioning)
+              };
+            }
+            return newEv;
+          });
+          newEventsToPush = processedInputs;
+        } else {
+          newEventsToPush = inputsToProcess;
         }
+      } else {
+        newEventsToPush = inputs;
       }
 
-      const newEvents = inputs.map((input) => ({ ...input, id: nextEventId() }));
-      const result = [...filteredPrev, ...newEvents];
+      const finalizedNewEvents = newEventsToPush.map((input) => ({ ...input, id: nextEventId() }));
+      const result = [...filteredPrev, ...finalizedNewEvents];
 
       if (googleAccount?.email) {
-        newEvents.forEach((e) => pushEventToCloud(googleAccount.email!, e));
+        finalizedNewEvents.forEach((e) => pushEventToCloud(googleAccount.email!, e));
       }
 
       return result;

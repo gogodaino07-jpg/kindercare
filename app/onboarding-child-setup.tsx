@@ -1,13 +1,18 @@
+import * as ImagePicker from 'expo-image-picker';
+import { ImagePickerAsset } from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View, Image } from 'react-native';
 import PermissionModal from '../components/onboarding/PermissionModal';
+import PhotoCropModal from '../components/child-profile/PhotoCropModal';
+import PhotoSourceSheet from '../components/child-profile/PhotoSourceSheet';
 import Text from '../components/common/AppText';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
 import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
+import { useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { ChildAge } from '../types/models';
 import { ageFromBirthdate, toISODate } from '../utils/date';
@@ -20,6 +25,7 @@ export default function OnboardingChildSetupScreen() {
   const router = useRouter();
   const { addChild, completeOnboarding } = useAppData();
   const { showAlert } = useAlert();
+  const { setPickerActive } = useAppLock();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -41,7 +47,42 @@ export default function OnboardingChildSetupScreen() {
   const [error, setError] = useState(false);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
 
+  // Profile Photo States
+  const [pendingAsset, setPendingAsset] = useState<ImagePickerAsset | null>(null);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [showSourceSheet, setShowSourceSheet] = useState(false);
+
   const canCreate = !!name.trim() && !!birthdate;
+
+  const openCamera = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      showAlert({ title: '카메라 권한이 필요해요', message: '설정에서 카메라 접근을 허용해주세요.' });
+      return;
+    }
+    setPickerActive(true);
+    try {
+      const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 1 });
+      if (!result.canceled && result.assets[0]) setPendingAsset(result.assets[0]);
+    } finally {
+      setPickerActive(false);
+    }
+  };
+
+  const openGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      showAlert({ title: '사진첩 권한이 필요해요', message: '설정에서 사진첩 접근을 허용해주세요.' });
+      return;
+    }
+    setPickerActive(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 1, mediaTypes: ['images'] });
+      if (!result.canceled && result.assets[0]) setPendingAsset(result.assets[0]);
+    } finally {
+      setPickerActive(false);
+    }
+  };
 
   const handleCreate = () => {
     if (!canCreate || !birthdate) {
@@ -52,7 +93,8 @@ export default function OnboardingChildSetupScreen() {
     addChild({
       name: name.trim(),
       age: ageFromBirthdate(birthdate),
-      birthdate: toISODate(birthdate)
+      birthdate: toISODate(birthdate),
+      photoUri: photoUri ?? undefined
     });
     setShowPermissionModal(true);
   };
@@ -84,7 +126,20 @@ export default function OnboardingChildSetupScreen() {
           <Text style={styles.subtitle}>우리 아이 정보를 알려주세요</Text>
         </View>
 
-        <View style={styles.spacer} />
+        <View style={styles.photoSection}>
+          <Pressable style={styles.photoContainer} onPress={() => setShowSourceSheet(true)}>
+            {photoUri ? (
+              <Image source={{ uri: photoUri }} style={styles.photo} />
+            ) : (
+              <View style={styles.photoPlaceholder}>
+                <Text style={styles.photoPlaceholderIcon}>🧒</Text>
+              </View>
+            )}
+            <View style={styles.cameraBadge}>
+              <Text style={styles.cameraBadgeIcon}>📷</Text>
+            </View>
+          </Pressable>
+        </View>
 
         <View style={styles.card}>
           <Text style={styles.label}>이름</Text>
@@ -159,6 +214,27 @@ export default function OnboardingChildSetupScreen() {
       </Pressable>
 
       <PermissionModal visible={showPermissionModal} onDone={handlePermissionDone} />
+
+      <PhotoSourceSheet
+        visible={showSourceSheet}
+        onCancel={() => setShowSourceSheet(false)}
+        onPickCamera={() => {
+          setShowSourceSheet(false);
+          openCamera();
+        }}
+        onPickGallery={() => {
+          setShowSourceSheet(false);
+          openGallery();
+        }}
+      />
+      <PhotoCropModal
+        asset={pendingAsset}
+        onCancel={() => setPendingAsset(null)}
+        onApply={(uri) => {
+          setPhotoUri(uri);
+          setPendingAsset(null);
+        }}
+      />
     </OnboardingBackground>
   );
 }
@@ -205,6 +281,48 @@ function createStyles(colors: ThemeColors) {
       color: colors.textSecondary,
       lineHeight: 20,
       textAlign: 'center',
+    },
+    photoSection: {
+      alignItems: 'center',
+      marginBottom: 32,
+    },
+    photoContainer: {
+      width: 120,
+      height: 120,
+    },
+    photo: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+    },
+    photoPlaceholder: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+    },
+    photoPlaceholderIcon: {
+      fontSize: 40,
+    },
+    cameraBadge: {
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.textPrimary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...SHADOW,
+    },
+    cameraBadgeIcon: {
+      fontSize: 16,
     },
     card: {
       backgroundColor: colors.creamBeigeCard,
