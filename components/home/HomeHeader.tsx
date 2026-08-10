@@ -87,9 +87,9 @@ function createStyles(colors: ThemeColors) {
       flexShrink: 1,
     },
     avatarContainer: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 54,
+      height: 54,
+      borderRadius: 27,
       backgroundColor: colors.orangeLight2,
       alignItems: 'center',
       justifyContent: 'center',
@@ -99,18 +99,18 @@ function createStyles(colors: ThemeColors) {
       borderColor: colors.orangeBorder,
     },
     avatar: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 54,
+      height: 54,
+      borderRadius: 27,
     },
     avatarPlaceholder: {
-      width: 44,
-      height: 44,
+      width: 54,
+      height: 54,
       alignItems: 'center',
       justifyContent: 'center',
     },
     avatarIcon: {
-      fontSize: 24,
+      fontSize: 30,
     },
     infoColumn: {
       justifyContent: 'center',
@@ -121,13 +121,13 @@ function createStyles(colors: ThemeColors) {
       gap: 2,
     },
     nameText: {
-      fontSize: 17,
+      fontSize: 20,
       fontWeight: '900',
       color: colors.gray900,
       letterSpacing: -0.5,
     },
     subInfoText: {
-      fontSize: 13,
+      fontSize: 15,
       fontWeight: '600',
       color: colors.textSecondary,
       marginTop: 1,

@@ -10,7 +10,7 @@ export const seedFamilyMembers: FamilyMember[] = [
 
 export const seedNotificationSettings: NotificationSettings = {
   enabled: true,
-  dayBeforeTime: { period: 'AM', hour: 6, minute: 0 },
+  dayBeforeTime: { period: 'PM', hour: 6, minute: 0 },
   sameDayEnabled: false,
   sameDayTime: { period: 'AM', hour: 8, minute: 0 },
 };

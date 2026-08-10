@@ -51,6 +51,9 @@ export default function UploadScreen() {
   const [remainingAnalyses, setRemainingAnalyses] = useState<number | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [lastUsedType, setLastUsedType] = useState<'camera' | 'gallery' | 'file' | null>(null);
+
   // Prevent accidental navigation during analysis
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
@@ -230,6 +233,8 @@ export default function UploadScreen() {
       const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
       if (!result.canceled && result.assets[0]) {
         addDoc({ id: `doc-${Date.now()}`, uri: result.assets[0].uri, kind: 'image' });
+        setLastUsedType('camera');
+        setIsMenuOpen(false);
       }
     } finally {
       setPickerActive(false);
@@ -258,6 +263,8 @@ export default function UploadScreen() {
         result.assets.forEach((asset) =>
           addDoc({ id: `doc-${Date.now()}-${asset.assetId ?? asset.uri}`, uri: asset.uri, kind: 'image' })
         );
+        setLastUsedType('gallery');
+        setIsMenuOpen(false);
       }
     } finally {
       setPickerActive(false);
@@ -283,6 +290,8 @@ export default function UploadScreen() {
           kind: asset.mimeType?.startsWith('image/') ? 'image' : 'file',
           name: asset.name,
         });
+        setLastUsedType('file');
+        setIsMenuOpen(false);
       }
     } finally {
       setPickerActive(false);
@@ -385,13 +394,21 @@ export default function UploadScreen() {
     if (remainingAnalyses !== null && remainingAnalyses <= 0) {
       showAlert({
         title: '무료 횟수 소진',
-        message: '이번 달 무료 횟수(3회)를 모두 사용했어요.\n유료 플랜으로 전환하시면 무제한으로 이용하실 수 있습니다.',
+        message: (
+          <Text style={{ textAlign: 'center' }}>
+            이번 달 무료 횟수(3회)를 모두 사용했어요.{"\n"}
+            <Text style={{ color: colors.coralPink, fontWeight: 'bold' }}>프리미엄</Text>
+            으로 업그레이드하시면{" "}
+            <Text style={{ color: colors.coralPink, fontWeight: 'bold' }}>무제한</Text>
+            으로 이용하실 수 있습니다.
+          </Text>
+        ),
         icon: '💎',
         buttons: [
           { text: '확인', style: 'cancel' },
           {
-            text: '유료 플랜 안내 (준비중)',
-            onPress: () => showToast('유료 플랜 기능을 준비 중입니다.')
+            text: '프리미엄 안내 (준비중)',
+            onPress: () => showToast('프리미엄 기능을 준비 중입니다.')
           },
         ],
       });
@@ -424,44 +441,7 @@ export default function UploadScreen() {
 
         <View style={styles.mainContainer}>
 
-          {/* 1. Upload Options Row */}
-          <View style={styles.uploadOptionsRow}>
-            <TouchableOpacity
-              style={[styles.optionCard, isUploadDisabled && { opacity: 0.5 }]}
-              activeOpacity={0.7}
-              onPress={handleTakePhoto}
-              disabled={isUploadDisabled}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: '#EFF6FF' }]}>
-                <Text style={styles.iconEmoji}>📸</Text>
-              </View>
-              <Text style={styles.optionText}>사진 찍기</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.optionCard, isUploadDisabled && { opacity: 0.5 }]}
-              activeOpacity={0.7}
-              onPress={handlePickGallery}
-              disabled={isUploadDisabled}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: '#ECFDF5' }]}>
-                <Text style={styles.iconEmoji}>🖼️</Text>
-              </View>
-              <Text style={styles.optionText}>갤러리</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.optionCard, isUploadDisabled && { opacity: 0.5 }]}
-              activeOpacity={0.7}
-              onPress={handlePickFile}
-              disabled={isUploadDisabled}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: '#FAF5FF' }]}>
-                <Text style={styles.iconEmoji}>📁</Text>
-              </View>
-              <Text style={styles.optionText}>파일</Text>
-            </TouchableOpacity>
-          </View>
+          {/* 1. Upload Options Row - Removed and replaced by FAB Menu */}
 
           {/* 2. AI Illustration Area */}
           <View style={styles.illustrationContainer}>
@@ -518,7 +498,7 @@ export default function UploadScreen() {
             <>
               <Text style={styles.mainTitle}>가정통신문을 분석해 드릴게요!</Text>
               <Text style={styles.subDescription}>
-                사진 찍기, 갤러리, 파일 중{'\n'}편하신 걸로 올려주세요 ☺️
+                우측 하단의 + 버튼을 눌러{'\n'}사진이나 파일을 올려주세요 ☺️
               </Text>
             </>
           )}
@@ -590,6 +570,49 @@ export default function UploadScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* FAB and Menu Bar */}
+      {!analyzing && (
+        <View style={[styles.fabContainer, { bottom: 100 + insets.bottom }]}>
+          {isMenuOpen && (
+            <View style={styles.menuBar}>
+              <TouchableOpacity
+                style={[styles.menuItem, lastUsedType === 'file' && styles.menuItemActive]}
+                onPress={handlePickFile}
+              >
+                <Text style={styles.menuItemEmoji}>📁</Text>
+                <Text style={styles.menuItemText}>파일</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.menuItem, lastUsedType === 'camera' && styles.menuItemActive]}
+                onPress={handleTakePhoto}
+              >
+                <Text style={styles.menuItemEmoji}>📸</Text>
+                <Text style={styles.menuItemText}>카메라</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.menuItem, lastUsedType === 'gallery' && styles.menuItemActive]}
+                onPress={handlePickGallery}
+              >
+                <Text style={styles.menuItemEmoji}>🖼️</Text>
+                <Text style={styles.menuItemText}>갤러리</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={styles.fabButton}
+            activeOpacity={0.8}
+            onPress={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            <MaterialCommunityIcons
+              name={isMenuOpen ? "close" : "plus"}
+              size={30}
+              color="#FFFFFF"
+            />
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -607,48 +630,15 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       paddingHorizontal: 20,
       paddingTop: 32,
       alignItems: 'center',
-    },
-    uploadOptionsRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      width: '100%',
-      marginBottom: 40,
-    },
-    optionCard: {
-      width: '31%',
-      aspectRatio: 1,
-      backgroundColor: colors.cardWhite,
-      borderRadius: 24,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: colors.border,
-      ...SHADOW,
-      shadowOpacity: 0.03,
-      elevation: 2,
-    },
-    iconCircle: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 10,
-    },
-    iconEmoji: {
-      fontSize: 22,
-    },
-    optionText: {
-      fontSize: 13,
-      fontWeight: 'bold',
-      color: colors.textPrimary,
+      flex: 1,
     },
     illustrationContainer: {
       width: 220,
       height: 220,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 24,
+      marginBottom: 32,
+      marginTop: 20,
     },
     bgBlueCircle: {
       position: 'absolute',
@@ -919,6 +909,53 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       color: colors.cardWhite,
       fontSize: 16,
       fontWeight: 'bold',
+    },
+    fabContainer: {
+      position: 'absolute',
+      right: 20,
+      alignItems: 'flex-end',
+    },
+    fabButton: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: '#4A4A4A',
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...SHADOW,
+      elevation: 5,
+    },
+    menuBar: {
+      flexDirection: 'row',
+      backgroundColor: '#FFFFFF',
+      borderRadius: 30,
+      padding: 6,
+      marginBottom: 12,
+      ...SHADOW,
+      elevation: 4,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    menuItem: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'column',
+      minWidth: 60,
+    },
+    menuItemActive: {
+      backgroundColor: '#F1F1F3',
+    },
+    menuItemEmoji: {
+      fontSize: 20,
+      marginBottom: 2,
+    },
+    menuItemText: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: colors.textSecondary,
     },
   });
 }

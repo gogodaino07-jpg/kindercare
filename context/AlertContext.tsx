@@ -12,7 +12,7 @@ export interface AlertButton {
 
 interface AlertConfig {
   title: string;
-  message?: string;
+  message?: string | React.ReactNode;
   /** Rendered above the title, e.g. '⚠️' for destructive/irreversible actions. */
   icon?: string;
   /** A second, bold red paragraph below `message` for irreversible-action warnings. */
@@ -63,9 +63,15 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
               {config.icon ? <Text style={styles.icon}>{config.icon}</Text> : null}
               <Text style={styles.title}>{config.title}</Text>
               {config.message ? (
-                <Text style={[styles.message, !config.warningMessage && styles.messageLast]}>
-                  {config.message}
-                </Text>
+                typeof config.message === 'string' ? (
+                  <Text style={[styles.message, !config.warningMessage && styles.messageLast]}>
+                    {config.message}
+                  </Text>
+                ) : (
+                  <View style={[styles.message, !config.warningMessage && styles.messageLast]}>
+                    {config.message}
+                  </View>
+                )
               ) : null}
               {config.warningMessage ? (
                 <Text style={styles.warningMessage}>{config.warningMessage}</Text>

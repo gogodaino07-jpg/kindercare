@@ -16,17 +16,19 @@ interface WeeklyWeatherStripProps {
   usingFallbackLocation: boolean;
 }
 
-export default function WeeklyWeatherStrip({
+export function WeatherCards({
   days,
   loading,
-  error,
   retry,
-  usingFallbackLocation,
-}: WeeklyWeatherStripProps) {
+  onPressDate,
+}: {
+  days: WeatherDay[] | null;
+  loading: boolean;
+  retry: () => void;
+  onPressDate: (date: string) => void;
+}) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const todayDay = days?.find((d) => d.isToday);
-  const todayLabel = todayDay?.label;
 
   if (loading && !days) {
     return (
@@ -44,11 +46,52 @@ export default function WeeklyWeatherStrip({
     );
   }
 
-  if (error || !days) {
+  if (!days) return null;
+
+  return (
+    <View
+      style={[
+        styles.wrapper,
+        {
+          backgroundColor: '#FFFFFF',
+        }
+      ]}
+    >
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled" // Better touch behavior
+      >
+        {days.map((day) => (
+          <WeatherDayCard key={day.date} day={day} onPress={() => onPressDate(day.date)} />
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+export function WeatherTip({
+  days,
+  usingFallbackLocation,
+  error,
+  retry,
+}: {
+  days: WeatherDay[] | null;
+  usingFallbackLocation: boolean;
+  error: string | null;
+  retry: () => void;
+}) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const todayDay = days?.find((d) => d.isToday);
+  const todayLabel = todayDay?.label;
+
+  if (error) {
     return (
       <View style={styles.wrapper}>
         <View style={styles.statusContainer}>
-          <Text style={styles.errorText}>{error ?? '날씨 정보를 가져오지 못했어요'}</Text>
+          <Text style={styles.errorText}>{error}</Text>
           <Pressable onPress={retry}>
             <Text style={styles.retryText}>다시 시도</Text>
           </Pressable>
@@ -59,16 +102,6 @@ export default function WeeklyWeatherStrip({
 
   return (
     <View style={styles.wrapper}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {days.map((day) => (
-          <WeatherDayCard key={day.date} day={day} />
-        ))}
-      </ScrollView>
-
       {todayLabel ? (
         <View style={styles.summaryBox}>
           <MaterialIcons name="cloud" size={20} color={colors.blue500} />
@@ -85,10 +118,22 @@ export default function WeeklyWeatherStrip({
   );
 }
 
+export default function WeeklyWeatherStrip(props: WeeklyWeatherStripProps) {
+  return (
+    <>
+      <WeatherCards {...props} />
+      <WeatherTip {...props} />
+    </>
+  );
+}
+
+
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     wrapper: {
       paddingBottom: 4,
+      borderTopWidth: 0,
+      borderBottomWidth: 0,
     },
     scrollContent: {
       paddingHorizontal: 16,
@@ -97,13 +142,12 @@ function createStyles(colors: ThemeColors) {
     summaryBox: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.lightBlueBg,
-      borderWidth: 1,
-      borderColor: colors.blue100,
+      backgroundColor: 'transparent',
       borderRadius: 12,
       marginHorizontal: 16,
       marginTop: 8, // Adjusted: slightly reduced from original 16
-      padding: 12,
+      paddingHorizontal: 4,
+      paddingVertical: 12,
     },
     summaryText: {
       fontSize: 15,

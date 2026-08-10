@@ -94,6 +94,7 @@ interface AppDataContextValue {
 
   // Cloud sync
   checkCloudDataExists: (email: string) => Promise<boolean>;
+  checkOnboardingStatus: (email: string) => Promise<boolean>;
   restoreDataFromCloud: (email: string) => Promise<void>;
 
   // Google sign-in (mocked — real OAuth is deferred to a future contract)
@@ -200,7 +201,18 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
           }
           if (storedNotificationSettings) {
             try {
-              setNotificationSettings(JSON.parse(storedNotificationSettings));
+              let parsed = JSON.parse(storedNotificationSettings);
+              // [Migration] Old default (AM 6:00) -> New default (PM 6:00)
+              // Only migrate if it matches the exact old default to avoid overriding intentional user choices.
+              if (
+                parsed.dayBeforeTime?.period === 'AM' &&
+                parsed.dayBeforeTime?.hour === 6 &&
+                parsed.dayBeforeTime?.minute === 0
+              ) {
+                console.log('🔄 Migrating notification time from AM 6:00 to PM 6:00');
+                parsed.dayBeforeTime = { period: 'PM', hour: 6, minute: 0 };
+              }
+              setNotificationSettings(parsed);
             } catch (e) {
               console.error('Failed to parse stored notification settings:', e);
             }
@@ -219,7 +231,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
             if (storedGoogleAccount) {
               try {
                 const account = JSON.parse(storedGoogleAccount);
-                syncUserToFirestore(account);
+                syncUserToFirestore(account, 'google');
               } catch (e) {
                 console.error('Failed to parse google account for firestore sync:', e);
               }
@@ -296,17 +308,27 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       .collection('children')
       .onSnapshot((snap) => {
         if (!snap) return;
-        const cloudChildren = snap.docs.map(doc => {
-          const data = doc.data() as Child;
-          // Always reset photoUri on sync to prevent broken image links from other devices.
-          return { ...data, photoUri: undefined };
-        });
+        const cloudChildren = snap.docs.map(doc => doc.data() as Child);
         console.log(`📥 Cloud Sync: Received ${cloudChildren.length} children`);
 
         // Trust cloud only if we've already done our initial sync-up check.
         // This prevents accidental wipes on cold start.
         if (cloudChildren.length > 0 || syncChecked) {
-          setChildProfiles(cloudChildren);
+          setChildProfiles(prev => {
+            // Keep local children that aren't in cloud yet (e.g. just added but not pushed)
+            const localOnlyChildren = prev.filter(p => !cloudChildren.some(c => c.id === p.id));
+
+            const mergedChildren = cloudChildren.map(cloudChild => {
+              // Priority: cloud data for fields, but keep local photoUri
+              const localChild = prev.find(p => p.id === cloudChild.id);
+              return {
+                ...cloudChild,
+                photoUri: localChild?.photoUri || (cloudChild as any).photoUri
+              };
+            });
+
+            return [...mergedChildren, ...localOnlyChildren];
+          });
         }
       }, (err) => console.error('❌ Firestore Children Listener Error:', err));
 
@@ -387,15 +409,16 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     [fontSizeChoice]
   );
 
-  const syncUserToFirestore = async (account: GoogleAccount) => {
+  const syncUserToFirestore = async (account: GoogleAccount, provider: string = 'google') => {
     try {
-      console.log('📡 Syncing user to Firestore:', account.email);
+      console.log(`📡 Syncing user to Firestore (${provider}):`, account.email);
       const userRef = getDb().collection('users').doc(account.email);
       await userRef.set(sanitizeData({
         email: account.email,
         name: account.name,
         lastLogin: new Date().toISOString(),
         hasOnboarded: true,
+        provider,
       }), { merge: true });
       console.log('✅ User sync success');
     } catch (error) {
@@ -462,34 +485,36 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       const childrenSnap = await getDb().collection('users').doc(email).collection('children').get();
       const eventsSnap = await getDb().collection('users').doc(email).collection('events').get();
 
-      const cloudChildren = childrenSnap.docs.map(doc => {
-        const data = doc.data() as Child;
-        // Always reset photoUri on restore to prevent broken image links from other devices.
-        return { ...data, photoUri: undefined };
-      });
+      const cloudChildren = childrenSnap.docs.map(doc => doc.data() as Child);
       const cloudEvents = eventsSnap.docs.map(doc => doc.data() as Event);
 
       console.log(`📥 Restored ${cloudChildren.length} children and ${cloudEvents.length} events`);
 
-      // 1. Update In-memory State first
+      // 1. Update In-memory State first (Preserving local photoUris if we somehow had them)
+      let finalChildren: Child[] = [];
+      setChildProfiles(prev => {
+        finalChildren = cloudChildren.map(cloudChild => {
+          const localChild = prev.find(p => p.id === cloudChild.id);
+          return { ...cloudChild, photoUri: localChild?.photoUri };
+        });
+        return finalChildren;
+      });
+
+      setEvents(cloudEvents);
       if (cloudChildren.length > 0) {
-        setChildProfiles(cloudChildren);
         setSelectedChildId(cloudChildren[0].id);
       }
-      setEvents(cloudEvents);
       setDataOwnerEmail(email);
 
       // 2. Persist to AsyncStorage (Immediate)
-      // We do this manually here to ensure that even if the app is closed
-      // immediately after navigation, the data is definitely there.
       const persistOps = [
         AsyncStorage.setItem(HAS_ONBOARDED_KEY, 'true'),
         AsyncStorage.setItem(DATA_OWNER_EMAIL_KEY, email),
         AsyncStorage.setItem(EVENTS_KEY, JSON.stringify(cloudEvents)),
-        AsyncStorage.setItem(CHILDREN_KEY, JSON.stringify(cloudChildren)),
+        AsyncStorage.setItem(CHILDREN_KEY, JSON.stringify(finalChildren)),
       ];
-      if (cloudChildren.length > 0) {
-        persistOps.push(AsyncStorage.setItem(SELECTED_CHILD_ID_KEY, cloudChildren[0].id));
+      if (mergedChildren.length > 0) {
+        persistOps.push(AsyncStorage.setItem(SELECTED_CHILD_ID_KEY, mergedChildren[0].id));
       }
       await Promise.all(persistOps);
 
@@ -510,7 +535,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     // When onboarding is completed, lock the current user's email as the data owner.
     if (googleAccount?.email && !dataOwnerEmail) {
       setDataOwnerEmail(googleAccount.email);
-      syncUserToFirestore(googleAccount);
+      syncUserToFirestore(googleAccount, 'google');
     }
   };
 
@@ -689,7 +714,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
           // If they already finished onboarding, sync to Firestore on login
           if (hasOnboarded) {
-            await syncUserToFirestore(account);
+            await syncUserToFirestore(account, 'google');
           }
 
           // If family members list is empty (e.g. first login or fresh install),
@@ -783,10 +808,9 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       const email = googleAccount.email;
       try {
         console.log('📡 Requesting withdrawal for:', email);
-        await getDb().collection('users').doc(email).update({
-          withdrawalRequestedAt: new Date().toISOString(),
-        });
-        console.log('✅ Withdrawal requested successfully');
+        // 즉시 삭제로 변경: 유예기간 없이 바로 purgeCloudData 호출
+        await purgeCloudData(email);
+        console.log('✅ Withdrawal (immediate) processed successfully');
       } catch (error) {
         console.error('❌ Firestore Withdrawal Request Error:', error);
         throw error;
@@ -830,6 +854,19 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       console.log('✅ Cloud data purge complete');
     } catch (error) {
       console.error('❌ Firestore Purge Data Error:', error);
+    }
+  };
+
+  const checkOnboardingStatus = async (email: string): Promise<boolean> => {
+    try {
+      const doc = await getDb().collection('users').doc(email).get();
+      if (doc.exists) {
+        return doc.data()?.hasOnboarded === true;
+      }
+      return false;
+    } catch (error) {
+      console.error('❌ Firestore Check Onboarding Status Error:', error);
+      return false;
     }
   };
 
@@ -907,6 +944,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     dataOwnerEmail,
 
     checkCloudDataExists,
+    checkOnboardingStatus,
     restoreDataFromCloud,
 
     googleAccount,

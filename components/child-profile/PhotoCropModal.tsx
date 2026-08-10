@@ -1,8 +1,9 @@
+import * as FileSystem from 'expo-file-system/legacy';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { ImagePickerAsset } from 'expo-image-picker';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Alert, Modal, Pressable, StyleSheet, View, Image } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import Text from '../common/AppText';
 import { ThemeColors } from '../../constants/theme';
@@ -10,7 +11,7 @@ import { useThemeColors } from '../../context/ThemeContext';
 
 const VIEWPORT = 280;
 const MIN_SCALE = 1;
-const MAX_SCALE = 4;
+const MAX_SCALE = 5;
 
 function clamp(value: number, min: number, max: number) {
   'worklet';
@@ -52,24 +53,30 @@ export default function PhotoCropModal({ asset, onCancel, onApply }: PhotoCropMo
     savedTranslateY.value = 0;
   }, [asset?.uri]);
 
-  const panGesture = Gesture.Pan().onUpdate((e) => {
-    const effectiveScale = baseScale * scale.value;
-    const maxX = Math.max((imgW * effectiveScale - VIEWPORT) / 2, 0);
-    const maxY = Math.max((imgH * effectiveScale - VIEWPORT) / 2, 0);
-    translateX.value = clamp(savedTranslateX.value + e.translationX, -maxX, maxX);
-    translateY.value = clamp(savedTranslateY.value + e.translationY, -maxY, maxY);
-  }).onEnd(() => {
-    savedTranslateX.value = translateX.value;
-    savedTranslateY.value = translateY.value;
-  });
+  const panGesture = Gesture.Pan()
+    .averageTouches(true)
+    .onUpdate((e) => {
+      const nextScale = scale.value;
+      const effectiveScale = baseScale * nextScale;
+      const maxX = Math.max((imgW * effectiveScale - VIEWPORT) / 2, 0);
+      const maxY = Math.max((imgH * effectiveScale - VIEWPORT) / 2, 0);
+
+      translateX.value = clamp(savedTranslateX.value + e.translationX, -maxX, maxX);
+      translateY.value = clamp(savedTranslateY.value + e.translationY, -maxY, maxY);
+    }).onEnd(() => {
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
+    });
 
   const pinchGesture = Gesture.Pinch()
     .onUpdate((e) => {
       const nextScale = clamp(savedScale.value * e.scale, MIN_SCALE, MAX_SCALE);
       scale.value = nextScale;
+
       const effectiveScale = baseScale * nextScale;
       const maxX = Math.max((imgW * effectiveScale - VIEWPORT) / 2, 0);
       const maxY = Math.max((imgH * effectiveScale - VIEWPORT) / 2, 0);
+
       translateX.value = clamp(translateX.value, -maxX, maxX);
       translateY.value = clamp(translateY.value, -maxY, maxY);
     })
@@ -100,50 +107,80 @@ export default function PhotoCropModal({ asset, onCancel, onApply }: PhotoCropMo
       const originX = clamp(centerXInImage - cropSize / 2, 0, imgW - cropSize);
       const originY = clamp(centerYInImage - cropSize / 2, 0, imgH - cropSize);
 
-      const context = ImageManipulator.manipulate(asset.uri);
-      context.crop({
-        originX: Math.round(originX),
-        originY: Math.round(originY),
-        width: Math.round(cropSize),
-        height: Math.round(cropSize),
+      // 1. Manipulate and render
+      const manipulator = ImageManipulator.manipulate(asset.uri);
+      const imageRef = await manipulator
+        .crop({
+          originX: Math.round(originX),
+          originY: Math.round(originY),
+          width: Math.round(cropSize),
+          height: Math.round(cropSize),
+        })
+        .resize({ width: 512, height: 512 })
+        .renderAsync();
+
+      if (!imageRef) throw new Error('이미지 편집 엔진 초기화 실패');
+
+      // 2. Save to temporary cache
+      const tempResult = await imageRef.saveAsync({
+        format: SaveFormat.JPEG,
+        compress: 0.8
       });
-      context.resize({ width: 512, height: 512 });
-      const rendered = await context.renderAsync();
-      const result = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.85 });
-      onApply(result.uri);
+
+      if (!tempResult?.uri) throw new Error('편집된 이미지 저장 실패');
+
+      // 3. Move to permanent directory
+      const permanentUri = `${FileSystem.documentDirectory}profile_${Date.now()}.jpg`;
+      await FileSystem.copyAsync({
+        from: tempResult.uri,
+        to: permanentUri
+      });
+
+      // 4. Success callback
+      onApply(permanentUri);
+    } catch (err: any) {
+      console.error('Failed to crop image:', err);
+      Alert.alert(
+        '이미지 저장 실패',
+        '사진을 처리하는 중 오류가 발생했어요. 다시 시도해 주세요.\n(' + (err.message || 'Unknown error') + ')'
+      );
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal visible={!!asset} onRequestClose={onCancel}>
-      <View style={styles.container}>
-        <View style={styles.viewportWrapper}>
-          <View style={styles.viewport}>
-            {asset ? (
-              <GestureDetector gesture={composedGesture}>
-                <Animated.Image
-                  source={{ uri: asset.uri }}
-                  style={[{ width: baseWidth, height: baseHeight }, animatedImageStyle]}
-                />
-              </GestureDetector>
-            ) : null}
+    <Modal visible={!!asset} onRequestClose={onCancel} animationType="slide">
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={styles.container}>
+          <View style={styles.viewportWrapper}>
+            <GestureDetector gesture={composedGesture}>
+              <View style={styles.viewport}>
+                {asset ? (
+                  <Animated.View style={[animatedImageStyle, { width: baseWidth, height: baseHeight }]}>
+                    <Image
+                      source={{ uri: asset.uri }}
+                      style={{ width: baseWidth, height: baseHeight }}
+                    />
+                  </Animated.View>
+                ) : null}
+              </View>
+            </GestureDetector>
+            <View pointerEvents="none" style={styles.ring} />
           </View>
-          <View pointerEvents="none" style={styles.ring} />
+          <Text style={styles.hint}>
+            손가락으로 밀어서 위치를 옮기고,{'\n'}두 손가락으로 확대·축소해보세요 ✨
+          </Text>
+          <View style={styles.buttonRow}>
+            <Pressable style={styles.secondaryButton} onPress={onCancel} disabled={saving}>
+              <Text style={styles.secondaryButtonText}>다시 선택</Text>
+            </Pressable>
+            <Pressable style={styles.primaryButton} onPress={handleApply} disabled={saving}>
+              <Text style={styles.primaryButtonText}>{saving ? '저장 중...' : '적용'}</Text>
+            </Pressable>
+          </View>
         </View>
-        <Text style={styles.hint}>
-          손가락으로 밀어서 위치를 옮기고, 두 손가락으로 확대·축소해보세요
-        </Text>
-        <View style={styles.buttonRow}>
-          <Pressable style={styles.secondaryButton} onPress={onCancel} disabled={saving}>
-            <Text style={styles.secondaryButtonText}>다시 선택</Text>
-          </Pressable>
-          <Pressable style={styles.primaryButton} onPress={handleApply} disabled={saving}>
-            <Text style={styles.primaryButtonText}>{saving ? '저장 중...' : '적용'}</Text>
-          </Pressable>
-        </View>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }

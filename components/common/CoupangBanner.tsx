@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { StyleSheet, View, ViewStyle, useWindowDimensions, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import Text from './AppText';
 
@@ -14,8 +15,17 @@ interface CoupangBannerProps {
  */
 export default function CoupangBanner({ style }: CoupangBannerProps) {
   const { width: windowWidth } = useWindowDimensions();
+  const { googleAccount } = useAppData();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    // Reset readiness when account changes to force a clean reload
+    setIsReady(false);
+    const timer = setTimeout(() => setIsReady(true), 0);
+    return () => clearTimeout(timer);
+  }, [googleAccount?.email]);
 
   // Adjusting dimensions for the WebView container
   const bannerHeight = 64;
@@ -65,16 +75,27 @@ export default function CoupangBanner({ style }: CoupangBannerProps) {
         </View>
 
         <View style={[styles.webviewContainer, { height: bannerHeight }]}>
-          <WebView
-            originWhitelist={['*']}
-            source={{ html: htmlContent }}
-            style={styles.webview}
-            scrollEnabled={false}
-            showsHorizontalScrollIndicator={false}
-            showsVerticalScrollIndicator={false}
-            backgroundColor="transparent"
-            androidLayerType={Platform.OS === 'android' ? 'software' : 'none'} // Helps with rendering issues on some Android versions
-          />
+          {isReady ? (
+            <WebView
+              key={`coupang-banner-${windowWidth}-${googleAccount?.email || 'guest'}`}
+              originWhitelist={['*']}
+              source={{ html: htmlContent, baseUrl: 'https://ads-partners.coupang.com' }}
+              style={styles.webview}
+              scrollEnabled={false}
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              backgroundColor="transparent"
+              androidLayerType={Platform.OS === 'android' ? 'software' : 'none'}
+              domStorageEnabled={true}
+              javaScriptEnabled={true}
+              mixedContentMode="always"
+              thirdPartyCookiesEnabled={true}
+              allowFileAccess={true}
+              userAgent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36"
+            />
+          ) : (
+            <View style={[styles.webview, { height: bannerHeight, backgroundColor: 'transparent' }]} />
+          )}
         </View>
 
         <Text style={styles.legalDisclosure}>

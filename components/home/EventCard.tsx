@@ -40,12 +40,13 @@ export default function EventCard({
   onPress,
 }: EventCardProps) {
   const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors, themeColor), [colors, themeColor]);
+  const styles = useMemo(() => createStyles(colors, themeColor, !!highlighted), [colors, themeColor, highlighted]);
 
   const items = useMemo(() => {
     if (!event.note) return [];
+    // Split by newline, or comma/dot that is NOT part of a number (thousand separator)
     return event.note
-      .split(/[,\n]|\.(?!\d)/)
+      .split(/\n|,(?!\d)|\.(?!\d)/)
       .map((s) => s.trim())
       .filter(Boolean);
   }, [event.note]);
@@ -74,7 +75,11 @@ export default function EventCard({
     <View style={styles.container}>
       <TouchableOpacity style={styles.headerRow} onPress={onPress} activeOpacity={0.7}>
         <View style={styles.headerLeft}>
-          <View style={[styles.categoryDot, { backgroundColor: categoryColor }]} />
+          {!highlighted ? (
+            <Text style={styles.blueBullet}>•</Text>
+          ) : (
+            <View style={[styles.categoryDot, { backgroundColor: categoryColor }]} />
+          )}
           {!!dateBadgeText ? (
             <View style={styles.badgeBox}>
               <Text style={styles.dateBadgeText}>{dateBadgeText}</Text>
@@ -161,7 +166,7 @@ export default function EventCard({
   );
 }
 
-function createStyles(colors: ThemeColors, themeColor: string) {
+function createStyles(colors: ThemeColors, themeColor: string, highlighted: boolean) {
   return StyleSheet.create({
     container: {
       paddingVertical: 2, // Reduced from 4
@@ -196,9 +201,15 @@ function createStyles(colors: ThemeColors, themeColor: string) {
       color: themeColor,
     },
     title: {
-      fontSize: 16, // Premium font size
-      fontWeight: 'bold',
+      fontSize: 15, // Adjusted to match image feel
+      fontWeight: highlighted ? 'bold' : '500',
       color: colors.gray900,
+    },
+    blueBullet: {
+      fontSize: 20,
+      color: colors.blue500,
+      marginRight: 8,
+      lineHeight: 22,
     },
     expandButton: {
       padding: 4,
@@ -214,14 +225,14 @@ function createStyles(colors: ThemeColors, themeColor: string) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: colors.cardWhite,
-      borderRadius: 12, // Reduced from 16 for smaller card feel
-      padding: 10, // Reduced from 12
-      borderWidth: 1,
+      backgroundColor: highlighted ? colors.cardWhite : 'transparent',
+      borderRadius: 12,
+      padding: highlighted ? 10 : 0,
+      borderWidth: highlighted ? 1 : 0,
       borderColor: colors.border,
-      ...SHADOW,
-      shadowOpacity: 0.05,
-      elevation: 2,
+      ...(highlighted ? SHADOW : {}),
+      shadowOpacity: highlighted ? 0.05 : 0,
+      elevation: highlighted ? 2 : 0,
     },
     checkLabelArea: {
       flexDirection: 'row',

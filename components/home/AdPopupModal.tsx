@@ -51,21 +51,37 @@ export default function AdPopupModal({ visible, onClose }: AdPopupModalProps) {
 
           <View style={styles.adArea}>
             <WebView
-              source={{ html: COUPANG_AD_HTML }}
+              source={{ html: COUPANG_AD_HTML, baseUrl: 'https://ads-partners.coupang.com' }}
               style={styles.webview}
               scrollEnabled={false}
               onShouldStartLoadWithRequest={(request) => {
-                if (request.url.startsWith('http') && request.url !== 'about:blank' && !request.url.includes('ads-partners.coupang.com')) {
-                  Linking.openURL(request.url).catch(() => {});
+                const url = request.url;
+                // Allow internal resources (scripts, images from Coupang domains)
+                if (
+                  url === 'about:blank' ||
+                  url.includes('ads-partners.coupang.com') ||
+                  url.includes('coupangcdn.com') ||
+                  url.includes('coupang.com/thumbnails')
+                ) {
+                  return true;
+                }
+
+                // For actual product clicks, open in external browser
+                if (url.startsWith('http')) {
+                  Linking.openURL(url).catch(() => {});
                   return false;
                 }
                 return true;
               }}
               javaScriptEnabled
               domStorageEnabled
+              thirdPartyCookiesEnabled={true}
+              allowFileAccess={true}
+              userAgent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36"
               originWhitelist={['*']}
               scalesPageToFit={false}
               backgroundColor="transparent"
+              mixedContentMode="always"
             />
           </View>
 

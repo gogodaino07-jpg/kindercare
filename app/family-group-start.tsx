@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, TouchableOpacity } from 'react-native';
+import Constants from 'expo-constants';
 import JoinCodeModal from '../components/onboarding/JoinCodeModal';
 import Text from '../components/common/AppText';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
@@ -16,16 +17,19 @@ export default function FamilyGroupStartScreen() {
 
   const [showJoinModal, setShowJoinModal] = useState(false);
 
+  const appVersion = Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.0';
+
   const handleCreateNew = () => {
-    regenerateFamilyKey();
-    router.push('/family-create');
+    router.push({ pathname: '/google-signin', params: { flow: 'create' } });
   };
 
-  const handleJoin = (_code: string) => {
+  const handleJoin = (code: string) => {
     setShowJoinModal(false);
-    // Since we are already logged in from the onboarding screen,
-    // we can proceed directly to child setup.
-    router.push('/onboarding-child-setup');
+    router.push({ pathname: '/google-signin', params: { flow: 'join', code } });
+  };
+
+  const handleRelogin = () => {
+    router.push({ pathname: '/google-signin', params: { flow: 'relogin' } });
   };
 
   return (
@@ -52,6 +56,15 @@ export default function FamilyGroupStartScreen() {
           </View>
         </Pressable>
 
+        <TouchableOpacity style={styles.reloginButton} onPress={handleRelogin}>
+          <Text style={styles.reloginText}>
+            이미 계정이 있나요? <Text style={styles.reloginLink}>로그인하기</Text>
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.versionContainer}>
+          <Text style={styles.versionText}>버전 {appVersion}</Text>
+        </View>
       </View>
 
       <JoinCodeModal
@@ -98,14 +111,14 @@ function createStyles(colors: ThemeColors) {
     secondaryCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.coralPink,
+      backgroundColor: '#F1F1F3',
       borderRadius: 18,
       padding: 20,
       ...SHADOW,
     },
-    secondaryCardIcon: { fontSize: 28, marginRight: 14 },
-    secondaryCardTitle: { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
-    secondaryCardSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+    secondaryCardIcon: { fontSize: 28, marginRight: 14, color: '#9A9A9A' },
+    secondaryCardTitle: { fontSize: 17, fontWeight: '800', color: '#4A4A4A' },
+    secondaryCardSubtitle: { fontSize: 12, color: '#9A9A9A', marginTop: 2 },
     cardTextArea: { flex: 1 },
     reloginButton: {
       marginTop: 28,
@@ -120,6 +133,16 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '800',
       color: colors.accent,
       textDecorationLine: 'underline',
+    },
+    versionContainer: {
+      marginTop: 24,
+      alignItems: 'center',
+    },
+    versionText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      fontWeight: '500',
+      opacity: 0.5,
     },
   });
 }

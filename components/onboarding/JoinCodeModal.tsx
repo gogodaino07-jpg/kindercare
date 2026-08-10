@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -23,6 +23,17 @@ export default function JoinCodeModal({ visible, onClose, onJoin }: JoinCodeModa
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [code, setCode] = useState('');
   const [error, setError] = useState(false);
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (visible) {
+      // Use a small delay to ensure the modal animation and focus system are ready.
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
 
   const handleClose = () => {
     setCode('');
@@ -46,7 +57,8 @@ export default function JoinCodeModal({ visible, onClose, onJoin }: JoinCodeModa
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <KeyboardAvoidingView
         style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.select({ ios: 0, android: -100 })}
       >
         <Pressable style={styles.backdrop} onPress={handleClose} />
         <View style={styles.card}>
@@ -55,6 +67,7 @@ export default function JoinCodeModal({ visible, onClose, onJoin }: JoinCodeModa
           <Text style={styles.subtitle}>가족에게 받은 코드를 입력해주세요</Text>
 
           <TextInput
+            ref={inputRef}
             style={[styles.input, error && styles.inputError]}
             value={code}
             onChangeText={(t) => {
@@ -64,7 +77,6 @@ export default function JoinCodeModal({ visible, onClose, onJoin }: JoinCodeModa
             placeholder="초대 코드를 입력해주세요"
             placeholderTextColor={colors.textSecondary}
             autoCapitalize="characters"
-            autoFocus
           />
           {error ? <Text style={styles.errorText}>올바른 초대 코드를 입력해 주세요</Text> : null}
 

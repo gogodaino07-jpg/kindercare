@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import React, { useMemo, useEffect, useRef } from 'react';
+import { StyleSheet, View, Animated } from 'react-native';
 import { ThemeColors } from '../constants/theme';
 import { useThemeColors } from '../context/ThemeContext';
 import Text from './common/AppText';
@@ -12,11 +12,63 @@ export default function BootSplashOverlay() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Floating movement (up and down)
+    const float = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: -15,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    // Pulse effect (scale slightly)
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    Animated.parallel([float, pulse]).start();
+
+    return () => {
+      floatAnim.stopAnimation();
+      pulseAnim.stopAnimation();
+    };
+  }, []);
+
   return (
     <View style={styles.container}>
-      <Image
-        source={require('../assets/splash_logo.gif')}
-        style={styles.logoImage}
+      <Animated.Image
+        source={require('../assets/logo_pure_chick.png')}
+        style={[
+          styles.logoImage,
+          {
+            transform: [
+              { translateY: floatAnim },
+              { scale: pulseAnim }
+            ]
+          }
+        ]}
         resizeMode="contain"
       />
       <Text style={styles.tagline}>우리 아이 유치원 소식, 놓치지 마세요</Text>
@@ -28,7 +80,7 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#FEF9F0', // Matched to the provided logo's background color
+      backgroundColor: '#FFFFFF',
       alignItems: 'center',
       justifyContent: 'center',
     },

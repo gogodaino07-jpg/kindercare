@@ -8,8 +8,10 @@ import {
   StyleSheet,
   StatusBar,
   Platform,
+  Linking,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../../components/common/AppText';
 import { useAlert } from '../../context/AlertContext';
@@ -27,6 +29,8 @@ export default function SettingsScreen() {
   const { resetAllData, requestWithdrawal, googleAccount, signOutGoogle } = useAppData();
   const { resetLock } = useAppLock();
   const { clearNotifications } = useNotificationCenter();
+
+  const appVersion = Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.0';
 
   // 섹션 타이틀(이모지 포함)과 카드를 감싸는 컴포넌트
   const SettingSection = ({ emoji, title, children }: { emoji: string; title: string; children: React.ReactNode }) => (
@@ -99,7 +103,7 @@ export default function SettingsScreen() {
   const handleLogout = () => {
     showAlert({
       title: '로그아웃',
-      message: '구글 계정 연동을 해제할까요?',
+      message: '정말 로그아웃 하시겠어요?',
       buttons: [
         { text: '취소', style: 'cancel' },
         {
@@ -121,11 +125,11 @@ export default function SettingsScreen() {
       icon: '⚠️',
       message: '정말 탈퇴하시겠습니까?',
       warningMessage:
-        '7일의 유예기간이 제공됩니다. 유예기간 내에 재로그인하면 복구가 가능하지만, 7일이 지나면 모든 데이터가 완전히 삭제되어 복구할 수 없습니다.',
+        '탈퇴 시 클라우드와 로컬의 모든 데이터가 즉시 영구 삭제되며, 더 이상 복구할 수 없습니다. 신중히 선택해 주세요.',
       buttons: [
         { text: '취소', style: 'cancel' },
         {
-          text: '탈퇴 요청',
+          text: '탈퇴하기',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -141,8 +145,8 @@ export default function SettingsScreen() {
               };
 
               showAlert({
-                title: '탈퇴 요청 완료',
-                message: '탈퇴 요청이 정상적으로 접수되었습니다.\n\n7일 이내에 다시 로그인하시면 언제든 계정을 복구하실 수 있습니다.',
+                title: '탈퇴 처리 완료',
+                message: '모든 데이터가 성공적으로 삭제되었습니다. 그동안 이용해 주셔서 감사합니다.',
                 onDismiss: finalizeWithdrawal,
                 buttons: [
                   {
@@ -154,7 +158,7 @@ export default function SettingsScreen() {
             } catch (err) {
               showAlert({
                 title: '오류 발생',
-                message: '탈퇴 요청 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+                message: '탈퇴 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
               });
             }
           },
@@ -232,13 +236,27 @@ export default function SettingsScreen() {
 
           {/* 기타 섹션 */}
           <SettingSection emoji="📎" title="기타">
-            <SettingItem title="고객센터 / 문의 및 의견 보내기" onPress={() => router.push('/settings/support')} showDivider={false} />
+            <SettingItem title="고객센터 / 문의 및 의견 보내기" onPress={() => router.push('/settings/support')} />
+            <SettingItem
+              title="개인정보 처리방침"
+              onPress={() => router.push('/settings/privacy')}
+            />
+            <SettingItem
+              title="오픈소스 라이선스"
+              onPress={() => router.push('/settings/licenses')}
+              showDivider={false}
+            />
           </SettingSection>
+
+          <View style={styles.versionContainer}>
+            <Text style={styles.versionText}>버전 정보 v{appVersion}</Text>
+          </View>
 
           {/* 회원탈퇴 링크 */}
           <TouchableOpacity style={styles.withdrawButton} onPress={handleWithdraw}>
             <Text style={styles.withdrawText}>회원탈퇴</Text>
           </TouchableOpacity>
+
 
         </ScrollView>
       </View>
@@ -382,13 +400,22 @@ function createStyles(colors: any) {
     },
     withdrawButton: {
       alignItems: 'center',
-      paddingVertical: 32,
+      paddingVertical: 16,
     },
     withdrawText: {
       fontSize: 14,
-      color: colors.tomorrowRed,
+      color: colors.textSecondary,
       fontWeight: '700',
       textDecorationLine: 'underline',
+    },
+    versionContainer: {
+      alignItems: 'center',
+      marginTop: 24,
+    },
+    versionText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      fontWeight: '600',
     },
   });
 }

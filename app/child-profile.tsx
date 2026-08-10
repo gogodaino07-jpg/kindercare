@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { ImagePickerAsset } from 'expo-image-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import {
@@ -18,7 +19,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import PhotoCropModal from '../components/child-profile/PhotoCropModal';
 import PhotoSourceSheet from '../components/child-profile/PhotoSourceSheet';
 import ScreenBackground from '../components/ScreenBackground';
-import CoupangBanner from '../components/common/CoupangBanner';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
@@ -27,8 +27,14 @@ import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { ChildAge } from '../types/models';
 import { stripInvalidCharacters } from '../utils/validation';
+import { ageFromBirthdate, toISODate, parseISODate } from '../utils/date';
 
 const AGE_OPTIONS: ChildAge[] = [3, 4, 5, 6, 7];
+
+function formatBirthdate(date: Date): string {
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+}
+
 
 export default function ChildProfileScreen() {
   const router = useRouter();
@@ -42,13 +48,40 @@ export default function ChildProfileScreen() {
   const { childId } = useLocalSearchParams<{ childId?: string }>();
   const editingChild = childId ? children.find((c) => c.id === childId) : undefined;
 
+  const maxDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 3);
+    return d;
+  }, []);
+
+  const minDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 8);
+    return d;
+  }, []);
+
   const [pendingAsset, setPendingAsset] = useState<ImagePickerAsset | null>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(editingChild?.photoUri ?? null);
   const [showSourceSheet, setShowSourceSheet] = useState(false);
   const [name, setName] = useState(editingChild?.name ?? '');
+
+  const initialBirthdate = editingChild?.birthdate ? parseISODate(editingChild.birthdate) : null;
+  const [birthdate, setBirthdate] = useState<Date | null>(initialBirthdate);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
   const [age, setAge] = useState<ChildAge | null>(editingChild?.age ?? null);
   const [className, setClassName] = useState(editingChild?.className ?? '');
   const [attemptedSave, setAttemptedSave] = useState(false);
+
+  const handleBirthdateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setBirthdate(selectedDate);
+      const calculatedAge = ageFromBirthdate(selectedDate);
+      setAge(calculatedAge);
+    }
+  };
+
 
   const nameValid = name.trim().length > 0;
   const classNameValid = className.trim().length > 0;
@@ -90,7 +123,13 @@ export default function ChildProfileScreen() {
       setAttemptedSave(true);
       return;
     }
-    const input = { name: name.trim(), age, className: className.trim(), photoUri: photoUri ?? undefined };
+    const input = {
+      name: name.trim(),
+      age,
+      className: className.trim(),
+      photoUri: photoUri ?? undefined,
+      birthdate: birthdate ? toISODate(birthdate) : undefined
+    };
     if (editingChild) updateChild(editingChild.id, input);
     else addChild(input);
     showToast('저장이 완료되었습니다.');
@@ -121,12 +160,36 @@ export default function ChildProfileScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>나이 *</Text>
+          <Text style={styles.label}>생년월일 *</Text>
+          <Pressable
+            style={[styles.input, attemptedSave && !birthdate && styles.inputInvalid]}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={[styles.dateText, !birthdate && { color: '#94A3B8' }]}>
+              {birthdate ? formatBirthdate(birthdate) : '생년월일을 선택해주세요'}
+            </Text>
+          </Pressable>
+          {showDatePicker && (
+            <DateTimePicker
+              value={birthdate ?? maxDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+              maximumDate={maxDate}
+              minimumDate={minDate}
+              themeVariant="light"
+              accentColor={colors.textPrimary}
+              onChange={handleBirthdateChange}
+            />
+          )}
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>나이 (생년월일 기준 자동 계산)</Text>
           <View style={styles.chipRow}>
             {AGE_OPTIONS.map((option) => (
-              <Pressable key={option} style={[styles.chip, age === option && styles.chipSelected]} onPress={() => setAge(option)}>
+              <View key={option} style={[styles.chip, age === option && styles.chipSelected]}>
                 <Text style={[styles.chipText, age === option && styles.chipTextSelected]}>{option}세</Text>
-              </Pressable>
+              </View>
             ))}
           </View>
         </View>
@@ -156,8 +219,6 @@ export default function ChildProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <CoupangBanner style={styles.adBanner} />
-
       <PhotoSourceSheet
         visible={showSourceSheet}
         onCancel={() => setShowSourceSheet(false)}
@@ -184,7 +245,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     content: {
       padding: 24,
       alignItems: 'center',
-      paddingBottom: 180 + bottomInset,
+      paddingBottom: 100 + bottomInset,
     },
     photoContainer: {
       width: PHOTO_SIZE,
@@ -236,6 +297,10 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       shadowOpacity: 0.03,
     },
     inputInvalid: { borderColor: colors.tomorrowRed },
+    dateText: {
+      fontSize: 15,
+      color: colors.textPrimary,
+    },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: {
       paddingVertical: 10,
@@ -253,7 +318,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     summaryErrorText: { color: colors.tomorrowRed, fontSize: 12, fontWeight: '600', textAlign: 'center', marginTop: 8 },
     fabContainer: {
       position: 'absolute',
-      bottom: 110 + bottomInset, // Increased from 95 to avoid overlap with ad banner
+      bottom: 20 + bottomInset,
       left: 20,
       right: 20,
       zIndex: 100,
@@ -271,12 +336,5 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     saveButtonDisabled: { backgroundColor: colors.gray400, opacity: 0.6 },
     saveButtonText: { color: colors.cardWhite, fontSize: 16, fontWeight: 'bold' },
-    adBanner: {
-      position: 'absolute',
-      bottom: 12 + bottomInset,
-      left: 0,
-      right: 0,
-      zIndex: 100,
-    },
   });
 }

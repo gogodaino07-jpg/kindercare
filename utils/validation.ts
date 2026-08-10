@@ -2,13 +2,27 @@
  * Guards the "Coupang에서 바로 구매" button from showing for a 준비물 value
  * that has no real content — standalone Hangul jamo (ㅁㄴㅇㄹ, ㅏㅑ...) or
  * punctuation/symbols only aren't meaningful shopping search terms.
- * Requires at least one Latin letter, digit, or complete Hangul syllable.
+ * Also filters out pure numbers, prices, or very short keywords.
  */
 export function isValidCoupangKeyword(text: string | undefined | null): boolean {
   if (!text) return false;
   const trimmed = text.trim();
-  if (!trimmed) return false;
-  return /[a-zA-Z0-9가-힣]/.test(trimmed);
+
+  // 1. Must be at least 2 characters (excluding single numbers like "3")
+  if (trimmed.length < 2) return false;
+
+  // 2. Must contain at least one Korean syllable or English letter
+  if (!/[a-zA-Z가-힣]/.test(trimmed)) return false;
+
+  // 3. Filter out pure prices (e.g., "3,000원", "5000원", "1만원")
+  const isPurePrice = /^[0-9,]+(원|만원|천원)?$/.test(trimmed);
+  if (isPurePrice) return false;
+
+  // 4. Filter out pure numbers with punctuation
+  const isPureNumber = /^[0-9., ]+$/.test(trimmed);
+  if (isPureNumber) return false;
+
+  return true;
 }
 
 /**

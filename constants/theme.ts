@@ -94,7 +94,7 @@ export const DARK_COLORS: ThemeColors = {
   chalkboardText: '#F5F1E6',
   accent: '#5B9EE6',
   border: '#2A3744',
-  creamBeige: '#241D15',
+  creamBeige: '#FFFFFF',
   creamBeigeCard: '#2C2419',
   peachOrange: '#E69968', // Slightly desaturated for dark mode
   peachOrangeDeep: '#CC7B48',

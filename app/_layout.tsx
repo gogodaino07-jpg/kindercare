@@ -58,12 +58,12 @@ function ThemedNavigation() {
       Animated.parallel([
         Animated.timing(splashOpacity, {
           toValue: 0,
-          duration: 600, // Balanced duration for smooth fade out
+          duration: 400, // Faster fade out
           useNativeDriver: true,
         }),
         Animated.timing(appOpacity, {
           toValue: 1,
-          duration: 600, // Fade in the app content simultaneously
+          duration: 400, // Fade in the app content simultaneously
           useNativeDriver: true,
         }),
       ]).start(() => {
@@ -130,7 +130,7 @@ function ThemedNavigation() {
               <Stack.Screen name="splash" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding" options={{ headerShown: false }} />
               <Stack.Screen name="family-group-start" options={{ headerShown: false }} />
-              <Stack.Screen name="family-create" options={{ title: '가족 그룹 생성' }} />
+              <Stack.Screen name="family-create" options={{ headerShown: false, title: '새로운 가족 그룹 생성' }} />
               <Stack.Screen name="google-signin" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding-child-setup" options={{ headerShown: false }} />
               <Stack.Screen name="calendar" options={{ title: '캘린더' }} />
@@ -149,6 +149,8 @@ function ThemedNavigation() {
               <Stack.Screen name="settings/chalkboard-theme" options={{ title: '팝업 테마' }} />
               <Stack.Screen name="settings/theme" options={{ title: '테마' }} />
               <Stack.Screen name="settings/app-lock" options={{ title: '잠금화면 설정' }} />
+              <Stack.Screen name="settings/privacy" options={{ title: '개인정보 처리방침' }} />
+              <Stack.Screen name="settings/licenses" options={{ title: '오픈소스 라이선스' }} />
               <Stack.Screen name="settings/support" options={{ title: '고객센터' }} />
             </Stack>
             <AppLockScreen autoBiometricEnabled={true} />

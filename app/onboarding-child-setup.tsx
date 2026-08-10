@@ -10,17 +10,7 @@ import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { ChildAge } from '../types/models';
-
-/** Calendar age from a birthdate, clamped into the app's supported 3~7 range. */
-function ageFromBirthdate(birthdate: Date): ChildAge {
-  const today = new Date();
-  let age = today.getFullYear() - birthdate.getFullYear();
-  const monthDiff = today.getMonth() - birthdate.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthdate.getDate())) {
-    age -= 1;
-  }
-  return Math.min(7, Math.max(3, age)) as ChildAge;
-}
+import { ageFromBirthdate, toISODate } from '../utils/date';
 
 function formatBirthdate(date: Date): string {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
@@ -32,6 +22,18 @@ export default function OnboardingChildSetupScreen() {
   const { showAlert } = useAlert();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const maxDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 3);
+    return d;
+  }, []);
+
+  const minDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 8);
+    return d;
+  }, []);
 
   const [name, setName] = useState('');
   const [birthdate, setBirthdate] = useState<Date | null>(null);
@@ -47,7 +49,11 @@ export default function OnboardingChildSetupScreen() {
       return;
     }
     setError(false);
-    addChild({ name: name.trim(), age: ageFromBirthdate(birthdate) });
+    addChild({
+      name: name.trim(),
+      age: ageFromBirthdate(birthdate),
+      birthdate: toISODate(birthdate)
+    });
     setShowPermissionModal(true);
   };
 
@@ -67,12 +73,18 @@ export default function OnboardingChildSetupScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable style={styles.backButton} hitSlop={8} onPress={() => router.back()}>
-          <Text style={styles.backIcon}>‹</Text>
-        </Pressable>
+        <View style={styles.header}>
+          <Pressable style={styles.backButton} hitSlop={8} onPress={() => router.back()}>
+            <Text style={styles.backText}>뒤로가기</Text>
+          </Pressable>
+        </View>
 
-        <Text style={styles.title}>아이 프로필 설정</Text>
-        <Text style={styles.subtitle}>우리 아이 정보를 알려주세요</Text>
+        <View style={styles.topSection}>
+          <Text style={styles.title}>새로운 아이 프로필 설정</Text>
+          <Text style={styles.subtitle}>우리 아이 정보를 알려주세요</Text>
+        </View>
+
+        <View style={styles.spacer} />
 
         <View style={styles.card}>
           <Text style={styles.label}>이름</Text>
@@ -94,8 +106,10 @@ export default function OnboardingChildSetupScreen() {
           <Text style={styles.label}>생년월일</Text>
           {Platform.OS === 'web' ? (
             <DateTimePicker
-              value={birthdate ?? new Date()}
+              value={birthdate ?? maxDate}
               mode="date"
+              maximumDate={maxDate}
+              minimumDate={minDate}
               themeVariant="light"
               accentColor={colors.coralPink}
               onChange={(_, selected) => selected && setBirthdate(selected)}
@@ -112,9 +126,10 @@ export default function OnboardingChildSetupScreen() {
               </Pressable>
               {showPicker ? (
                 <DateTimePicker
-                  value={birthdate ?? new Date()}
+                  value={birthdate ?? maxDate}
                   mode="date"
-                  maximumDate={new Date()}
+                  maximumDate={maxDate}
+                  minimumDate={minDate}
                   display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
                   themeVariant="light"
                   accentColor={colors.coralPink}
@@ -130,6 +145,9 @@ export default function OnboardingChildSetupScreen() {
             <Text style={styles.errorText}>생년월일을 선택해주세요</Text>
           ) : null}
         </View>
+
+        <View style={styles.spacer} />
+        <View style={styles.spacer} />
       </ScrollView>
 
       <Pressable
@@ -148,43 +166,57 @@ export default function OnboardingChildSetupScreen() {
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     scroll: { flex: 1 },
-    content: { padding: 24, paddingBottom: 24 },
-    backButton: {
-      width: 36,
-      height: 36,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 4,
-      marginLeft: -8,
+    content: {
+      flexGrow: 1,
+      paddingHorizontal: 24,
+      paddingTop: 8,
+      paddingBottom: 20,
     },
-    backIcon: {
-      fontSize: 26,
-      fontWeight: '700',
-      color: colors.textPrimary,
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    backButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 4,
+      marginLeft: -4,
+    },
+    backText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    spacer: {
+      flex: 1,
+    },
+    topSection: {
+      marginBottom: 32,
     },
     title: {
       fontSize: 22,
       fontWeight: '800',
       color: colors.textPrimary,
-      marginBottom: 6,
+      marginBottom: 8,
+      textAlign: 'center',
     },
     subtitle: {
       fontSize: 13,
       color: colors.textSecondary,
-      marginBottom: 24,
+      lineHeight: 20,
+      textAlign: 'center',
     },
     card: {
       backgroundColor: colors.creamBeigeCard,
-      borderRadius: 18,
-      padding: 20,
+      borderRadius: 20,
+      padding: 24,
       ...SHADOW,
     },
     label: {
       fontSize: 13,
       fontWeight: '700',
       color: colors.textPrimary,
-      marginBottom: 6,
-      marginTop: 14,
+      marginBottom: 8,
     },
     input: {
       backgroundColor: '#FFFFFF',
@@ -222,6 +254,7 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 16,
       paddingVertical: 16,
       alignItems: 'center',
+      ...SHADOW,
     },
     completeButtonDisabled: {
       opacity: 0.4,

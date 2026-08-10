@@ -2,17 +2,22 @@
   "expo": {
     "name": "kindercare",
     "slug": "kindercare",
-    "version": "1.0.4",
+    "version": "1.0.8",
     "orientation": "portrait",
-    "icon": "./assets/logo_icon.jpg",
+    "icon": "./assets/logo_pure_chick.png",
     "scheme": "kindercare",
     "userInterfaceStyle": "automatic",
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#FEF9F0"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": [
+          "coupang"
+        ]
+      }
     },
     "android": {
       "package": "com.kindeerecare.app",
@@ -21,8 +26,8 @@
         "googleMobileAdsAppId": "ca-app-pub-4231795240337411~8399519719"
       },
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/logo_icon.jpg",
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/logo_pure_chick.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
@@ -57,7 +62,7 @@
         "expo-notifications",
         {
           "icon": "./assets/android-icon-monochrome.png",
-          "color": "#FEF9F0"
+          "color": "#FFFFFF"
         }
       ],
       "@react-native-community/datetimepicker",

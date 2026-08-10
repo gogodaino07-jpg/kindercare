@@ -29,3 +29,16 @@ export function describeGuideTip(label: string): string {
   if (label === '뇌우') return '천둥·번개가 있어요. 실내 활동을 추천해요 ⛈️';
   return '오늘도 즐거운 하루 보내세요 🐥';
 }
+
+/** Extra short guide text for compact list views. */
+export function describeShortTip(label: string): string {
+  if (label === '맑음' || label === '대체로 맑음') return '야외 활동하기 좋은 날씨예요';
+  if (label === '흐림') return '구름이 많아요';
+  if (label === '안개') return '안개가 껴요';
+  if (label === '이슬비' || label === '비') return '우산을 챙겨주세요';
+  if (label === '눈' || label === '눈 소나기') return '눈이 와요. 빙판길 조심!';
+  if (label === '소나기') return '소나기 예보가 있어요';
+  if (label === '뇌우') return '천둥·번개가 쳐요';
+  return '즐거운 하루 보내세요';
+}
+

@@ -8,7 +8,8 @@ import {
   StatusBar,
   Linking,
   Dimensions,
-  TextInput
+  TextInput,
+  Keyboard
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -486,6 +487,7 @@ export default function CalendarScreen() {
                 if (isSearching) {
                   setIsSearching(false);
                   setSearchQuery('');
+                  Keyboard.dismiss();
                 } else {
                   setIsSearching(true);
                 }
@@ -618,7 +620,7 @@ export default function CalendarScreen() {
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.manual }]} />
-              <Text style={styles.legendText}>일정 등록</Text>
+              <Text style={styles.legendText}>등록된 일정</Text>
             </View>
           </View>
         </View>

@@ -44,3 +44,13 @@ export function isTomorrow(isoDate: string, today: Date = new Date()): boolean {
 export function isPast(isoDate: string, today: Date = new Date()): boolean {
   return parseISODate(isoDate).getTime() < startOfDay(today).getTime();
 }
+
+/** Calendar age from a birthdate (Current Year - Birth Year - 1) to match kindergarten class standards (만 N세반). */
+export function ageFromBirthdate(birthdate: Date): 3 | 4 | 5 | 6 | 7 {
+  const today = new Date();
+  // Using academic class age (만 N세반) as requested.
+  // Formula: (Current Year - Birth Year) - 1
+  const age = today.getFullYear() - birthdate.getFullYear() - 1;
+  return Math.min(7, Math.max(3, age)) as 3 | 4 | 5 | 6 | 7;
+}
+

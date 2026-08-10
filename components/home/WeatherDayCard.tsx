@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Pressable } from 'react-native';
 import Text from '../common/AppText';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -7,9 +7,10 @@ import { WeatherDay } from '../../hooks/useWeeklyWeather';
 
 interface WeatherDayCardProps {
   day: WeatherDay;
+  onPress?: () => void;
 }
 
-export default function WeatherDayCard({ day }: WeatherDayCardProps) {
+export default function WeatherDayCard({ day, onPress }: WeatherDayCardProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -17,7 +18,15 @@ export default function WeatherDayCard({ day }: WeatherDayCardProps) {
   const displayDate = day.weekdayLabel;
 
   return (
-    <View style={styles.container}>
+    <Pressable
+      style={({ pressed }) => [
+        styles.container,
+        pressed && { opacity: 0.8 } // Minimal feedback, no background color change
+      ]}
+      onPress={onPress}
+      hitSlop={{ top: 20, bottom: 20, left: 10, right: 10 }}
+      pressRetentionOffset={{ top: 50, bottom: 50, left: 30, right: 30 }}
+    >
       <View style={[
         styles.card,
         day.isToday ? styles.todayCard : styles.futureCard
@@ -48,7 +57,7 @@ export default function WeatherDayCard({ day }: WeatherDayCardProps) {
           {badgeText}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 

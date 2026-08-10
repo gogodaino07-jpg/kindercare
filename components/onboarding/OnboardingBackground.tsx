@@ -25,7 +25,7 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.creamBeige,
+      backgroundColor: '#FFFFFF',
     },
   });
 }

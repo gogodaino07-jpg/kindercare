@@ -6,7 +6,7 @@ import { isExternalActionActive, setExternalActionActive } from '../utils/extern
 
 export type LockMethod = 'none' | 'pin' | 'password' | 'pattern';
 
-export const BOOT_SPLASH_MS = 3000;
+export const BOOT_SPLASH_MS = 800;
 
 interface StoredLockConfig {
   method: LockMethod;

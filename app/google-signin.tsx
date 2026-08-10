@@ -1,7 +1,9 @@
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { ActivityIndicator, Image, Pressable, StyleSheet, View, TouchableOpacity, Animated } from 'react-native';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
 import GoogleLogo from '../components/common/GoogleLogo';
 import Text from '../components/common/AppText';
@@ -13,14 +15,17 @@ import { useToast } from '../context/ToastContext';
 
 export default function GoogleSignInScreen() {
   const router = useRouter();
-  const { flow } = useLocalSearchParams<{ flow?: string }>();
+  const { flow, code } = useLocalSearchParams<{ flow?: string; code?: string }>();
   const {
     completeOnboarding,
     signInWithGoogle,
     signOutGoogle,
     children,
     dataOwnerEmail,
+    resetAllData,
+    regenerateFamilyKey,
     checkCloudDataExists,
+    checkOnboardingStatus,
     restoreDataFromCloud,
     checkWithdrawalStatus,
     cancelWithdrawal,
@@ -33,6 +38,52 @@ export default function GoogleSignInScreen() {
   const [loading, setLoading] = useState(false);
   const [toastActive, setToastActive] = useState(false);
 
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Floating movement (up and down)
+    const float = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: -10,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    // Pulse effect (scale slightly)
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.03,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    Animated.parallel([float, pulse]).start();
+
+    return () => {
+      floatAnim.stopAnimation();
+      pulseAnim.stopAnimation();
+    };
+  }, []);
+
+  const appVersion = Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.0';
+
   const handleGoogleSignIn = async () => {
     if (loading || toastActive) return;
     setLoading(true);
@@ -40,139 +91,123 @@ export default function GoogleSignInScreen() {
       const account = await signInWithGoogle();
 
       // [Withdrawal Check]
+      // 즉시 탈퇴 정책으로 변경됨에 따라 유예기간 확인 및 복구 로직 제거
       const withdrawalDateStr = await checkWithdrawalStatus(account.email);
       if (withdrawalDateStr) {
-        const withdrawalDate = new Date(withdrawalDateStr);
-        const now = new Date();
-        const diffTime = now.getTime() - withdrawalDate.getTime();
-        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+        // 이미 탈퇴 처리된 계정인 경우 클라우드 데이터 잔여분이 있다면 정리
+        setLoading(true);
+        await purgeCloudData(account.email);
+        console.log('🗑️ Legacy withdrawal data found. Cloud data purged.');
+      }
 
-        if (diffDays < 7) {
-          // Within 7 days: Recovery Option
-          const shouldRecover = await new Promise<boolean>((resolve) => {
-            showAlert({
-              title: '계정 복구',
-              message: '탈퇴 대기 중인 계정입니다. 탈퇴를 취소하고 모든 데이터를 복구하시겠습니까?',
-              buttons: [
-                {
-                  text: '취소',
-                  style: 'cancel',
-                  onPress: () => resolve(false),
-                },
-                {
-                  text: '복구',
-                  onPress: () => resolve(true),
-                },
-              ],
-            });
+      // [Device Ownership Check]
+      // If there's local data from a different owner, ask to wipe or cancel.
+      if (dataOwnerEmail && account.email !== dataOwnerEmail) {
+        const shouldWipe = await new Promise<boolean>((resolve) => {
+          showAlert({
+            title: '다른 계정 데이터 발견',
+            message: '이 기기에는 다른 사용자의 데이터가 있습니다. 기존 데이터를 삭제하고 현재 계정으로 새롭게 시작하시겠습니까?',
+            buttons: [
+              { text: '취소', style: 'cancel', onPress: () => resolve(false) },
+              { text: '데이터 삭제 후 시작', style: 'destructive', onPress: () => resolve(true) },
+            ],
           });
+        });
 
-          if (shouldRecover) {
-            setLoading(true);
-            await cancelWithdrawal(account.email);
-            showToast('✅ 계정이 성공적으로 복구되었습니다.');
-            // Proceed to the normal recovery/home logic below
-          } else {
-            await signOutGoogle();
-            setLoading(false);
-            return;
-          }
-        } else {
-          // After 7 days: Purge and Treat as New User
+        if (shouldWipe) {
           setLoading(true);
-          await purgeCloudData(account.email);
-          console.log('🗑️ Withdrawal grace period expired. Cloud data purged.');
-
-          // Since we just purged the data, we skip any further cloud data checks
-          // and move straight to child setup.
-          router.push('/onboarding-child-setup');
+          await resetAllData();
+          showToast('기존 데이터가 삭제되었습니다.');
+        } else {
+          await signOutGoogle();
           setLoading(false);
           return;
         }
       }
 
-      // [Strict User Separation]
-      // In the 'relogin' flow, we verify if the signed-in account matches
-      // the email that originally created the local data on this device.
-      if (flow === 'relogin' && dataOwnerEmail && account.email !== dataOwnerEmail) {
-        await signOutGoogle();
-        showToast('기존 데이터의 소유자가 아닙니다.');
-        setToastActive(true);
-        setTimeout(() => setToastActive(false), 2500);
-        return;
-      }
-
-      // [Cloud Data Recovery]
-      // Check if there's data on the cloud for this user.
+      // [Flow Logic]
+      const hasOnboardedCloud = await checkOnboardingStatus(account.email);
       const hasCloudData = await checkCloudDataExists(account.email);
-      if (hasCloudData) {
-        const restored = await new Promise<boolean>((resolve) => {
-          showAlert({
-            title: '기존 데이터 불러오기',
-            message: '클라우드에 저장된 아이 정보와 캘린더 일정이 있습니다. 지금 불러오시겠습니까?\n\n(잠금화면 등 보안 설정과 앱 설정은 기기 보호를 위해 복구되지 않습니다.)',
-            buttons: [
-              {
-                text: '아니요',
-                style: 'cancel',
-                onPress: () => resolve(false),
-              },
-              {
-                text: '예',
-                onPress: async () => {
+
+      // 1. Re-login Flow
+      if (flow === 'relogin') {
+        if (hasCloudData) {
+          if (hasOnboardedCloud) {
+            try {
+              setLoading(true);
+              await restoreDataFromCloud(account.email);
+              showToast('👋 다시 오신 걸 환영해요!');
+              setTimeout(() => router.replace('/'), 100);
+              return;
+            } catch (err) {
+              console.error('Auto Restore Error:', err);
+            }
+          }
+
+          const restored = await new Promise<boolean>((resolve) => {
+            showAlert({
+              title: '기존 데이터 불러오기',
+              message: '클라우드에 저장된 아이 정보와 캘린더 일정이 있습니다. 지금 불러오시겠습니까?\n\n(잠금화면 등 보안 설정과 앱 설정은 기기 보호를 위해 복구되지 않습니다.)',
+              buttons: [
+                { text: '아니요', style: 'cancel', onPress: () => resolve(false) },
+                { text: '예', onPress: async () => {
                   try {
-                    // Stay in loading state during restoration
                     setLoading(true);
                     await restoreDataFromCloud(account.email);
                     resolve(true);
                   } catch (err) {
-                    console.error('Restore Error:', err);
                     showToast('❌ 데이터 복구 중 오류가 발생했습니다.');
                     resolve(false);
                   }
-                },
-              },
-            ],
+                }},
+              ],
+            });
           });
-        });
 
-        if (restored) {
-          showToast('👋 데이터를 성공적으로 복구했어요!');
-          // Give React state a moment to propagate before navigation
-          setTimeout(() => {
-            router.replace('/');
-          }, 100);
+          if (restored) {
+            showToast('👋 데이터를 성공적으로 복구했어요!');
+            setTimeout(() => router.replace('/'), 100);
+            return;
+          }
+        }
+
+        const hasChild = (children?.length ?? 0) > 0;
+        if (hasChild) {
+          completeOnboarding();
+          router.replace('/');
           return;
         }
+        router.push('/onboarding-child-setup');
+        return;
       }
 
-      // Even for returning flows, check if they actually have a child profile
-      // before dumping them on Home; otherwise, a fresh/deleted account
-      // through relogin/join flow would hit an empty home state prematurely.
-      const hasChild = (children?.length ?? 0) > 0;
+      // 2. New Group Creation Flow
+      if (flow === 'create') {
+        regenerateFamilyKey();
+        router.push('/family-create');
+        return;
+      }
 
+      // 3. Join with Code Flow
+      if (flow === 'join') {
+        router.push('/onboarding-child-setup');
+        return;
+      }
+
+      // 4. Default Fallback
+      const hasChild = (children?.length ?? 0) > 0;
       if (hasChild) {
         completeOnboarding();
-        showToast(flow === 'join' ? '☁️ 클라우드 데이터를 자동 동기화했어요' : '👋 다시 오신 걸 환영해요!');
         router.replace('/');
-        return;
+      } else {
+        router.push('/onboarding-child-setup');
       }
 
-      if (flow === 'relogin') {
-        showToast('기존 로그인 사용자가 아닙니다.');
-        setToastActive(true);
-        setTimeout(() => setToastActive(false), 2500);
-        return;
-      }
-
-      router.push('/onboarding-child-setup');
     } catch (e: any) {
-      // Robust check for cancellation to prevent the error toast on back/cancel.
       const errorCode = String(e?.code || '');
       const errorMessage = String(e?.message || '').toLowerCase();
       const errorString = String(e || '').toLowerCase();
 
-      // [Extreme Cancel Detection]
-      // Catch everything that looks like a user-initiated cancellation.
       const isCancel =
         errorCode === '12501' ||
         errorCode === '12502' ||
@@ -199,8 +234,7 @@ export default function GoogleSignInScreen() {
         errorString.includes('10');
 
       if (!isCancel) {
-        showToast('❌ 로그인 중 오류가 발생했습니다.');
-        // Disable the button while the toast is visible to prevent duplicate attempts
+        showToast(`❌ 로그인 오류 (${errorCode}): 다시 시도해 주세요.`);
         setToastActive(true);
         setTimeout(() => setToastActive(false), 2500);
       }
@@ -209,44 +243,83 @@ export default function GoogleSignInScreen() {
     }
   };
 
+  const handleProviderLogin = (provider: string) => {
+    showToast(`${provider === 'naver' ? '네이버' : '카카오톡'} 로그인은 준비 중입니다. 구글 로그인을 이용해 주세요.`);
+  };
+
   return (
     <OnboardingBackground>
       <Pressable style={styles.backButton} hitSlop={8} onPress={() => router.back()}>
-        <Text style={styles.backIcon}>‹</Text>
+        <Text style={styles.backText}>뒤로가기</Text>
       </Pressable>
 
       <View style={styles.content}>
-        <Image
-          source={require('../assets/logo_icon.jpg')}
-          style={styles.logoImage}
+        <Animated.Image
+          source={require('../assets/logo_pure_chick.png')}
+          style={[
+            styles.logoImage,
+            {
+              transform: [
+                { translateY: floatAnim },
+                { scale: pulseAnim }
+              ]
+            }
+          ]}
           resizeMode="contain"
         />
         <Text style={styles.title}>Kindercare 시작하기</Text>
-        <Text style={styles.subtitle}>Google 계정으로 1초 만에 시작하세요</Text>
+        <Text style={styles.subtitle}>가족과 함께하는 일상의 시작,{'\n'}소셜 계정으로 1초 만에 가입하세요</Text>
 
-        <Pressable
-          style={[
-            styles.googleButton,
-            (loading || toastActive) && styles.googleButtonDisabled
-          ]}
-          onPress={handleGoogleSignIn}
-          disabled={loading || toastActive}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.textPrimary} />
-          ) : (
-            <>
-              <View style={styles.googleLogoWrapper}>
+        <View style={styles.btnStack}>
+          <Pressable
+            style={[
+              styles.btn,
+              styles.btnGoogle,
+              (loading || toastActive) && styles.googleButtonDisabled
+            ]}
+            onPress={handleGoogleSignIn}
+            disabled={loading || toastActive}
+          >
+            {loading ? (
+              <ActivityIndicator color="#3C4043" />
+            ) : (
+              <View style={styles.btnInner}>
                 <GoogleLogo size={20} />
+                <Text style={styles.btnTextDark}>구글로 시작하기</Text>
               </View>
-              <Text style={styles.googleButtonText}>Google 계정으로 1초 만에 시작하기</Text>
-            </>
-          )}
-        </Pressable>
+            )}
+          </Pressable>
+
+          <TouchableOpacity
+            style={[styles.btn, styles.btnNaver]}
+            onPress={() => handleProviderLogin('naver')}
+          >
+            <View style={styles.btnInner}>
+              <View style={styles.naverIconBox}>
+                <Text style={styles.naverIconText}>N</Text>
+              </View>
+              <Text style={styles.btnTextLight}>네이버로 시작하기</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.btn, styles.btnKakao]}
+            onPress={() => handleProviderLogin('kakao')}
+          >
+            <View style={styles.btnInner}>
+              <FontAwesome name="comment" size={20} color="#3C1E1E" style={styles.btnIcon} />
+              <Text style={styles.btnTextKakao}>카카오톡으로 시작하기</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
 
         <Text style={styles.disclaimer}>
           가입 시 이용약관 및 개인정보처리방침에 동의하게 됩니다.
         </Text>
+
+        <View style={styles.versionContainer}>
+          <Text style={styles.versionText}>버전 {appVersion}</Text>
+        </View>
       </View>
     </OnboardingBackground>
   );
@@ -255,17 +328,15 @@ export default function GoogleSignInScreen() {
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     backButton: {
-      width: 36,
-      height: 36,
-      alignItems: 'center',
-      justifyContent: 'center',
+      paddingVertical: 8,
+      paddingHorizontal: 4,
       marginLeft: 12,
       marginTop: 4,
     },
-    backIcon: {
-      fontSize: 26,
-      fontWeight: '700',
-      color: colors.textPrimary,
+    backText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textSecondary,
     },
     content: {
       flex: 1,
@@ -288,30 +359,74 @@ function createStyles(colors: ThemeColors) {
     subtitle: {
       fontSize: 14,
       color: colors.textSecondary,
-      marginBottom: 36,
+      marginBottom: 32,
       textAlign: 'center',
+      lineHeight: 20,
     },
-    googleButton: {
+    btnStack: {
+      width: '100%',
+      gap: 12,
+      marginBottom: 24,
+    },
+    btn: {
+      width: '100%',
+      height: 56,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...SHADOW,
+    },
+    btnInner: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      width: '100%',
+    },
+    btnIcon: {
+      marginRight: 10,
+    },
+    btnGoogle: {
       backgroundColor: '#FFFFFF',
-      borderRadius: 16,
-      paddingVertical: 16,
-      paddingHorizontal: 20,
-      ...SHADOW,
+      borderWidth: 1,
+      borderColor: '#E4E4E7',
+    },
+    btnNaver: {
+      backgroundColor: '#03C75A',
+    },
+    btnKakao: {
+      backgroundColor: '#FEE500',
+    },
+    btnTextDark: {
+      color: '#3C4043',
+      fontSize: 15,
+      fontWeight: '700',
+      marginLeft: 10,
+    },
+    btnTextLight: {
+      color: '#FFFFFF',
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    btnTextKakao: {
+      color: '#3C1E1E',
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    naverIconBox: {
+      backgroundColor: '#FFFFFF',
+      width: 22,
+      height: 22,
+      borderRadius: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 10,
+    },
+    naverIconText: {
+      color: '#03C75A',
+      fontSize: 14,
+      fontWeight: '900',
     },
     googleButtonDisabled: {
       opacity: 0.7,
-    },
-    googleLogoWrapper: {
-      marginRight: 12,
-    },
-    googleButtonText: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: '#1F1F1F',
     },
     disclaimer: {
       fontSize: 11,
@@ -319,6 +434,16 @@ function createStyles(colors: ThemeColors) {
       textAlign: 'center',
       marginTop: 18,
       lineHeight: 16,
+    },
+    versionContainer: {
+      marginTop: 24,
+      alignItems: 'center',
+    },
+    versionText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      fontWeight: '500',
+      opacity: 0.5,
     },
   });
 }

@@ -1,6 +1,6 @@
 {
   "name": "kindercare",
-  "version": "1.0.4",
+  "version": "1.0.8",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/dongle": "^0.4.1",

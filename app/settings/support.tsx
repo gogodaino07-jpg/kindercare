@@ -83,6 +83,9 @@ export default function SupportScreen() {
         </ScrollView>
 
         <View style={[styles.buttonContainer, { bottom: 24 + insets.bottom }]}>
+          <Text style={styles.privacyNotice}>
+            문의 시 입력하신 이메일 주소는 답변 용도로만 사용됩니다.
+          </Text>
           <Pressable
             style={[styles.sendButton, !canSend && styles.sendButtonDisabled]}
             onPress={handleSend}
@@ -133,6 +136,13 @@ function createStyles(colors: ThemeColors) {
     contentBox: { backgroundColor: colors.gray50, borderRadius: 14, padding: 14, minHeight: 180, borderWidth: 1, borderColor: colors.border },
     contentInput: { flex: 1, fontSize: 14, color: colors.textPrimary, minHeight: 140, textAlignVertical: 'top' },
     counterText: { alignSelf: 'flex-end', fontSize: 11, color: colors.textSecondary, marginTop: 6 },
+    privacyNotice: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: 12,
+      fontWeight: '500',
+    },
     buttonContainer: { position: 'absolute', left: 20, right: 20, zIndex: 100, elevation: 5 },
     sendButton: { backgroundColor: colors.gray900, borderRadius: 16, paddingVertical: 16, alignItems: 'center', ...SHADOW },
     sendButtonDisabled: { opacity: 0.4 },

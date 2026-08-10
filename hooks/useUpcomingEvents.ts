@@ -28,26 +28,22 @@ export function useUpcomingEvents(): UpcomingEvents {
     tomorrowDate.setDate(now.getDate() + 1);
     const tomorrowISO = toISODate(tomorrowDate);
 
-    // 10 AM is the cutoff
     const isMorning = currentHour < 10;
     const displayType = isMorning ? 'TODAY' : 'TOMORROW';
     const mainDateISO = isMorning ? todayISO : tomorrowISO;
 
+    const weekLaterDate = new Date(now);
+    weekLaterDate.setDate(now.getDate() + 7);
+    const weekLaterISO = toISODate(weekLaterDate);
+
     const upcoming = events
-      .filter((e) => e.childId === selectedChild?.id && !isPast(e.date))
+      .filter((e) => e.childId === selectedChild?.id && e.date >= todayISO && e.date < weekLaterISO)
       .sort((a, b) => a.date.localeCompare(b.date));
 
     const mainEvents = upcoming.filter((e) => e.date === mainDateISO);
 
-    // Logic for featured later events (next 3 distinct days)
-    let featuredLaterEvents: Event[] = [];
-    let laterEvents = upcoming.filter((e) => e.date > mainDateISO);
-
-    if (displayType === 'TOMORROW') {
-      const distinctDays = Array.from(new Set(laterEvents.map(e => e.date))).slice(0, 3);
-      featuredLaterEvents = laterEvents.filter(e => distinctDays.includes(e.date));
-      laterEvents = laterEvents.filter(e => !distinctDays.includes(e.date));
-    }
+    // Filter events for the "Upcoming" section (excluding the main focused date)
+    const laterEvents = upcoming.filter((e) => e.date !== mainDateISO);
 
     const groupsByDate = new Map<string, Event[]>();
     for (const event of laterEvents) {
@@ -56,15 +52,14 @@ export function useUpcomingEvents(): UpcomingEvents {
       groupsByDate.set(event.date, group);
     }
 
-    const laterGroups: EventDateGroup[] = Array.from(groupsByDate.entries()).map(
-      ([date, groupEvents]) => ({ date, events: groupEvents })
-    );
+    const laterGroups: EventDateGroup[] = Array.from(groupsByDate.entries())
+      .map(([date, groupEvents]) => ({ date, events: groupEvents }))
+      .sort((a, b) => a.date.localeCompare(b.date));
 
-    // Card should be hidden if there are NO events to show for the current context (Today/Tomorrow lookahead)
-    const hasVisibleContent =
-      mainEvents.length > 0 ||
-      featuredLaterEvents.length > 0 ||
-      laterGroups.length > 0;
+    // For backward compatibility with existing components if needed
+    const featuredLaterEvents = laterEvents;
+
+    const hasVisibleContent = mainEvents.length > 0 || laterGroups.length > 0;
 
     return {
       mainEvents,

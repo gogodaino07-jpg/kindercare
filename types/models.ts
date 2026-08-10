@@ -4,6 +4,7 @@ export interface Child {
   id: string;
   name?: string;
   age: ChildAge;
+  birthdate?: string; // ISO date string: "YYYY-MM-DD"
   className?: string;
   photoUri?: string;
 }
