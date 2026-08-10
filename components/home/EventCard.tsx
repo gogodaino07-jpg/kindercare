@@ -108,7 +108,7 @@ export default function EventCard({
         <ScrollView
           style={styles.checklistScroll}
           showsVerticalScrollIndicator={false}
-          nestedScrollEnabled={true}
+          nestedScrollEnabled={false}
           disallowInterruption={true}
         >
           <View style={styles.checklist}>
