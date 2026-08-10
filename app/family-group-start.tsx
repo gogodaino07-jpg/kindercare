@@ -61,10 +61,10 @@ export default function FamilyGroupStartScreen() {
             이미 계정이 있나요? <Text style={styles.reloginLink}>로그인하기</Text>
           </Text>
         </TouchableOpacity>
+      </View>
 
-        <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>버전 {appVersion}</Text>
-        </View>
+      <View style={styles.versionContainer}>
+        <Text style={styles.versionText}>버전 {appVersion}</Text>
       </View>
 
       <JoinCodeModal
@@ -135,7 +135,7 @@ function createStyles(colors: ThemeColors) {
       textDecorationLine: 'underline',
     },
     versionContainer: {
-      marginTop: 24,
+      paddingBottom: 20,
       alignItems: 'center',
     },
     versionText: {

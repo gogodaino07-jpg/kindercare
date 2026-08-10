@@ -465,10 +465,10 @@ export default function GoogleSignInScreen() {
         <Text style={styles.disclaimer}>
           가입 시 이용약관 및 개인정보처리방침에 동의하게 됩니다.
         </Text>
+      </View>
 
-        <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>버전 {appVersion}</Text>
-        </View>
+      <View style={styles.versionContainer}>
+        <Text style={styles.versionText}>버전 {appVersion}</Text>
       </View>
     </OnboardingBackground>
   );
@@ -585,7 +585,7 @@ function createStyles(colors: ThemeColors) {
       lineHeight: 16,
     },
     versionContainer: {
-      marginTop: 24,
+      paddingBottom: 20,
       alignItems: 'center',
     },
     versionText: {
