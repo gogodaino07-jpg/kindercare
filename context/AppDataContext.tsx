@@ -3,6 +3,7 @@ import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { login as kakaoLogin, logout as kakaoLogout, getProfile as getKakaoProfile } from '@react-native-seoul/kakao-login';
+import NaverLogin from '@react-native-seoul/naver-login';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { DEFAULT_CHALKBOARD_THEME_ID } from '../constants/chalkboardThemes';
 import {
@@ -106,6 +107,10 @@ interface AppDataContextValue {
   // Kakao sign-in
   signInWithKakao: () => Promise<GoogleAccount>;
   signOutKakao: () => void;
+
+  // Naver sign-in
+  signInWithNaver: () => Promise<GoogleAccount>;
+  signOutNaver: () => void;
 }
 
 const AppDataContext = createContext<AppDataContextValue | undefined>(undefined);
@@ -144,6 +149,14 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     GoogleSignin.configure({
       webClientId: '399651841789-rnm71qdp4tbvsism5rne3b2k5ndquuih.apps.googleusercontent.com',
       offlineAccess: true,
+    });
+
+    NaverLogin.initialize({
+      consumerKey: 'OURq4y3vlVxSXaIWtVFF',
+      consumerSecret: 'AQIw68TAya',
+      appName: 'kindercare',
+      // For android, serviceUrlScheme is usually kakao{appKey} or just the packageName
+      // But naver uses the clientID for scheme sometimes or just direct activity
     });
 
     Promise.all([
@@ -846,6 +859,61 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
+  const signInWithNaver = async (): Promise<GoogleAccount> => {
+    try {
+      console.log('📡 Starting Naver Sign-In...');
+      const { successResponse, failureResponse } = await NaverLogin.login();
+
+      if (failureResponse) {
+        throw new Error(`Naver login failed: ${failureResponse.message}`);
+      }
+
+      if (!successResponse) throw new Error('Naver login failed - no response');
+
+      const { response: profile } = await NaverLogin.getProfile(successResponse.accessToken);
+
+      if (!profile || !profile.email) {
+        throw new Error('Naver profile is missing email');
+      }
+
+      const account: GoogleAccount = {
+        email: profile.email,
+        name: profile.name ?? profile.nickname ?? '사용자'
+      };
+
+      setGoogleAccount(account);
+      await AsyncStorage.setItem(GOOGLE_ACCOUNT_KEY, JSON.stringify(account));
+
+      if (hasOnboarded) {
+        await syncUserToFirestore(account, 'naver');
+      }
+
+      // Initialize family members if empty
+      setFamilyMembers((prev) => {
+        if (prev.length === 0) {
+          return [{ id: `member-${Date.now()}`, name: '나', isOwner: true }];
+        }
+        return prev;
+      });
+
+      console.log('✅ Naver Sign-In Success:', account.email);
+      return account;
+    } catch (error: any) {
+      console.error('Naver Sign-In Error:', error);
+      throw error;
+    }
+  };
+
+  const signOutNaver = async () => {
+    try {
+      await NaverLogin.logout();
+      setGoogleAccount(null);
+      AsyncStorage.removeItem(GOOGLE_ACCOUNT_KEY).catch(() => {});
+    } catch (error) {
+      console.error('Naver Sign-Out Error:', error);
+    }
+  };
+
   // 회원탈퇴: wipes every piece of this app's persisted state and puts the
   // in-memory data back to the same shape a fresh install would have, then
   // the caller navigates back to onboarding.
@@ -1030,6 +1098,9 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
     signInWithKakao,
     signOutKakao,
+
+    signInWithNaver,
+    signOutNaver,
   };
 
   return <AppDataContext.Provider value={value}>{reactChildren}</AppDataContext.Provider>;
