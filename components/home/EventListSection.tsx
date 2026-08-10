@@ -52,18 +52,21 @@ export function SuppliesSection({
           <Text style={styles.sectionTitle}>준비물 챙기기</Text>
         </View>
 
-        {!isToday && mainEvents.length > 0 && (
+        {mainEvents.length > 0 && (
           <TouchableOpacity
             onPress={() => router.push('/upload')}
-            style={styles.aiScanButtonTop}
+            style={[
+              styles.aiScanButtonTop,
+              !isToday && { backgroundColor: colors.lightBlueBg } // TOMORROW일 때는 연한 파랑 배경
+            ]}
           >
-            <Text style={[styles.aiScanTextTop, { color: '#E05A48' }]}>
+            <Text style={[styles.aiScanTextTop, { color: themeColor }]}>
               ✨ AI 스캔
             </Text>
             <MaterialIcons
               name="chevron-right"
               size={18}
-              color="#E05A48"
+              color={themeColor}
             />
           </TouchableOpacity>
         )}
@@ -84,22 +87,6 @@ export function SuppliesSection({
           </View>
 
           <View style={styles.headerRightGroup}>
-            {isToday && mainEvents.length > 0 && (
-              <TouchableOpacity
-                onPress={() => router.push('/upload')}
-                style={styles.aiScanButton}
-              >
-                <Text style={[styles.aiScanText, { color: themeColor }]}>
-                  ✨ AI 스캔
-                </Text>
-                <MaterialIcons
-                  name="chevron-right"
-                  size={16}
-                  color={themeColor}
-                />
-              </TouchableOpacity>
-            )}
-
             {hasMoreMain && (
               <TouchableOpacity
                 onPress={() => onEventPress(mainEvents[0])}
@@ -304,8 +291,11 @@ export default function EventListSection({
               />
             ))
           ) : (
-            <View style={[styles.upcomingDateCardContainer, styles.emptyContainer]}>
-              <Text style={styles.emptyText}>다가올 일정이 없습니다.</Text>
+            <View style={styles.emptyUpcomingCard}>
+              <Text style={styles.emptyUpcomingTitle}>아직 다가오는 일정이 없어요</Text>
+              <Text style={styles.emptyUpcomingSubtitle}>
+                가정통신문을 스캔하면{'\n'}여기에 일정이 예쁘게 정리돼요!
+              </Text>
             </View>
           )}
         </View>
@@ -526,6 +516,47 @@ function createStyles(colors: ThemeColors) {
       color: colors.gray400,
       paddingVertical: 12,
       fontSize: 13,
+    },
+    emptyUpcomingCard: {
+      marginHorizontal: 20,
+      marginTop: 12,
+      paddingVertical: 32,
+      paddingHorizontal: 24,
+      backgroundColor: colors.gray50,
+      borderRadius: 24,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyUpcomingIconBox: {
+      width: 54,
+      height: 54,
+      borderRadius: 18,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+      ...SHADOW,
+      shadowOpacity: 0.05,
+    },
+    emptyUpcomingEmoji: {
+      fontSize: 26,
+    },
+    emptyUpcomingTitle: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.gray900,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    emptyUpcomingSubtitle: {
+      fontSize: 13,
+      color: colors.gray500,
+      textAlign: 'center',
+      lineHeight: 19,
+      fontWeight: '500',
     },
     placeholderContainer: {
       marginTop: 12,

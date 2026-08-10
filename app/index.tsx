@@ -73,6 +73,47 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       zIndex: 10,
       backgroundColor: '#FFFFFF',
     },
+    emptyUpcomingCard: {
+      marginHorizontal: 20,
+      marginTop: 12,
+      paddingVertical: 32,
+      paddingHorizontal: 24,
+      backgroundColor: colors.gray50,
+      borderRadius: 24,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyUpcomingIconBox: {
+      width: 54,
+      height: 54,
+      borderRadius: 18,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+      ...SHADOW,
+      shadowOpacity: 0.05,
+    },
+    emptyUpcomingEmoji: {
+      fontSize: 26,
+    },
+    emptyUpcomingTitle: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.gray900,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    emptyUpcomingSubtitle: {
+      fontSize: 13,
+      color: colors.gray500,
+      textAlign: 'center',
+      lineHeight: 19,
+      fontWeight: '500',
+    },
   });
 }
 
@@ -213,22 +254,33 @@ export default function HomeScreen() {
     // Child 4: UpcomingHeader
     elements.push(<UpcomingHeader key="upcoming-header" />);
 
-    upcoming.laterGroups.forEach((group, idx) => {
+    if (upcoming.laterGroups.length > 0) {
+      upcoming.laterGroups.forEach((group, idx) => {
+        elements.push(
+          <View
+            key={`card-wrapper-${group.date}`}
+            collapsable={false}
+            onLayout={(e) => onItemLayout(group.date, e.nativeEvent.layout.y)}
+          >
+            <UpcomingDateCard
+              group={group}
+              weather={weather.days?.find((d) => d.date === group.date)}
+              isHighlighted={highlightedDate === group.date}
+              onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
+            />
+          </View>
+        );
+      });
+    } else {
       elements.push(
-        <View
-          key={`card-wrapper-${group.date}`}
-          collapsable={false} // Ensure layout is measured correctly on Android
-          onLayout={(e) => onItemLayout(group.date, e.nativeEvent.layout.y)}
-        >
-          <UpcomingDateCard
-            group={group}
-            weather={weather.days?.find((d) => d.date === group.date)}
-            isHighlighted={highlightedDate === group.date}
-            onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
-          />
+        <View key="empty-upcoming" style={styles.emptyUpcomingCard}>
+          <Text style={styles.emptyUpcomingTitle}>아직 다가오는 일정이 없어요</Text>
+          <Text style={styles.emptyUpcomingSubtitle}>
+            가정통신문을 스캔하면{"\n"}여기에 일정이 예쁘게 정리돼요!
+          </Text>
         </View>
       );
-    });
+    }
 
     return { elements, stickyIndices };
 

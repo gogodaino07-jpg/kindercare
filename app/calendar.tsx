@@ -188,15 +188,23 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     dotRow: {
       flexDirection: 'row',
-      marginTop: 1,
+      marginTop: 2,
       gap: 2,
-      height: 3.5, // Slightly refined height
+      height: 6, // Increased height to accommodate '+' indicator
       justifyContent: 'center',
+      alignItems: 'center',
     },
     dot: {
-      width: 3.5, // Restoration of recommended crisp size
-      height: 3.5,
-      borderRadius: 1.75,
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+    },
+    moreDotText: {
+      fontSize: 10,
+      fontWeight: 'bold',
+      color: colors.textSecondary,
+      lineHeight: 10,
+      marginTop: -1,
     },
     legendContainer: {
       flexDirection: 'row',
@@ -593,15 +601,30 @@ export default function CalendarScreen() {
                       {dayNum}
                     </Text>
                     <View style={styles.dotRow}>
-                      {dayEvents.slice(0, 2).map((e) => (
-                        <View
-                          key={e.id}
-                          style={[
-                            styles.dot,
-                            { backgroundColor: dotColorFor(e.source, e.needsReview) },
-                          ]}
-                        />
-                      ))}
+                      {dayEvents.length > 4 ? (
+                        <>
+                          {dayEvents.slice(0, 3).map((e) => (
+                            <View
+                              key={e.id}
+                              style={[
+                                styles.dot,
+                                { backgroundColor: dotColorFor(e.source, e.needsReview) },
+                              ]}
+                            />
+                          ))}
+                          <Text style={styles.moreDotText}>+</Text>
+                        </>
+                      ) : (
+                        dayEvents.map((e) => (
+                          <View
+                            key={e.id}
+                            style={[
+                              styles.dot,
+                              { backgroundColor: dotColorFor(e.source, e.needsReview) },
+                            ]}
+                          />
+                        ))
+                      )}
                     </View>
                   </TouchableOpacity>
                 </View>
