@@ -7,7 +7,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   View,
   TouchableOpacity,
@@ -18,6 +17,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import PhotoCropModal from '../components/child-profile/PhotoCropModal';
 import PhotoSourceSheet from '../components/child-profile/PhotoSourceSheet';
 import ScreenBackground from '../components/ScreenBackground';
+import Text from '../components/common/AppText';
 import CoupangBanner from '../components/common/CoupangBanner';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAlert } from '../context/AlertContext';

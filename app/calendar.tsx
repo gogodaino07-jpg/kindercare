@@ -128,6 +128,14 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       color: colors.textPrimary,
       fontWeight: '500',
     },
+    dayTextSelected: {
+      color: colors.tomorrowRed,
+      fontWeight: '700',
+    },
+    dayTextToday: {
+      color: colors.accent,
+      fontWeight: '700',
+    },
     dotRow: {
       flexDirection: 'row',
       marginTop: 1,
