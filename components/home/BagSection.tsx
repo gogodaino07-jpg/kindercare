@@ -145,7 +145,7 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
 function createStyles(colors: ThemeColors, cardWidth: number) {
   return StyleSheet.create({
     container: {
-      marginTop: 4,
+      marginTop: 20,
     },
     sectionHeaderRow: {
       flexDirection: 'row',
