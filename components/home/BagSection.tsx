@@ -152,11 +152,13 @@ function BagCard({
   const buttonScale = useRef(new Animated.Value(1)).current;
   const checkScale = useRef(new Animated.Value(isDone ? 1 : 0)).current;
   useEffect(() => {
+    // marginRight below animates alongside scale, and layout properties like
+    // margin aren't supported by the native driver, so this one runs on JS.
     Animated.spring(checkScale, {
       toValue: isDone ? 1 : 0,
       friction: 4,
       tension: 140,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start();
   }, [isDone, checkScale]);
 
