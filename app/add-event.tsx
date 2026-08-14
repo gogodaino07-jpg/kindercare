@@ -10,6 +10,7 @@ import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { formatMD, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
+import { EVENT_ICON_OPTIONS, suggestEventIcon } from '../utils/eventIcon';
 import { stripInvalidCharacters } from '../utils/validation';
 
 const COUPANG_LINK = 'https://link.coupang.com/a/fHdMU98clE';
@@ -136,6 +137,28 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       fontSize: 14,
       fontWeight: 'bold',
     },
+    iconRow: {
+      flexDirection: 'row',
+      gap: 10,
+      paddingVertical: 2,
+    },
+    iconOption: {
+      width: 44,
+      height: 44,
+      borderRadius: 14,
+      backgroundColor: colors.gray50,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    iconOptionSelected: {
+      backgroundColor: colors.lightBlueBg,
+      borderColor: colors.accent,
+    },
+    iconOptionText: {
+      fontSize: 22,
+    },
     chipsContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -222,6 +245,16 @@ export default function AddEventScreen() {
   const [items, setItems] = useState<string[]>([]);
   const [memo, setMemo] = useState('');
   const [titleError, setTitleError] = useState(false);
+  const [icon, setIcon] = useState(EVENT_ICON_OPTIONS[0]);
+  const [iconManuallySet, setIconManuallySet] = useState(false);
+
+  const handleTitleChange = (t: string) => {
+    setTitle(t);
+    setTitleError(false);
+    if (!iconManuallySet) {
+      setIcon(suggestEventIcon(t));
+    }
+  };
 
   const addItem = () => {
     const trimmed = itemInput.trim();
@@ -262,7 +295,7 @@ export default function AddEventScreen() {
         notifyDayBefore: true,
         childId: selectedChild.id,
         source: 'manual' as const,
-        icon: '📌',
+        icon,
       };
       console.log('[AddEvent] Saving event:', eventData);
       addEvent(eventData);
@@ -327,15 +360,30 @@ export default function AddEventScreen() {
               <TextInput
                 style={[styles.input, titleError && styles.inputError]}
                 value={title}
-                onChangeText={(t) => {
-                  setTitle(t);
-                  setTitleError(false);
-                }}
+                onChangeText={handleTitleChange}
                 maxLength={TITLE_MAX_LENGTH}
                 placeholder="예: 어린이집 현장학습"
                 placeholderTextColor={colors.textSecondary}
               />
               {titleError && <Text style={styles.errorText}>제목을 입력해주세요</Text>}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { marginBottom: 8 }]}>아이콘</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.iconRow}>
+                {EVENT_ICON_OPTIONS.map((option) => (
+                  <Pressable
+                    key={option}
+                    style={[styles.iconOption, icon === option && styles.iconOptionSelected]}
+                    onPress={() => {
+                      setIcon(option);
+                      setIconManuallySet(true);
+                    }}
+                  >
+                    <Text style={styles.iconOptionText}>{option}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
             </View>
 
             <View style={styles.inputGroup}>

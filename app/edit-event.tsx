@@ -10,6 +10,7 @@ import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { formatMD, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
+import { EVENT_ICON_OPTIONS } from '../utils/eventIcon';
 import { stripInvalidCharacters } from '../utils/validation';
 
 const TITLE_MAX_LENGTH = 20;
@@ -140,6 +141,28 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       fontSize: 14,
       fontWeight: 'bold',
     },
+    iconRow: {
+      flexDirection: 'row',
+      gap: 10,
+      paddingVertical: 2,
+    },
+    iconOption: {
+      width: 44,
+      height: 44,
+      borderRadius: 14,
+      backgroundColor: colors.gray50,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    iconOptionSelected: {
+      backgroundColor: colors.lightBlueBg,
+      borderColor: colors.accent,
+    },
+    iconOptionText: {
+      fontSize: 22,
+    },
     chipsContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -226,6 +249,7 @@ export default function EditEventScreen() {
   const [items, setItems] = useState<string[]>([]);
   const [memo, setMemo] = useState('');
   const [titleError, setTitleError] = useState(false);
+  const [icon, setIcon] = useState(EVENT_ICON_OPTIONS[0]);
 
   useEffect(() => {
     if (existingEvent) {
@@ -233,6 +257,7 @@ export default function EditEventScreen() {
       setTitle(existingEvent.title);
       setItems(existingEvent.note ? existingEvent.note.split(', ').filter(Boolean) : []);
       setMemo(existingEvent.memo ?? '');
+      setIcon(existingEvent.icon || EVENT_ICON_OPTIONS[0]);
     } else {
       router.back();
     }
@@ -269,6 +294,7 @@ export default function EditEventScreen() {
         title: title.trim(),
         note: noteString || undefined,
         memo: memo.trim() || undefined,
+        icon,
       });
       showToast('수정이 완료되었습니다.');
       router.back();
@@ -305,7 +331,8 @@ export default function EditEventScreen() {
     toISODate(date) !== existingEvent.date ||
     title.trim() !== existingEvent.title ||
     items.join(', ') !== (existingEvent.note ?? '') ||
-    memo.trim() !== (existingEvent.memo ?? '');
+    memo.trim() !== (existingEvent.memo ?? '') ||
+    icon !== (existingEvent.icon || EVENT_ICON_OPTIONS[0]);
 
   const isSaveDisabled = !title.trim() || !isChanged;
   const weekdayLabel = WEEKDAY_KO[date.getDay()];
@@ -375,6 +402,21 @@ export default function EditEventScreen() {
                 placeholderTextColor={colors.textSecondary}
               />
               {titleError && <Text style={styles.errorText}>제목을 입력해주세요</Text>}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { marginBottom: 8 }]}>아이콘</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.iconRow}>
+                {EVENT_ICON_OPTIONS.map((option) => (
+                  <Pressable
+                    key={option}
+                    style={[styles.iconOption, icon === option && styles.iconOptionSelected]}
+                    onPress={() => setIcon(option)}
+                  >
+                    <Text style={styles.iconOptionText}>{option}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
             </View>
 
             <View style={styles.inputGroup}>
