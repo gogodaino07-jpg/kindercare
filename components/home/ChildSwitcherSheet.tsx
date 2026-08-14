@@ -154,9 +154,6 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
                       </View>
                     )}
                     <Text style={styles.cardLabel}>{label}</Text>
-                    <View style={styles.checkSlot}>
-                      {isSelected ? <Text style={styles.checkIcon}>✓</Text> : null}
-                    </View>
                   </Pressable>
                   <Pressable
                     style={styles.editButton}
@@ -274,16 +271,6 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       fontSize: 16,
       fontWeight: '600',
       color: colors.gray900,
-    },
-    checkSlot: {
-      width: 26,
-      alignItems: 'center',
-      marginLeft: 8,
-    },
-    checkIcon: {
-      fontSize: 20,
-      color: colors.accent,
-      fontWeight: '900',
     },
     editButton: {
       paddingVertical: 7,
