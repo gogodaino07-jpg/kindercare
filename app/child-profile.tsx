@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import {
   Image,
+  KeyboardAvoidingView,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -160,6 +161,10 @@ export default function ChildProfileScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ title: '아이 프로필 설정' }} />
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoider}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Pressable style={styles.photoContainer} onPress={() => setShowSourceSheet(true)}>
           {photoUri ? <Image source={{ uri: photoUri }} style={styles.photo} /> : (
@@ -234,6 +239,7 @@ export default function ChildProfileScreen() {
           </Pressable>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Floating Action Button (Save) - Positioned exactly like Calendar */}
       <View style={styles.fabContainer}>
@@ -268,6 +274,9 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     safeArea: {
       flex: 1,
       backgroundColor: colors.skyBackground,
+    },
+    keyboardAvoider: {
+      flex: 1,
     },
     content: {
       padding: 24,

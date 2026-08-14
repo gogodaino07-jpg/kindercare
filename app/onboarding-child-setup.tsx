@@ -3,7 +3,7 @@ import { ImagePickerAsset } from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View, Image } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View, Image } from 'react-native';
 import PermissionModal from '../components/onboarding/PermissionModal';
 import PhotoCropModal from '../components/child-profile/PhotoCropModal';
 import PhotoSourceSheet from '../components/child-profile/PhotoSourceSheet';
@@ -113,6 +113,10 @@ export default function OnboardingChildSetupScreen() {
 
   return (
     <OnboardingBackground>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoider}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -230,6 +234,7 @@ export default function OnboardingChildSetupScreen() {
       >
         <Text style={styles.completeButtonText}>프로필 생성 완료</Text>
       </Pressable>
+      </KeyboardAvoidingView>
 
       <PermissionModal visible={showPermissionModal} onDone={handlePermissionDone} />
 
@@ -259,6 +264,7 @@ export default function OnboardingChildSetupScreen() {
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
+    keyboardAvoider: { flex: 1 },
     scroll: { flex: 1 },
     content: {
       flexGrow: 1,
