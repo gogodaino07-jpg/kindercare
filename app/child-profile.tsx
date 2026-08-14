@@ -221,7 +221,7 @@ export default function ChildProfileScreen() {
             style={[styles.input, attemptedSave && !classNameValid && styles.inputInvalid]}
             value={className}
             onChangeText={(text) => setClassName(stripInvalidCharacters(text))}
-            placeholder="예: 병아리반"
+            placeholder="예: 병아리반, 7세반"
             placeholderTextColor="#94A3B8"
           />
         </View>

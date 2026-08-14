@@ -211,7 +211,7 @@ export default function OnboardingChildSetupScreen() {
               setClassName(stripInvalidCharacters(t));
               setError(false);
             }}
-            placeholder="예: 병아리반"
+            placeholder="예: 병아리반, 7세반"
             placeholderTextColor={colors.textSecondary}
           />
           {error && !className.trim() ? (
