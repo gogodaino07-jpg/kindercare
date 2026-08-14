@@ -2,7 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { ImagePickerAsset } from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View, Image } from 'react-native';
 import PermissionModal from '../components/onboarding/PermissionModal';
 import PhotoCropModal from '../components/child-profile/PhotoCropModal';
@@ -29,6 +29,21 @@ export default function OnboardingChildSetupScreen() {
   const { setPickerActive } = useAppLock();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const classNameInputRef = useRef<TextInput>(null);
+  const scrollToClassNameInput = () => {
+    setTimeout(() => {
+      classNameInputRef.current?.measureLayout(
+        // @ts-expect-error - getInnerViewNode exists at runtime but isn't typed
+        scrollViewRef.current?.getInnerViewNode(),
+        (_x: number, y: number) => {
+          scrollViewRef.current?.scrollTo({ y: y - 80, animated: true });
+        },
+        () => {}
+      );
+    }, 100);
+  };
 
   const maxDate = useMemo(() => {
     const d = new Date();
@@ -118,6 +133,7 @@ export default function OnboardingChildSetupScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scroll}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
@@ -209,12 +225,14 @@ export default function OnboardingChildSetupScreen() {
 
           <Text style={styles.label}>반 이름</Text>
           <TextInput
+            ref={classNameInputRef}
             style={[styles.input, error && !className.trim() && styles.inputInvalid]}
             value={className}
             onChangeText={(t) => {
               setClassName(stripInvalidCharacters(t));
               setError(false);
             }}
+            onFocus={scrollToClassNameInput}
             placeholder="예: 병아리반, 7세반"
             placeholderTextColor={colors.textSecondary}
           />

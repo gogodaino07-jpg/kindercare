@@ -2,7 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { ImagePickerAsset } from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -47,6 +47,21 @@ export default function ChildProfileScreen() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
   const { childId } = useLocalSearchParams<{ childId?: string }>();
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const classNameInputRef = useRef<TextInput>(null);
+  const scrollToClassNameInput = () => {
+    setTimeout(() => {
+      classNameInputRef.current?.measureLayout(
+        // @ts-expect-error - getInnerViewNode exists at runtime but isn't typed
+        scrollViewRef.current?.getInnerViewNode(),
+        (_x: number, y: number) => {
+          scrollViewRef.current?.scrollTo({ y: y - 80, animated: true });
+        },
+        () => {}
+      );
+    }, 100);
+  };
   const editingChild = childId ? children.find((c) => c.id === childId) : undefined;
 
   const maxDate = useMemo(() => {
@@ -165,7 +180,7 @@ export default function ChildProfileScreen() {
         style={styles.keyboardAvoider}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Pressable style={styles.photoContainer} onPress={() => setShowSourceSheet(true)}>
           {photoUri ? <Image source={{ uri: photoUri }} style={styles.photo} /> : (
             <View style={styles.photoPlaceholder}><Text style={styles.photoPlaceholderIcon}>🧒</Text></View>
@@ -223,9 +238,11 @@ export default function ChildProfileScreen() {
         <View style={styles.field}>
           <Text style={styles.label}>반 이름 *</Text>
           <TextInput
+            ref={classNameInputRef}
             style={[styles.input, attemptedSave && !classNameValid && styles.inputInvalid]}
             value={className}
             onChangeText={(text) => setClassName(stripInvalidCharacters(text))}
+            onFocus={scrollToClassNameInput}
             placeholder="예: 병아리반, 7세반"
             placeholderTextColor="#94A3B8"
           />
