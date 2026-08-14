@@ -172,7 +172,7 @@ function MiniWeatherCard({
   );
 }
 
-const AVATAR_SIZE = 68;
+const AVATAR_SIZE = 84;
 const ICON_BUTTON_SIZE = 32;
 const TODAY_CARD_HEIGHT = 192;
 
@@ -227,10 +227,10 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'center',
     },
     avatarIcon: {
-      fontSize: 34,
+      fontSize: 42,
     },
     greetingText: {
-      fontSize: 19,
+      fontSize: 23,
       fontWeight: '800',
       color: colors.gray900,
       textAlign: 'center',
@@ -241,18 +241,20 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '900',
     },
     badge: {
-      marginTop: 10,
-      backgroundColor: colors.cardWhite,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 999,
-      paddingHorizontal: 14,
-      paddingVertical: 5,
+      marginTop: 12,
+      backgroundColor: '#FFE066',
+      borderRadius: 6,
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+      transform: [{ rotate: '-1.5deg' }],
+      ...SHADOW,
+      shadowOpacity: 0.1,
+      elevation: 2,
     },
     badgeText: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: colors.gray600,
+      fontSize: 15,
+      fontWeight: '800',
+      color: '#5C4A1E',
     },
     weatherHeroRow: {
       flexDirection: 'row',
