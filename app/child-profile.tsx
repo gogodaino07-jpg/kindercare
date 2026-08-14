@@ -51,16 +51,11 @@ export default function ChildProfileScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const classNameInputRef = useRef<TextInput>(null);
   const scrollToClassNameInput = () => {
+    // 반 이름 입력란은 폼의 마지막 필드라, 정확한 좌표를 재는 것보다
+    // 스크롤 끝으로 이동시키는 편이 New Architecture에서 더 안정적으로 동작함.
     setTimeout(() => {
-      classNameInputRef.current?.measureLayout(
-        // @ts-expect-error - getInnerViewNode exists at runtime but isn't typed
-        scrollViewRef.current?.getInnerViewNode(),
-        (_x: number, y: number) => {
-          scrollViewRef.current?.scrollTo({ y: y - 80, animated: true });
-        },
-        () => {}
-      );
-    }, 100);
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 150);
   };
   const editingChild = childId ? children.find((c) => c.id === childId) : undefined;
 
