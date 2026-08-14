@@ -543,7 +543,7 @@ export default function GoogleSignInScreen() {
 
       <View style={styles.content}>
         <Animated.Image
-          source={require('../assets/logo_pure_chick.png')}
+          source={require('../assets/logo_pure_chick_transparent.png')}
           style={[
             styles.logoImage,
             {

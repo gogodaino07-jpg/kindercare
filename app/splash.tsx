@@ -71,7 +71,7 @@ export default function SplashPage() {
   return (
     <SafeAreaView style={styles.container}>
       <Animated.Image
-        source={require('../assets/logo_pure_chick.png')}
+        source={require('../assets/logo_pure_chick_transparent.png')}
         style={[
           styles.logoImage,
           {
