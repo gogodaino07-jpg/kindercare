@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Event } from '../../types/models';
@@ -52,67 +52,19 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
     });
   };
 
-  const renderCard = (event: Event, badgeText: string, muted: boolean) => {
-    const category = getCategoryStyle(event, colors);
-    const isDone = completedIds.has(event.id);
-    const description = event.note || event.memo || '';
-    // "내일" cards (tomorrow's items shown as the main focus) get a paler card
-    // background than usual — button color stays the normal accent.
-    const isTomorrowCard = !muted && badgeText === '내일';
-    const cardBg = muted ? category.mutedBg : (isTomorrowCard ? lighten(category.bg, 0.6) : category.bg);
-
-    return (
-      <View
-        key={event.id}
-        style={[styles.card, { backgroundColor: cardBg }]}
-      >
-        <Pressable onPress={() => onEventPress(event)}>
-          <View style={styles.cardHeaderRow}>
-            <View style={[styles.iconCircle, muted && { backgroundColor: colors.cardWhite }]}>
-              <Text style={styles.iconEmoji}>{event.icon || DEFAULT_ICON}</Text>
-            </View>
-            <View style={[styles.dateBadge, muted && styles.dateBadgeMuted]}>
-              <Text style={[styles.dateBadgeText, { color: muted ? colors.gray500 : category.accent }]}>
-                {badgeText}
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
-          {!!description && (
-            <Text style={styles.cardDescription} numberOfLines={2}>{description}</Text>
-          )}
-        </Pressable>
-
-        <Pressable
-          style={[
-            styles.completeButton,
-            muted
-              ? [styles.completeButtonMuted, { borderColor: category.accent }, isDone && { backgroundColor: category.accent }]
-              : { backgroundColor: isDone ? colors.gray900 : category.accent },
-          ]}
-          onPress={() => toggleComplete(event.id)}
-        >
-          {isDone && (
-            <MaterialIcons
-              name="check"
-              size={14}
-              color={muted && !isDone ? category.accent : '#FFFFFF'}
-              style={{ marginRight: 4 }}
-            />
-          )}
-          <Text
-            style={[
-              styles.completeButtonText,
-              muted && !isDone && { color: category.accent },
-            ]}
-          >
-            {isDone ? '완료!' : '확인'}
-          </Text>
-        </Pressable>
-      </View>
-    );
-  };
+  const renderCard = (event: Event, badgeText: string, muted: boolean) => (
+    <BagCard
+      key={event.id}
+      event={event}
+      badgeText={badgeText}
+      muted={muted}
+      isDone={completedIds.has(event.id)}
+      onToggleComplete={() => toggleComplete(event.id)}
+      onPress={() => onEventPress(event)}
+      colors={colors}
+      styles={styles}
+    />
+  );
 
   return (
     <View style={styles.container}>
@@ -141,7 +93,10 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
 
       {secondaryEvents.length > 0 && (
         <>
-          <Text style={styles.secondaryLabel}>오늘 남은 준비물</Text>
+          <View style={styles.secondaryHeaderRow}>
+            <Text style={styles.sectionEmoji}>📍</Text>
+            <Text style={styles.sectionTitle}>오늘 진행한 일정</Text>
+          </View>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -152,6 +107,95 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
         </>
       )}
     </View>
+  );
+}
+
+function BagCard({
+  event,
+  badgeText,
+  muted,
+  isDone,
+  onToggleComplete,
+  onPress,
+  colors,
+  styles,
+}: {
+  event: Event;
+  badgeText: string;
+  muted: boolean;
+  isDone: boolean;
+  onToggleComplete: () => void;
+  onPress: () => void;
+  colors: ThemeColors;
+  styles: ReturnType<typeof createStyles>;
+}) {
+  const category = getCategoryStyle(event, colors);
+  const description = event.note || event.memo || '';
+  // "내일" cards (tomorrow's items shown as the main focus) get a paler card
+  // background than usual — button color stays the normal accent.
+  const isTomorrowCard = !muted && badgeText === '내일';
+  const cardBg = muted ? category.mutedBg : (isTomorrowCard ? lighten(category.bg, 0.6) : category.bg);
+
+  // Fades the whole card when marked done, so "완료" reads as a finished
+  // task rather than just a button color flip.
+  const doneOpacity = useRef(new Animated.Value(isDone ? 0.55 : 1)).current;
+  useEffect(() => {
+    Animated.timing(doneOpacity, {
+      toValue: isDone ? 0.55 : 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [isDone, doneOpacity]);
+
+  return (
+    <Animated.View
+      style={[styles.card, { backgroundColor: cardBg, opacity: doneOpacity }]}
+    >
+      <Pressable onPress={onPress}>
+        <View style={styles.cardHeaderRow}>
+          <View style={[styles.iconCircle, muted && { backgroundColor: colors.cardWhite }]}>
+            <Text style={styles.iconEmoji}>{event.icon || DEFAULT_ICON}</Text>
+          </View>
+          <View style={[styles.dateBadge, muted && styles.dateBadgeMuted]}>
+            <Text style={[styles.dateBadgeText, { color: muted ? colors.gray500 : category.accent }]}>
+              {badgeText}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
+        {!!description && (
+          <Text style={styles.cardDescription} numberOfLines={2}>{description}</Text>
+        )}
+      </Pressable>
+
+      <Pressable
+        style={[
+          styles.completeButton,
+          muted
+            ? [styles.completeButtonMuted, { borderColor: category.accent }, isDone && { backgroundColor: category.accent }]
+            : { backgroundColor: isDone ? colors.gray900 : category.accent },
+        ]}
+        onPress={onToggleComplete}
+      >
+        {isDone && (
+          <MaterialIcons
+            name="check"
+            size={14}
+            color={muted && !isDone ? category.accent : '#FFFFFF'}
+            style={{ marginRight: 4 }}
+          />
+        )}
+        <Text
+          style={[
+            styles.completeButtonText,
+            muted && !isDone && { color: category.accent },
+          ]}
+        >
+          {isDone ? '완료!' : '확인'}
+        </Text>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -176,13 +220,13 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       color: colors.gray900,
       letterSpacing: -0.5,
     },
-    secondaryLabel: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: colors.gray500,
+    secondaryHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
       paddingHorizontal: SIDE_PADDING,
-      marginTop: 14,
-      marginBottom: 8,
+      marginTop: 18,
+      marginBottom: 12,
     },
     scrollContent: {
       paddingHorizontal: SIDE_PADDING,
