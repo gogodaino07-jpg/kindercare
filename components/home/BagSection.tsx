@@ -147,6 +147,27 @@ function BagCard({
     }).start();
   }, [isDone, doneOpacity]);
 
+  // Button "pop" on tap, and the checkmark springs in/out with it, so
+  // marking something done feels like a satisfying little bounce.
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  const checkScale = useRef(new Animated.Value(isDone ? 1 : 0)).current;
+  useEffect(() => {
+    Animated.spring(checkScale, {
+      toValue: isDone ? 1 : 0,
+      friction: 4,
+      tension: 140,
+      useNativeDriver: true,
+    }).start();
+  }, [isDone, checkScale]);
+
+  const handleTogglePress = () => {
+    Animated.sequence([
+      Animated.timing(buttonScale, { toValue: 0.85, duration: 80, useNativeDriver: true }),
+      Animated.spring(buttonScale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: true }),
+    ]).start();
+    onToggleComplete();
+  };
+
   return (
     <Animated.View
       style={[styles.card, { backgroundColor: cardBg, opacity: doneOpacity }]}
@@ -169,23 +190,28 @@ function BagCard({
         )}
       </Pressable>
 
-      <Pressable
-        style={[
-          styles.completeButton,
-          muted
-            ? [styles.completeButtonMuted, { borderColor: category.accent }, isDone && { backgroundColor: category.accent }]
-            : { backgroundColor: isDone ? colors.gray900 : category.accent },
-        ]}
-        onPress={onToggleComplete}
-      >
-        {isDone && (
+      <Pressable onPress={handleTogglePress}>
+        <Animated.View
+          style={[
+            styles.completeButton,
+            muted
+              ? [styles.completeButtonMuted, { borderColor: category.accent }, isDone && { backgroundColor: category.accent }]
+              : { backgroundColor: isDone ? colors.gray900 : category.accent },
+            { transform: [{ scale: buttonScale }] },
+          ]}
+        >
+        <Animated.View
+          style={{
+            transform: [{ scale: checkScale }],
+            marginRight: checkScale.interpolate({ inputRange: [0, 1], outputRange: [0, 4] }),
+          }}
+        >
           <MaterialIcons
             name="check"
             size={14}
             color={muted && !isDone ? category.accent : '#FFFFFF'}
-            style={{ marginRight: 4 }}
           />
-        )}
+        </Animated.View>
         <Text
           style={[
             styles.completeButtonText,
@@ -194,6 +220,7 @@ function BagCard({
         >
           {isDone ? '완료!' : '확인'}
         </Text>
+        </Animated.View>
       </Pressable>
     </Animated.View>
   );
