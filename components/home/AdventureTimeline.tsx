@@ -56,7 +56,7 @@ export function AdventureNode({
   return (
     <View style={styles.row}>
       <View style={styles.markerColumn}>
-        <View style={[styles.marker, { backgroundColor: markerColor }, isHighlighted && styles.markerHighlighted]} />
+        <View style={[styles.marker, { borderColor: markerColor }, isHighlighted && styles.markerHighlighted]} />
         {!isLast && <View style={styles.dottedLine} />}
       </View>
 
@@ -128,9 +128,11 @@ function createNodeStyles(colors: ThemeColors) {
       height: 14,
       borderRadius: 7,
       marginTop: 20,
+      backgroundColor: colors.cardWhite,
+      borderWidth: 3,
     },
     markerHighlighted: {
-      backgroundColor: colors.tomorrowRed,
+      borderColor: colors.tomorrowRed,
     },
     dottedLine: {
       flex: 1,
