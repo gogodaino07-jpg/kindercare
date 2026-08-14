@@ -19,6 +19,15 @@ const DEFAULT_ICON = '📌';
 const SIDE_PADDING = 20;
 const CARD_GAP = 12;
 
+/** Blends a hex color toward white by `amount` (0-1) to make it a paler shade. */
+function lighten(hex: string, amount: number): string {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, Math.round(((num >> 16) & 0xff) + (255 - ((num >> 16) & 0xff)) * amount));
+  const g = Math.min(255, Math.round(((num >> 8) & 0xff) + (255 - ((num >> 8) & 0xff)) * amount));
+  const b = Math.min(255, Math.round((num & 0xff) + (255 - (num & 0xff)) * amount));
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
 function getCategoryStyle(event: Event, colors: ThemeColors) {
   if (event.needsReview) return { bg: colors.pastelOrange, mutedBg: colors.orangeLight1, accent: colors.pastelOrangeAccent };
   if (event.source === 'manual') return { bg: colors.pastelPink, mutedBg: colors.tomorrowRedBg, accent: colors.pastelPinkAccent };
@@ -47,11 +56,15 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
     const category = getCategoryStyle(event, colors);
     const isDone = completedIds.has(event.id);
     const description = event.note || event.memo || '';
+    // "내일" cards (tomorrow's items shown as the main focus) get a paler card
+    // background than usual — button color stays the normal accent.
+    const isTomorrowCard = !muted && badgeText === '내일';
+    const cardBg = muted ? category.mutedBg : (isTomorrowCard ? lighten(category.bg, 0.35) : category.bg);
 
     return (
       <View
         key={event.id}
-        style={[styles.card, { backgroundColor: muted ? category.mutedBg : category.bg }]}
+        style={[styles.card, { backgroundColor: cardBg }]}
       >
         <Pressable onPress={() => onEventPress(event)}>
           <View style={styles.cardHeaderRow}>
