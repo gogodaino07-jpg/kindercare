@@ -62,7 +62,7 @@ export default function HomeHeroHeader({
         </Pressable>
       </View>
 
-      <Pressable style={styles.greetingSection} onPress={onPressChild} hitSlop={8}>
+      <Pressable style={styles.greetingSection} onPress={onPressChild}>
         <View style={styles.avatarContainer}>
           {selectedChild?.photoUri ? (
             <Image source={{ uri: selectedChild.photoUri }} style={styles.avatar} />
