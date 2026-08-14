@@ -59,7 +59,7 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
     // "내일" cards (tomorrow's items shown as the main focus) get a paler card
     // background than usual — button color stays the normal accent.
     const isTomorrowCard = !muted && badgeText === '내일';
-    const cardBg = muted ? category.mutedBg : (isTomorrowCard ? lighten(category.bg, 0.35) : category.bg);
+    const cardBg = muted ? category.mutedBg : (isTomorrowCard ? lighten(category.bg, 0.6) : category.bg);
 
     return (
       <View
