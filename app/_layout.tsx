@@ -12,7 +12,7 @@ import { Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus, BackHandler, Keyboard, ToastAndroid, View, Platform, Animated, StyleSheet } from 'react-native';
+import { AppState, AppStateStatus, BackHandler, Keyboard, LogBox, ToastAndroid, View, Platform, Animated, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppLockScreen from '../components/AppLockScreen';
@@ -26,6 +26,16 @@ import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
 
 SplashScreen.preventAutoHideAsync();
+
+// Namespaced React Native Firebase API calls (firestore().collection(), .doc(), etc.)
+// log a deprecation warning on every call until the modular API migration is done.
+// That's dozens of warnings a minute during normal use, which pops the dev-only
+// "Open debugger to view warnings" toast constantly and gets in the way while
+// testing. Silencing just this pattern (not all logs) so real warnings still show.
+LogBox.ignoreLogs([
+  /deprecated \(as well as all React Native Firebase namespaced API\)/,
+  /SafeAreaView has been deprecated/,
+]);
 
 const EXIT_CONFIRM_WINDOW_MS = 2000;
 // App-wide header colors - now reactive to theme

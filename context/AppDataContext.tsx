@@ -4,6 +4,7 @@ import firestore from '@react-native-firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { login as kakaoLogin, logout as kakaoLogout, getProfile as getKakaoProfile } from '@react-native-seoul/kakao-login';
 import NaverLogin from '@react-native-seoul/naver-login';
+import * as Crypto from 'expo-crypto';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { DEFAULT_CHALKBOARD_THEME_ID } from '../constants/chalkboardThemes';
 import {
@@ -810,6 +811,41 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
+  // Kakao/Naver don't have a Firebase Auth provider, so Firestore's
+  // per-user security rules (request.auth.token.email == doc id) would
+  // otherwise reject every read/write for those accounts. We derive a
+  // stable password from the email itself (not the provider's uid) and
+  // use it to sign into Firebase Auth with email/password every time,
+  // creating the account on first login. Deriving from email means Kakao
+  // and Naver share one Firebase account when the person uses the same
+  // address on both, instead of colliding as separate identities.
+  const signInFirebaseWithSocialAccount = async (email: string) => {
+    const password = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      `kindercare-social-auth-v1:${email.trim().toLowerCase()}`
+    );
+    try {
+      await getFirebaseAuth().createUserWithEmailAndPassword(email, password);
+    } catch (error: any) {
+      if (error.code === 'auth/email-already-in-use') {
+        try {
+          await getFirebaseAuth().signInWithEmailAndPassword(email, password);
+        } catch (signInError: any) {
+          if (signInError.code === 'auth/invalid-credential' || signInError.code === 'auth/wrong-password') {
+            const err = new Error(
+              '이미 다른 로그인 방식(예: 구글)으로 가입된 이메일이에요. 처음 가입했던 방식으로 로그인해주세요.'
+            );
+            (err as any).code = 'auth/account-exists-with-different-credential';
+            throw err;
+          }
+          throw signInError;
+        }
+      } else {
+        throw error;
+      }
+    }
+  };
+
   const signInWithKakao = async (): Promise<GoogleAccount> => {
     try {
       console.log('📡 Starting Kakao Sign-In...');
@@ -820,6 +856,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       if (!profile || !profile.email) {
         throw new Error('Kakao profile is missing email');
       }
+
+      await signInFirebaseWithSocialAccount(profile.email);
 
       const account: GoogleAccount = {
         email: profile.email,
@@ -852,6 +890,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const signOutKakao = async () => {
     try {
       await kakaoLogout();
+      await getFirebaseAuth().signOut();
       setGoogleAccount(null);
       AsyncStorage.removeItem(GOOGLE_ACCOUNT_KEY).catch(() => {});
     } catch (error) {
@@ -875,6 +914,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       if (!profile || !profile.email) {
         throw new Error('Naver profile is missing email');
       }
+
+      await signInFirebaseWithSocialAccount(profile.email);
 
       const account: GoogleAccount = {
         email: profile.email,
@@ -907,6 +948,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const signOutNaver = async () => {
     try {
       await NaverLogin.logout();
+      await getFirebaseAuth().signOut();
       setGoogleAccount(null);
       AsyncStorage.removeItem(GOOGLE_ACCOUNT_KEY).catch(() => {});
     } catch (error) {
