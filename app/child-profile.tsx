@@ -38,7 +38,7 @@ function formatBirthdate(date: Date): string {
 
 export default function ChildProfileScreen() {
   const router = useRouter();
-  const { children, addChild, updateChild } = useAppData();
+  const { children, addChild, updateChild, deleteChild } = useAppData();
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
   const { showToast } = useToast();
@@ -136,6 +136,27 @@ export default function ChildProfileScreen() {
     router.back();
   };
 
+  const isMainChild = editingChild && children[0]?.id === editingChild.id;
+
+  const handleDelete = () => {
+    if (!editingChild) return;
+    showAlert({
+      title: '아이 프로필 삭제',
+      message: `정말 이 아이 프로필을 삭제하시겠습니까?\n${editingChild.name}`,
+      buttons: [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: () => {
+            deleteChild(editingChild.id);
+            router.back();
+          },
+        },
+      ],
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ title: '아이 프로필 설정' }} />
@@ -206,6 +227,12 @@ export default function ChildProfileScreen() {
         </View>
 
         {showErrors && <Text style={styles.summaryErrorText}>이름, 나이, 반 이름을 모두 입력해주세요</Text>}
+
+        {editingChild && !isMainChild && (
+          <Pressable style={styles.deleteLink} onPress={handleDelete}>
+            <Text style={styles.deleteLinkText}>아이 프로필 삭제</Text>
+          </Pressable>
+        )}
       </ScrollView>
 
       {/* Floating Action Button (Save) - Positioned exactly like Calendar */}
@@ -316,6 +343,8 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     chipText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
     chipTextSelected: { color: colors.cardWhite },
     summaryErrorText: { color: colors.tomorrowRed, fontSize: 12, fontWeight: '600', textAlign: 'center', marginTop: 8 },
+    deleteLink: { marginTop: 16, paddingVertical: 10 },
+    deleteLinkText: { color: colors.tomorrowRed, fontSize: 14, fontWeight: '700', textAlign: 'center' },
     fabContainer: {
       position: 'absolute',
       bottom: 20 + bottomInset,

@@ -16,6 +16,7 @@ import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handl
 import { runOnJS } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import BlackboardModal from '../components/home/BlackboardModal';
+import ScreenBackground from '../components/ScreenBackground';
 import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
 import EventCard from '../components/home/EventCard';
@@ -93,7 +94,6 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: colors.skyBackground,
     },
     scrollContent: {
       paddingBottom: 180 + bottomInset,
@@ -478,6 +478,7 @@ export default function CalendarScreen() {
   };
 
   return (
+    <ScreenBackground>
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen
         options={{
@@ -703,5 +704,6 @@ export default function CalendarScreen() {
 
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
     </SafeAreaView>
+    </ScreenBackground>
   );
 }

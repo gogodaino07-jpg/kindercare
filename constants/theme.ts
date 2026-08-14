@@ -38,6 +38,19 @@ export interface ThemeColors {
   orangeBorder: string;
   pinkBg: string;
   pinkText: string;
+  // Dot-grid screen background overlay
+  dotColor: string;
+  // Purple accent (AI scan CTA gradient)
+  purple500: string;
+  purpleDeep: string;
+  purpleBg: string;
+  // Vivid pastel card colors (Bag section / timeline)
+  pastelPink: string;
+  pastelPinkAccent: string;
+  pastelBlue: string;
+  pastelBlueAccent: string;
+  pastelOrange: string;
+  pastelOrangeAccent: string;
 }
 
 export const LIGHT_COLORS: ThemeColors = {
@@ -79,6 +92,16 @@ export const LIGHT_COLORS: ThemeColors = {
   orangeBorder: '#FFEDD5',
   pinkBg: '#FFE4E6',
   pinkText: '#E11D48',
+  dotColor: 'rgba(15, 23, 42, 0.06)',
+  purple500: '#8B5CF6',
+  purpleDeep: '#6D28D9',
+  purpleBg: '#F3E8FF',
+  pastelPink: '#FFC2D9',
+  pastelPinkAccent: '#EC4899',
+  pastelBlue: '#AAD4FF',
+  pastelBlueAccent: '#3B82F6',
+  pastelOrange: '#FFD9A0',
+  pastelOrangeAccent: '#F97316',
 };
 
 export const DARK_COLORS: ThemeColors = {
@@ -119,6 +142,16 @@ export const DARK_COLORS: ThemeColors = {
   orangeBorder: '#4A3224',
   pinkBg: '#3A211E',
   pinkText: '#FF7A6E',
+  dotColor: 'rgba(255, 255, 255, 0.05)',
+  purple500: '#A78BFA',
+  purpleDeep: '#7C3AED',
+  purpleBg: '#2E1F45',
+  pastelPink: '#4A2436',
+  pastelPinkAccent: '#F472B6',
+  pastelBlue: '#1E3A5F',
+  pastelBlueAccent: '#4299E1',
+  pastelOrange: '#4A3319',
+  pastelOrangeAccent: '#ED8936',
 };
 
 /** @deprecated Prefer `useThemeColors()` from context/ThemeContext for theme-reactive colors. Kept as the static light-mode fallback for screens not yet wired to the theme context. */

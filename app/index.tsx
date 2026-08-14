@@ -1,21 +1,18 @@
 import { Redirect, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View, TouchableOpacity, Linking, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdPopupModal from '../components/home/AdPopupModal';
-import AiScanSection from '../components/home/AiScanSection';
+import { AdventureHeader, AdventureNode } from '../components/home/AdventureTimeline';
+import BagSection from '../components/home/BagSection';
 import BlackboardModal from '../components/home/BlackboardModal';
 import ChildSwitcherSheet from '../components/home/ChildSwitcherSheet';
-import EmptyState from '../components/home/EmptyState';
-import EventListSection, { SuppliesSection, UpcomingHeader, UpcomingDateCard } from '../components/home/EventListSection';
-import HomeHeader from '../components/home/HomeHeader';
-import NotificationCenterModal from '../components/home/NotificationCenterModal';
-import WeeklyWeatherStrip, { WeatherCards, WeatherTip } from '../components/home/WeeklyWeatherStrip';
+import HomeEmptyContent from '../components/home/HomeEmptyContent';
+import HomeHeroHeader from '../components/home/HomeHeroHeader';
 import ScreenBackground from '../components/ScreenBackground';
 import CoupangBanner from '../components/common/CoupangBanner';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
-import { useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
@@ -28,13 +25,6 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     mainContainer: {
       flex: 1,
-    },
-    topCurve: {
-      backgroundColor: colors.cardWhite,
-      paddingBottom: 0,
-    },
-    contentPadding: {
-      paddingBottom: 20,
     },
     scrollContainer: {
       paddingBottom: 150 + bottomInset,
@@ -65,14 +55,6 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       fontSize: 14,
       fontWeight: '600',
     },
-    stickyHeaderContainer: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 10,
-      backgroundColor: '#FFFFFF',
-    },
     emptyUpcomingCard: {
       marginHorizontal: 20,
       marginTop: 12,
@@ -86,19 +68,9 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    emptyUpcomingIconBox: {
-      width: 54,
-      height: 54,
-      borderRadius: 18,
-      backgroundColor: '#FFFFFF',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 16,
-      ...SHADOW,
-      shadowOpacity: 0.05,
-    },
     emptyUpcomingEmoji: {
-      fontSize: 26,
+      fontSize: 36,
+      marginBottom: 12,
     },
     emptyUpcomingTitle: {
       fontSize: 16,
@@ -120,9 +92,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
 export default function HomeScreen() {
   const router = useRouter();
   const { hasOnboarded, selectedChild, events, googleAccount, onboardingLoaded } = useAppData();
-  const { isLocked, isBooting } = useAppLock();
   const insets = useSafeAreaInsets();
-  const { height: screenHeight } = useWindowDimensions();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
   const upcoming = useUpcomingEvents();
@@ -136,7 +106,6 @@ export default function HomeScreen() {
   const layoutMap = useRef<Record<string, number>>({});
   const [highlightedDate, setHighlightedDate] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [showStickyHeader, setShowStickyHeader] = useState(false);
 
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
 
@@ -193,66 +162,35 @@ export default function HomeScreen() {
     }
   }, [onboardingLoaded, hasOnboarded, googleAccount]);
 
-  const handleScroll = useCallback((event: any) => {
-    const y = event.nativeEvent.contentOffset.y;
-    // Show sticky header when we scroll past the HomeHeader (~80px)
-    if (y > 80) {
-      if (!showStickyHeader) setShowStickyHeader(true);
-    } else {
-      if (showStickyHeader) setShowStickyHeader(false);
-    }
-  }, [showStickyHeader]);
-
   const upcomingElements = useMemo(() => {
+    if (upcoming.isEmpty) {
+      return [] as React.ReactNode[];
+    }
+
     const elements: React.ReactNode[] = [];
-    const stickyIndices: number[] = [];
 
-    // Child 0: HomeHeader
     elements.push(
-      <View key="header" style={styles.topCurve}>
-        <HomeHeader
-          selectedChild={selectedChild}
-          onPressChild={() => setSwitcherOpen(true)}
-        />
-      </View>
-    );
-
-    // Child 1: WeatherCards (Sticky)
-    stickyIndices.push(elements.length);
-    elements.push(
-      <WeatherCards
-        key="weather-cards"
-        days={weather.days}
-        loading={weather.loading}
-        retry={weather.retry}
+      <HomeHeroHeader
+        key="hero-header"
+        selectedChild={selectedChild}
+        onPressChild={() => setSwitcherOpen(true)}
+        weatherDays={weather.days}
+        weatherLoading={weather.loading}
         onPressDate={onDatePress}
       />
     );
 
-    // Child 2: WeatherTip
     elements.push(
-      <View key="weather-tip" style={{ paddingBottom: 12 }}>
-        <WeatherTip
-          days={weather.days}
-          usingFallbackLocation={weather.usingFallbackLocation}
-          error={weather.error}
-          retry={weather.retry}
-        />
-      </View>
-    );
-
-    // Child 3: SuppliesSection
-    elements.push(
-      <SuppliesSection
-        key="supplies"
+      <BagSection
+        key="bag"
         mainEvents={upcoming.mainEvents}
+        secondaryEvents={upcoming.secondaryEvents}
         displayType={upcoming.displayType}
         onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
       />
     );
 
-    // Child 4: UpcomingHeader
-    elements.push(<UpcomingHeader key="upcoming-header" />);
+    elements.push(<AdventureHeader key="adventure-header" />);
 
     if (upcoming.laterGroups.length > 0) {
       upcoming.laterGroups.forEach((group, idx) => {
@@ -262,9 +200,10 @@ export default function HomeScreen() {
             collapsable={false}
             onLayout={(e) => onItemLayout(group.date, e.nativeEvent.layout.y)}
           >
-            <UpcomingDateCard
+            <AdventureNode
               group={group}
-              weather={weather.days?.find((d) => d.date === group.date)}
+              index={idx}
+              isLast={idx === upcoming.laterGroups.length - 1}
               isHighlighted={highlightedDate === group.date}
               onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
             />
@@ -274,17 +213,16 @@ export default function HomeScreen() {
     } else {
       elements.push(
         <View key="empty-upcoming" style={styles.emptyUpcomingCard}>
-          <Text style={styles.emptyUpcomingTitle}>아직 다가오는 일정이 없어요</Text>
-          <Text style={styles.emptyUpcomingSubtitle}>
-            가정통신문을 스캔하면{"\n"}여기에 일정이 예쁘게 정리돼요!
-          </Text>
+          <Text style={styles.emptyUpcomingEmoji}>🏝️</Text>
+          <Text style={styles.emptyUpcomingTitle}>이번 주는 특별한 일정이 없어요</Text>
+          <Text style={styles.emptyUpcomingSubtitle}>여유롭고 평화로운 한 주를 보내세요!</Text>
         </View>
       );
     }
 
-    return { elements, stickyIndices };
+    return elements;
 
-  }, [selectedChild, weather, upcoming, colors, styles, router, onDatePress, onItemLayout, highlightedDate]);
+  }, [upcoming, selectedChild, weather, styles, router, onDatePress, onItemLayout, highlightedDate]);
 
   if (!onboardingLoaded) {
     return null;
@@ -297,31 +235,26 @@ export default function HomeScreen() {
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={{ flex: 1 }}>
+        {upcoming.isEmpty ? (
+          <HomeEmptyContent
+            selectedChild={selectedChild}
+            onPressChild={() => setSwitcherOpen(true)}
+            weatherDays={weather.days}
+            weatherLoading={weather.loading}
+            onPressDate={onDatePress}
+          />
+        ) : (
           <ScrollView
             ref={scrollRef}
             style={styles.mainContainer}
             contentContainerStyle={styles.scrollContainer}
             showsVerticalScrollIndicator={false}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
             keyboardShouldPersistTaps="always"
             nestedScrollEnabled={true}
           >
-            {upcomingElements.elements}
+            {upcomingElements}
           </ScrollView>
-
-          {showStickyHeader && (
-            <View style={styles.stickyHeaderContainer}>
-              <WeatherCards
-                days={weather.days}
-                loading={weather.loading}
-                retry={weather.retry}
-                onPressDate={onDatePress}
-              />
-            </View>
-          )}
-        </View>
+        )}
       </SafeAreaView>
 
       {toastMessage && (
@@ -332,11 +265,11 @@ export default function HomeScreen() {
         </View>
       )}
 
-      <CoupangBanner style={styles.adBanner} />
+      {!upcoming.isEmpty && <CoupangBanner style={styles.adBanner} />}
 
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
-      <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />
+      {!upcoming.isEmpty && <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />}
     </ScreenBackground>
   );
 }

@@ -13,6 +13,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ScreenBackground from '../../components/ScreenBackground';
 import Text from '../../components/common/AppText';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
@@ -168,8 +169,9 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.skyBackground }]}>
-      <View style={[styles.container, { backgroundColor: colors.skyBackground }]}>
+    <ScreenBackground>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
 
         {/* 스크롤 영역 */}
         <ScrollView
@@ -261,6 +263,7 @@ export default function SettingsScreen() {
         </ScrollView>
       </View>
     </SafeAreaView>
+    </ScreenBackground>
   );
 }
 

@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ScreenBackground from '../../components/ScreenBackground';
 import Text from '../../components/common/AppText';
 import PatternGrid from '../../components/settings/PatternGrid';
-import ScreenBackground from '../../components/ScreenBackground';
 import { SHADOW } from '../../constants/theme';
 import { useAlert } from '../../context/AlertContext';
 import { LockMethod, serializePattern, useAppLock } from '../../context/AppLockContext';

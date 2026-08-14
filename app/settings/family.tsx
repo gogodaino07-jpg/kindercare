@@ -166,7 +166,7 @@ export default function FamilyMembersScreen() {
   };
 
   return (
-    <ScreenBackground hidePattern={true}>
+    <ScreenBackground>
       <Stack.Screen options={{ title: titleParam ?? '가족 계정' }} />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
@@ -297,7 +297,7 @@ export default function FamilyMembersScreen() {
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    safeArea: { flex: 1 },
+    safeArea: { flex: 1, backgroundColor: colors.gray50 },
     content: { padding: 20, paddingBottom: 120 },
     sectionLabel: {
       fontSize: 13,

@@ -132,7 +132,7 @@ function ThemedNavigation() {
                 headerLeftContainerStyle: {
                   paddingLeft: Platform.OS === 'android' ? 8 : 0,
                 },
-                contentStyle: { backgroundColor: colors.skyBackground },
+                contentStyle: { backgroundColor: colors.gray50 },
                 statusBarStyle: statusBarStyle,
               }}
             >

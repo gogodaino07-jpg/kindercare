@@ -16,6 +16,7 @@ import { useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { ChildAge } from '../types/models';
 import { ageFromBirthdate, toISODate } from '../utils/date';
+import { stripInvalidCharacters } from '../utils/validation';
 
 function formatBirthdate(date: Date): string {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
@@ -43,6 +44,7 @@ export default function OnboardingChildSetupScreen() {
 
   const [name, setName] = useState('');
   const [birthdate, setBirthdate] = useState<Date | null>(null);
+  const [className, setClassName] = useState('');
   const [showPicker, setShowPicker] = useState(Platform.OS === 'web');
   const [error, setError] = useState(false);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
@@ -52,7 +54,7 @@ export default function OnboardingChildSetupScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [showSourceSheet, setShowSourceSheet] = useState(false);
 
-  const canCreate = !!name.trim() && !!birthdate;
+  const canCreate = !!name.trim() && !!birthdate && !!className.trim();
 
   const openCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -94,6 +96,7 @@ export default function OnboardingChildSetupScreen() {
       name: name.trim(),
       age: ageFromBirthdate(birthdate),
       birthdate: toISODate(birthdate),
+      className: className.trim(),
       photoUri: photoUri ?? undefined
     });
     setShowPermissionModal(true);
@@ -198,6 +201,21 @@ export default function OnboardingChildSetupScreen() {
           )}
           {error && !birthdate ? (
             <Text style={styles.errorText}>생년월일을 선택해주세요</Text>
+          ) : null}
+
+          <Text style={styles.label}>반 이름</Text>
+          <TextInput
+            style={[styles.input, error && !className.trim() && styles.inputInvalid]}
+            value={className}
+            onChangeText={(t) => {
+              setClassName(stripInvalidCharacters(t));
+              setError(false);
+            }}
+            placeholder="예: 병아리반"
+            placeholderTextColor={colors.textSecondary}
+          />
+          {error && !className.trim() ? (
+            <Text style={styles.errorText}>반 이름을 입력해주세요</Text>
           ) : null}
         </View>
 
