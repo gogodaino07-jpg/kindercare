@@ -1,5 +1,6 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View, KeyboardAvoidingView, TouchableOpacity, Linking } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -78,7 +79,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       justifyContent: 'space-between',
       alignItems: 'center',
       backgroundColor: colors.gray50,
-      borderRadius: 16,
+      borderRadius: 20,
       paddingHorizontal: 16,
       paddingVertical: 14,
       borderWidth: 1,
@@ -110,7 +111,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     input: {
       backgroundColor: colors.gray50,
-      borderRadius: 16,
+      borderRadius: 20,
       paddingHorizontal: 16,
       paddingVertical: 14,
       fontSize: 15,
@@ -126,7 +127,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       gap: 8,
     },
     addButton: {
-      backgroundColor: colors.accent,
+      backgroundColor: colors.purple500,
       borderRadius: 16,
       paddingHorizontal: 16,
       justifyContent: 'center',
@@ -153,8 +154,8 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       justifyContent: 'center',
     },
     iconOptionSelected: {
-      backgroundColor: colors.lightBlueBg,
-      borderColor: colors.accent,
+      backgroundColor: colors.purpleBg,
+      borderColor: colors.purple500,
     },
     iconOptionText: {
       fontSize: 22,
@@ -168,7 +169,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     chip: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.lightBlueBg,
+      backgroundColor: colors.purpleBg,
       borderRadius: 10,
       paddingHorizontal: 12,
       paddingVertical: 8,
@@ -177,7 +178,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     chipText: {
       fontSize: 14,
-      color: colors.accent,
+      color: colors.purple500,
       fontWeight: '600',
       marginRight: 6,
     },
@@ -204,13 +205,12 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       zIndex: 100,
     },
     saveButton: {
-      backgroundColor: '#000000', // Changed to Black
       paddingVertical: 18,
       borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
       ...SHADOW,
-      shadowColor: '#000000',
+      shadowColor: colors.purpleDeep,
       shadowOpacity: 0.3,
       elevation: 5,
     },
@@ -317,6 +317,12 @@ export default function AddEventScreen() {
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea}>
+        <Stack.Screen
+          options={{
+            headerStyle: { backgroundColor: colors.cardWhite },
+            headerTitleStyle: { fontWeight: '800' },
+          }}
+        />
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}
@@ -441,12 +447,24 @@ export default function AddEventScreen() {
       {/* Floating Action Button (Save) - Outside KeyboardAvoidingView for exact sync with calendar.tsx */}
       <View style={styles.fabContainer}>
         <TouchableOpacity
-          style={[styles.saveButton, isSaveDisabled && styles.saveButtonDisabled]}
           onPress={handleSave}
           disabled={isSaveDisabled}
           activeOpacity={0.8}
         >
-          <Text style={styles.saveButtonText}>일정 저장하기</Text>
+          {isSaveDisabled ? (
+            <View style={[styles.saveButton, styles.saveButtonDisabled]}>
+              <Text style={styles.saveButtonText}>일정 저장하기</Text>
+            </View>
+          ) : (
+            <LinearGradient
+              colors={[colors.purple500, colors.purpleDeep]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.saveButton}
+            >
+              <Text style={styles.saveButtonText}>일정 저장하기</Text>
+            </LinearGradient>
+          )}
         </TouchableOpacity>
       </View>
       </SafeAreaView>

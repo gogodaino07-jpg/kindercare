@@ -12,6 +12,7 @@ import {
   Keyboard
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +31,15 @@ const DOT_COLORS = {
   review: '#F59E0B',
   manual: '#F43F5E',
 };
+
+/** Blends a hex color toward white by `amount` (0-1) to make it a paler shade. */
+function lighten(hex: string, amount: number): string {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, Math.round(((num >> 16) & 0xff) + (255 - ((num >> 16) & 0xff)) * amount));
+  const g = Math.min(255, Math.round(((num >> 8) & 0xff) + (255 - ((num >> 8) & 0xff)) * amount));
+  const b = Math.min(255, Math.round((num & 0xff) + (255 - (num & 0xff)) * amount));
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
 
 const SearchHeader = React.memo(({
   query,
@@ -177,14 +187,20 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       borderColor: colors.tomorrowRed,
     },
     dayCellToday: {
-      backgroundColor: colors.lightBlueBg,
-      borderWidth: 1,
-      borderColor: colors.accent,
+      backgroundColor: colors.purple500,
     },
     dayText: {
       fontSize: 14, // Restoration of recommended font size
       color: colors.textPrimary,
       fontWeight: '500',
+    },
+    dayTextSelected: {
+      color: colors.tomorrowRed,
+      fontWeight: 'bold',
+    },
+    dayTextToday: {
+      color: '#FFFFFF',
+      fontWeight: 'bold',
     },
     dotRow: {
       flexDirection: 'row',
@@ -214,22 +230,16 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       paddingTop: 10,
       borderTopWidth: 1,
       borderTopColor: colors.border,
-      gap: 20,
+      gap: 8,
     },
     legendItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-    },
-    legendDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
     },
     legendText: {
       fontSize: 12,
-      fontWeight: '500',
-      color: colors.textSecondary,
+      fontWeight: '700',
     },
     scheduleSection: {
       marginTop: 16,
@@ -310,6 +320,21 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       ...SHADOW,
       shadowOpacity: 0.03,
     },
+    eventCardRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    eventCardIconCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    eventCardIconEmoji: {
+      fontSize: 17,
+    },
     fabContainer: {
       position: 'absolute',
       bottom: 110 + bottomInset, // Increased from 95 to avoid overlap with ad banner
@@ -320,12 +345,11 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       width: 56,
       height: 56,
       borderRadius: 28,
-      backgroundColor: colors.textPrimary,
       alignItems: 'center',
       justifyContent: 'center',
       ...SHADOW,
-      shadowColor: colors.textPrimary,
-      shadowOpacity: 0.2,
+      shadowColor: colors.purpleDeep,
+      shadowOpacity: 0.25,
       elevation: 6,
     },
     fabPlus: {
@@ -483,6 +507,8 @@ export default function CalendarScreen() {
       <Stack.Screen
         options={{
           title: isSearching ? '' : '캘린더',
+          headerStyle: { backgroundColor: colors.cardWhite },
+          headerTitleStyle: { fontWeight: '800' },
           headerTitle: isSearching ? () => (
             <SearchHeader
               query={searchQuery}
@@ -588,16 +614,16 @@ export default function CalendarScreen() {
                   <TouchableOpacity
                     style={[
                       styles.dayCell,
-                      isSelected && styles.dayCellSelected,
-                      isToday && !isSelected && styles.dayCellToday
+                      isSelected && !isToday && styles.dayCellSelected,
+                      isToday && styles.dayCellToday
                     ]}
                     activeOpacity={0.7}
                     onPress={() => setSelectedDate(iso)}
                   >
                     <Text style={[
                       styles.dayText,
-                      isSelected && styles.dayTextSelected,
-                      isToday && !isSelected && styles.dayTextToday
+                      isSelected && !isToday && styles.dayTextSelected,
+                      isToday && styles.dayTextToday
                     ]}>
                       {dayNum}
                     </Text>
@@ -634,17 +660,14 @@ export default function CalendarScreen() {
           </View>
 
           <View style={styles.legendContainer}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.ai }]} />
-              <Text style={styles.legendText}>유치원 일정</Text>
+            <View style={[styles.legendItem, { backgroundColor: lighten(DOT_COLORS.ai, 0.8) }]}>
+              <Text style={[styles.legendText, { color: DOT_COLORS.ai }]}>유치원 일정</Text>
             </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.review }]} />
-              <Text style={styles.legendText}>확인 필요</Text>
+            <View style={[styles.legendItem, { backgroundColor: lighten(DOT_COLORS.review, 0.8) }]}>
+              <Text style={[styles.legendText, { color: DOT_COLORS.review }]}>확인 필요</Text>
             </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: DOT_COLORS.manual }]} />
-              <Text style={styles.legendText}>등록된 일정</Text>
+            <View style={[styles.legendItem, { backgroundColor: lighten(DOT_COLORS.manual, 0.8) }]}>
+              <Text style={[styles.legendText, { color: DOT_COLORS.manual }]}>등록된 일정</Text>
             </View>
           </View>
         </View>
@@ -674,17 +697,27 @@ export default function CalendarScreen() {
             contentContainerStyle={styles.eventList}
             showsVerticalScrollIndicator={false}
           >
-            {selectedDateEvents.map((e) => (
-              <View key={e.id} style={styles.eventCardWrapper}>
-                <EventCard
-                  event={e}
-                  showCoupangButton
-                  wrapNote
-                  hideCheckbox
-                  onPress={() => router.push({ pathname: '/edit-event', params: { id: e.id } })}
-                />
-              </View>
-            ))}
+            {selectedDateEvents.map((e) => {
+              const tint = dotColorFor(e.source, e.needsReview);
+              return (
+                <View key={e.id} style={[styles.eventCardWrapper, { backgroundColor: lighten(tint, 0.88) }]}>
+                  <View style={styles.eventCardRow}>
+                    <View style={[styles.eventCardIconCircle, { backgroundColor: colors.cardWhite }]}>
+                      <Text style={styles.eventCardIconEmoji}>{e.icon || '📌'}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <EventCard
+                        event={e}
+                        showCoupangButton
+                        wrapNote
+                        hideCheckbox
+                        onPress={() => router.push({ pathname: '/edit-event', params: { id: e.id } })}
+                      />
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
           </ScrollView>
         )}
       </View>
@@ -692,11 +725,17 @@ export default function CalendarScreen() {
       {/* Floating Action Button */}
       <View style={styles.fabContainer}>
         <TouchableOpacity
-          style={styles.fabButton}
           activeOpacity={0.8}
           onPress={() => router.push({ pathname: '/add-event', params: { date: selectedDate ?? todayISO } })}
         >
-          <Text style={styles.fabPlus}>+</Text>
+          <LinearGradient
+            colors={[colors.purple500, colors.purpleDeep]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fabButton}
+          >
+            <Text style={styles.fabPlus}>+</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
