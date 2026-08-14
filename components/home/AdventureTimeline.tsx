@@ -12,6 +12,15 @@ function getMarkerPalette(colors: ThemeColors): string[] {
   return [colors.peachOrangeDeep, colors.blue500, colors.pastelPinkAccent, colors.statusGreen, colors.purple500];
 }
 
+/** Blends a hex color toward white by `amount` (0-1) to make it a paler shade. */
+function lighten(hex: string, amount: number): string {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, Math.round(((num >> 16) & 0xff) + (255 - ((num >> 16) & 0xff)) * amount));
+  const g = Math.min(255, Math.round(((num >> 8) & 0xff) + (255 - ((num >> 8) & 0xff)) * amount));
+  const b = Math.min(255, Math.round((num & 0xff) + (255 - (num & 0xff)) * amount));
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
 /** "D-3" for future dates, "D-DAY" for today, "D+2" for past dates. */
 function computeDday(dateISO: string): string {
   const diffDays = Math.round(
@@ -62,9 +71,9 @@ export function AdventureNode({
 
       <View style={[styles.card, isHighlighted && styles.cardHighlighted]}>
         <View style={styles.cardHeader}>
-          <Text style={styles.dateText}>{formatMD(group.date)}</Text>
-          <View style={styles.ddayBadge}>
-            <Text style={styles.ddayText}>{ddayLabel}</Text>
+          <Text style={[styles.dateText, { color: markerColor }]}>{formatMD(group.date)}</Text>
+          <View style={[styles.ddayBadge, { backgroundColor: lighten(markerColor, 0.75) }]}>
+            <Text style={[styles.ddayText, { color: markerColor }]}>{ddayLabel}</Text>
           </View>
         </View>
 
@@ -166,10 +175,8 @@ function createNodeStyles(colors: ThemeColors) {
     dateText: {
       fontSize: 15,
       fontWeight: 'bold',
-      color: colors.gray900,
     },
     ddayBadge: {
-      backgroundColor: colors.lightBlueBg,
       borderRadius: 999,
       paddingHorizontal: 10,
       paddingVertical: 3,
@@ -177,7 +184,6 @@ function createNodeStyles(colors: ThemeColors) {
     ddayText: {
       fontSize: 12,
       fontWeight: '800',
-      color: colors.blue500,
     },
     eventRow: {},
     eventRowSpaced: {
@@ -188,7 +194,7 @@ function createNodeStyles(colors: ThemeColors) {
     },
     eventTitle: {
       fontSize: 14,
-      fontWeight: '700',
+      fontWeight: '800',
       color: colors.gray900,
       marginBottom: 2,
     },
