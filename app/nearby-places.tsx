@@ -412,7 +412,7 @@ function createStyles(colors: ThemeColors) {
       color: '#FFFFFF',
     },
     heroTitle: {
-      fontSize: 17,
+      fontSize: 20,
       fontWeight: '800',
       color: '#FFFFFF',
       letterSpacing: -0.3,
