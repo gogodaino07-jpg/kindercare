@@ -39,7 +39,7 @@ const MAX_DOCS = 5;
 export default function UploadScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const { selectedChild, events, googleAccount } = useAppData();
+  const { selectedChild, events, googleAccount, addMealPlans } = useAppData();
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
   const { showToast } = useToast();
@@ -314,7 +314,7 @@ export default function UploadScreen() {
       const session = AnalysisResultStore.getSession();
       if (session) session.shouldReplaceSimilar = true;
     }
-    showToast('분석 완료하였습니다');
+    showToast(mealPlans.length > 0 ? '분석 완료! 식단표도 함께 저장했어요 🍱' : '분석 완료하였습니다');
     router.push('/ai-review');
   };
 
@@ -343,6 +343,13 @@ export default function UploadScreen() {
     const count = await AIUsageLimitService.consume(googleAccount?.email);
     setRemainingAnalyses(count);
     setAnalyzing(false);
+
+    // Meal plans don't need review — save them right away so they show up
+    // in the home screen's meal popup even if the user never finishes
+    // reviewing/saving the events below (or there are no events at all).
+    if (mealPlans.length > 0) {
+      addMealPlans(mealPlans);
+    }
 
     // Check for duplicate/similar events already in calendar
     const duplicateResults = result.filter((newEvent) =>

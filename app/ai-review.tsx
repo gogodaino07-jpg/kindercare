@@ -24,7 +24,7 @@ import { AnalysisResultStore, AnalysisLogService } from '../features/newsletter-
 import { AIReviewEventItem } from '../features/newsletter-analysis/components/AIReviewEventItem';
 import { AIReviewBottomSheet } from '../features/newsletter-analysis/components/AIReviewBottomSheet';
 import { ZoomableImage } from '../features/newsletter-analysis/components/ZoomableImage';
-import { DraftEvent, DraftMealPlan } from '../features/newsletter-analysis/types';
+import { DraftEvent } from '../features/newsletter-analysis/types';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const MIN_SHEET_HEIGHT = SCREEN_HEIGHT * 0.4;
@@ -39,7 +39,7 @@ function isImminent(isoDate: string): boolean {
 export default function AIReviewScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const { children, selectedChild, addEvents, addMealPlans } = useAppData();
+  const { children, selectedChild, addEvents } = useAppData();
   const { showAlert } = useAlert();
   const { addNotification } = useNotificationCenter();
   const insets = useSafeAreaInsets();
@@ -48,17 +48,12 @@ export default function AIReviewScreen() {
 
   const session = useMemo(() => AnalysisResultStore.getSession(), []);
   const originalEvents = useMemo(() => session?.initialEvents ?? [], [session]);
-  const originalMealPlans = useMemo(() => session?.mealPlans ?? [], [session]);
   const docs = useMemo(() => session?.docs ?? [], [session]);
 
   const [draftEvents, setDraftEvents] = useState<DraftEvent[]>(() => {
     const source = originalEvents.length > 0 ? originalEvents : generateMockAIEvents(selectedChild);
     return source.map((e, i) => ({ ...e, localId: `draft-${i}` }));
   });
-
-  const [draftMealPlans, setDraftMealPlans] = useState<DraftMealPlan[]>(() =>
-    originalMealPlans.map((m, i) => ({ ...m, localId: `meal-draft-${i}` }))
-  );
 
   const [isSaved, setIsSaved] = useState(false);
 
@@ -209,16 +204,10 @@ export default function AIReviewScreen() {
     // Pass the replace flag from session to addEvents
     addEvents(finalWithoutIds, { replaceSimilar: !!session?.shouldReplaceSimilar });
 
-    if (draftMealPlans.length > 0) {
-      const finalMealPlans = draftMealPlans.map(({ localId, ...rest }) => rest);
-      addMealPlans(finalMealPlans);
-    }
-
     const keyword = draftEvents.find((e) => e.note?.trim())?.note;
-    const mealPlanSuffix = draftMealPlans.length > 0 ? ' 이번주 식단표도 함께 저장했어요!' : '';
     addNotification({
       title: '가정통신문 분석 완료',
-      body: `${draftEvents.length}건의 일정이 캘린더에 저장됐어요.${mealPlanSuffix}`,
+      body: `${draftEvents.length}건의 일정이 캘린더에 저장됐어요.`,
       keyword,
       date: draftEvents[0]?.date,
     });
