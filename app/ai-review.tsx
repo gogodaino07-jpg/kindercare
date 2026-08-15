@@ -8,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  Modal,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -95,10 +94,6 @@ export default function AIReviewScreen() {
   // Date Picker State
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [dateTargetId, setDateTargetId] = useState<string | null>(null);
-
-  // Age/Class Picker State
-  const [showAgePicker, setShowAgePicker] = useState(false);
-  const [ageTargetId, setAgeTargetId] = useState<string | null>(null);
 
   // Bottom Sheet Animation
   const currentSheetY = useRef(SCREEN_HEIGHT - MIN_SHEET_HEIGHT);
@@ -190,11 +185,6 @@ export default function AIReviewScreen() {
     setShowDatePicker(true);
   };
 
-  const handleAgePress = (localId: string) => {
-    setAgeTargetId(localId);
-    setShowAgePicker(true);
-  };
-
   const handleSave = async () => {
     if (draftEvents.length === 0) return;
 
@@ -282,13 +272,10 @@ export default function AIReviewScreen() {
                 <AIReviewEventItem
                   key={ev.localId}
                   event={ev}
-                  child={children.find((c) => c.id === ev.childId)}
                   isEditing={editingId === ev.localId}
                   onEditToggle={() => setEditingId(editingId === ev.localId ? null : ev.localId)}
                   onUpdate={(patch) => updateDraft(ev.localId, patch)}
                   onDelete={() => deleteDraft(ev.localId)}
-                  onDatePress={() => handleDatePress(ev.localId)}
-                  onAgePress={() => handleAgePress(ev.localId)}
                   colors={colors}
                 />
               ))}
@@ -314,26 +301,6 @@ export default function AIReviewScreen() {
           }}
         />
       )}
-
-      {/* Age/Class Picker Modal */}
-      <Modal visible={showAgePicker} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>대상 아이 선택</Text>
-            {children.map(c => (
-              <Pressable key={c.id} style={styles.childOption} onPress={() => {
-                if (ageTargetId) updateDraft(ageTargetId, { childId: c.id });
-                setShowAgePicker(false);
-              }}>
-                <Text style={styles.childOptionText}>{c.name} ({c.age}세 · {c.className || '반 정보 없음'})</Text>
-              </Pressable>
-            ))}
-            <Pressable style={styles.modalCloseButton} onPress={() => setShowAgePicker(false)}>
-              <Text style={styles.modalCloseButtonText}>닫기</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -359,12 +326,5 @@ function createStyles(colors: ThemeColors) {
     chevron: { fontSize: 16, color: colors.textSecondary },
     addButton: { marginTop: 12, paddingVertical: 12, alignItems: 'center', borderRadius: 12, borderWidth: 1.5, borderColor: colors.accent, borderStyle: 'dashed' },
     addButtonText: { fontSize: 12, fontWeight: '700', color: colors.accent },
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
-    modalContent: { width: '85%', backgroundColor: '#FFF', borderRadius: 20, padding: 24 },
-    modalTitle: { fontSize: 18, fontWeight: '800', color: '#111', marginBottom: 20, textAlign: 'center' },
-    childOption: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#EEE' },
-    childOptionText: { fontSize: 15, color: '#333', textAlign: 'center' },
-    modalCloseButton: { marginTop: 20, paddingVertical: 12, backgroundColor: '#EEE', borderRadius: 12 },
-    modalCloseButtonText: { fontSize: 14, color: '#666', textAlign: 'center', fontWeight: '700' },
   });
 }

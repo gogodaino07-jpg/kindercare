@@ -4,17 +4,13 @@ import Text from '../../../components/common/AppText';
 import { ThemeColors } from '../../../constants/theme';
 import { DraftEvent } from '../types';
 import { stripInvalidCharacters } from '../../../utils/validation';
-import { Child } from '../../../types/models';
 
 interface AIReviewEventItemProps {
   event: DraftEvent;
-  child?: Child;
   isEditing: boolean;
   onEditToggle: () => void;
   onUpdate: (patch: Partial<DraftEvent>) => void;
   onDelete: () => void;
-  onDatePress: () => void;
-  onAgePress: () => void;
   colors: ThemeColors;
 }
 
@@ -24,13 +20,10 @@ const MEMO_MAX_LENGTH = 200;
 
 export const AIReviewEventItem = ({
   event,
-  child,
   isEditing,
   onEditToggle,
   onUpdate,
   onDelete,
-  onDatePress,
-  onAgePress,
   colors,
 }: AIReviewEventItemProps) => {
   const styles = createStyles(colors);
@@ -52,7 +45,6 @@ export const AIReviewEventItem = ({
             <Text style={styles.eventTitle}>
               {event.icon ? `${event.icon} ` : ''}
               {event.title}
-              {child?.name ? ` · ${child.name}` : ''}
               {hasReviewHint && <Text style={{ color: colors.tomorrowRed }}> 🔴</Text>}
             </Text>
           )}
@@ -80,14 +72,6 @@ export const AIReviewEventItem = ({
             placeholder="📝 메모 (선택 입력)"
             placeholderTextColor={colors.textSecondary}
           />
-          <View style={styles.editingControls}>
-            <Pressable style={styles.editButton} onPress={onDatePress}>
-              <Text style={styles.editButtonText}>📅 날짜 변경</Text>
-            </Pressable>
-            <Pressable style={styles.editButton} onPress={onAgePress}>
-              <Text style={styles.editButtonText}>👶 반/연령 선택</Text>
-            </Pressable>
-          </View>
         </>
       ) : (
         <>
@@ -128,9 +112,6 @@ function createStyles(colors: ThemeColors) {
     memoTag: { alignSelf: 'flex-start', backgroundColor: colors.gray100, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginTop: 6 },
     memoTagText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
     noteInput: { fontSize: 13, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, marginTop: 8, backgroundColor: colors.gray50 },
-    editingControls: { flexDirection: 'row', gap: 8, marginTop: 10 },
-    editButton: { flex: 1, backgroundColor: colors.lightBlueBg, paddingVertical: 8, alignItems: 'center', borderRadius: 8, borderWidth: 1, borderColor: colors.blue100 },
-    editButtonText: { fontSize: 11, fontWeight: '700', color: colors.blue500 },
     reviewBadgeRow: { marginTop: 8, padding: 8, backgroundColor: '#FEF2F2', borderRadius: 8 },
     reviewBadge: { fontSize: 11, fontWeight: '900', color: colors.tomorrowRed, marginBottom: 2 },
     reviewReason: { fontSize: 11, color: colors.textSecondary },
