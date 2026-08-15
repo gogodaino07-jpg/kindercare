@@ -309,8 +309,9 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     eventList: {
       gap: 8,
-      paddingHorizontal: 44,
-      paddingBottom: 190 + bottomInset, // Clears the floating add-event button (bottom 110 + height 56)
+      paddingLeft: 44,
+      paddingRight: 76, // Wider than the floating add-event button's footprint (right 20 + width 48) so cards never render under it
+      paddingBottom: 190 + bottomInset,
     },
     eventCardWrapper: {
       backgroundColor: colors.cardWhite,
@@ -335,14 +336,14 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     fabContainer: {
       position: 'absolute',
-      bottom: 110 + bottomInset, // Increased from 95 to avoid overlap with ad banner
+      bottom: 118 + bottomInset, // Increased from 95 to avoid overlap with ad banner
       right: 20,
       zIndex: 100,
     },
     fabButton: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
       alignItems: 'center',
       justifyContent: 'center',
       ...SHADOW,
@@ -352,7 +353,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     fabPlus: {
       color: colors.cardWhite,
-      fontSize: 32,
+      fontSize: 28,
       fontWeight: '300',
       marginTop: -2,
     },
