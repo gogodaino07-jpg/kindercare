@@ -379,6 +379,9 @@ function createStyles(colors: ThemeColors) {
     todayTipBox: {
       flexDirection: 'row',
       alignItems: 'center',
+      alignSelf: 'center',
+      justifyContent: 'center',
+      maxWidth: '100%',
       gap: 8,
       backgroundColor: 'rgba(255,255,255,0.18)',
       borderRadius: 12,
@@ -386,7 +389,7 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 8,
     },
     todayTipText: {
-      flex: 1,
+      flexShrink: 1,
       fontSize: 13,
       fontWeight: '600',
       color: '#FFFFFF',
