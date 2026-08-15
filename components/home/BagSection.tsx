@@ -78,7 +78,7 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
     <View style={styles.container}>
       <View style={styles.sectionHeaderRow}>
         <View style={styles.sectionHeaderLeft}>
-          <Text style={styles.sectionEmoji}>🌞</Text>
+          <Text style={styles.sectionEmoji}>🐥</Text>
           <Text style={styles.sectionTitle}>오늘 일정</Text>
         </View>
         {mainEvents.length > 0 && (
@@ -114,7 +114,7 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
       {secondaryEvents.length > 0 && (
         <>
           <View style={styles.secondaryHeaderRow}>
-            <Text style={styles.sectionEmoji}>🌛</Text>
+            <Text style={styles.sectionEmoji}>🌟</Text>
             <Text style={styles.sectionTitle}>내일 일정</Text>
           </View>
           <ScrollView
