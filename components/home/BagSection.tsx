@@ -9,8 +9,9 @@ import Text from '../common/AppText';
 import EventIcon from '../common/EventIcon';
 
 interface BagSectionProps {
+  /** Today's events, shown as the main cards. */
   mainEvents: Event[];
-  /** Today's leftover events once the main focus has shifted to tomorrow (afternoon) — shown de-emphasized below the main cards. */
+  /** Tomorrow's events, shown de-emphasized below the main cards. */
   secondaryEvents: Event[];
   displayType: 'TODAY' | 'TOMORROW';
   onEventPress: (event: Event) => void;
@@ -109,15 +110,15 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
       {secondaryEvents.length > 0 && (
         <>
           <View style={styles.secondaryHeaderRow}>
-            <Text style={styles.sectionEmoji}>📍</Text>
-            <Text style={styles.sectionTitle}>오늘 진행한 일정</Text>
+            <Text style={styles.sectionEmoji}>📅</Text>
+            <Text style={styles.sectionTitle}>내일 일정</Text>
           </View>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            {secondaryEvents.map((event) => renderCard(event, '오늘', true))}
+            {secondaryEvents.map((event) => renderCard(event, '내일', true))}
           </ScrollView>
         </>
       )}

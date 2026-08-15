@@ -9,10 +9,11 @@ export interface EventDateGroup {
 }
 
 export interface UpcomingEvents {
+  /** Today's events — always shown regardless of the current time. */
   mainEvents: Event[];
-  /** Today's leftover events when the main focus has shifted to tomorrow (afternoon). Empty in the morning, since mainEvents already covers today. */
+  /** Tomorrow's events — always shown alongside today's, regardless of the current time. */
   secondaryEvents: Event[];
-  featuredLaterEvents: Event[]; // New: Next 3 days of events when after 10 AM
+  featuredLaterEvents: Event[];
   displayType: 'TODAY' | 'TOMORROW';
   laterGroups: EventDateGroup[];
   isEmpty: boolean;
@@ -23,16 +24,11 @@ export function useUpcomingEvents(): UpcomingEvents {
 
   return useMemo(() => {
     const now = new Date();
-    const currentHour = now.getHours();
     const todayISO = toISODate(now);
 
     const tomorrowDate = new Date(now);
     tomorrowDate.setDate(now.getDate() + 1);
     const tomorrowISO = toISODate(tomorrowDate);
-
-    const isMorning = currentHour < 10;
-    const displayType = isMorning ? 'TODAY' : 'TOMORROW';
-    const mainDateISO = isMorning ? todayISO : tomorrowISO;
 
     const weekLaterDate = new Date(now);
     weekLaterDate.setDate(now.getDate() + 7);
@@ -42,15 +38,12 @@ export function useUpcomingEvents(): UpcomingEvents {
       .filter((e) => e.childId === selectedChild?.id && e.date >= todayISO && e.date < weekLaterISO)
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    const mainEvents = upcoming.filter((e) => e.date === mainDateISO);
+    const mainEvents = upcoming.filter((e) => e.date === todayISO);
+    const secondaryEvents = upcoming.filter((e) => e.date === tomorrowISO);
 
-    // In the afternoon, focus shifts to tomorrow — but today's leftover events still need
-    // surfacing (just de-emphasized), not silently dropped or mixed into the future timeline.
-    const secondaryEvents = isMorning ? [] : upcoming.filter((e) => e.date === todayISO);
-
-    // Filter events for the "Upcoming" timeline (excluding the main focused date AND today,
-    // so today's events never leak into the future-adventures section).
-    const laterEvents = upcoming.filter((e) => e.date !== mainDateISO && e.date !== todayISO);
+    // Filter events for the "Upcoming" timeline (excluding today and tomorrow,
+    // which already have their own dedicated cards above).
+    const laterEvents = upcoming.filter((e) => e.date !== todayISO && e.date !== tomorrowISO);
 
     const groupsByDate = new Map<string, Event[]>();
     for (const event of laterEvents) {
@@ -72,7 +65,7 @@ export function useUpcomingEvents(): UpcomingEvents {
       mainEvents,
       secondaryEvents,
       featuredLaterEvents,
-      displayType,
+      displayType: 'TODAY',
       laterGroups,
       isEmpty: !hasVisibleContent,
     };
