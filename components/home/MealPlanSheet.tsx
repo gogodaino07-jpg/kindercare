@@ -201,9 +201,11 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
                 const isToday = d.date === todayISO;
                 return (
                   <View key={d.date} style={[styles.weekCard, isToday && styles.weekCardToday]}>
-                    <Text style={[styles.weekCardDate, isToday && styles.weekCardDateToday]}>
-                      {d.weekday} · {formatMD(d.date).split('(')[0]}
-                    </Text>
+                    <View style={[styles.weekCardDateHeader, isToday && styles.weekCardDateHeaderToday]}>
+                      <Text style={[styles.weekCardDate, isToday && styles.weekCardDateToday]}>
+                        {d.weekday} · {formatMD(d.date).split('(')[0]}
+                      </Text>
+                    </View>
                     {d.plan ? (
                       d.plan.menu.map((item, i) => (
                         <Text key={i} style={styles.weekCardMenuItem}>
@@ -321,12 +323,22 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.lightBlueBg,
       borderColor: colors.blue100,
     },
+    weekCardDateHeader: {
+      marginHorizontal: -14,
+      marginTop: -14,
+      paddingVertical: 8,
+      marginBottom: 10,
+      borderBottomWidth: 1.5,
+      borderBottomColor: colors.border,
+    },
+    weekCardDateHeaderToday: {
+      borderBottomColor: colors.blue100,
+    },
     weekCardDate: {
       fontSize: 12,
       fontWeight: '900',
       color: colors.gray900,
       textAlign: 'center',
-      marginBottom: 10,
     },
     weekCardDateToday: {
       color: colors.blue500,
@@ -336,12 +348,14 @@ function createStyles(colors: ThemeColors) {
       lineHeight: 17,
       color: colors.gray900,
       fontWeight: '600',
+      textAlign: 'center',
       marginBottom: 5,
     },
     weekCardEmpty: {
       fontSize: 12,
       color: colors.gray400,
       fontStyle: 'italic',
+      textAlign: 'center',
     },
     closeButton: {
       marginTop: 16,
