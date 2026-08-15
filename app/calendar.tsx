@@ -360,7 +360,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     adBanner: {
       position: 'absolute',
-      bottom: 12 + bottomInset,
+      bottom: 4 + bottomInset,
       left: 0,
       right: 0,
       zIndex: 100,

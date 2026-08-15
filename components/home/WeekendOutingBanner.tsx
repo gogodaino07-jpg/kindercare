@@ -1,5 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
@@ -25,6 +26,8 @@ export default function WeekendOutingBanner() {
     outputRange: ['-10deg', '10deg'],
   });
   const loopRef = useRef<Animated.CompositeAnimation | null>(null);
+  const ctaScale = useRef(new Animated.Value(1)).current;
+  const arrowNudge = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     let cancelled = false;
@@ -75,12 +78,36 @@ export default function WeekendOutingBanner() {
     return () => loopRef.current?.stop();
   }, [place, bubbleScale, bubbleWiggle]);
 
+  // A small repeating "go" nudge on the arrow — hints that the button leads
+  // somewhere, independent of the press feedback below.
+  useEffect(() => {
+    if (!place) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(arrowNudge, { toValue: 5, duration: 400, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(arrowNudge, { toValue: 0, duration: 400, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+        Animated.delay(500),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [place, arrowNudge]);
+
+  const handlePressIn = () => {
+    Animated.spring(ctaScale, { toValue: 0.92, useNativeDriver: true, friction: 5 }).start();
+  };
+  const handlePressOut = () => {
+    Animated.spring(ctaScale, { toValue: 1, useNativeDriver: true, friction: 3, tension: 200 }).start();
+  };
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    router.push({ pathname: '/nearby-places', params: { areaCode: DEFAULT_AREA_CODE } });
+  };
+
   if (!place) return null;
 
   return (
-    <Pressable
-      onPress={() => router.push({ pathname: '/nearby-places', params: { areaCode: DEFAULT_AREA_CODE } })}
-    >
+    <Pressable onPress={handlePress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
       <LinearGradient
         colors={[colors.pastelOrangeAccent, colors.pastelPinkAccent, colors.purpleDeep]}
         start={{ x: 0, y: 0 }}
@@ -96,9 +123,12 @@ export default function WeekendOutingBanner() {
           <Text style={styles.placeName}>{place.title}</Text> 어때요?
         </Text>
 
-        <View style={styles.ctaButton}>
-          <Text style={styles.ctaButtonText}>보러가기 →</Text>
-        </View>
+        <Animated.View style={[styles.ctaButton, { transform: [{ scale: ctaScale }] }]}>
+          <Text style={styles.ctaButtonText}>보러가기</Text>
+          <Animated.Text style={[styles.ctaButtonArrow, { transform: [{ translateX: arrowNudge }] }]}>
+            →
+          </Animated.Text>
+        </Animated.View>
 
         <View style={styles.mascotWrap}>
           <Animated.View
@@ -158,6 +188,8 @@ function createStyles(colors: ThemeColors) {
     },
     ctaButton: {
       marginTop: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
       alignSelf: 'flex-start',
       backgroundColor: '#FFFFFF',
       borderRadius: 999,
@@ -168,6 +200,12 @@ function createStyles(colors: ThemeColors) {
       fontSize: 14,
       fontWeight: '800',
       color: colors.purpleDeep,
+    },
+    ctaButtonArrow: {
+      fontSize: 15,
+      fontWeight: '900',
+      color: colors.pastelPinkAccent,
+      marginLeft: 5,
     },
     mascotWrap: {
       position: 'absolute',
