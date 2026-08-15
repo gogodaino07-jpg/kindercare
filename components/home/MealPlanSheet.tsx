@@ -323,8 +323,9 @@ function createStyles(colors: ThemeColors) {
     },
     weekCardDate: {
       fontSize: 12,
-      fontWeight: '800',
+      fontWeight: '900',
       color: colors.gray900,
+      textAlign: 'center',
       marginBottom: 10,
     },
     weekCardDateToday: {
