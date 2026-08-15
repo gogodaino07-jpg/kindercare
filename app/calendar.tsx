@@ -310,7 +310,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     eventList: {
       gap: 8,
       paddingHorizontal: 44,
-      paddingBottom: 80,
+      paddingBottom: 190 + bottomInset, // Clears the floating add-event button (bottom 110 + height 56)
     },
     eventCardWrapper: {
       backgroundColor: colors.cardWhite,
