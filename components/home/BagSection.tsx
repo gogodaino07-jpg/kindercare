@@ -213,6 +213,7 @@ function BagCard({
         <Animated.View
           style={[
             styles.completeButton,
+            centered && styles.completeButtonCentered,
             muted
               ? [styles.completeButtonMuted, { borderColor: colors.gray400 }, isDone && { backgroundColor: colors.gray400, borderColor: colors.gray400 }]
               : { backgroundColor: isDone ? colors.gray900 : category.accent },
@@ -234,6 +235,7 @@ function BagCard({
         <Text
           style={[
             styles.completeButtonText,
+            centered && styles.completeButtonTextCentered,
             muted && !isDone && { color: colors.gray500 },
           ]}
         >
@@ -353,9 +355,14 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
     },
     cardTitleCentered: {
       textAlign: 'center',
+      fontSize: 20,
+      marginBottom: 6,
     },
     cardDescriptionCentered: {
       textAlign: 'center',
+      fontSize: 15,
+      lineHeight: 20,
+      minHeight: 0,
     },
     completeButtonWrapCentered: {
       alignSelf: 'center',
@@ -366,7 +373,13 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       justifyContent: 'center',
       borderRadius: 999,
       paddingVertical: 9,
+      paddingHorizontal: 16,
       marginTop: 10,
+    },
+    completeButtonCentered: {
+      paddingVertical: 12,
+      paddingHorizontal: 28,
+      marginTop: 16,
     },
     completeButtonMuted: {
       backgroundColor: colors.cardWhite,
@@ -376,6 +389,9 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       fontSize: 12,
       fontWeight: '800',
       color: '#FFFFFF',
+    },
+    completeButtonTextCentered: {
+      fontSize: 14,
     },
     emptyCard: {
       marginHorizontal: SIDE_PADDING,
