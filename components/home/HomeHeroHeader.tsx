@@ -8,7 +8,7 @@ import { useThemeColors } from '../../context/ThemeContext';
 import { WeatherDay } from '../../hooks/useWeeklyWeather';
 import { Child } from '../../types/models';
 import { formatMD } from '../../utils/date';
-import { describeGuideTip } from '../../utils/weatherCode';
+import { describeGuideTip, describeShortTip } from '../../utils/weatherCode';
 import Text from '../common/AppText';
 
 interface HomeHeroHeaderProps {
@@ -234,6 +234,11 @@ function MiniWeatherCard({
         {day ? ` ${formatMD(day.date)}` : ''}
       </Text>
       <Text style={styles.emoji}>{day?.emoji ?? '🌡️'}</Text>
+      {day && (
+        <Text style={styles.tip} numberOfLines={1}>
+          {describeShortTip(day.label)}
+        </Text>
+      )}
       <Text style={styles.temp}>{day ? `${day.tempMax}°` : '--'}</Text>
     </Pressable>
   );
@@ -455,6 +460,7 @@ function createMiniCardStyles(colors: ThemeColors) {
       paddingVertical: 10,
       paddingHorizontal: 12,
       justifyContent: 'center',
+      alignItems: 'center',
     },
     peach: {
       backgroundColor: colors.orangeLight1,
@@ -472,6 +478,7 @@ function createMiniCardStyles(colors: ThemeColors) {
       fontSize: 12,
       fontWeight: '700',
       color: colors.gray600,
+      textAlign: 'center',
       marginBottom: 4,
     },
     emoji: {
@@ -482,6 +489,13 @@ function createMiniCardStyles(colors: ThemeColors) {
       fontSize: 18,
       fontWeight: '800',
       color: colors.gray900,
+    },
+    tip: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.gray500,
+      textAlign: 'center',
+      marginVertical: 4,
     },
   });
 }
