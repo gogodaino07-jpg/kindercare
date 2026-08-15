@@ -147,6 +147,19 @@ export default function NearbyPlacesScreen() {
     setSort('recommend');
   };
 
+  // On first open (no explicit area passed in, e.g. from the weekend-outing
+  // banner), silently use the device's already-granted location instead of
+  // defaulting to Seoul — but only if permission was already granted; this
+  // must never itself trigger the permission prompt, which stays a
+  // user-initiated action via the refresh button.
+  useEffect(() => {
+    if (initialAreaCode) return;
+    Location.getForegroundPermissionsAsync().then(({ status }) => {
+      if (status === 'granted') resolveLocation();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const provinceLabel = AREA_OPTIONS.find((a) => a.code === areaCode)?.label ?? '서울';
   const areaDisplayName = coords && gpsAreaName ? `${provinceLabel} ${gpsAreaName}` : provinceLabel;
 
