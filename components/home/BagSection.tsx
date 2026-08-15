@@ -156,7 +156,7 @@ function BagCard({
   // "내일" cards (tomorrow's items shown as the main focus) get an even paler
   // card background than "오늘" cards — button color stays the normal accent.
   const isTomorrowCard = !muted && badgeText === '내일';
-  const cardBg = muted ? colors.gray100 : lighten(category.bg, isTomorrowCard ? 0.92 : 0.4);
+  const cardBg = muted ? colors.gray100 : lighten(category.bg, isTomorrowCard ? 0.92 : 0.6);
 
   // Fades the whole card when marked done, so "완료" reads as a finished
   // task rather than just a button color flip.
