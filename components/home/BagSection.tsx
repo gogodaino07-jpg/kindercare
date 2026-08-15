@@ -207,30 +207,32 @@ function BagCard({
           </View>
         </Pressable>
 
-        <Pressable style={styles.singleRowButtonWrap} onPress={handleTogglePress}>
-          <Animated.View
-            style={[
-              styles.completeButton,
-              styles.singleRowCompleteButton,
-              muted
-                ? [styles.completeButtonMuted, { borderColor: colors.gray400 }, isDone && { backgroundColor: colors.gray400, borderColor: colors.gray400 }]
-                : { backgroundColor: isDone ? colors.gray900 : category.accent },
-              { transform: [{ scale: buttonScale }] },
-            ]}
-          >
+        <View style={styles.singleRowButtonWrap}>
+          <Pressable onPress={handleTogglePress}>
             <Animated.View
-              style={{
-                transform: [{ scale: checkScale }],
-                marginRight: checkScale.interpolate({ inputRange: [0, 1], outputRange: [0, 4] }),
-              }}
+              style={[
+                styles.completeButton,
+                styles.singleRowCompleteButton,
+                muted
+                  ? [styles.completeButtonMuted, { borderColor: colors.gray400 }, isDone && { backgroundColor: colors.gray400, borderColor: colors.gray400 }]
+                  : { backgroundColor: isDone ? colors.gray900 : category.accent },
+                { transform: [{ scale: buttonScale }] },
+              ]}
             >
-              <MaterialIcons name="check" size={14} color={muted && !isDone ? colors.gray500 : '#FFFFFF'} />
+              <Animated.View
+                style={{
+                  transform: [{ scale: checkScale }],
+                  marginRight: checkScale.interpolate({ inputRange: [0, 1], outputRange: [0, 4] }),
+                }}
+              >
+                <MaterialIcons name="check" size={14} color={muted && !isDone ? colors.gray500 : '#FFFFFF'} />
+              </Animated.View>
+              <Text style={[styles.completeButtonText, muted && !isDone && { color: colors.gray500 }]}>
+                {isDone ? '완료!' : '확인'}
+              </Text>
             </Animated.View>
-            <Text style={[styles.completeButtonText, muted && !isDone && { color: colors.gray500 }]}>
-              {isDone ? '완료!' : '확인'}
-            </Text>
-          </Animated.View>
-        </Pressable>
+          </Pressable>
+        </View>
       </Animated.View>
     );
   }
@@ -432,12 +434,9 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
-      flex: 1,
-      minWidth: 0,
     },
     singleRowTextBlock: {
-      flex: 1,
-      minWidth: 0,
+      flexShrink: 1,
     },
     singleRowBadge: {
       alignSelf: 'flex-start',
@@ -454,7 +453,9 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       paddingHorizontal: 14,
     },
     singleRowButtonWrap: {
-      alignSelf: 'center',
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     emptyCard: {
       marginHorizontal: SIDE_PADDING,
