@@ -173,10 +173,6 @@ export default function AIReviewScreen() {
     if (editingId === localId) setEditingId(null);
   };
 
-  const deleteDraftMealPlan = (localId: string) => {
-    setDraftMealPlans((prev) => prev.filter((m) => m.localId !== localId));
-  };
-
   const addDraftForDate = (date: string) => {
     const localId = `draft-new-${Date.now()}`;
     setDraftEvents((prev) => [
@@ -269,25 +265,6 @@ export default function AIReviewScreen() {
         onSave={handleSave}
         isSaveDisabled={draftEvents.length === 0}
       >
-        {draftMealPlans.length > 0 && (
-          <View style={styles.mealPlanSection}>
-            <View style={styles.mealPlanBanner}>
-              <Text style={styles.mealPlanBannerText}>🍱 이번주 식단표도 발견했어요!</Text>
-            </View>
-            {draftMealPlans.map((m) => (
-              <View key={m.localId} style={styles.mealPlanRow}>
-                <View style={styles.mealPlanRowTop}>
-                  <Text style={styles.mealPlanDate}>🗓️ {formatMD(m.date)}</Text>
-                  <Pressable onPress={() => deleteDraftMealPlan(m.localId)} style={styles.trashButton}>
-                    <Text style={styles.trashIcon}>🗑️</Text>
-                  </Pressable>
-                </View>
-                <Text style={styles.mealPlanMenu}>{m.menu.join(' · ')}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
         {groups.map((group) => {
           const collapsed = group.events.length >= 2 && collapsedDates.has(group.date);
           return (
@@ -377,44 +354,6 @@ function createStyles(colors: ThemeColors) {
     container: { flex: 1, backgroundColor: '#000' },
     backgroundContainer: { height: SCREEN_HEIGHT - MIN_SHEET_HEIGHT, width: SCREEN_WIDTH },
     bgImage: { width: SCREEN_WIDTH, height: SCREEN_HEIGHT - MIN_SHEET_HEIGHT },
-    mealPlanSection: {
-      backgroundColor: colors.pastelOrange,
-      borderRadius: 16,
-      padding: 14,
-      marginBottom: 14,
-    },
-    mealPlanBanner: {
-      marginBottom: 10,
-    },
-    mealPlanBannerText: {
-      fontSize: 14,
-      fontWeight: '800',
-      color: colors.gray900,
-    },
-    mealPlanRow: {
-      backgroundColor: colors.cardWhite,
-      borderRadius: 12,
-      padding: 12,
-      marginBottom: 8,
-    },
-    mealPlanRowTop: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 4,
-    },
-    mealPlanDate: {
-      fontSize: 13,
-      fontWeight: '700',
-      color: colors.gray900,
-    },
-    mealPlanMenu: {
-      fontSize: 13,
-      color: colors.textSecondary,
-      lineHeight: 19,
-    },
-    trashButton: { padding: 4 },
-    trashIcon: { fontSize: 14 },
     dateCard: {
       backgroundColor: colors.cardWhite,
       borderRadius: 16,
