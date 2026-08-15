@@ -199,12 +199,12 @@ function createStyles(colors: ThemeColors) {
     ctaButtonText: {
       fontSize: 14,
       fontWeight: '800',
-      color: colors.purpleDeep,
+      color: '#5B21B6',
     },
     ctaButtonArrow: {
       fontSize: 15,
       fontWeight: '900',
-      color: colors.pastelPinkAccent,
+      color: '#DB2777',
       marginLeft: 5,
     },
     mascotWrap: {
