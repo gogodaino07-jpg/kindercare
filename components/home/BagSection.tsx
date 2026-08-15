@@ -418,6 +418,7 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       color: '#FFFFFF',
     },
     singleRowCard: {
+      width: cardWidth,
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
