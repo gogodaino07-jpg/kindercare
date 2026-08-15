@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { DEFAULT_AREA_CODE, fetchNearbyPlaces, NearbyPlace } from '../../features/nearby-places';
@@ -18,6 +18,13 @@ export default function WeekendOutingBanner() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [place, setPlace] = useState<NearbyPlace | null>(null);
+  const bubbleScale = useRef(new Animated.Value(0)).current;
+  const bubbleWiggle = useRef(new Animated.Value(0)).current;
+  const bubbleRotate = bubbleWiggle.interpolate({
+    inputRange: [-1, 1],
+    outputRange: ['-10deg', '10deg'],
+  });
+  const loopRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,6 +39,41 @@ export default function WeekendOutingBanner() {
       cancelled = true;
     };
   }, []);
+
+  // Pop the speech bubble in, then keep it wiggling side-to-side with a
+  // scale pulse — reads as the mascot excitedly chiming in "저요 저요!",
+  // not just decoration.
+  useEffect(() => {
+    if (!place) return;
+    bubbleScale.setValue(0);
+    Animated.spring(bubbleScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 4,
+      tension: 60,
+    }).start(() => {
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.delay(500),
+          Animated.parallel([
+            Animated.sequence([
+              Animated.timing(bubbleWiggle, { toValue: -1, duration: 90, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+              Animated.timing(bubbleWiggle, { toValue: 1, duration: 90, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+              Animated.timing(bubbleWiggle, { toValue: -0.6, duration: 90, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+              Animated.timing(bubbleWiggle, { toValue: 0, duration: 90, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+            ]),
+            Animated.sequence([
+              Animated.timing(bubbleScale, { toValue: 1.14, duration: 150, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+              Animated.timing(bubbleScale, { toValue: 1, duration: 210, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+            ]),
+          ]),
+        ])
+      );
+      loop.start();
+      loopRef.current = loop;
+    });
+    return () => loopRef.current?.stop();
+  }, [place, bubbleScale, bubbleWiggle]);
 
   if (!place) return null;
 
@@ -59,10 +101,12 @@ export default function WeekendOutingBanner() {
         </View>
 
         <View style={styles.mascotWrap}>
-          <View style={styles.bubble}>
+          <Animated.View
+            style={[styles.bubble, { transform: [{ scale: bubbleScale }, { rotate: bubbleRotate }] }]}
+          >
             <Text style={styles.bubbleText}>저요 저요!</Text>
             <View style={styles.bubbleTail} />
-          </View>
+          </Animated.View>
           <Text style={styles.mascot}>🧸</Text>
         </View>
       </LinearGradient>
