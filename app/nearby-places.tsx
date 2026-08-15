@@ -28,6 +28,34 @@ function formatDistance(meters?: number): string | null {
   return `${(meters / 1000).toFixed(1)}km`;
 }
 
+/** Matches a reverse-geocoded province/metro name (e.g. "인천광역시") to an AREA_OPTIONS code. */
+function matchAreaCode(regionName?: string | null): string | undefined {
+  if (!regionName) return undefined;
+  const normalized = regionName.replace(/(특별자치시|특별자치도|광역시|특별시|자치도|도)$/, '');
+  return AREA_OPTIONS.find((a) => normalized.startsWith(a.label) || a.label.startsWith(normalized))?.code;
+}
+
+/**
+ * A fresh GPS fix can occasionally take a long time on a second/third request
+ * in a row (the OS location provider throttles rapid repeated high-accuracy
+ * requests). Races it against a timeout and falls back to the last known
+ * position so repeated taps stay snappy instead of hanging.
+ */
+async function getPositionWithFallback(): Promise<Location.LocationObject> {
+  try {
+    return await Promise.race([
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+      new Promise<Location.LocationObject>((_, reject) =>
+        setTimeout(() => reject(new Error('location-timeout')), 6000)
+      ),
+    ]);
+  } catch {
+    const cached = await Location.getLastKnownPositionAsync();
+    if (cached) return cached;
+    throw new Error('위치를 가져오지 못했어요');
+  }
+}
+
 export default function NearbyPlacesScreen() {
   const router = useRouter();
   const { areaCode: initialAreaCode } = useLocalSearchParams<{ areaCode?: string }>();
@@ -47,13 +75,20 @@ export default function NearbyPlacesScreen() {
   const [permissionModalVisible, setPermissionModalVisible] = useState(false);
   const [gpsAreaName, setGpsAreaName] = useState<string | null>(null);
 
+  // When coords is set, the area filter doesn't affect the fetch at all (the
+  // API call switches to a radius search around the coords) — excluding it
+  // from `effectiveAreaCode` keeps `load`'s identity stable while GPS resolves
+  // the matching region in the background, so that update doesn't trigger a
+  // redundant second fetch on top of the one coords already triggered.
+  const effectiveAreaCode = coords ? undefined : areaCode;
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const result = await fetchNearbyPlaces({
         coords,
-        areaCode: coords ? undefined : areaCode,
+        areaCode: effectiveAreaCode,
         category,
         sort,
       });
@@ -63,7 +98,7 @@ export default function NearbyPlacesScreen() {
     } finally {
       setLoading(false);
     }
-  }, [coords, areaCode, category, sort]);
+  }, [coords, effectiveAreaCode, category, sort]);
 
   useEffect(() => {
     load();
@@ -81,14 +116,16 @@ export default function NearbyPlacesScreen() {
   const resolveLocation = async () => {
     setLocating(true);
     try {
-      const position = await withExternalAction(() =>
-        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
-      );
+      const position = await withExternalAction(getPositionWithFallback);
       const nextCoords = { latitude: position.coords.latitude, longitude: position.coords.longitude };
       setCoords(nextCoords);
       setSort('distance');
       Location.reverseGeocodeAsync(nextCoords)
-        .then(([place]) => setGpsAreaName(place?.district || place?.city || place?.region || null))
+        .then(([place]) => {
+          setGpsAreaName(place?.district || place?.city || null);
+          const matchedCode = matchAreaCode(place?.region);
+          if (matchedCode) setAreaCode(matchedCode);
+        })
         .catch(() => setGpsAreaName(null));
     } catch {
       setError('현재 위치를 가져오지 못했어요');
@@ -110,8 +147,8 @@ export default function NearbyPlacesScreen() {
     setSort('recommend');
   };
 
-  const areaDisplayName =
-    (coords ? gpsAreaName : null) ?? AREA_OPTIONS.find((a) => a.code === areaCode)?.label ?? '서울';
+  const provinceLabel = AREA_OPTIONS.find((a) => a.code === areaCode)?.label ?? '서울';
+  const areaDisplayName = coords && gpsAreaName ? `${provinceLabel} ${gpsAreaName}` : provinceLabel;
 
   return (
     <ScreenBackground>
@@ -136,7 +173,7 @@ export default function NearbyPlacesScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.locationStatusBar}>
             <Text style={styles.locationStatusText} numberOfLines={1}>
-              현재 위치: <Text style={styles.locationStatusAreaBold}>{areaDisplayName}</Text> 근처
+              현재 위치:{'  '}<Text style={styles.locationStatusAreaBold}>{areaDisplayName}</Text> 근처
             </Text>
             <Pressable onPress={handlePressLocate} disabled={locating} hitSlop={10}>
               {locating ? (
@@ -152,7 +189,7 @@ export default function NearbyPlacesScreen() {
               label="지역"
               options={AREA_OPTIONS.map((area) => ({ value: area.code, label: area.label }))}
               selectedValue={areaCode}
-              selectedLabel={coords ? '현재 위치' : (AREA_OPTIONS.find((a) => a.code === areaCode)?.label ?? '지역')}
+              selectedLabel={AREA_OPTIONS.find((a) => a.code === areaCode)?.label ?? (coords ? '현재 위치' : '지역')}
               onSelect={handleSelectArea}
               colors={colors}
             />
