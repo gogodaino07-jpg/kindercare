@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
-import { DEFAULT_AREA_CODE, fetchNearbyPlaces, NearbyPlace } from '../../features/nearby-places';
+import { DEFAULT_AREA_CODE, fetchNearbyPlaces, loadLastAreaCode, NearbyPlace } from '../../features/nearby-places';
 import Text from '../common/AppText';
 
 /**
@@ -19,6 +19,7 @@ export default function WeekendOutingBanner() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [place, setPlace] = useState<NearbyPlace | null>(null);
+  const [areaCode, setAreaCode] = useState(DEFAULT_AREA_CODE);
   const bubbleScale = useRef(new Animated.Value(0)).current;
   const bubbleWiggle = useRef(new Animated.Value(0)).current;
   const bubbleRotate = bubbleWiggle.interpolate({
@@ -31,13 +32,18 @@ export default function WeekendOutingBanner() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchNearbyPlaces({ areaCode: DEFAULT_AREA_CODE, category: 'all', sort: 'recommend' })
-      .then((places) => {
-        if (!cancelled) setPlace(places[0] ?? null);
-      })
-      .catch(() => {
+    (async () => {
+      const savedAreaCode = (await loadLastAreaCode()) || DEFAULT_AREA_CODE;
+      try {
+        const places = await fetchNearbyPlaces({ areaCode: savedAreaCode, category: 'all', sort: 'recommend' });
+        if (!cancelled) {
+          setPlace(places[0] ?? null);
+          setAreaCode(savedAreaCode);
+        }
+      } catch {
         if (!cancelled) setPlace(null);
-      });
+      }
+    })();
     return () => {
       cancelled = true;
     };
@@ -101,7 +107,7 @@ export default function WeekendOutingBanner() {
   };
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    router.push({ pathname: '/nearby-places', params: { areaCode: DEFAULT_AREA_CODE } });
+    router.push({ pathname: '/nearby-places', params: { areaCode } });
   };
 
   if (!place) return null;

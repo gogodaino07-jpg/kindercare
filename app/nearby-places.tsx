@@ -18,6 +18,7 @@ import {
   NearbyPlace,
   PlaceCategory,
   PlaceSort,
+  saveLastAreaCode,
 } from '../features/nearby-places';
 import { withExternalAction } from '../utils/externalAction';
 import { openYeogiSearch } from '../utils/travelLinks';
@@ -135,7 +136,10 @@ export default function NearbyPlacesScreen() {
           const districtName = place?.district || place?.city || null;
           const matchedCode = matchAreaCode(place?.region);
           setGpsAreaName(districtName);
-          if (matchedCode) setAreaCode(matchedCode);
+          if (matchedCode) {
+            setAreaCode(matchedCode);
+            saveLastAreaCode(matchedCode);
+          }
           locationCache = {
             coords: nextCoords,
             areaCode: matchedCode ?? DEFAULT_AREA_CODE,
@@ -162,6 +166,7 @@ export default function NearbyPlacesScreen() {
     setAreaCode(code);
     setCoords(undefined);
     setSort('recommend');
+    saveLastAreaCode(code);
   };
 
   // On first open (no explicit area passed in, e.g. from the weekend-outing
