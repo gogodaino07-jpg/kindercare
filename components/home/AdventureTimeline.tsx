@@ -93,6 +93,15 @@ export function AdventureNode({
 
 const NOTE_COLLAPSED_LINES = 2;
 
+/** Renders 준비물 as a single comma-separated line instead of one item per line. */
+function formatNoteInline(note: string): string {
+  return note
+    .split(/\n|,(?!\d)|\.(?!\d)/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join(',');
+}
+
 function AdventureEventRow({
   event,
   spaced,
@@ -106,7 +115,7 @@ function AdventureEventRow({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [truncated, setTruncated] = useState(false);
-  const noteContent = event.note || event.memo;
+  const noteContent = event.note ? formatNoteInline(event.note) : event.memo;
 
   return (
     <Pressable style={[styles.eventRow, spaced && styles.eventRowSpaced]} onPress={onPress}>
