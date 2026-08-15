@@ -207,7 +207,7 @@ function BagCard({
           </View>
         </Pressable>
 
-        <Pressable onPress={handleTogglePress}>
+        <Pressable style={styles.singleRowButtonWrap} onPress={handleTogglePress}>
           <Animated.View
             style={[
               styles.completeButton,
@@ -452,6 +452,9 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
     singleRowCompleteButton: {
       marginTop: 0,
       paddingHorizontal: 14,
+    },
+    singleRowButtonWrap: {
+      alignSelf: 'center',
     },
     emptyCard: {
       marginHorizontal: SIDE_PADDING,
