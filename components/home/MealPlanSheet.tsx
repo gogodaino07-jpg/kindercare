@@ -335,7 +335,7 @@ function createStyles(colors: ThemeColors) {
       borderBottomColor: colors.blue100,
     },
     weekCardDate: {
-      fontSize: 12,
+      fontSize: 13.5,
       fontWeight: '900',
       color: colors.gray900,
       textAlign: 'center',
