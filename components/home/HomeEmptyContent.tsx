@@ -13,6 +13,7 @@ interface HomeEmptyContentProps {
   selectedChild: Child | undefined;
   onPressChild: () => void;
   onPressMeal: () => void;
+  onPressPlaces: () => void;
   weatherDays: WeatherDay[] | null;
   weatherLoading: boolean;
   onPressDate: (date: string) => void;
@@ -22,6 +23,7 @@ export default function HomeEmptyContent({
   selectedChild,
   onPressChild,
   onPressMeal,
+  onPressPlaces,
   weatherDays,
   weatherLoading,
   onPressDate,
@@ -36,6 +38,7 @@ export default function HomeEmptyContent({
         selectedChild={selectedChild}
         onPressChild={onPressChild}
         onPressMeal={onPressMeal}
+        onPressPlaces={onPressPlaces}
         weatherDays={weatherDays}
         weatherLoading={weatherLoading}
         onPressDate={onPressDate}

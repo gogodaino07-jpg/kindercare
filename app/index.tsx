@@ -182,6 +182,7 @@ export default function HomeScreen() {
         selectedChild={selectedChild}
         onPressChild={() => setSwitcherOpen(true)}
         onPressMeal={() => setMealSheetOpen(true)}
+        onPressPlaces={() => router.push('/nearby-places')}
         weatherDays={weather.days}
         weatherLoading={weather.loading}
         onPressDate={onDatePress}
@@ -248,6 +249,7 @@ export default function HomeScreen() {
             selectedChild={selectedChild}
             onPressChild={() => setSwitcherOpen(true)}
             onPressMeal={() => setMealSheetOpen(true)}
+            onPressPlaces={() => router.push('/nearby-places')}
             weatherDays={weather.days}
             weatherLoading={weather.loading}
             onPressDate={onDatePress}

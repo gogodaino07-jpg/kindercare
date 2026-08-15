@@ -15,6 +15,7 @@ interface HomeHeroHeaderProps {
   selectedChild: Child | undefined;
   onPressChild: () => void;
   onPressMeal: () => void;
+  onPressPlaces: () => void;
   weatherDays: WeatherDay[] | null;
   weatherLoading: boolean;
   onPressDate: (date: string) => void;
@@ -33,6 +34,7 @@ export default function HomeHeroHeader({
   selectedChild,
   onPressChild,
   onPressMeal,
+  onPressPlaces,
   weatherDays,
   weatherLoading,
   onPressDate,
@@ -89,10 +91,13 @@ export default function HomeHeroHeader({
           )}
         </Pressable>
 
-        {/* A thought bubble "hovering" over the avatar, tail pointing down at
-            it — reads as the kid's own thought, not part of the profile tap target. */}
+        {/* Thought bubbles "hovering" over the avatar, tails pointing down at
+            it — read as the kid's own thoughts, not part of the profile tap target. */}
+        <View style={styles.placesButtonSlot}>
+          <ThoughtBubble text={'오늘은\n어디가지? 🗺️'} onPress={onPressPlaces} mirror />
+        </View>
         <View style={styles.mealButtonSlot}>
-          <MealThoughtBubble onPress={onPressMeal} />
+          <ThoughtBubble text={'오늘 점심은\n뭐지? 🍚'} onPress={onPressMeal} />
         </View>
       </View>
 
@@ -142,8 +147,8 @@ export default function HomeHeroHeader({
   );
 }
 
-/** A cartoon "thought bubble" over the avatar's head that opens the meal-plan popup — idle-bounces to invite a tap. Same onPress logic as before, just a different shell. */
-function MealThoughtBubble({ onPress }: { onPress: () => void }) {
+/** A cartoon "thought bubble" over the avatar's head — idle-bounces to invite a tap. `mirror` flips it to the left side of the avatar, tail included. */
+function ThoughtBubble({ text, onPress, mirror }: { text: string; onPress: () => void; mirror?: boolean }) {
   const colors = useThemeColors();
   const styles = useMemo(() => createMealButtonStyles(colors), [colors]);
   const bounceAnim = useRef(new Animated.Value(0)).current;
@@ -185,17 +190,17 @@ function MealThoughtBubble({ onPress }: { onPress: () => void }) {
   return (
     <Animated.View
       style={[
-        styles.wrapper,
+        mirror ? styles.wrapperMirror : styles.wrapper,
         { transform: [{ translateY: bounceAnim }, { scale: scaleAnim }] },
       ]}
     >
       <Pressable onPress={handlePress} onPressIn={handlePressIn} onPressOut={handlePressOut} hitSlop={10}>
         <View style={styles.bubble}>
-          <Text style={styles.bubbleText}>오늘 점심은{'\n'}뭐지? 🍚</Text>
+          <Text style={styles.bubbleText}>{text}</Text>
         </View>
         {/* Trailing thought-bubble dots, curling down toward the avatar */}
-        <View style={styles.tailDotMedium} />
-        <View style={styles.tailDotSmall} />
+        <View style={mirror ? styles.tailDotMediumMirror : styles.tailDotMedium} />
+        <View style={mirror ? styles.tailDotSmallMirror : styles.tailDotSmall} />
       </Pressable>
     </Animated.View>
   );
@@ -281,6 +286,11 @@ function createStyles(colors: ThemeColors) {
       position: 'absolute',
       top: 14,
       right: 32,
+    },
+    placesButtonSlot: {
+      position: 'absolute',
+      top: 14,
+      left: 16,
     },
     avatarContainer: {
       width: AVATAR_SIZE,
@@ -408,6 +418,9 @@ function createMealButtonStyles(colors: ThemeColors) {
     wrapper: {
       alignItems: 'flex-end',
     },
+    wrapperMirror: {
+      alignItems: 'flex-start',
+    },
     bubble: {
       minWidth: 114,
       backgroundColor: colors.cardWhite,
@@ -444,6 +457,28 @@ function createMealButtonStyles(colors: ThemeColors) {
       position: 'absolute',
       bottom: -16,
       left: 12,
+      width: 7,
+      height: 7,
+      borderRadius: 3.5,
+      backgroundColor: colors.cardWhite,
+      borderWidth: 2,
+      borderColor: colors.orangeBorder,
+    },
+    tailDotMediumMirror: {
+      position: 'absolute',
+      bottom: -9,
+      right: 22,
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: colors.cardWhite,
+      borderWidth: 2,
+      borderColor: colors.orangeBorder,
+    },
+    tailDotSmallMirror: {
+      position: 'absolute',
+      bottom: -16,
+      right: 12,
       width: 7,
       height: 7,
       borderRadius: 3.5,

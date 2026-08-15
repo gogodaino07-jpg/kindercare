@@ -149,6 +149,7 @@ function ThemedNavigation() {
               <Stack.Screen name="ai-review" options={{ title: 'AI 확인·수정' }} />
               <Stack.Screen name="save-complete" options={{ headerShown: false }} />
               <Stack.Screen name="past-events" options={{ title: '지난 일정' }} />
+              <Stack.Screen name="nearby-places" options={{ title: '나들이 장소 추천' }} />
               <Stack.Screen name="child-profile" options={{ title: '아이 프로필 설정' }} />
               <Stack.Screen name="edit-event" options={{ title: '일정 수정' }} />
               <Stack.Screen name="settings/index" options={{ title: '설정' }} />

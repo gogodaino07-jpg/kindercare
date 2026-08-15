@@ -15,7 +15,9 @@
       "supportsTablet": true,
       "infoPlist": {
         "LSApplicationQueriesSchemes": [
-          "coupang"
+          "coupang",
+          "goodchoice",
+          "yanolja"
         ]
       }
     },
