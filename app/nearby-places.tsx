@@ -56,6 +56,16 @@ async function getPositionWithFallback(): Promise<Location.LocationObject> {
   }
 }
 
+const LOCATION_CACHE_TTL_MS = 60 * 60 * 1000; // 1시간
+
+/**
+ * Module-level (not React state) so it survives navigating away from and
+ * back to this screen within the same app session — re-entering the screen
+ * shouldn't re-hit GPS/reverse-geocoding every time. The manual refresh
+ * button bypasses this and always fetches fresh, updating the cache.
+ */
+let locationCache: { coords: Coords; areaCode: string; gpsAreaName: string | null; timestamp: number } | null = null;
+
 export default function NearbyPlacesScreen() {
   const router = useRouter();
   const { areaCode: initialAreaCode } = useLocalSearchParams<{ areaCode?: string }>();
@@ -122,9 +132,16 @@ export default function NearbyPlacesScreen() {
       setSort('distance');
       Location.reverseGeocodeAsync(nextCoords)
         .then(([place]) => {
-          setGpsAreaName(place?.district || place?.city || null);
+          const districtName = place?.district || place?.city || null;
           const matchedCode = matchAreaCode(place?.region);
+          setGpsAreaName(districtName);
           if (matchedCode) setAreaCode(matchedCode);
+          locationCache = {
+            coords: nextCoords,
+            areaCode: matchedCode ?? DEFAULT_AREA_CODE,
+            gpsAreaName: districtName,
+            timestamp: Date.now(),
+          };
         })
         .catch(() => setGpsAreaName(null));
     } catch {
@@ -151,9 +168,18 @@ export default function NearbyPlacesScreen() {
   // banner), silently use the device's already-granted location instead of
   // defaulting to Seoul — but only if permission was already granted; this
   // must never itself trigger the permission prompt, which stays a
-  // user-initiated action via the refresh button.
+  // user-initiated action via the refresh button. Re-entering the screen
+  // within an hour reuses the cached fix instead of re-fetching every time;
+  // only the manual refresh button always forces a fresh GPS read.
   useEffect(() => {
     if (initialAreaCode) return;
+    if (locationCache && Date.now() - locationCache.timestamp < LOCATION_CACHE_TTL_MS) {
+      setCoords(locationCache.coords);
+      setAreaCode(locationCache.areaCode);
+      setGpsAreaName(locationCache.gpsAreaName);
+      setSort('distance');
+      return;
+    }
     Location.getForegroundPermissionsAsync().then(({ status }) => {
       if (status === 'granted') resolveLocation();
     });
