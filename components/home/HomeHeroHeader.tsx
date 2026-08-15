@@ -290,7 +290,7 @@ function createStyles(colors: ThemeColors) {
     placesButtonSlot: {
       position: 'absolute',
       top: 14,
-      left: 16,
+      left: 21,
     },
     avatarContainer: {
       width: AVATAR_SIZE,
