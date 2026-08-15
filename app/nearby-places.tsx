@@ -45,6 +45,7 @@ export default function NearbyPlacesScreen() {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [permissionModalVisible, setPermissionModalVisible] = useState(false);
+  const [gpsAreaName, setGpsAreaName] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -83,8 +84,12 @@ export default function NearbyPlacesScreen() {
       const position = await withExternalAction(() =>
         Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
       );
-      setCoords({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+      const nextCoords = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+      setCoords(nextCoords);
       setSort('distance');
+      Location.reverseGeocodeAsync(nextCoords)
+        .then(([place]) => setGpsAreaName(place?.district || place?.city || place?.region || null))
+        .catch(() => setGpsAreaName(null));
     } catch {
       setError('현재 위치를 가져오지 못했어요');
     } finally {
@@ -104,6 +109,9 @@ export default function NearbyPlacesScreen() {
     setCoords(undefined);
     setSort('recommend');
   };
+
+  const areaDisplayName =
+    (coords ? gpsAreaName : null) ?? AREA_OPTIONS.find((a) => a.code === areaCode)?.label ?? '서울';
 
   return (
     <ScreenBackground>
@@ -126,15 +134,18 @@ export default function NearbyPlacesScreen() {
 
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
-          <Pressable style={styles.locateButton} onPress={handlePressLocate} disabled={locating}>
-            {locating ? (
-              <ActivityIndicator color={colors.accent} />
-            ) : (
-              <Text style={styles.locateButtonText}>
-                📍 {coords ? '현재 위치로 다시 찾기' : '현재 위치로 찾기'}
-              </Text>
-            )}
-          </Pressable>
+          <View style={styles.locationStatusBar}>
+            <Text style={styles.locationStatusText} numberOfLines={1}>
+              현재 위치: <Text style={styles.locationStatusAreaBold}>{areaDisplayName}</Text> 근처
+            </Text>
+            <Pressable onPress={handlePressLocate} disabled={locating} hitSlop={10}>
+              {locating ? (
+                <ActivityIndicator size="small" color="#7C3AED" />
+              ) : (
+                <Text style={styles.locationRefreshIcon}>⟳</Text>
+              )}
+            </Pressable>
+          </View>
 
           <View style={styles.dropdownRow}>
             <Dropdown
@@ -369,21 +380,34 @@ function createStyles(colors: ThemeColors) {
       color: '#FFFFFF',
       letterSpacing: -0.3,
     },
-    locateButton: {
-      backgroundColor: colors.cardWhite,
-      borderRadius: 16,
-      borderWidth: 1.5,
-      borderColor: colors.accent,
-      paddingVertical: 14,
+    locationStatusBar: {
+      flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.cardWhite,
+      borderRadius: 999,
+      paddingHorizontal: 18,
+      paddingVertical: 14,
       marginBottom: 20,
       ...SHADOW,
       shadowOpacity: 0.08,
+      elevation: 2,
     },
-    locateButtonText: {
-      fontSize: 15,
+    locationStatusText: {
+      flexShrink: 1,
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    locationStatusAreaBold: {
+      fontWeight: '900',
+      color: colors.textPrimary,
+    },
+    locationRefreshIcon: {
+      fontSize: 20,
       fontWeight: '800',
-      color: colors.accent,
+      color: '#7C3AED',
+      marginLeft: 10,
     },
     filterSection: {
       marginBottom: 16,
