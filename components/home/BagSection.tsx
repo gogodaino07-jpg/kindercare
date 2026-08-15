@@ -39,10 +39,14 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
   const router = useRouter();
   const colors = useThemeColors();
   const { width: screenWidth } = useWindowDimensions();
-  const cardWidth = mainEvents.length === 1
-    ? screenWidth - SIDE_PADDING * 2
-    : Math.min(220, Math.max(150, (screenWidth - SIDE_PADDING * 2 - CARD_GAP) / 2));
-  const styles = useMemo(() => createStyles(colors, cardWidth), [colors, cardWidth]);
+  const cardWidthFor = (count: number) =>
+    count === 1
+      ? screenWidth - SIDE_PADDING * 2
+      : Math.min(220, Math.max(150, (screenWidth - SIDE_PADDING * 2 - CARD_GAP) / 2));
+  const mainCardWidth = cardWidthFor(mainEvents.length);
+  const secondaryCardWidth = cardWidthFor(secondaryEvents.length);
+  const styles = useMemo(() => createStyles(colors, mainCardWidth), [colors, mainCardWidth]);
+  const secondaryStyles = useMemo(() => createStyles(colors, secondaryCardWidth), [colors, secondaryCardWidth]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const dateBadgeText = displayType === 'TODAY' ? '오늘' : '내일';
 
@@ -55,7 +59,7 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
     });
   };
 
-  const renderCard = (event: Event, badgeText: string, muted: boolean, singleRow = false) => (
+  const renderCard = (event: Event, badgeText: string, muted: boolean, cardStyles: typeof styles, singleRow = false) => (
     <BagCard
       key={event.id}
       event={event}
@@ -66,7 +70,7 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
       onToggleComplete={() => toggleComplete(event.id)}
       onPress={() => onEventPress(event)}
       colors={colors}
-      styles={styles}
+      styles={cardStyles}
     />
   );
 
@@ -103,7 +107,7 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {mainEvents.map((event) => renderCard(event, dateBadgeText, false, mainEvents.length === 1))}
+          {mainEvents.map((event) => renderCard(event, dateBadgeText, false, styles, mainEvents.length === 1))}
         </ScrollView>
       )}
 
@@ -116,9 +120,9 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={secondaryStyles.scrollContent}
           >
-            {secondaryEvents.map((event) => renderCard(event, '내일', true))}
+            {secondaryEvents.map((event) => renderCard(event, '내일', true, secondaryStyles, secondaryEvents.length === 1))}
           </ScrollView>
         </>
       )}
