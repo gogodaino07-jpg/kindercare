@@ -452,6 +452,7 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       marginTop: 1,
     },
     singleRowCompleteButton: {
+      width: 84,
       marginTop: 0,
       paddingHorizontal: 14,
     },
