@@ -158,7 +158,7 @@ export default function NearbyPlacesScreen() {
         end={{ x: 1, y: 1 }}
         style={[styles.heroHeader, { paddingTop: insets.top + 10 }]}
       >
-        <Text style={styles.heroTitle}>🗺️ 나들이 장소 추천</Text>
+        <Text style={styles.heroTitle}>나들이 장소 추천</Text>
         <Pressable
           style={styles.closeButton}
           onPress={() => router.back()}
