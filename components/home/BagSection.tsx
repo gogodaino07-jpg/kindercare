@@ -78,8 +78,8 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
     <View style={styles.container}>
       <View style={styles.sectionHeaderRow}>
         <View style={styles.sectionHeaderLeft}>
-          <Text style={styles.sectionEmoji}>🎒</Text>
-          <Text style={styles.sectionTitle}>가방에 쏙쏙!</Text>
+          <Text style={styles.sectionEmoji}>🌞</Text>
+          <Text style={styles.sectionTitle}>오늘 일정</Text>
         </View>
         {mainEvents.length > 0 && (
           <Pressable
@@ -114,7 +114,7 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
       {secondaryEvents.length > 0 && (
         <>
           <View style={styles.secondaryHeaderRow}>
-            <Text style={styles.sectionEmoji}>📅</Text>
+            <Text style={styles.sectionEmoji}>🌛</Text>
             <Text style={styles.sectionTitle}>내일 일정</Text>
           </View>
           <ScrollView
@@ -157,10 +157,6 @@ function BagCard({
   // background than usual — button color stays the normal accent.
   const isTomorrowCard = !muted && badgeText === '내일';
   const cardBg = muted ? colors.gray100 : (isTomorrowCard ? lighten(category.bg, 0.92) : category.bg);
-  // The "내일" badge keeps the normal (non-muted) white pill + accent text look,
-  // even on muted cards, so it stays clearly readable instead of blending into gray.
-  const isTomorrowBadge = badgeText === '내일';
-  const badgeTextColor = muted && !isTomorrowBadge ? colors.gray500 : category.accent;
 
   // Fades the whole card when marked done, so "완료" reads as a finished
   // task rather than just a button color flip.
@@ -204,17 +200,6 @@ function BagCard({
             <EventIcon icon={event.icon} size={24} />
           </View>
           <View style={styles.singleRowTextBlock}>
-            <View
-              style={[
-                styles.dateBadge,
-                styles.singleRowBadge,
-                muted && !isTomorrowBadge && styles.dateBadgeMuted,
-              ]}
-            >
-              <Text style={[styles.dateBadgeText, { color: badgeTextColor }]}>
-                {badgeText}
-              </Text>
-            </View>
             <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
             {!!description && (
               <Text style={styles.singleRowDescription} numberOfLines={1}>{description}</Text>
@@ -260,16 +245,6 @@ function BagCard({
         <View style={styles.cardHeaderRow}>
           <View style={[styles.iconCircle, muted && { backgroundColor: colors.cardWhite }]}>
             <EventIcon icon={event.icon} size={24} />
-          </View>
-          <View
-            style={[
-              styles.dateBadge,
-              muted && !isTomorrowBadge && styles.dateBadgeMuted,
-            ]}
-          >
-            <Text style={[styles.dateBadgeText, { color: badgeTextColor }]}>
-              {badgeText}
-            </Text>
           </View>
         </View>
 
@@ -387,19 +362,6 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       justifyContent: 'space-between',
       marginBottom: 10,
     },
-    dateBadge: {
-      backgroundColor: 'rgba(255,255,255,0.75)',
-      borderRadius: 999,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-    },
-    dateBadgeMuted: {
-      backgroundColor: colors.gray100,
-    },
-    dateBadgeText: {
-      fontSize: 11,
-      fontWeight: '800',
-    },
     iconCircle: {
       width: 40,
       height: 40,
@@ -460,10 +422,6 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
     singleRowTextBlock: {
       flex: 1,
       minWidth: 0,
-    },
-    singleRowBadge: {
-      alignSelf: 'flex-start',
-      marginBottom: 4,
     },
     singleRowDescription: {
       fontSize: 11.5,
