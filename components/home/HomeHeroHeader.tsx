@@ -387,9 +387,10 @@ function createStyles(colors: ThemeColors) {
     },
     todayTipText: {
       flex: 1,
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: '600',
       color: '#FFFFFF',
+      textAlign: 'center',
     },
     miniCardColumn: {
       flex: 1,
