@@ -42,7 +42,8 @@ export default function WeekendOutingBanner() {
     try {
       const places = await fetchNearbyPlaces({ areaCode: savedAreaCode, category: 'all', sort: 'recommend' });
       if (!cancelledRef.current) {
-        setPlace(places[0] ?? null);
+        const randomPlace = places.length > 0 ? places[Math.floor(Math.random() * places.length)] : null;
+        setPlace(randomPlace);
         setAreaCode(savedAreaCode);
         areaCodeRef.current = savedAreaCode;
       }
