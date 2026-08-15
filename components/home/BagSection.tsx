@@ -54,13 +54,13 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
     });
   };
 
-  const renderCard = (event: Event, badgeText: string, muted: boolean, centered = false) => (
+  const renderCard = (event: Event, badgeText: string, muted: boolean, singleRow = false) => (
     <BagCard
       key={event.id}
       event={event}
       badgeText={badgeText}
       muted={muted}
-      centered={centered}
+      singleRow={singleRow}
       isDone={completedIds.has(event.id)}
       onToggleComplete={() => toggleComplete(event.id)}
       onPress={() => onEventPress(event)}
@@ -129,7 +129,7 @@ function BagCard({
   event,
   badgeText,
   muted,
-  centered,
+  singleRow,
   isDone,
   onToggleComplete,
   onPress,
@@ -139,7 +139,7 @@ function BagCard({
   event: Event;
   badgeText: string;
   muted: boolean;
-  centered?: boolean;
+  singleRow?: boolean;
   isDone: boolean;
   onToggleComplete: () => void;
   onPress: () => void;
@@ -187,6 +187,54 @@ function BagCard({
     onToggleComplete();
   };
 
+  if (singleRow) {
+    return (
+      <Animated.View style={[styles.singleRowCard, { backgroundColor: cardBg, opacity: doneOpacity }]}>
+        <Pressable style={styles.singleRowMain} onPress={onPress}>
+          <View style={[styles.iconCircle, muted && { backgroundColor: colors.cardWhite }]}>
+            <Text style={styles.iconEmoji}>{event.icon || DEFAULT_ICON}</Text>
+          </View>
+          <View style={styles.singleRowTextBlock}>
+            <View style={[styles.dateBadge, styles.singleRowBadge, muted && styles.dateBadgeMuted]}>
+              <Text style={[styles.dateBadgeText, { color: muted ? colors.gray500 : category.accent }]}>
+                {badgeText}
+              </Text>
+            </View>
+            <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
+            {!!description && (
+              <Text style={styles.singleRowDescription} numberOfLines={1}>{description}</Text>
+            )}
+          </View>
+        </Pressable>
+
+        <Pressable onPress={handleTogglePress}>
+          <Animated.View
+            style={[
+              styles.completeButton,
+              styles.singleRowCompleteButton,
+              muted
+                ? [styles.completeButtonMuted, { borderColor: colors.gray400 }, isDone && { backgroundColor: colors.gray400, borderColor: colors.gray400 }]
+                : { backgroundColor: isDone ? colors.gray900 : category.accent },
+              { transform: [{ scale: buttonScale }] },
+            ]}
+          >
+            <Animated.View
+              style={{
+                transform: [{ scale: checkScale }],
+                marginRight: checkScale.interpolate({ inputRange: [0, 1], outputRange: [0, 4] }),
+              }}
+            >
+              <MaterialIcons name="check" size={14} color={muted && !isDone ? colors.gray500 : '#FFFFFF'} />
+            </Animated.View>
+            <Text style={[styles.completeButtonText, muted && !isDone && { color: colors.gray500 }]}>
+              {isDone ? '완료!' : '확인'}
+            </Text>
+          </Animated.View>
+        </Pressable>
+      </Animated.View>
+    );
+  }
+
   return (
     <Animated.View
       style={[styles.card, { backgroundColor: cardBg, opacity: doneOpacity }]}
@@ -203,17 +251,16 @@ function BagCard({
           </View>
         </View>
 
-        <Text style={[styles.cardTitle, centered && styles.cardTitleCentered]} numberOfLines={1}>{event.title}</Text>
+        <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
         {!!description && (
-          <Text style={[styles.cardDescription, centered && styles.cardDescriptionCentered]} numberOfLines={2}>{description}</Text>
+          <Text style={styles.cardDescription} numberOfLines={2}>{description}</Text>
         )}
       </Pressable>
 
-      <Pressable onPress={handleTogglePress} style={centered && styles.completeButtonWrapCentered}>
+      <Pressable onPress={handleTogglePress}>
         <Animated.View
           style={[
             styles.completeButton,
-            centered && styles.completeButtonCentered,
             muted
               ? [styles.completeButtonMuted, { borderColor: colors.gray400 }, isDone && { backgroundColor: colors.gray400, borderColor: colors.gray400 }]
               : { backgroundColor: isDone ? colors.gray900 : category.accent },
@@ -235,7 +282,6 @@ function BagCard({
         <Text
           style={[
             styles.completeButtonText,
-            centered && styles.completeButtonTextCentered,
             muted && !isDone && { color: colors.gray500 },
           ]}
         >
@@ -353,20 +399,6 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       lineHeight: 15,
       minHeight: 30,
     },
-    cardTitleCentered: {
-      textAlign: 'center',
-      fontSize: 20,
-      marginBottom: 6,
-    },
-    cardDescriptionCentered: {
-      textAlign: 'center',
-      fontSize: 15,
-      lineHeight: 20,
-      minHeight: 0,
-    },
-    completeButtonWrapCentered: {
-      alignSelf: 'center',
-    },
     completeButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -375,11 +407,6 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       paddingVertical: 9,
       paddingHorizontal: 16,
       marginTop: 10,
-    },
-    completeButtonCentered: {
-      paddingVertical: 12,
-      paddingHorizontal: 28,
-      marginTop: 16,
     },
     completeButtonMuted: {
       backgroundColor: colors.cardWhite,
@@ -390,8 +417,40 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       fontWeight: '800',
       color: '#FFFFFF',
     },
-    completeButtonTextCentered: {
-      fontSize: 14,
+    singleRowCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      borderRadius: 18,
+      padding: 12,
+      ...SHADOW,
+      shadowOpacity: 0.1,
+      elevation: 3,
+    },
+    singleRowMain: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      flex: 1,
+      minWidth: 0,
+    },
+    singleRowTextBlock: {
+      flex: 1,
+      minWidth: 0,
+    },
+    singleRowBadge: {
+      alignSelf: 'flex-start',
+      marginBottom: 4,
+    },
+    singleRowDescription: {
+      fontSize: 11.5,
+      fontWeight: '500',
+      color: colors.gray600,
+      marginTop: 1,
+    },
+    singleRowCompleteButton: {
+      marginTop: 0,
+      paddingHorizontal: 14,
     },
     emptyCard: {
       marginHorizontal: SIDE_PADDING,
