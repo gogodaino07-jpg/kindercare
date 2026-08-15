@@ -220,6 +220,8 @@ function BagCard({
           >
             <Animated.View
               style={{
+                width: checkScale.interpolate({ inputRange: [0, 1], outputRange: [0, 14] }),
+                overflow: 'hidden',
                 transform: [{ scale: checkScale }],
                 marginRight: checkScale.interpolate({ inputRange: [0, 1], outputRange: [0, 4] }),
               }}
