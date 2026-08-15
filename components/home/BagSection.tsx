@@ -82,7 +82,7 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
           >
             <Text style={styles.scanBarIcon}>✨</Text>
             <Text style={styles.scanBarText}>가정통신문 AI 스캔하기</Text>
-            <Text style={styles.scanBarArrow}>→</Text>
+            <MaterialIcons name="file-upload" size={18} color="#FFFFFF" />
           </LinearGradient>
         </Pressable>
       )}
@@ -293,11 +293,6 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
     scanBarText: {
       flex: 1,
       fontSize: 13,
-      fontWeight: '800',
-      color: '#FFFFFF',
-    },
-    scanBarArrow: {
-      fontSize: 14,
       fontWeight: '800',
       color: '#FFFFFF',
     },

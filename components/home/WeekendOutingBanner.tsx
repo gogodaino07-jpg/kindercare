@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -16,10 +16,12 @@ import Text from '../common/AppText';
  */
 export default function WeekendOutingBanner() {
   const router = useRouter();
+  const navigation = useNavigation();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [place, setPlace] = useState<NearbyPlace | null>(null);
   const [areaCode, setAreaCode] = useState(DEFAULT_AREA_CODE);
+  const areaCodeRef = useRef(DEFAULT_AREA_CODE);
   const bubbleScale = useRef(new Animated.Value(0)).current;
   const bubbleWiggle = useRef(new Animated.Value(0)).current;
   const bubbleRotate = bubbleWiggle.interpolate({
@@ -30,24 +32,43 @@ export default function WeekendOutingBanner() {
   const ctaScale = useRef(new Animated.Value(1)).current;
   const arrowNudge = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const savedAreaCode = (await loadLastAreaCode()) || DEFAULT_AREA_CODE;
-      try {
-        const places = await fetchNearbyPlaces({ areaCode: savedAreaCode, category: 'all', sort: 'recommend' });
-        if (!cancelled) {
-          setPlace(places[0] ?? null);
-          setAreaCode(savedAreaCode);
-        }
-      } catch {
-        if (!cancelled) setPlace(null);
+  // Re-checks the saved area code (not just on first mount) so picking a new
+  // region on the nearby-places screen and coming back to Home updates the
+  // banner — expo-router keeps Home mounted underneath, so a plain mount
+  // effect would otherwise never see the change.
+  const loadForSavedArea = useCallback(async (cancelledRef: { current: boolean }) => {
+    const savedAreaCode = (await loadLastAreaCode()) || DEFAULT_AREA_CODE;
+    if (savedAreaCode === areaCodeRef.current) return;
+    try {
+      const places = await fetchNearbyPlaces({ areaCode: savedAreaCode, category: 'all', sort: 'recommend' });
+      if (!cancelledRef.current) {
+        setPlace(places[0] ?? null);
+        setAreaCode(savedAreaCode);
+        areaCodeRef.current = savedAreaCode;
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    } catch {
+      if (!cancelledRef.current) setPlace(null);
+    }
   }, []);
+
+  useEffect(() => {
+    const cancelledRef = { current: false };
+    loadForSavedArea(cancelledRef);
+    return () => {
+      cancelledRef.current = true;
+    };
+  }, [loadForSavedArea]);
+
+  useEffect(() => {
+    const cancelledRef = { current: false };
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadForSavedArea(cancelledRef);
+    });
+    return () => {
+      cancelledRef.current = true;
+      unsubscribe();
+    };
+  }, [navigation, loadForSavedArea]);
 
   // Pop the speech bubble in, then keep it wiggling side-to-side with a
   // scale pulse — reads as the mascot excitedly chiming in "IT'S ME!!",
