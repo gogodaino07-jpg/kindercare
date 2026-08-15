@@ -12,6 +12,7 @@ import HomeHeroHeader from './HomeHeroHeader';
 interface HomeEmptyContentProps {
   selectedChild: Child | undefined;
   onPressChild: () => void;
+  onPressMeal: () => void;
   weatherDays: WeatherDay[] | null;
   weatherLoading: boolean;
   onPressDate: (date: string) => void;
@@ -20,6 +21,7 @@ interface HomeEmptyContentProps {
 export default function HomeEmptyContent({
   selectedChild,
   onPressChild,
+  onPressMeal,
   weatherDays,
   weatherLoading,
   onPressDate,
@@ -33,6 +35,7 @@ export default function HomeEmptyContent({
       <HomeHeroHeader
         selectedChild={selectedChild}
         onPressChild={onPressChild}
+        onPressMeal={onPressMeal}
         weatherDays={weatherDays}
         weatherLoading={weatherLoading}
         onPressDate={onPressDate}
@@ -88,7 +91,7 @@ function createStyles(colors: ThemeColors) {
       flex: 1,
     },
     scrollContent: {
-      paddingBottom: 60,
+      paddingBottom: 150,
     },
     card: {
       marginHorizontal: 20,

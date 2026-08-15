@@ -69,8 +69,18 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
   return (
     <View style={styles.container}>
       <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionEmoji}>🎒</Text>
-        <Text style={styles.sectionTitle}>가방에 쏙쏙!</Text>
+        <View style={styles.sectionHeaderLeft}>
+          <Text style={styles.sectionEmoji}>🎒</Text>
+          <Text style={styles.sectionTitle}>가방에 쏙쏙!</Text>
+        </View>
+        {mainEvents.length > 0 && (
+          <Pressable
+            style={({ pressed }) => [styles.scanAgainButton, pressed && { opacity: 0.8 }]}
+            onPress={() => router.push('/upload')}
+          >
+            <Text style={styles.scanAgainButtonText}>✨ AI 스캔</Text>
+          </Pressable>
+        )}
       </View>
 
       {mainEvents.length === 0 ? (
@@ -236,9 +246,14 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
     sectionHeaderRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      justifyContent: 'space-between',
       paddingHorizontal: SIDE_PADDING,
       marginBottom: 12,
+    },
+    sectionHeaderLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
     },
     sectionEmoji: {
       fontSize: 18,
@@ -248,6 +263,17 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       fontWeight: 'bold',
       color: colors.gray900,
       letterSpacing: -0.5,
+    },
+    scanAgainButton: {
+      backgroundColor: colors.purpleBg,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 999,
+    },
+    scanAgainButtonText: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.purple500,
     },
     secondaryHeaderRow: {
       flexDirection: 'row',

@@ -26,7 +26,7 @@ import { useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { isSimilarEvent } from '../data/mockAIResult';
-import { Event, UploadedDoc } from '../types/models';
+import { Event, MealPlan, UploadedDoc } from '../types/models';
 import {
   AIUsageLimitService,
   AnalysisResultStore,
@@ -305,9 +305,10 @@ export default function UploadScreen() {
   const goToAnalysis = (
     uploadedDocs: UploadedDoc[],
     result: Omit<Event, 'id'>[],
+    mealPlans: Omit<MealPlan, 'id'>[],
     replaceSimilar: boolean = false
   ) => {
-    AnalysisResultStore.setSession(uploadedDocs, result);
+    AnalysisResultStore.setSession(uploadedDocs, result, mealPlans);
     // Track if we should auto-delete existing similar events on save
     if (replaceSimilar) {
       const session = AnalysisResultStore.getSession();
@@ -325,8 +326,11 @@ export default function UploadScreen() {
 
     setAnalyzing(true);
     let result: Omit<Event, 'id'>[];
+    let mealPlans: Omit<MealPlan, 'id'>[];
     try {
-      result = await GeminiAnalysisService.analyze(targetDocs, targetChild);
+      const analysis = await GeminiAnalysisService.analyze(targetDocs, targetChild);
+      result = analysis.events;
+      mealPlans = analysis.mealPlans;
     } catch (err) {
       const message =
         err instanceof GeminiAnalysisError
@@ -366,13 +370,13 @@ export default function UploadScreen() {
                 showToast('모든 일정이 이미 등록되어 있어 리뷰할 내용이 없습니다.');
                 AnalysisResultStore.clearPendingSession();
               } else {
-                goToAnalysis(targetDocs, filtered, false);
+                goToAnalysis(targetDocs, filtered, mealPlans, false);
               }
             },
           },
           {
             text: '기존 일정 덮어쓰기',
-            onPress: () => goToAnalysis(targetDocs, result, true),
+            onPress: () => goToAnalysis(targetDocs, result, mealPlans, true),
           },
           {
             text: '취소',
@@ -383,7 +387,7 @@ export default function UploadScreen() {
       });
       return;
     }
-    goToAnalysis(targetDocs, result);
+    goToAnalysis(targetDocs, result, mealPlans);
   };
 
   const handleAnalyze = async () => {

@@ -7,7 +7,7 @@ import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { WeatherDay } from '../../hooks/useWeeklyWeather';
 import { Child } from '../../types/models';
-import { formatMD, parseISODate, WEEKDAY_KO } from '../../utils/date';
+import { formatMD } from '../../utils/date';
 import { describeGuideTip } from '../../utils/weatherCode';
 import Text from '../common/AppText';
 
@@ -64,8 +64,8 @@ export default function HomeHeroHeader({
         </Pressable>
       </View>
 
-      <Pressable style={styles.greetingSection} onPress={onPressChild}>
-        <View style={styles.avatarWrapper}>
+      <View style={styles.greetingArea}>
+        <Pressable style={styles.greetingSection} onPress={onPressChild}>
           <View style={styles.avatarContainer}>
             {selectedChild?.photoUri ? (
               <Image source={{ uri: selectedChild.photoUri }} style={styles.avatar} />
@@ -75,21 +75,26 @@ export default function HomeHeroHeader({
               </View>
             )}
           </View>
-          <MealIconButton onPress={onPressMeal} />
+
+          <Text style={styles.greetingText}>
+            오늘도 신나게, <Text style={styles.greetingName}>{greetingName ?? '우리 아이'}{particle}</Text>!
+          </Text>
+
+          {selectedChild && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {[`${selectedChild.age}세`, selectedChild.className].filter(Boolean).join(' ')}
+              </Text>
+            </View>
+          )}
+        </Pressable>
+
+        {/* A thought bubble "hovering" over the avatar, tail pointing down at
+            it — reads as the kid's own thought, not part of the profile tap target. */}
+        <View style={styles.mealButtonSlot}>
+          <MealThoughtBubble onPress={onPressMeal} />
         </View>
-
-        <Text style={styles.greetingText}>
-          오늘도 신나게, <Text style={styles.greetingName}>{greetingName ?? '우리 아이'}{particle}</Text>!
-        </Text>
-
-        {selectedChild && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {[`${selectedChild.age}세`, selectedChild.className].filter(Boolean).join(' ')}
-            </Text>
-          </View>
-        )}
-      </Pressable>
+      </View>
 
       <View style={styles.weatherHeroRow}>
         <View style={styles.todayCardWrapper}>
@@ -139,8 +144,8 @@ export default function HomeHeroHeader({
   );
 }
 
-/** Small badge button on the avatar's corner that opens the meal-plan popup — idle-bounces to invite a tap. */
-function MealIconButton({ onPress }: { onPress: () => void }) {
+/** A cartoon "thought bubble" over the avatar's head that opens the meal-plan popup — idle-bounces to invite a tap. Same onPress logic as before, just a different shell. */
+function MealThoughtBubble({ onPress }: { onPress: () => void }) {
   const colors = useThemeColors();
   const styles = useMemo(() => createMealButtonStyles(colors), [colors]);
   const bounceAnim = useRef(new Animated.Value(0)).current;
@@ -169,7 +174,7 @@ function MealIconButton({ onPress }: { onPress: () => void }) {
   }, [bounceAnim]);
 
   const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.85, useNativeDriver: true, friction: 5 }).start();
+    Animated.spring(scaleAnim, { toValue: 0.92, useNativeDriver: true, friction: 5 }).start();
   };
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, friction: 3, tension: 200 }).start();
@@ -186,8 +191,13 @@ function MealIconButton({ onPress }: { onPress: () => void }) {
         { transform: [{ translateY: bounceAnim }, { scale: scaleAnim }] },
       ]}
     >
-      <Pressable onPress={handlePress} onPressIn={handlePressIn} onPressOut={handlePressOut} hitSlop={8}>
-        <Text style={styles.emoji}>🍱</Text>
+      <Pressable onPress={handlePress} onPressIn={handlePressIn} onPressOut={handlePressOut} hitSlop={10}>
+        <View style={styles.bubble}>
+          <Text style={styles.bubbleText}>오늘 점심은{'\n'}뭐지? 🍚</Text>
+        </View>
+        {/* Trailing thought-bubble dots, curling down toward the avatar */}
+        <View style={styles.tailDotMedium} />
+        <View style={styles.tailDotSmall} />
       </Pressable>
     </Animated.View>
   );
@@ -213,8 +223,6 @@ function MiniWeatherCard({
     return <View style={[styles.container, styles.skeleton]} />;
   }
 
-  const weekday = day ? WEEKDAY_KO[parseISODate(day.date).getDay()] : '';
-
   return (
     <Pressable
       style={[styles.container, variant === 'peach' ? styles.peach : styles.plain]}
@@ -223,7 +231,7 @@ function MiniWeatherCard({
     >
       <Text style={styles.label}>
         {label}
-        {weekday ? ` (${weekday})` : ''}
+        {day ? ` ${formatMD(day.date)}` : ''}
       </Text>
       <Text style={styles.emoji}>{day?.emoji ?? '🌡️'}</Text>
       <Text style={styles.temp}>{day ? `${day.tempMax}°` : '--'}</Text>
@@ -255,15 +263,19 @@ function createStyles(colors: ThemeColors) {
       width: ICON_BUTTON_SIZE,
       height: ICON_BUTTON_SIZE,
     },
+    greetingArea: {
+      position: 'relative',
+    },
     greetingSection: {
       alignItems: 'center',
       paddingHorizontal: 24,
       paddingTop: 4,
       paddingBottom: 20,
     },
-    avatarWrapper: {
-      position: 'relative',
-      marginBottom: 12,
+    mealButtonSlot: {
+      position: 'absolute',
+      top: 14,
+      right: 32,
     },
     avatarContainer: {
       width: AVATAR_SIZE,
@@ -275,6 +287,7 @@ function createStyles(colors: ThemeColors) {
       overflow: 'hidden',
       borderWidth: 1.5,
       borderColor: colors.orangeBorder,
+      marginBottom: 12,
     },
     avatar: {
       width: AVATAR_SIZE,
@@ -385,24 +398,50 @@ function createStyles(colors: ThemeColors) {
 function createMealButtonStyles(colors: ThemeColors) {
   return StyleSheet.create({
     wrapper: {
-      position: 'absolute',
-      bottom: -2,
-      right: -2,
+      alignItems: 'flex-end',
     },
-    emoji: {
-      fontSize: 16,
-      width: 30,
-      height: 30,
-      lineHeight: 30,
-      textAlign: 'center',
-      borderRadius: 15,
+    bubble: {
+      minWidth: 114,
       backgroundColor: colors.cardWhite,
-      borderWidth: 1.5,
+      borderRadius: 22,
+      borderWidth: 2,
       borderColor: colors.orangeBorder,
-      overflow: 'hidden',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
       ...SHADOW,
       shadowOpacity: 0.15,
       elevation: 3,
+    },
+    bubbleText: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: colors.gray800,
+      textAlign: 'center',
+      lineHeight: 18,
+    },
+    // Small trailing circles that curl the bubble's tail down toward the avatar,
+    // the classic comic "thought bubble" shape instead of a pointed speech tail.
+    tailDotMedium: {
+      position: 'absolute',
+      bottom: -9,
+      left: 22,
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: colors.cardWhite,
+      borderWidth: 2,
+      borderColor: colors.orangeBorder,
+    },
+    tailDotSmall: {
+      position: 'absolute',
+      bottom: -16,
+      left: 12,
+      width: 7,
+      height: 7,
+      borderRadius: 3.5,
+      backgroundColor: colors.cardWhite,
+      borderWidth: 2,
+      borderColor: colors.orangeBorder,
     },
   });
 }

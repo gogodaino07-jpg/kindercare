@@ -19,7 +19,7 @@ import {
   seedNotificationSettings,
 } from '../data/seed';
 import { isSimilarEvent } from '../data/mockAIResult';
-import { Child, Event, FamilyMember, GoogleAccount, NotificationSettings } from '../types/models';
+import { Child, Event, FamilyMember, GoogleAccount, MealPlan, NotificationSettings } from '../types/models';
 import { toISODate } from '../utils/date';
 import { withExternalAction } from '../utils/externalAction';
 import { getDb, getFirebaseAuth } from '../utils/firebase';
@@ -30,6 +30,7 @@ import { AIUsageLimitService } from '../features/newsletter-analysis';
 const HAS_ONBOARDED_KEY = 'kindercare_has_onboarded';
 const FONT_SIZE_KEY = 'kindercare_font_size';
 const EVENTS_KEY = 'kindercare_events';
+const MEAL_PLANS_KEY = 'kindercare_mealplans';
 const CHILDREN_KEY = 'kindercare_children';
 const SELECTED_CHILD_ID_KEY = 'kindercare_selected_child_id';
 const NOTIFICATION_SETTINGS_KEY = 'kindercare_notification_settings';
@@ -66,6 +67,10 @@ interface AppDataContextValue {
   deleteEvents: (eventIds: string[]) => void;
   addEvent: (input: Omit<Event, 'id'>) => void;
   addEvents: (inputs: Omit<Event, 'id'>[], options?: { replaceSimilar?: boolean }) => void;
+
+  // Meal plans
+  mealPlans: MealPlan[];
+  addMealPlans: (inputs: Omit<MealPlan, 'id'>[]) => void;
 
   // Notifications
   notificationSettings: NotificationSettings;
@@ -122,6 +127,12 @@ function nextEventId() {
   return `event-${Date.now()}-${eventIdCounter}`;
 }
 
+let mealPlanIdCounter = 0;
+function nextMealPlanId() {
+  mealPlanIdCounter += 1;
+  return `mealplan-${Date.now()}-${mealPlanIdCounter}`;
+}
+
 export function AppDataProvider({ children: reactChildren }: { children: React.ReactNode }) {
   const [hasOnboarded, setHasOnboarded] = useState(false);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
@@ -130,6 +141,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
   const [childProfiles, setChildProfiles] = useState<Child[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string | undefined>(undefined);
 
   const [notificationSettings, setNotificationSettings] =
@@ -164,6 +176,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       AsyncStorage.getItem(HAS_ONBOARDED_KEY),
       AsyncStorage.getItem(FONT_SIZE_KEY),
       AsyncStorage.getItem(EVENTS_KEY),
+      AsyncStorage.getItem(MEAL_PLANS_KEY),
       AsyncStorage.getItem(GOOGLE_ACCOUNT_KEY),
       AsyncStorage.getItem(CHILDREN_KEY),
       AsyncStorage.getItem(SELECTED_CHILD_ID_KEY),
@@ -177,6 +190,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
           storedOnboarded,
           storedFontSize,
           storedEvents,
+          storedMealPlans,
           storedGoogleAccount,
           storedChildren,
           storedSelectedChildId,
@@ -198,6 +212,14 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
               if (Array.isArray(parsed)) setEvents(parsed);
             } catch (e) {
               console.error('Failed to parse stored events:', e);
+            }
+          }
+          if (storedMealPlans) {
+            try {
+              const parsed = JSON.parse(storedMealPlans);
+              if (Array.isArray(parsed)) setMealPlans(parsed);
+            } catch (e) {
+              console.error('Failed to parse stored meal plans:', e);
             }
           }
           if (storedGoogleAccount) {
@@ -266,6 +288,12 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     if (!onboardingLoaded) return;
     AsyncStorage.setItem(EVENTS_KEY, JSON.stringify(events)).catch(() => {});
   }, [events, onboardingLoaded]);
+
+  // Persist meal plans after the initial load above has resolved
+  useEffect(() => {
+    if (!onboardingLoaded) return;
+    AsyncStorage.setItem(MEAL_PLANS_KEY, JSON.stringify(mealPlans)).catch(() => {});
+  }, [mealPlans, onboardingLoaded]);
 
   // Persist children after initial load
   useEffect(() => {
@@ -367,10 +395,27 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
         }
       }, (err) => console.error('❌ Firestore Events Listener Error:', err));
 
+    // Listen to Meal Plans
+    const unsubMealPlans = getDb()
+      .collection('users')
+      .doc(email)
+      .collection('mealPlans')
+      .onSnapshot((snap) => {
+        if (!snap) return;
+        const cloudMealPlans = snap.docs.map(doc => doc.data() as MealPlan);
+        console.log(`📥 Cloud Sync: Received ${cloudMealPlans.length} meal plans`);
+
+        // Trust cloud only if we've already done our initial sync-up check.
+        if (cloudMealPlans.length > 0 || syncChecked) {
+          setMealPlans(cloudMealPlans);
+        }
+      }, (err) => console.error('❌ Firestore Meal Plans Listener Error:', err));
+
     return () => {
       console.log('🔌 Firestore Listener Unsubscribed');
       unsubChildren();
       unsubEvents();
+      unsubMealPlans();
     };
   }, [googleAccount?.email, onboardingLoaded, syncChecked]);
 
@@ -398,6 +443,12 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
         if (eventsSnap.empty && events.length > 0) {
           console.log(`📤 Pushing ${events.length} local events to cloud...`);
           await Promise.all(events.map(e => pushEventToCloud(email, e)));
+        }
+
+        const mealPlansSnap = await getDb().collection('users').doc(email).collection('mealPlans').limit(1).get();
+        if (mealPlansSnap.empty && mealPlans.length > 0) {
+          console.log(`📤 Pushing ${mealPlans.length} local meal plans to cloud...`);
+          await Promise.all(mealPlans.map(m => pushMealPlanToCloud(email, m)));
         }
 
         if (childrenSnap.empty && childProfiles.length > 0) {
@@ -467,6 +518,16 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
+  const pushMealPlanToCloud = async (email: string, mealPlan: MealPlan) => {
+    try {
+      console.log('📡 Pushing meal plan to cloud:', mealPlan.id);
+      await getDb().collection('users').doc(email).collection('mealPlans').doc(mealPlan.id).set(sanitizeData(mealPlan));
+      console.log('✅ Meal plan push success');
+    } catch (error) {
+      console.error('❌ Firestore Push Meal Plan Error:', error);
+    }
+  };
+
   const deleteChildFromCloud = async (email: string, childId: string) => {
     try {
       console.log('📡 Deleting child from cloud:', childId);
@@ -503,11 +564,13 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
       const childrenSnap = await getDb().collection('users').doc(email).collection('children').get();
       const eventsSnap = await getDb().collection('users').doc(email).collection('events').get();
+      const mealPlansSnap = await getDb().collection('users').doc(email).collection('mealPlans').get();
 
       const cloudChildren = childrenSnap.docs.map(doc => doc.data() as Child);
       const cloudEvents = eventsSnap.docs.map(doc => doc.data() as Event);
+      const cloudMealPlans = mealPlansSnap.docs.map(doc => doc.data() as MealPlan);
 
-      console.log(`📥 Restored ${cloudChildren.length} children and ${cloudEvents.length} events`);
+      console.log(`📥 Restored ${cloudChildren.length} children, ${cloudEvents.length} events, ${cloudMealPlans.length} meal plans`);
 
       // 1. Update In-memory State first (Preserving local photoUris if we somehow had them)
       let finalChildren: Child[] = [];
@@ -520,6 +583,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       });
 
       setEvents(cloudEvents);
+      setMealPlans(cloudMealPlans);
       if (cloudChildren.length > 0) {
         setSelectedChildId(cloudChildren[0].id);
       }
@@ -530,6 +594,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
         AsyncStorage.setItem(HAS_ONBOARDED_KEY, 'true'),
         AsyncStorage.setItem(DATA_OWNER_EMAIL_KEY, email),
         AsyncStorage.setItem(EVENTS_KEY, JSON.stringify(cloudEvents)),
+        AsyncStorage.setItem(MEAL_PLANS_KEY, JSON.stringify(cloudMealPlans)),
         AsyncStorage.setItem(CHILDREN_KEY, JSON.stringify(finalChildren)),
       ];
       if (finalChildren.length > 0) {
@@ -713,6 +778,19 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       }
 
       return result;
+    });
+  };
+
+  const addMealPlans = (inputs: Omit<MealPlan, 'id'>[]) => {
+    setMealPlans((prev) => {
+      // Re-scanning a menu photo should replace that date's entry, not duplicate it.
+      const replacedKeys = new Set(inputs.map((m) => `${m.childId}|${m.date}`));
+      const kept = prev.filter((m) => !replacedKeys.has(`${m.childId}|${m.date}`));
+      const finalized = inputs.map((input) => ({ ...input, id: nextMealPlanId() }));
+      if (googleAccount?.email) {
+        finalized.forEach((m) => pushMealPlanToCloud(googleAccount.email!, m));
+      }
+      return [...kept, ...finalized];
     });
   };
 
@@ -969,6 +1047,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       HAS_ONBOARDED_KEY,
       FONT_SIZE_KEY,
       EVENTS_KEY,
+      MEAL_PLANS_KEY,
       CHILDREN_KEY,
       SELECTED_CHILD_ID_KEY,
       NOTIFICATION_SETTINGS_KEY,
@@ -986,6 +1065,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setFamilyMembers([]);
     setChildProfiles([]);
     setEvents([]);
+    setMealPlans([]);
     setSelectedChildId(undefined);
     setNotificationSettings(seedNotificationSettings);
     setFontChoiceId(DEFAULT_FONT_ID);
@@ -1115,6 +1195,9 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     deleteEvents,
     addEvent,
     addEvents,
+
+    mealPlans,
+    addMealPlans,
 
     notificationSettings,
     updateNotificationSettings,

@@ -9,6 +9,7 @@ import BlackboardModal from '../components/home/BlackboardModal';
 import ChildSwitcherSheet from '../components/home/ChildSwitcherSheet';
 import HomeEmptyContent from '../components/home/HomeEmptyContent';
 import HomeHeroHeader from '../components/home/HomeHeroHeader';
+import MealPlanSheet from '../components/home/MealPlanSheet';
 import ScreenBackground from '../components/ScreenBackground';
 import CoupangBanner from '../components/common/CoupangBanner';
 import { SHADOW, type ThemeColors } from '../constants/theme';
@@ -101,6 +102,7 @@ export default function HomeScreen() {
   const weather = useWeeklyWeather();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [mealSheetOpen, setMealSheetOpen] = useState(false);
   const [adPopupVisible, setAdPopupVisible] = useState(false);
   const adShownRef = useRef(false);
 
@@ -179,6 +181,7 @@ export default function HomeScreen() {
         key="hero-header"
         selectedChild={selectedChild}
         onPressChild={() => setSwitcherOpen(true)}
+        onPressMeal={() => setMealSheetOpen(true)}
         weatherDays={weather.days}
         weatherLoading={weather.loading}
         onPressDate={onDatePress}
@@ -244,6 +247,7 @@ export default function HomeScreen() {
           <HomeEmptyContent
             selectedChild={selectedChild}
             onPressChild={() => setSwitcherOpen(true)}
+            onPressMeal={() => setMealSheetOpen(true)}
             weatherDays={weather.days}
             weatherLoading={weather.loading}
             onPressDate={onDatePress}
@@ -270,10 +274,11 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {!upcoming.isEmpty && <CoupangBanner style={styles.adBanner} />}
+      <CoupangBanner style={styles.adBanner} />
 
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
+      <MealPlanSheet visible={mealSheetOpen} onClose={() => setMealSheetOpen(false)} />
       {!upcoming.isEmpty && !isLocked && <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />}
     </ScreenBackground>
   );

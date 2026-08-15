@@ -1,6 +1,6 @@
 import { EncodingType, readAsStringAsync } from 'expo-file-system/legacy';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import { Child, Event, UploadedDoc } from '../../../types/models';
+import { Child, Event, MealPlan, UploadedDoc } from '../../../types/models';
 import { toISODate } from '../../../utils/date';
 import { getVertexAIModel } from './firebaseAI';
 
@@ -22,6 +22,16 @@ interface GeminiExtractedEvent {
   reviewReason?: string;
 }
 
+interface GeminiExtractedMealPlan {
+  date?: string;
+  menu?: string[];
+}
+
+export interface GeminiAnalysisResult {
+  events: Omit<Event, 'id'>[];
+  mealPlans: Omit<MealPlan, 'id'>[];
+}
+
 const RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
@@ -41,12 +51,38 @@ const RESPONSE_SCHEMA = {
         required: ['date', 'title'],
       },
     },
+    mealPlan: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          date: { type: 'string' },
+          menu: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['date', 'menu'],
+      },
+    },
   },
   required: ['events'],
 };
 
+function extractMealPlans(
+  raw: GeminiExtractedMealPlan[] | undefined,
+  childId: string
+): Omit<MealPlan, 'id'>[] {
+  return (raw ?? [])
+    .filter((m): m is Required<Pick<GeminiExtractedMealPlan, 'date'>> & GeminiExtractedMealPlan =>
+      !!m.date && Array.isArray(m.menu) && m.menu.length > 0
+    )
+    .map((m) => ({
+      date: m.date,
+      menu: (m.menu ?? []).map((item) => item.trim()).filter(Boolean),
+      childId,
+    }));
+}
+
 export const GeminiAnalysisService = {
-  async analyze(docs: UploadedDoc[], child: Child): Promise<Omit<Event, 'id'>[]> {
+  async analyze(docs: UploadedDoc[], child: Child): Promise<GeminiAnalysisResult> {
     if (IS_PROD) {
       return this.analyzeWithVertexAI(docs, child);
     }
@@ -114,7 +150,7 @@ export const GeminiAnalysisService = {
       throw new GeminiAnalysisError('분석 결과를 읽지 못했어요. 다시 시도해주세요.');
     }
 
-    let parsed: { events?: GeminiExtractedEvent[] };
+    let parsed: { events?: GeminiExtractedEvent[]; mealPlan?: GeminiExtractedMealPlan[] };
     try {
       parsed = JSON.parse(rawText);
     } catch {
@@ -130,20 +166,23 @@ export const GeminiAnalysisService = {
       throw new GeminiAnalysisError('문서에서 일정을 찾지 못했어요. 더 선명한 사진으로 다시 시도해주세요.');
     }
 
-    return extracted.map((e) => ({
-      date: e.date,
-      title: e.title.trim(),
-      note: e.note?.trim() || undefined,
-      memo: e.memo?.trim() || undefined,
-      childId: child.id,
-      source: 'ai' as const,
-      icon: e.icon?.trim() || '📌',
-      needsReview: e.needsReview || undefined,
-      reviewReason: e.reviewReason?.trim() || undefined,
-    }));
+    return {
+      events: extracted.map((e) => ({
+        date: e.date,
+        title: e.title.trim(),
+        note: e.note?.trim() || undefined,
+        memo: e.memo?.trim() || undefined,
+        childId: child.id,
+        source: 'ai' as const,
+        icon: e.icon?.trim() || '📌',
+        needsReview: e.needsReview || undefined,
+        reviewReason: e.reviewReason?.trim() || undefined,
+      })),
+      mealPlans: extractMealPlans(parsed.mealPlan, child.id),
+    };
   },
 
-  async analyzeWithVertexAI(docs: UploadedDoc[], child: Child): Promise<Omit<Event, 'id'>[]> {
+  async analyzeWithVertexAI(docs: UploadedDoc[], child: Child): Promise<GeminiAnalysisResult> {
     try {
       const model = getVertexAIModel();
       const todayISO = toISODate(new Date());
@@ -163,7 +202,7 @@ export const GeminiAnalysisService = {
       const response = await result.response;
       const text = response.text();
 
-      const parsed: { events?: GeminiExtractedEvent[] } = JSON.parse(text);
+      const parsed: { events?: GeminiExtractedEvent[]; mealPlan?: GeminiExtractedMealPlan[] } = JSON.parse(text);
       const extracted = (parsed.events ?? []).filter(
         (e): e is Required<Pick<GeminiExtractedEvent, 'date' | 'title'>> & GeminiExtractedEvent =>
           !!e.date && !!e.title
@@ -173,17 +212,20 @@ export const GeminiAnalysisService = {
         throw new GeminiAnalysisError('문서에서 일정을 찾지 못했어요.');
       }
 
-      return extracted.map((e) => ({
-        date: e.date,
-        title: e.title.trim(),
-        note: e.note?.trim() || undefined,
-        memo: e.memo?.trim() || undefined,
-        childId: child.id,
-        source: 'ai' as const,
-        icon: e.icon?.trim() || '📌',
-        needsReview: e.needsReview || undefined,
-        reviewReason: e.reviewReason?.trim() || undefined,
-      }));
+      return {
+        events: extracted.map((e) => ({
+          date: e.date,
+          title: e.title.trim(),
+          note: e.note?.trim() || undefined,
+          memo: e.memo?.trim() || undefined,
+          childId: child.id,
+          source: 'ai' as const,
+          icon: e.icon?.trim() || '📌',
+          needsReview: e.needsReview || undefined,
+          reviewReason: e.reviewReason?.trim() || undefined,
+        })),
+        mealPlans: extractMealPlans(parsed.mealPlan, child.id),
+      };
     } catch (err: any) {
       console.error('[VertexAI] Error:', err);
       let message = err.message || '프로덕션 분석 엔진 오류가 발생했습니다.';
@@ -267,6 +309,12 @@ export const GeminiAnalysisService = {
 
 4. 출력 및 신뢰도:
    - 반드시 정해진 JSON 형식으로만 결괏값을 출력하세요. 불필요한 서술이나 설명은 절대 포함하지 마세요.
-   - 확실하지 않은 날짜나 내용은 'needsReview: true'로 표시하고 이유를 'reviewReason'에 적으세요.`;
+   - 확실하지 않은 날짜나 내용은 'needsReview: true'로 표시하고 이유를 'reviewReason'에 적으세요.
+
+[급식 식단표 추출]
+- 가정통신문에 주간 또는 월간 식단표(요일별/날짜별 급식 메뉴가 나열된 표)가 포함되어 있다면, "mealPlan" 배열로 별도 추출하세요.
+- 각 항목은 날짜(date, "YYYY-MM-DD")와 그날의 메뉴 목록(menu, 문자열 배열 — 예: ["흰쌀밥", "미역국", "제육볶음", "배추김치"])으로 구성하세요.
+- 요일만 적혀 있고 날짜가 명시되지 않았다면, [현재 기준 날짜]를 기준으로 그 주(월~금)의 실제 날짜로 환산하세요.
+- 식단표가 아예 없으면 "mealPlan"은 빈 배열([])로 반환하세요. 이는 오류가 아니라 정상적인 결과입니다.`;
   }
 };

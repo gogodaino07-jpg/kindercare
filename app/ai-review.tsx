@@ -24,7 +24,7 @@ import { AnalysisResultStore, AnalysisLogService } from '../features/newsletter-
 import { AIReviewEventItem } from '../features/newsletter-analysis/components/AIReviewEventItem';
 import { AIReviewBottomSheet } from '../features/newsletter-analysis/components/AIReviewBottomSheet';
 import { ZoomableImage } from '../features/newsletter-analysis/components/ZoomableImage';
-import { DraftEvent } from '../features/newsletter-analysis/types';
+import { DraftEvent, DraftMealPlan } from '../features/newsletter-analysis/types';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const MIN_SHEET_HEIGHT = SCREEN_HEIGHT * 0.4;
@@ -39,7 +39,7 @@ function isImminent(isoDate: string): boolean {
 export default function AIReviewScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const { children, selectedChild, addEvents } = useAppData();
+  const { children, selectedChild, addEvents, addMealPlans } = useAppData();
   const { showAlert } = useAlert();
   const { addNotification } = useNotificationCenter();
   const insets = useSafeAreaInsets();
@@ -48,12 +48,17 @@ export default function AIReviewScreen() {
 
   const session = useMemo(() => AnalysisResultStore.getSession(), []);
   const originalEvents = useMemo(() => session?.initialEvents ?? [], [session]);
+  const originalMealPlans = useMemo(() => session?.mealPlans ?? [], [session]);
   const docs = useMemo(() => session?.docs ?? [], [session]);
 
   const [draftEvents, setDraftEvents] = useState<DraftEvent[]>(() => {
     const source = originalEvents.length > 0 ? originalEvents : generateMockAIEvents(selectedChild);
     return source.map((e, i) => ({ ...e, localId: `draft-${i}` }));
   });
+
+  const [draftMealPlans, setDraftMealPlans] = useState<DraftMealPlan[]>(() =>
+    originalMealPlans.map((m, i) => ({ ...m, localId: `meal-draft-${i}` }))
+  );
 
   const [isSaved, setIsSaved] = useState(false);
 
@@ -168,6 +173,10 @@ export default function AIReviewScreen() {
     if (editingId === localId) setEditingId(null);
   };
 
+  const deleteDraftMealPlan = (localId: string) => {
+    setDraftMealPlans((prev) => prev.filter((m) => m.localId !== localId));
+  };
+
   const addDraftForDate = (date: string) => {
     const localId = `draft-new-${Date.now()}`;
     setDraftEvents((prev) => [
@@ -204,10 +213,16 @@ export default function AIReviewScreen() {
     // Pass the replace flag from session to addEvents
     addEvents(finalWithoutIds, { replaceSimilar: !!session?.shouldReplaceSimilar });
 
+    if (draftMealPlans.length > 0) {
+      const finalMealPlans = draftMealPlans.map(({ localId, ...rest }) => rest);
+      addMealPlans(finalMealPlans);
+    }
+
     const keyword = draftEvents.find((e) => e.note?.trim())?.note;
+    const mealPlanSuffix = draftMealPlans.length > 0 ? ' 이번주 식단표도 함께 저장했어요!' : '';
     addNotification({
       title: '가정통신문 분석 완료',
-      body: `${draftEvents.length}건의 일정이 캘린더에 저장됐어요.`,
+      body: `${draftEvents.length}건의 일정이 캘린더에 저장됐어요.${mealPlanSuffix}`,
       keyword,
       date: draftEvents[0]?.date,
     });
@@ -254,6 +269,25 @@ export default function AIReviewScreen() {
         onSave={handleSave}
         isSaveDisabled={draftEvents.length === 0}
       >
+        {draftMealPlans.length > 0 && (
+          <View style={styles.mealPlanSection}>
+            <View style={styles.mealPlanBanner}>
+              <Text style={styles.mealPlanBannerText}>🍱 이번주 식단표도 발견했어요!</Text>
+            </View>
+            {draftMealPlans.map((m) => (
+              <View key={m.localId} style={styles.mealPlanRow}>
+                <View style={styles.mealPlanRowTop}>
+                  <Text style={styles.mealPlanDate}>🗓️ {formatMD(m.date)}</Text>
+                  <Pressable onPress={() => deleteDraftMealPlan(m.localId)} style={styles.trashButton}>
+                    <Text style={styles.trashIcon}>🗑️</Text>
+                  </Pressable>
+                </View>
+                <Text style={styles.mealPlanMenu}>{m.menu.join(' · ')}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         {groups.map((group) => {
           const collapsed = group.events.length >= 2 && collapsedDates.has(group.date);
           return (
@@ -343,6 +377,44 @@ function createStyles(colors: ThemeColors) {
     container: { flex: 1, backgroundColor: '#000' },
     backgroundContainer: { height: SCREEN_HEIGHT - MIN_SHEET_HEIGHT, width: SCREEN_WIDTH },
     bgImage: { width: SCREEN_WIDTH, height: SCREEN_HEIGHT - MIN_SHEET_HEIGHT },
+    mealPlanSection: {
+      backgroundColor: colors.pastelOrange,
+      borderRadius: 16,
+      padding: 14,
+      marginBottom: 14,
+    },
+    mealPlanBanner: {
+      marginBottom: 10,
+    },
+    mealPlanBannerText: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: colors.gray900,
+    },
+    mealPlanRow: {
+      backgroundColor: colors.cardWhite,
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 8,
+    },
+    mealPlanRowTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    mealPlanDate: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.gray900,
+    },
+    mealPlanMenu: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      lineHeight: 19,
+    },
+    trashButton: { padding: 4 },
+    trashIcon: { fontSize: 14 },
     dateCard: {
       backgroundColor: colors.cardWhite,
       borderRadius: 16,

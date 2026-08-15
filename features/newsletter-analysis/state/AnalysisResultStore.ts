@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Event, UploadedDoc, Child } from '../../../types/models';
+import { Event, MealPlan, UploadedDoc, Child } from '../../../types/models';
 
 interface AnalysisSession {
   docs: UploadedDoc[];
   initialEvents: Omit<Event, 'id'>[];
+  mealPlans: Omit<MealPlan, 'id'>[];
   shouldReplaceSimilar?: boolean;
 }
 
@@ -22,8 +23,8 @@ let currentSession: AnalysisSession | null = null;
 let _shouldResetUpload = false;
 
 export const AnalysisResultStore = {
-  setSession(docs: UploadedDoc[], events: Omit<Event, 'id'>[]) {
-    currentSession = { docs, initialEvents: events };
+  setSession(docs: UploadedDoc[], events: Omit<Event, 'id'>[], mealPlans: Omit<MealPlan, 'id'>[] = []) {
+    currentSession = { docs, initialEvents: events, mealPlans };
     this.clearPendingSession(); // Successfully moved to review, clear pending
   },
 

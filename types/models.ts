@@ -28,6 +28,16 @@ export interface Event {
   reviewReason?: string;
 }
 
+export interface MealPlan {
+  id: string;
+  /** ISO date string, e.g. "2026-07-21" */
+  date: string;
+  /** 메뉴 항목들 */
+  menu: string[];
+  /** Event처럼 아이(=소속 기관) 기준으로 스코프 */
+  childId: string;
+}
+
 export interface FamilyMember {
   id: string;
   name: string;
