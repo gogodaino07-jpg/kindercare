@@ -163,7 +163,7 @@ function ThemedNavigation() {
               <Stack.Screen name="settings/licenses" options={{ title: '오픈소스 라이선스' }} />
               <Stack.Screen name="settings/support" options={{ title: '고객센터' }} />
             </Stack>
-            <AppLockScreen autoBiometricEnabled={true} />
+            <AppLockScreen autoBiometricEnabled={!showOverlay} />
           </>
         )}
       </Animated.View>
