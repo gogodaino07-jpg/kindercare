@@ -19,6 +19,10 @@ expo-env.d.ts
 *.p8
 *.p12
 *.key
+
+# Release signing (real upload key — never commit, unlike debug.keystore)
+/release-keystore/
+android/keystore.properties
 *.mobileprovision
 
 # Metro
