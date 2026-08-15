@@ -326,7 +326,10 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       alignItems: 'center',
       gap: 4,
       paddingVertical: 6,
-      paddingHorizontal: 4,
+      paddingHorizontal: 10,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: '#14B8A6',
     },
     scanAgainIcon: {
       fontSize: 12.5,
