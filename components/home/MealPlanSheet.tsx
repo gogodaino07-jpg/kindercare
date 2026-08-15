@@ -89,6 +89,8 @@ const sparkleStyles = StyleSheet.create({
 /** Each menu item springs in from above, one after another, instead of all appearing at once. */
 function StaggeredMenuItem({ text, index }: { text: string; index: number }) {
   const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const chipColors = [colors.orangeLight1, colors.lightBlueBg, colors.green50, colors.pinkBg];
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -105,10 +107,13 @@ function StaggeredMenuItem({ text, index }: { text: string; index: number }) {
   const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] });
 
   return (
-    <Animated.View style={{ opacity: anim, transform: [{ translateY }] }}>
-      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.gray900, paddingVertical: 6 }}>
-        🍚 {text}
-      </Text>
+    <Animated.View style={{ opacity: anim, transform: [{ translateY }], width: '100%' }}>
+      <View style={[styles.menuItemRow, { backgroundColor: chipColors[index % chipColors.length] }]}>
+        <View style={styles.menuItemIconCircle}>
+          <Text style={styles.menuItemIcon}>🍚</Text>
+        </View>
+        <Text style={styles.menuItemText}>{text}</Text>
+      </View>
     </Animated.View>
   );
 }
@@ -201,7 +206,7 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
                     </Text>
                     {d.plan ? (
                       d.plan.menu.map((item, i) => (
-                        <Text key={i} style={styles.weekCardMenuItem} numberOfLines={1}>
+                        <Text key={i} style={styles.weekCardMenuItem}>
                           {item}
                         </Text>
                       ))
@@ -254,8 +259,34 @@ function createStyles(colors: ThemeColors) {
     },
     menuList: {
       width: '100%',
-      alignItems: 'center',
+      gap: 8,
       marginBottom: 6,
+    },
+    menuItemRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '100%',
+      borderRadius: 14,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+    },
+    menuItemIconCircle: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 10,
+    },
+    menuItemIcon: {
+      fontSize: 14,
+    },
+    menuItemText: {
+      flex: 1,
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.gray900,
     },
     emptyText: {
       fontSize: 14,
@@ -279,11 +310,11 @@ function createStyles(colors: ThemeColors) {
       paddingHorizontal: 2,
     },
     weekCard: {
-      width: 120,
+      width: 148,
       backgroundColor: colors.gray50,
-      borderRadius: 16,
-      padding: 12,
-      borderWidth: 1,
+      borderRadius: 18,
+      padding: 14,
+      borderWidth: 1.5,
       borderColor: colors.border,
     },
     weekCardToday: {
@@ -293,17 +324,18 @@ function createStyles(colors: ThemeColors) {
     weekCardDate: {
       fontSize: 12,
       fontWeight: '800',
-      color: colors.gray600,
-      marginBottom: 8,
+      color: colors.gray900,
+      marginBottom: 10,
     },
     weekCardDateToday: {
       color: colors.blue500,
     },
     weekCardMenuItem: {
-      fontSize: 12,
+      fontSize: 12.5,
+      lineHeight: 17,
       color: colors.gray900,
-      fontWeight: '500',
-      marginBottom: 3,
+      fontWeight: '600',
+      marginBottom: 5,
     },
     weekCardEmpty: {
       fontSize: 12,
