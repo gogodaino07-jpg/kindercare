@@ -1,7 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, Easing, Image, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { WeatherDay } from '../../hooks/useWeeklyWeather';
@@ -13,6 +14,7 @@ import Text from '../common/AppText';
 interface HomeHeroHeaderProps {
   selectedChild: Child | undefined;
   onPressChild: () => void;
+  onPressMeal: () => void;
   weatherDays: WeatherDay[] | null;
   weatherLoading: boolean;
   onPressDate: (date: string) => void;
@@ -30,6 +32,7 @@ function hasFinalConsonant(text: string): boolean {
 export default function HomeHeroHeader({
   selectedChild,
   onPressChild,
+  onPressMeal,
   weatherDays,
   weatherLoading,
   onPressDate,
@@ -54,22 +57,25 @@ export default function HomeHeroHeader({
     <View>
       <View style={styles.topIconsRow}>
         <Pressable style={styles.iconButton} onPress={() => router.push('/calendar')}>
-          <Text style={styles.iconEmoji}>🗓️</Text>
+          <Image source={require('../../assets/icon_calendar_cute.png')} style={styles.iconImage} resizeMode="contain" />
         </Pressable>
         <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
-          <Text style={styles.iconEmoji}>🧰</Text>
+          <Image source={require('../../assets/icon_settings_cute.png')} style={styles.iconImage} resizeMode="contain" />
         </Pressable>
       </View>
 
       <Pressable style={styles.greetingSection} onPress={onPressChild}>
-        <View style={styles.avatarContainer}>
-          {selectedChild?.photoUri ? (
-            <Image source={{ uri: selectedChild.photoUri }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarIcon}>🧒</Text>
-            </View>
-          )}
+        <View style={styles.avatarWrapper}>
+          <View style={styles.avatarContainer}>
+            {selectedChild?.photoUri ? (
+              <Image source={{ uri: selectedChild.photoUri }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarIcon}>🧒</Text>
+              </View>
+            )}
+          </View>
+          <MealIconButton onPress={onPressMeal} />
         </View>
 
         <Text style={styles.greetingText}>
@@ -133,6 +139,60 @@ export default function HomeHeroHeader({
   );
 }
 
+/** Small badge button on the avatar's corner that opens the meal-plan popup — idle-bounces to invite a tap. */
+function MealIconButton({ onPress }: { onPress: () => void }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createMealButtonStyles(colors), [colors]);
+  const bounceAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounceAnim, {
+          toValue: -4,
+          duration: 700,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounceAnim, {
+          toValue: 0,
+          duration: 700,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.delay(600),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [bounceAnim]);
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, { toValue: 0.85, useNativeDriver: true, friction: 5 }).start();
+  };
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, friction: 3, tension: 200 }).start();
+  };
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    onPress();
+  };
+
+  return (
+    <Animated.View
+      style={[
+        styles.wrapper,
+        { transform: [{ translateY: bounceAnim }, { scale: scaleAnim }] },
+      ]}
+    >
+      <Pressable onPress={handlePress} onPressIn={handlePressIn} onPressOut={handlePressOut} hitSlop={8}>
+        <Text style={styles.emoji}>🍱</Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 function MiniWeatherCard({
   label,
   day,
@@ -191,14 +251,19 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    iconEmoji: {
-      fontSize: 20,
+    iconImage: {
+      width: ICON_BUTTON_SIZE,
+      height: ICON_BUTTON_SIZE,
     },
     greetingSection: {
       alignItems: 'center',
       paddingHorizontal: 24,
       paddingTop: 4,
       paddingBottom: 20,
+    },
+    avatarWrapper: {
+      position: 'relative',
+      marginBottom: 12,
     },
     avatarContainer: {
       width: AVATAR_SIZE,
@@ -210,7 +275,6 @@ function createStyles(colors: ThemeColors) {
       overflow: 'hidden',
       borderWidth: 1.5,
       borderColor: colors.orangeBorder,
-      marginBottom: 12,
     },
     avatar: {
       width: AVATAR_SIZE,
@@ -314,6 +378,31 @@ function createStyles(colors: ThemeColors) {
       flex: 1,
       justifyContent: 'space-between',
       gap: 10,
+    },
+  });
+}
+
+function createMealButtonStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    wrapper: {
+      position: 'absolute',
+      bottom: -2,
+      right: -2,
+    },
+    emoji: {
+      fontSize: 16,
+      width: 30,
+      height: 30,
+      lineHeight: 30,
+      textAlign: 'center',
+      borderRadius: 15,
+      backgroundColor: colors.cardWhite,
+      borderWidth: 1.5,
+      borderColor: colors.orangeBorder,
+      overflow: 'hidden',
+      ...SHADOW,
+      shadowOpacity: 0.15,
+      elevation: 3,
     },
   });
 }
