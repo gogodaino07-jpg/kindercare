@@ -106,7 +106,7 @@ async function fetchCategory(
     MobileOS: 'ETC',
     MobileApp: 'kindercare',
     _type: 'json',
-    numOfRows: '20',
+    numOfRows: '30',
     pageNo: '1',
     contentTypeId: CATEGORY_CONTENT_TYPE[category],
   });
@@ -133,7 +133,7 @@ async function fetchCategory(
   return Array.isArray(items) ? items : [items];
 }
 
-/** 아이와 가기 좋은 나들이 장소를 최대 10개 조회. 좌표가 있으면 거리순 정렬이 가능. */
+/** 아이와 가기 좋은 나들이 장소를 최대 30개 조회. 좌표가 있으면 거리순 정렬이 가능. */
 export async function fetchNearbyPlaces(options: {
   coords?: Coords;
   areaCode?: string;
@@ -164,5 +164,5 @@ export async function fetchNearbyPlaces(options: {
     places.sort((a, b) => (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity));
   }
 
-  return places.slice(0, 10);
+  return places.slice(0, 30);
 }
