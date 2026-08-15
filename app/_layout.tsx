@@ -122,9 +122,9 @@ function ThemedNavigation() {
           <>
             <Stack
               screenOptions={{
-                headerStyle: { backgroundColor: headerColors.bg },
+                headerStyle: { backgroundColor: colors.cardWhite },
                 headerTintColor: headerColors.text,
-                headerTitleStyle: { color: headerColors.text },
+                headerTitleStyle: { color: headerColors.text, fontWeight: '800' },
                 headerTitleAlign: 'left',
                 headerTitleContainerStyle: {
                   marginLeft: Platform.OS === 'android' ? -25 : -10,
