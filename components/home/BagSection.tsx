@@ -38,7 +38,9 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
   const router = useRouter();
   const colors = useThemeColors();
   const { width: screenWidth } = useWindowDimensions();
-  const cardWidth = Math.min(220, Math.max(150, (screenWidth - SIDE_PADDING * 2 - CARD_GAP) / 2));
+  const cardWidth = mainEvents.length === 1
+    ? screenWidth - SIDE_PADDING * 2
+    : Math.min(220, Math.max(150, (screenWidth - SIDE_PADDING * 2 - CARD_GAP) / 2));
   const styles = useMemo(() => createStyles(colors, cardWidth), [colors, cardWidth]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const dateBadgeText = displayType === 'TODAY' ? '오늘' : '내일';
@@ -52,12 +54,13 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
     });
   };
 
-  const renderCard = (event: Event, badgeText: string, muted: boolean) => (
+  const renderCard = (event: Event, badgeText: string, muted: boolean, centered = false) => (
     <BagCard
       key={event.id}
       event={event}
       badgeText={badgeText}
       muted={muted}
+      centered={centered}
       isDone={completedIds.has(event.id)}
       onToggleComplete={() => toggleComplete(event.id)}
       onPress={() => onEventPress(event)}
@@ -99,7 +102,7 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {mainEvents.map((event) => renderCard(event, dateBadgeText, false))}
+          {mainEvents.map((event) => renderCard(event, dateBadgeText, false, mainEvents.length === 1))}
         </ScrollView>
       )}
 
@@ -126,6 +129,7 @@ function BagCard({
   event,
   badgeText,
   muted,
+  centered,
   isDone,
   onToggleComplete,
   onPress,
@@ -135,6 +139,7 @@ function BagCard({
   event: Event;
   badgeText: string;
   muted: boolean;
+  centered?: boolean;
   isDone: boolean;
   onToggleComplete: () => void;
   onPress: () => void;
@@ -198,13 +203,13 @@ function BagCard({
           </View>
         </View>
 
-        <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
+        <Text style={[styles.cardTitle, centered && styles.cardTitleCentered]} numberOfLines={1}>{event.title}</Text>
         {!!description && (
-          <Text style={styles.cardDescription} numberOfLines={2}>{description}</Text>
+          <Text style={[styles.cardDescription, centered && styles.cardDescriptionCentered]} numberOfLines={2}>{description}</Text>
         )}
       </Pressable>
 
-      <Pressable onPress={handleTogglePress}>
+      <Pressable onPress={handleTogglePress} style={centered && styles.completeButtonWrapCentered}>
         <Animated.View
           style={[
             styles.completeButton,
@@ -345,6 +350,15 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       color: colors.gray600,
       lineHeight: 15,
       minHeight: 30,
+    },
+    cardTitleCentered: {
+      textAlign: 'center',
+    },
+    cardDescriptionCentered: {
+      textAlign: 'center',
+    },
+    completeButtonWrapCentered: {
+      alignSelf: 'center',
     },
     completeButton: {
       flexDirection: 'row',
