@@ -49,14 +49,22 @@ export default function WeekendOutingBanner() {
           <Text style={styles.badgeText}>🎈 주말 나들이 추천</Text>
         </View>
 
-        <Text style={styles.title}>{`이번 주말은\n${place.title} 어때요?`}</Text>
-        <Text style={styles.subtitle}>근처 인기 나들이 장소</Text>
+        <Text style={styles.line1}>이번 주말은</Text>
+        <Text style={styles.line2}>
+          <Text style={styles.placeName}>{place.title}</Text> 어때요?
+        </Text>
 
         <View style={styles.ctaButton}>
           <Text style={styles.ctaButtonText}>보러가기 →</Text>
         </View>
 
-        <Text style={styles.mascot}>🧸</Text>
+        <View style={styles.mascotWrap}>
+          <View style={styles.bubble}>
+            <Text style={styles.bubbleText}>저요 저요!</Text>
+            <View style={styles.bubbleTail} />
+          </View>
+          <Text style={styles.mascot}>🧸</Text>
+        </View>
       </LinearGradient>
     </Pressable>
   );
@@ -88,18 +96,21 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '800',
       color: '#FFFFFF',
     },
-    title: {
-      fontSize: 20,
+    line1: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: 'rgba(255,255,255,0.9)',
+      marginBottom: 2,
+    },
+    line2: {
+      fontSize: 21,
       fontWeight: '900',
       color: '#FFFFFF',
-      lineHeight: 26,
+      lineHeight: 27,
       letterSpacing: -0.3,
     },
-    subtitle: {
-      marginTop: 6,
-      fontSize: 12,
-      fontWeight: '700',
-      color: 'rgba(255,255,255,0.85)',
+    placeName: {
+      color: '#FEF08A',
     },
     ctaButton: {
       marginTop: 16,
@@ -114,13 +125,46 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '800',
       color: colors.purpleDeep,
     },
-    mascot: {
+    mascotWrap: {
       position: 'absolute',
-      right: 14,
-      bottom: 8,
-      fontSize: 46,
-      transform: [{ rotate: '12deg' }],
-      opacity: 0.95,
+      right: 10,
+      bottom: 4,
+    },
+    mascot: {
+      fontSize: 86,
+      transform: [{ rotate: '-8deg' }],
+      opacity: 0.97,
+    },
+    bubble: {
+      position: 'absolute',
+      top: -34,
+      left: -4,
+      backgroundColor: '#FFFFFF',
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      ...SHADOW,
+      shadowOpacity: 0.15,
+      elevation: 3,
+    },
+    bubbleText: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.purpleDeep,
+    },
+    bubbleTail: {
+      position: 'absolute',
+      bottom: -6,
+      left: 18,
+      width: 0,
+      height: 0,
+      borderLeftWidth: 6,
+      borderRightWidth: 2,
+      borderTopWidth: 7,
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+      borderTopColor: '#FFFFFF',
+      transform: [{ rotate: '20deg' }],
     },
   });
 }
