@@ -157,6 +157,10 @@ function BagCard({
   // background than usual — button color stays the normal accent.
   const isTomorrowCard = !muted && badgeText === '내일';
   const cardBg = muted ? colors.gray100 : (isTomorrowCard ? lighten(category.bg, 0.92) : category.bg);
+  // The "내일" badge keeps the normal (non-muted) white pill + accent text look,
+  // even on muted cards, so it stays clearly readable instead of blending into gray.
+  const isTomorrowBadge = badgeText === '내일';
+  const badgeTextColor = muted && !isTomorrowBadge ? colors.gray500 : category.accent;
 
   // Fades the whole card when marked done, so "완료" reads as a finished
   // task rather than just a button color flip.
@@ -200,8 +204,14 @@ function BagCard({
             <EventIcon icon={event.icon} size={24} />
           </View>
           <View style={styles.singleRowTextBlock}>
-            <View style={[styles.dateBadge, styles.singleRowBadge, muted && styles.dateBadgeMuted]}>
-              <Text style={[styles.dateBadgeText, { color: muted ? colors.gray500 : category.accent }]}>
+            <View
+              style={[
+                styles.dateBadge,
+                styles.singleRowBadge,
+                muted && !isTomorrowBadge && styles.dateBadgeMuted,
+              ]}
+            >
+              <Text style={[styles.dateBadgeText, { color: badgeTextColor }]}>
                 {badgeText}
               </Text>
             </View>
@@ -251,8 +261,13 @@ function BagCard({
           <View style={[styles.iconCircle, muted && { backgroundColor: colors.cardWhite }]}>
             <EventIcon icon={event.icon} size={24} />
           </View>
-          <View style={[styles.dateBadge, muted && styles.dateBadgeMuted]}>
-            <Text style={[styles.dateBadgeText, { color: muted ? colors.gray500 : category.accent }]}>
+          <View
+            style={[
+              styles.dateBadge,
+              muted && !isTomorrowBadge && styles.dateBadgeMuted,
+            ]}
+          >
+            <Text style={[styles.dateBadgeText, { color: badgeTextColor }]}>
               {badgeText}
             </Text>
           </View>
