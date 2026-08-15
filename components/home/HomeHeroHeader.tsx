@@ -252,6 +252,7 @@ function MiniWeatherCard({
 const AVATAR_SIZE = 84;
 const ICON_BUTTON_SIZE = 32;
 const TODAY_CARD_HEIGHT = 192;
+const BUBBLE_GAP = 6;
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
@@ -282,15 +283,20 @@ function createStyles(colors: ThemeColors) {
       paddingTop: 4,
       paddingBottom: 20,
     },
+    // Anchored off the avatar's known center + fixed size (not a measured
+    // layout) so both bubbles land an identical gap from the avatar on any
+    // platform/font, regardless of how wide each bubble's own text renders.
     mealButtonSlot: {
       position: 'absolute',
       top: 14,
-      right: 32,
+      left: '50%',
+      transform: [{ translateX: AVATAR_SIZE / 2 + BUBBLE_GAP }],
     },
     placesButtonSlot: {
       position: 'absolute',
       top: 14,
-      left: 21,
+      right: '50%',
+      transform: [{ translateX: -(AVATAR_SIZE / 2 + BUBBLE_GAP) }],
     },
     avatarContainer: {
       width: AVATAR_SIZE,
