@@ -71,18 +71,27 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
     <View style={styles.container}>
       {mainEvents.length > 0 && (
         <Pressable
-          style={({ pressed }) => [styles.scanBar, pressed && { opacity: 0.85 }]}
+          style={({ pressed }) => [pressed && { opacity: 0.85 }]}
           onPress={() => router.push('/upload')}
         >
           <LinearGradient
             colors={['#34D399', '#14B8A6']}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.scanBarGradient}
+            end={{ x: 1, y: 1 }}
+            style={styles.scanCard}
           >
-            <Text style={styles.scanBarIcon}>✨</Text>
-            <Text style={styles.scanBarText}>가정통신문 AI 스캔하기</Text>
-            <MaterialIcons name="file-upload" size={18} color="#FFFFFF" />
+            <View style={styles.scanCardInner}>
+              <View style={styles.scanCardIcon}>
+                <Text style={styles.scanCardIconText}>📄</Text>
+              </View>
+              <View style={styles.scanCardTextBlock}>
+                <Text style={styles.scanCardTitle}>새 가정통신문 왔나요?</Text>
+                <Text style={styles.scanCardSub}>사진 한 장이면 끝!</Text>
+              </View>
+              <View style={styles.scanCardCta}>
+                <Text style={styles.scanCardCtaText}>스캔</Text>
+              </View>
+            </View>
           </LinearGradient>
         </Pressable>
       )}
@@ -275,26 +284,62 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       color: colors.gray900,
       letterSpacing: -0.5,
     },
-    scanBar: {
+    scanCard: {
       marginHorizontal: SIDE_PADDING,
       marginBottom: 14,
+      borderRadius: 18,
+      padding: 12,
+      ...SHADOW,
+      shadowColor: '#14B8A6',
+      shadowOpacity: 0.28,
+      elevation: 3,
     },
-    scanBarGradient: {
+    scanCardInner: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      paddingHorizontal: 14,
-      paddingVertical: 11,
-      borderRadius: 14,
+      gap: 10,
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: 'rgba(255,255,255,0.5)',
+      borderRadius: 12,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
     },
-    scanBarIcon: {
-      fontSize: 14,
+    scanCardIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 10,
+      backgroundColor: 'rgba(255,255,255,0.22)',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    scanBarText: {
+    scanCardIconText: {
+      fontSize: 15,
+    },
+    scanCardTextBlock: {
       flex: 1,
-      fontSize: 13,
-      fontWeight: '800',
+    },
+    scanCardTitle: {
+      fontSize: 12.5,
+      fontWeight: '900',
       color: '#FFFFFF',
+    },
+    scanCardSub: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: 'rgba(255,255,255,0.85)',
+      marginTop: 1,
+    },
+    scanCardCta: {
+      backgroundColor: '#FFFFFF',
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 999,
+    },
+    scanCardCtaText: {
+      fontSize: 10.5,
+      fontWeight: '900',
+      color: '#0F766E',
     },
     secondaryHeaderRow: {
       flexDirection: 'row',
