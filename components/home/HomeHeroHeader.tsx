@@ -114,11 +114,13 @@ export default function HomeHeroHeader({
                 style={styles.todayCard}
               >
                 <Text style={styles.todayDateText}>오늘 {today ? formatMD(today.date) : ''}</Text>
-                <View style={styles.todayTipBox}>
-                  <Text style={styles.todayEmoji}>{today?.emoji ?? '🌤️'}</Text>
-                  <Text style={styles.todayTipText} numberOfLines={2}>
-                    {describeGuideTip(today?.label ?? '')}
-                  </Text>
+                <View style={styles.todayTipCenter}>
+                  <View style={styles.todayTipBox}>
+                    <Text style={styles.todayEmoji}>{today?.emoji ?? '🌤️'}</Text>
+                    <Text style={styles.todayTipText} numberOfLines={2}>
+                      {describeGuideTip(today?.label ?? '')}
+                    </Text>
+                  </View>
                 </View>
                 <Text style={styles.todayTempText}>{today?.tempMax ?? '--'}°</Text>
               </LinearGradient>
@@ -372,7 +374,11 @@ function createStyles(colors: ThemeColors) {
     todayCard: {
       flex: 1,
       padding: 18,
-      justifyContent: 'space-between',
+    },
+    todayTipCenter: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     skeleton: {
       backgroundColor: colors.gray100,
