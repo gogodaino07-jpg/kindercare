@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -78,24 +78,67 @@ export function AdventureNode({
         </View>
 
         {group.events.map((event, idx) => (
-          <Pressable
+          <AdventureEventRow
             key={event.id}
-            style={[styles.eventRow, idx > 0 && styles.eventRowSpaced]}
+            event={event}
+            spaced={idx > 0}
+            styles={styles}
             onPress={() => onEventPress(event)}
-          >
-            <Text style={styles.eventTitle} numberOfLines={1}>
-              {event.icon ? `${event.icon} ` : ''}
-              {event.title}
-            </Text>
-            {!!(event.note || event.memo) && (
-              <Text style={styles.eventDesc} numberOfLines={1}>
-                {event.note || event.memo}
-              </Text>
-            )}
-          </Pressable>
+          />
         ))}
       </View>
     </View>
+  );
+}
+
+const NOTE_COLLAPSED_LINES = 2;
+
+function AdventureEventRow({
+  event,
+  spaced,
+  styles,
+  onPress,
+}: {
+  event: Event;
+  spaced: boolean;
+  styles: ReturnType<typeof createNodeStyles>;
+  onPress: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [truncated, setTruncated] = useState(false);
+  const noteContent = event.note || event.memo;
+
+  return (
+    <Pressable style={[styles.eventRow, spaced && styles.eventRowSpaced]} onPress={onPress}>
+      <Text style={styles.eventTitle} numberOfLines={1}>
+        {event.icon ? `${event.icon} ` : ''}
+        {event.title}
+      </Text>
+      {!!noteContent && (
+        <>
+          <Text
+            style={styles.eventDesc}
+            numberOfLines={expanded ? undefined : NOTE_COLLAPSED_LINES}
+            onTextLayout={(e) => {
+              if (e.nativeEvent.lines.length > NOTE_COLLAPSED_LINES) setTruncated(true);
+            }}
+          >
+            {noteContent}
+          </Text>
+          {truncated && (
+            <Pressable
+              hitSlop={6}
+              onPress={(e) => {
+                e.stopPropagation();
+                setExpanded((prev) => !prev);
+              }}
+            >
+              <Text style={styles.eventMoreText}>{expanded ? '접기 ▲' : '더보기 ▾'}</Text>
+            </Pressable>
+          )}
+        </>
+      )}
+    </Pressable>
   );
 }
 
@@ -202,6 +245,12 @@ function createNodeStyles(colors: ThemeColors) {
       fontSize: 12,
       color: colors.gray500,
       fontWeight: '500',
+    },
+    eventMoreText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.accent,
+      marginTop: 4,
     },
   });
 }

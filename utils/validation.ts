@@ -26,6 +26,11 @@ export function isValidCoupangKeyword(text: string | undefined | null): boolean 
   const blacklistedKeywords = ['제출', '통장', '교재', '안내문', '봉투', '원복', '활동복', '가방', '성적표', '카드'];
   if (blacklistedKeywords.some(k => trimmed.includes(k))) return false;
 
+  // 6. Filter out household staples most families already have on hand —
+  // unlike consumables (휴지, 물티슈) that regularly need repurchasing.
+  const householdStapleKeywords = ['수건', '속옷'];
+  if (householdStapleKeywords.some(k => trimmed.includes(k))) return false;
+
   return true;
 }
 
