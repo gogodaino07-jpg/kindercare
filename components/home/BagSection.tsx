@@ -1,4 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
@@ -68,19 +69,29 @@ export default function BagSection({ mainEvents, secondaryEvents, displayType, o
 
   return (
     <View style={styles.container}>
+      {mainEvents.length > 0 && (
+        <Pressable
+          style={({ pressed }) => [styles.scanBar, pressed && { opacity: 0.85 }]}
+          onPress={() => router.push('/upload')}
+        >
+          <LinearGradient
+            colors={['#34D399', '#14B8A6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.scanBarGradient}
+          >
+            <Text style={styles.scanBarIcon}>✨</Text>
+            <Text style={styles.scanBarText}>가정통신문 AI 스캔하기</Text>
+            <Text style={styles.scanBarArrow}>→</Text>
+          </LinearGradient>
+        </Pressable>
+      )}
+
       <View style={styles.sectionHeaderRow}>
         <View style={styles.sectionHeaderLeft}>
           <Text style={styles.sectionEmoji}>🎒</Text>
           <Text style={styles.sectionTitle}>가방에 쏙쏙!</Text>
         </View>
-        {mainEvents.length > 0 && (
-          <Pressable
-            style={({ pressed }) => [styles.scanAgainButton, pressed && { opacity: 0.8 }]}
-            onPress={() => router.push('/upload')}
-          >
-            <Text style={styles.scanAgainButtonText}>✨ AI 스캔</Text>
-          </Pressable>
-        )}
       </View>
 
       {mainEvents.length === 0 ? (
@@ -264,16 +275,31 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       color: colors.gray900,
       letterSpacing: -0.5,
     },
-    scanAgainButton: {
-      backgroundColor: colors.purpleBg,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 999,
+    scanBar: {
+      marginHorizontal: SIDE_PADDING,
+      marginBottom: 14,
     },
-    scanAgainButtonText: {
-      fontSize: 12,
+    scanBarGradient: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 14,
+      paddingVertical: 11,
+      borderRadius: 14,
+    },
+    scanBarIcon: {
+      fontSize: 14,
+    },
+    scanBarText: {
+      flex: 1,
+      fontSize: 13,
       fontWeight: '800',
-      color: colors.purple500,
+      color: '#FFFFFF',
+    },
+    scanBarArrow: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: '#FFFFFF',
     },
     secondaryHeaderRow: {
       flexDirection: 'row',
