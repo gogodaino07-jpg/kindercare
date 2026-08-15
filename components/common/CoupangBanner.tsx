@@ -28,7 +28,7 @@ export default function CoupangBanner({ style }: CoupangBannerProps) {
   }, [googleAccount?.email]);
 
   // Adjusting dimensions for the WebView container
-  const bannerHeight = 64;
+  const bannerHeight = 56;
 
   const htmlContent = `
     <!DOCTYPE html>
