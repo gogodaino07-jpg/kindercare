@@ -42,3 +42,15 @@ export function describeShortTip(label: string): string {
   return '즐거운 하루 보내세요';
 }
 
+/** Ultra-short guide text (under ~6자) for the narrow mini weather cards, so it fits on one line next to the emoji. */
+export function describeMiniTip(label: string): string {
+  if (label === '맑음' || label === '대체로 맑음') return '화창해요';
+  if (label === '흐림') return '구름 많아요';
+  if (label === '안개') return '안개 껴요';
+  if (label === '이슬비' || label === '비') return '우산 챙기세요';
+  if (label === '눈' || label === '눈 소나기') return '눈길 조심해요';
+  if (label === '소나기') return '소나기 조심';
+  if (label === '뇌우') return '번개 조심해요';
+  return '즐거운 하루';
+}
+

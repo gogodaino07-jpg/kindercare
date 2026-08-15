@@ -8,7 +8,7 @@ import { useThemeColors } from '../../context/ThemeContext';
 import { WeatherDay } from '../../hooks/useWeeklyWeather';
 import { Child } from '../../types/models';
 import { formatMD } from '../../utils/date';
-import { describeGuideTip, describeShortTip } from '../../utils/weatherCode';
+import { describeGuideTip, describeMiniTip } from '../../utils/weatherCode';
 import Text from '../common/AppText';
 
 interface HomeHeroHeaderProps {
@@ -109,15 +109,13 @@ export default function HomeHeroHeader({
                 style={styles.todayCard}
               >
                 <Text style={styles.todayDateText}>오늘 {today ? formatMD(today.date) : ''}</Text>
-                <View style={styles.todayTempRow}>
-                  <Text style={styles.todayEmoji}>{today?.emoji ?? '🌤️'}</Text>
-                  <Text style={styles.todayTempText}>{today?.tempMax ?? '--'}°</Text>
-                </View>
                 <View style={styles.todayTipBox}>
+                  <Text style={styles.todayEmoji}>{today?.emoji ?? '🌤️'}</Text>
                   <Text style={styles.todayTipText} numberOfLines={2}>
                     {describeGuideTip(today?.label ?? '')}
                   </Text>
                 </View>
+                <Text style={styles.todayTempText}>{today?.tempMax ?? '--'}°</Text>
               </LinearGradient>
             </Pressable>
           )}
@@ -233,12 +231,14 @@ function MiniWeatherCard({
         {label}
         {day ? ` ${formatMD(day.date)}` : ''}
       </Text>
-      <Text style={styles.emoji}>{day?.emoji ?? '🌡️'}</Text>
-      {day && (
-        <Text style={styles.tip} numberOfLines={1}>
-          {describeShortTip(day.label)}
-        </Text>
-      )}
+      <View style={styles.tipRow}>
+        <Text style={styles.emoji}>{day?.emoji ?? '🌡️'}</Text>
+        {day && (
+          <Text style={styles.tip} numberOfLines={1}>
+            {describeMiniTip(day.label)}
+          </Text>
+        )}
+      </View>
       <Text style={styles.temp}>{day ? `${day.tempMax}°` : '--'}</Text>
     </Pressable>
   );
@@ -367,13 +367,8 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '700',
       color: 'rgba(255,255,255,0.9)',
     },
-    todayTempRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
     todayEmoji: {
-      fontSize: 30,
+      fontSize: 20,
     },
     todayTempText: {
       fontSize: 40,
@@ -382,12 +377,16 @@ function createStyles(colors: ThemeColors) {
       letterSpacing: -1,
     },
     todayTipBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
       backgroundColor: 'rgba(255,255,255,0.18)',
       borderRadius: 12,
       paddingHorizontal: 12,
       paddingVertical: 8,
     },
     todayTipText: {
+      flex: 1,
       fontSize: 12,
       fontWeight: '600',
       color: '#FFFFFF',
@@ -481,9 +480,15 @@ function createMiniCardStyles(colors: ThemeColors) {
       textAlign: 'center',
       marginBottom: 4,
     },
+    tipRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginVertical: 4,
+      maxWidth: '100%',
+    },
     emoji: {
-      fontSize: 18,
-      marginBottom: 2,
+      fontSize: 16,
     },
     temp: {
       fontSize: 18,
@@ -494,8 +499,7 @@ function createMiniCardStyles(colors: ThemeColors) {
       fontSize: 11,
       fontWeight: '600',
       color: colors.gray500,
-      textAlign: 'center',
-      marginVertical: 4,
+      flexShrink: 1,
     },
   });
 }
