@@ -207,7 +207,7 @@ function BagCard({
           </View>
         </Pressable>
 
-        <Pressable onPress={handleTogglePress}>
+        <Pressable style={styles.singleRowButtonWrap} onPress={handleTogglePress}>
           <Animated.View
             style={[
               styles.completeButton,
@@ -421,7 +421,6 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       width: cardWidth,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
       gap: 12,
       borderRadius: 18,
       padding: 12,
@@ -433,9 +432,12 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
+      flex: 1,
+      minWidth: 0,
     },
     singleRowTextBlock: {
-      flexShrink: 1,
+      flex: 1,
+      minWidth: 0,
     },
     singleRowBadge: {
       alignSelf: 'flex-start',
@@ -450,6 +452,9 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
     singleRowCompleteButton: {
       marginTop: 0,
       paddingHorizontal: 14,
+    },
+    singleRowButtonWrap: {
+      alignSelf: 'center',
     },
     emptyCard: {
       marginHorizontal: SIDE_PADDING,
