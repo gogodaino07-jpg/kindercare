@@ -1,7 +1,9 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
 import Text from '../components/common/AppText';
 import LocationPermissionModal from '../components/nearby-places/LocationPermissionModal';
@@ -28,6 +30,8 @@ function formatDistance(meters?: number): string | null {
 }
 
 export default function NearbyPlacesScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -103,6 +107,25 @@ export default function NearbyPlacesScreen() {
 
   return (
     <ScreenBackground>
+      <LinearGradient
+        colors={[colors.pastelOrangeAccent, colors.pastelPinkAccent]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.heroHeader, { paddingTop: insets.top + 18 }]}
+      >
+        <Pressable
+          style={[styles.closeButton, { top: insets.top + 10 }]}
+          onPress={() => router.back()}
+          hitSlop={10}
+          accessibilityLabel="닫기"
+        >
+          <Text style={styles.closeButtonText}>✕</Text>
+        </Pressable>
+        <Text style={styles.heroEmoji}>🗺️</Text>
+        <Text style={styles.heroTitle}>나들이 장소 추천</Text>
+        <Text style={styles.heroSubtitle}>아이와 함께 가기 좋은 곳을 찾아보세요</Text>
+      </LinearGradient>
+
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           <Pressable style={styles.locateButton} onPress={handlePressLocate} disabled={locating}>
@@ -315,6 +338,49 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     safeArea: { flex: 1 },
     content: { padding: 20, paddingBottom: 40 },
+    heroHeader: {
+      alignItems: 'center',
+      paddingBottom: 26,
+      paddingHorizontal: 24,
+      borderBottomLeftRadius: 32,
+      borderBottomRightRadius: 32,
+      ...SHADOW,
+      shadowOpacity: 0.22,
+      shadowColor: colors.pastelPinkAccent,
+      elevation: 6,
+    },
+    closeButton: {
+      position: 'absolute',
+      right: 16,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: 'rgba(255,255,255,0.3)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    closeButtonText: {
+      fontSize: 17,
+      fontWeight: '800',
+      color: '#FFFFFF',
+    },
+    heroEmoji: {
+      fontSize: 42,
+      marginBottom: 4,
+    },
+    heroTitle: {
+      fontSize: 25,
+      fontWeight: '900',
+      color: '#FFFFFF',
+      letterSpacing: -0.5,
+    },
+    heroSubtitle: {
+      marginTop: 6,
+      fontSize: 13,
+      fontWeight: '700',
+      color: 'rgba(255,255,255,0.92)',
+      textAlign: 'center',
+    },
     locateButton: {
       backgroundColor: colors.cardWhite,
       borderRadius: 16,
