@@ -1,4 +1,3 @@
-import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
@@ -54,11 +53,11 @@ export default function HomeHeroHeader({
   return (
     <View>
       <View style={styles.topIconsRow}>
-        <Pressable style={styles.iconButton} onPress={() => router.push('/calendar')}>
-          <MaterialIcons name="date-range" size={18} color={colors.gray600} />
+        <Pressable style={[styles.iconButton, { backgroundColor: colors.purpleBg }]} onPress={() => router.push('/calendar')}>
+          <Text style={styles.iconEmoji}>📅</Text>
         </Pressable>
-        <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
-          <MaterialIcons name="settings" size={18} color={colors.gray600} />
+        <Pressable style={[styles.iconButton, { backgroundColor: colors.pinkBg }]} onPress={() => router.push('/settings')}>
+          <Text style={styles.iconEmoji}>⚙️</Text>
         </Pressable>
       </View>
 
@@ -192,10 +191,12 @@ function createStyles(colors: ThemeColors) {
       borderRadius: ICON_BUTTON_SIZE / 2,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.cardWhite,
       ...SHADOW,
       shadowOpacity: 0.06,
       elevation: 1,
+    },
+    iconEmoji: {
+      fontSize: 15,
     },
     greetingSection: {
       alignItems: 'center',
