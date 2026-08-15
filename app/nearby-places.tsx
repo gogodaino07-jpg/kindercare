@@ -111,19 +111,17 @@ export default function NearbyPlacesScreen() {
         colors={[colors.pastelOrangeAccent, colors.pastelPinkAccent]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.heroHeader, { paddingTop: insets.top + 18 }]}
+        style={[styles.heroHeader, { paddingTop: insets.top + 10 }]}
       >
+        <Text style={styles.heroTitle}>🗺️ 나들이 장소 추천</Text>
         <Pressable
-          style={[styles.closeButton, { top: insets.top + 10 }]}
+          style={styles.closeButton}
           onPress={() => router.back()}
           hitSlop={10}
           accessibilityLabel="닫기"
         >
           <Text style={styles.closeButtonText}>✕</Text>
         </Pressable>
-        <Text style={styles.heroEmoji}>🗺️</Text>
-        <Text style={styles.heroTitle}>나들이 장소 추천</Text>
-        <Text style={styles.heroSubtitle}>아이와 함께 가기 좋은 곳을 찾아보세요</Text>
       </LinearGradient>
 
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -339,47 +337,37 @@ function createStyles(colors: ThemeColors) {
     safeArea: { flex: 1 },
     content: { padding: 20, paddingBottom: 40 },
     heroHeader: {
+      flexDirection: 'row',
       alignItems: 'center',
-      paddingBottom: 26,
+      justifyContent: 'center',
+      paddingBottom: 14,
       paddingHorizontal: 24,
-      borderBottomLeftRadius: 32,
-      borderBottomRightRadius: 32,
       ...SHADOW,
-      shadowOpacity: 0.22,
+      shadowOpacity: 0.15,
       shadowColor: colors.pastelPinkAccent,
-      elevation: 6,
+      elevation: 3,
     },
     closeButton: {
       position: 'absolute',
       right: 16,
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      bottom: 14,
+      width: 30,
+      height: 30,
+      borderRadius: 15,
       backgroundColor: 'rgba(255,255,255,0.3)',
       alignItems: 'center',
       justifyContent: 'center',
     },
     closeButtonText: {
-      fontSize: 17,
+      fontSize: 15,
       fontWeight: '800',
       color: '#FFFFFF',
     },
-    heroEmoji: {
-      fontSize: 42,
-      marginBottom: 4,
-    },
     heroTitle: {
-      fontSize: 25,
-      fontWeight: '900',
+      fontSize: 17,
+      fontWeight: '800',
       color: '#FFFFFF',
-      letterSpacing: -0.5,
-    },
-    heroSubtitle: {
-      marginTop: 6,
-      fontSize: 13,
-      fontWeight: '700',
-      color: 'rgba(255,255,255,0.92)',
-      textAlign: 'center',
+      letterSpacing: -0.3,
     },
     locateButton: {
       backgroundColor: colors.cardWhite,
