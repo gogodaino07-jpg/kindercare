@@ -85,6 +85,10 @@ export default function NearbyPlacesScreen() {
   const [error, setError] = useState<string | null>(null);
   const [permissionModalVisible, setPermissionModalVisible] = useState(false);
   const [gpsAreaName, setGpsAreaName] = useState<string | null>(null);
+  // Gates the first fetch until we know whether GPS/cache will override the
+  // default (Seoul, recommend) params — otherwise that default list flashes
+  // on screen for a moment before being replaced by the location-based one.
+  const [locationReady, setLocationReady] = useState(!!initialAreaCode);
 
   // When coords is set, the area filter doesn't affect the fetch at all (the
   // API call switches to a radius search around the coords) — excluding it
@@ -112,8 +116,9 @@ export default function NearbyPlacesScreen() {
   }, [coords, effectiveAreaCode, category, sort]);
 
   useEffect(() => {
+    if (!locationReady) return;
     load();
-  }, [load]);
+  }, [load, locationReady]);
 
   const handlePressLocate = async () => {
     const { status } = await Location.getForegroundPermissionsAsync();
@@ -183,10 +188,15 @@ export default function NearbyPlacesScreen() {
       setAreaCode(locationCache.areaCode);
       setGpsAreaName(locationCache.gpsAreaName);
       setSort('distance');
+      setLocationReady(true);
       return;
     }
     Location.getForegroundPermissionsAsync().then(({ status }) => {
-      if (status === 'granted') resolveLocation();
+      if (status === 'granted') {
+        resolveLocation().finally(() => setLocationReady(true));
+      } else {
+        setLocationReady(true);
+      }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -248,17 +258,17 @@ export default function NearbyPlacesScreen() {
           </View>
 
           <FilterSection title="정렬" colors={colors}>
-            <Chip label="추천순" selected={sort === 'recommend'} onPress={() => setSort('recommend')} colors={colors} />
             <Chip
               label="거리순"
               selected={sort === 'distance'}
               onPress={() => (coords ? setSort('distance') : handlePressLocate())}
               colors={colors}
             />
+            <Chip label="추천순" selected={sort === 'recommend'} onPress={() => setSort('recommend')} colors={colors} />
           </FilterSection>
 
           <View style={styles.listSection}>
-            {loading ? (
+            {!locationReady || loading ? (
               <ActivityIndicator style={styles.loadingIndicator} color={colors.accent} />
             ) : error ? (
               <View style={styles.emptyCard}>
