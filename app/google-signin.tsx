@@ -22,8 +22,6 @@ export default function GoogleSignInScreen() {
     signOutGoogle,
     signInWithKakao,
     signOutKakao,
-    signInWithNaver,
-    signOutNaver,
     children,
     dataOwnerEmail,
     resetAllData,
@@ -364,128 +362,6 @@ export default function GoogleSignInScreen() {
     }
   };
 
-  const handleNaverSignIn = async () => {
-    if (loading || toastActive) return;
-    setLoading(true);
-    try {
-      const account = await signInWithNaver();
-
-      // [Withdrawal Check]
-      const withdrawalDateStr = await checkWithdrawalStatus(account.email);
-      if (withdrawalDateStr) {
-        setLoading(true);
-        await purgeCloudData(account.email);
-        console.log('🗑️ Legacy withdrawal data found (Naver). Cloud data purged.');
-      }
-
-      // [Device Ownership Check]
-      // Local data is just a device-level cache for whoever was last signed in.
-      // Switching to a different account silently clears it — see the Google
-      // handler above for the full reasoning.
-      if (dataOwnerEmail && account.email !== dataOwnerEmail) {
-        setLoading(true);
-        await resetAllData({ preserveAccount: true });
-      }
-
-      // [Flow Logic]
-      const hasOnboardedCloud = await checkOnboardingStatus(account.email);
-      const hasCloudData = await checkCloudDataExists(account.email);
-
-      // 1. Re-login Flow
-      if (flow === 'relogin') {
-        if (hasCloudData) {
-          if (hasOnboardedCloud) {
-            try {
-              setLoading(true);
-              await restoreDataFromCloud(account.email);
-              showToast('👋 다시 오신 걸 환영해요!');
-              setTimeout(() => router.replace('/'), 100);
-              return;
-            } catch (err) {
-              console.error('Auto Restore Error:', err);
-            }
-          }
-
-          const restored = await new Promise<boolean>((resolve) => {
-            showAlert({
-              title: '기존 데이터 불러오기',
-              message: '클라우드에 저장된 아이 정보와 캘린더 일정이 있습니다. 지금 불러오시겠습니까?',
-              buttons: [
-                { text: '아니요', style: 'cancel', onPress: () => resolve(false) },
-                { text: '예', onPress: async () => {
-                  try {
-                    setLoading(true);
-                    await restoreDataFromCloud(account.email);
-                    resolve(true);
-                  } catch (err) {
-                    showToast('❌ 데이터 복구 중 오류가 발생했습니다.');
-                    resolve(false);
-                  }
-                }},
-              ],
-            });
-          });
-
-          if (restored) {
-            showToast('👋 데이터를 성공적으로 복구했어요!');
-            setTimeout(() => router.replace('/'), 100);
-            return;
-          }
-        }
-
-        const hasChild = (children?.length ?? 0) > 0;
-        if (hasChild) {
-          completeOnboarding();
-          router.replace('/');
-          return;
-        }
-
-        // [Fix] 이미 계정이 있는 경로(relogin)이나 데이터가 없는 경우 차단
-        if (!hasCloudData && !hasChild) {
-          showToast('가입 한 계정이 아닙니다');
-          await signOutNaver();
-          setLoading(false);
-          return;
-        }
-
-        router.push('/onboarding-child-setup');
-        return;
-      }
-
-      // 2. New Group Creation Flow
-      if (flow === 'create') {
-        regenerateFamilyKey();
-        router.push('/family-create');
-        return;
-      }
-
-      // 3. Join with Code Flow
-      if (flow === 'join') {
-        router.push('/onboarding-child-setup');
-        return;
-      }
-
-      // 4. Default Fallback
-      const hasChild = (children?.length ?? 0) > 0;
-      if (hasChild) {
-        completeOnboarding();
-        router.replace('/');
-      } else {
-        router.push('/onboarding-child-setup');
-      }
-
-    } catch (e: any) {
-      const errorMessage = String(e?.message || '').toLowerCase();
-      if (!errorMessage.includes('cancel') && !errorMessage.includes('user_cancelled')) {
-        showToast(`❌ 네이버 로그인 오류: 다시 시도해 주세요.`);
-        setToastActive(true);
-        setTimeout(() => setToastActive(false), 2500);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleProviderLogin = (provider: string) => {
     showToast(`${provider === 'naver' ? '네이버' : '카카오톡'} 로그인은 준비 중입니다. 구글 로그인을 이용해 주세요.`);
   };
@@ -532,18 +408,6 @@ export default function GoogleSignInScreen() {
               </View>
             )}
           </Pressable>
-
-          <TouchableOpacity
-            style={[styles.btn, styles.btnNaver]}
-            onPress={handleNaverSignIn}
-          >
-            <View style={styles.btnInner}>
-              <View style={styles.naverIconBox}>
-                <Text style={styles.naverIconText}>N</Text>
-              </View>
-              <Text style={styles.btnTextLight}>네이버로 시작하기</Text>
-            </View>
-          </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.btn, styles.btnKakao]}
@@ -632,9 +496,6 @@ function createStyles(colors: ThemeColors) {
       borderWidth: 1,
       borderColor: '#E4E4E7',
     },
-    btnNaver: {
-      backgroundColor: '#03C75A',
-    },
     btnKakao: {
       backgroundColor: '#FEE500',
     },
@@ -653,20 +514,6 @@ function createStyles(colors: ThemeColors) {
       color: '#3C1E1E',
       fontSize: 15,
       fontWeight: '700',
-    },
-    naverIconBox: {
-      backgroundColor: '#FFFFFF',
-      width: 22,
-      height: 22,
-      borderRadius: 4,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 10,
-    },
-    naverIconText: {
-      color: '#03C75A',
-      fontSize: 14,
-      fontWeight: '900',
     },
     googleButtonDisabled: {
       opacity: 0.7,
