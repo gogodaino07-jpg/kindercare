@@ -20,6 +20,7 @@ import BlackboardModal from '../components/home/BlackboardModal';
 import ScreenBackground from '../components/ScreenBackground';
 import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
+import EventIcon from '../components/common/EventIcon';
 import EventCard from '../components/home/EventCard';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
@@ -331,9 +332,6 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    eventCardIconEmoji: {
-      fontSize: 17,
     },
     fabContainer: {
       position: 'absolute',
@@ -703,7 +701,7 @@ export default function CalendarScreen() {
                 <View key={e.id} style={[styles.eventCardWrapper, { backgroundColor: lighten(tint, 0.88) }]}>
                   <View style={styles.eventCardRow}>
                     <View style={[styles.eventCardIconCircle, { backgroundColor: colors.cardWhite }]}>
-                      <Text style={styles.eventCardIconEmoji}>{e.icon || '📌'}</Text>
+                      <EventIcon icon={e.icon} size={20} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <EventCard

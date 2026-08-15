@@ -6,6 +6,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View, KeyboardA
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
 import Text from '../components/common/AppText';
+import EventIcon from '../components/common/EventIcon';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
@@ -156,9 +157,6 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     iconOptionSelected: {
       backgroundColor: colors.purpleBg,
       borderColor: colors.purple500,
-    },
-    iconOptionText: {
-      fontSize: 22,
     },
     chipsContainer: {
       flexDirection: 'row',
@@ -386,7 +384,7 @@ export default function AddEventScreen() {
                       setIconManuallySet(true);
                     }}
                   >
-                    <Text style={styles.iconOptionText}>{option}</Text>
+                    <EventIcon icon={option} size={22} />
                   </Pressable>
                 ))}
               </ScrollView>

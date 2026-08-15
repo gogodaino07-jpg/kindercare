@@ -6,6 +6,7 @@ import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Event } from '../../types/models';
 import Text from '../common/AppText';
+import EventIcon from '../common/EventIcon';
 
 interface BagSectionProps {
   mainEvents: Event[];
@@ -15,7 +16,6 @@ interface BagSectionProps {
   onEventPress: (event: Event) => void;
 }
 
-const DEFAULT_ICON = '📌';
 const SIDE_PADDING = 20;
 const CARD_GAP = 12;
 
@@ -192,7 +192,7 @@ function BagCard({
       <Animated.View style={[styles.singleRowCard, { backgroundColor: cardBg, opacity: doneOpacity }]}>
         <Pressable style={styles.singleRowMain} onPress={onPress}>
           <View style={[styles.iconCircle, muted && { backgroundColor: colors.cardWhite }]}>
-            <Text style={styles.iconEmoji}>{event.icon || DEFAULT_ICON}</Text>
+            <EventIcon icon={event.icon} size={24} />
           </View>
           <View style={styles.singleRowTextBlock}>
             <View style={[styles.dateBadge, styles.singleRowBadge, muted && styles.dateBadgeMuted]}>
@@ -244,7 +244,7 @@ function BagCard({
       <Pressable onPress={onPress}>
         <View style={styles.cardHeaderRow}>
           <View style={[styles.iconCircle, muted && { backgroundColor: colors.cardWhite }]}>
-            <Text style={styles.iconEmoji}>{event.icon || DEFAULT_ICON}</Text>
+            <EventIcon icon={event.icon} size={24} />
           </View>
           <View style={[styles.dateBadge, muted && styles.dateBadgeMuted]}>
             <Text style={[styles.dateBadgeText, { color: muted ? colors.gray500 : category.accent }]}>
@@ -384,9 +384,6 @@ function createStyles(colors: ThemeColors, cardWidth: number) {
       backgroundColor: colors.cardWhite,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    iconEmoji: {
-      fontSize: 20,
     },
     cardTitle: {
       fontSize: 14,

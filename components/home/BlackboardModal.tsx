@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Modal, Pressable, StyleSheet, View, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import Text from '../common/AppText';
+import EventIcon from '../common/EventIcon';
 import { SHADOW } from '../../constants/theme';
 import { useAppLock } from '../../context/AppLockContext';
 import { Event } from '../../types/models';
@@ -43,7 +44,7 @@ export default function BlackboardModal({ event, onClose, readOnly }: Blackboard
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.emojiCircle}>
-              <Text style={styles.headerEmoji}>{event.icon || '📌'}</Text>
+              <EventIcon icon={event.icon} size={38} />
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
               <MaterialIcons name="close" size={24} color="#94A3B8" />
@@ -125,9 +126,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  headerEmoji: {
-    fontSize: 32,
   },
   closeBtn: {
     position: 'absolute',
