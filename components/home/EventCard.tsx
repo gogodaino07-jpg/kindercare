@@ -1,7 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View, TouchableOpacity } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
 import { ThemeColors, SHADOW } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Event } from '../../types/models';
@@ -105,64 +104,57 @@ export default function EventCard({
       </TouchableOpacity>
 
       {isExpanded && !hideExpandButton && (
-        <ScrollView
-          style={styles.checklistScroll}
-          showsVerticalScrollIndicator={false}
-          nestedScrollEnabled={false}
-          disallowInterruption={true}
-        >
-          <View style={styles.checklist}>
-            {items.map((item, idx) => {
-              const isChecked = checkedItems.has(idx);
-              return (
-                <View key={idx} style={styles.checkRow}>
+        <View style={styles.checklist}>
+          {items.map((item, idx) => {
+            const isChecked = checkedItems.has(idx);
+            return (
+              <View key={idx} style={styles.checkRow}>
+                <TouchableOpacity
+                  style={styles.checkLabelArea}
+                  onPress={() => toggleCheck(idx)}
+                  disabled={hideCheckbox}
+                  activeOpacity={0.6}
+                >
+                  {hideCheckbox ? (
+                    <Text style={styles.bullet}>•</Text>
+                  ) : (
+                    <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
+                      {isChecked && <MaterialIcons name="check" size={14} color="#FFFFFF" />}
+                    </View>
+                  )}
+                  <Text style={[
+                    styles.noteText,
+                    isChecked && styles.noteTextChecked,
+                    hideCheckbox && styles.bulletText
+                  ]}>
+                    {item}
+                  </Text>
+                </TouchableOpacity>
+
+                {showCoupangButton && isValidCoupangKeyword(item) && (
                   <TouchableOpacity
-                    style={styles.checkLabelArea}
-                    onPress={() => toggleCheck(idx)}
-                    disabled={hideCheckbox}
-                    activeOpacity={0.6}
+                    style={[
+                      styles.coupangBadge,
+                      !highlighted && styles.coupangBadgeSubtle
+                    ]}
+                    onPress={() => openCoupangSearch(item)}
+                    activeOpacity={0.7}
                   >
-                    {hideCheckbox ? (
-                      <Text style={styles.bullet}>•</Text>
-                    ) : (
-                      <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
-                        {isChecked && <MaterialIcons name="check" size={14} color="#FFFFFF" />}
-                      </View>
-                    )}
                     <Text style={[
-                      styles.noteText,
-                      isChecked && styles.noteTextChecked,
-                      hideCheckbox && styles.bulletText
+                      styles.coupangText,
+                      !highlighted && styles.coupangTextSubtle
                     ]}>
-                      {item}
+                      {highlighted ? '🛒 쿠팡주문' : '쿠팡 검색'}
                     </Text>
                   </TouchableOpacity>
-
-                  {showCoupangButton && isValidCoupangKeyword(item) && (
-                    <TouchableOpacity
-                      style={[
-                        styles.coupangBadge,
-                        !highlighted && styles.coupangBadgeSubtle
-                      ]}
-                      onPress={() => openCoupangSearch(item)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[
-                        styles.coupangText,
-                        !highlighted && styles.coupangTextSubtle
-                      ]}>
-                        {highlighted ? '🛒 쿠팡주문' : '쿠팡 검색'}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              );
-            })}
-            {items.length === 0 && event.memo && (
-              <Text style={styles.memoText}>{event.memo}</Text>
-            )}
-          </View>
-        </ScrollView>
+                )}
+              </View>
+            );
+          })}
+          {items.length === 0 && event.memo && (
+            <Text style={styles.memoText}>{event.memo}</Text>
+          )}
+        </View>
       )}
     </View>
   );
@@ -215,9 +207,6 @@ function createStyles(colors: ThemeColors, themeColor: string, highlighted: bool
     },
     expandButton: {
       padding: 4,
-    },
-    checklistScroll: {
-      maxHeight: 115, // Fits ~2 items comfortably
     },
     checklist: {
       gap: 4, // Reduced from 6
