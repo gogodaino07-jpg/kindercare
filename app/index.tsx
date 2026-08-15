@@ -13,6 +13,7 @@ import ScreenBackground from '../components/ScreenBackground';
 import CoupangBanner from '../components/common/CoupangBanner';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
+import { useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
@@ -92,6 +93,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
 export default function HomeScreen() {
   const router = useRouter();
   const { hasOnboarded, selectedChild, events, googleAccount, onboardingLoaded } = useAppData();
+  const { isLocked } = useAppLock();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
@@ -151,16 +153,19 @@ export default function HomeScreen() {
     }
   }, []);
 
-  // Show ad popup once when app is ready
+  // Show ad popup once when app is ready — never while the app-lock screen is
+  // still up, since a native Modal always renders above it regardless of
+  // z-index and would visually jump the ad in front of the pattern/biometric
+  // prompt on cold start.
   useEffect(() => {
-    if (!adShownRef.current && onboardingLoaded && hasOnboarded && googleAccount) {
+    if (!adShownRef.current && onboardingLoaded && hasOnboarded && googleAccount && !isLocked) {
       const timer = setTimeout(() => {
         setAdPopupVisible(true);
         adShownRef.current = true;
       }, 1500); // 1.5s delay for better UX
       return () => clearTimeout(timer);
     }
-  }, [onboardingLoaded, hasOnboarded, googleAccount]);
+  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked]);
 
   const upcomingElements = useMemo(() => {
     if (upcoming.isEmpty) {
@@ -269,7 +274,7 @@ export default function HomeScreen() {
 
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
-      {!upcoming.isEmpty && <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />}
+      {!upcoming.isEmpty && !isLocked && <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />}
     </ScreenBackground>
   );
 }
