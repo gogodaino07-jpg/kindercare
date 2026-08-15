@@ -8,6 +8,8 @@ import { Coords, NearbyPlace, PlaceCategory, PlaceSort } from '../types';
 const TOUR_API_KEY = process.env.EXPO_PUBLIC_TOUR_API_KEY;
 const BASE_URL = 'https://apis.data.go.kr/B551011/KorService2';
 
+export const DEFAULT_AREA_CODE = '1'; // 서울
+
 type PlaceApiCategory = Exclude<PlaceCategory, 'all'>;
 
 // TourAPI contentTypeId 기준. cat1(대분류)까지 지정한 nature는 관광지 중 자연 항목만 좁혀서 가져옴.

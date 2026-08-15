@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +13,7 @@ import {
   AREA_OPTIONS,
   CATEGORY_OPTIONS,
   Coords,
+  DEFAULT_AREA_CODE,
   fetchNearbyPlaces,
   NearbyPlace,
   PlaceCategory,
@@ -20,8 +21,6 @@ import {
 } from '../features/nearby-places';
 import { withExternalAction } from '../utils/externalAction';
 import { openYeogiSearch } from '../utils/travelLinks';
-
-const DEFAULT_AREA_CODE = '1'; // 서울
 
 function formatDistance(meters?: number): string | null {
   if (meters === undefined) return null;
@@ -31,12 +30,13 @@ function formatDistance(meters?: number): string | null {
 
 export default function NearbyPlacesScreen() {
   const router = useRouter();
+  const { areaCode: initialAreaCode } = useLocalSearchParams<{ areaCode?: string }>();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [coords, setCoords] = useState<Coords | undefined>(undefined);
-  const [areaCode, setAreaCode] = useState(DEFAULT_AREA_CODE);
+  const [areaCode, setAreaCode] = useState(initialAreaCode || DEFAULT_AREA_CODE);
   const [category, setCategory] = useState<PlaceCategory>('all');
   const [sort, setSort] = useState<PlaceSort>('recommend');
 

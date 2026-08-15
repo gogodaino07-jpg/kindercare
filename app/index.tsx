@@ -10,6 +10,7 @@ import ChildSwitcherSheet from '../components/home/ChildSwitcherSheet';
 import HomeEmptyContent from '../components/home/HomeEmptyContent';
 import HomeHeroHeader from '../components/home/HomeHeroHeader';
 import MealPlanSheet from '../components/home/MealPlanSheet';
+import WeekendOutingBanner from '../components/home/WeekendOutingBanner';
 import ScreenBackground from '../components/ScreenBackground';
 import CoupangBanner from '../components/common/CoupangBanner';
 import { SHADOW, type ThemeColors } from '../constants/theme';
@@ -198,6 +199,8 @@ export default function HomeScreen() {
         onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
       />
     );
+
+    elements.push(<WeekendOutingBanner key="weekend-outing-banner" />);
 
     elements.push(<AdventureHeader key="adventure-header" />);
 
