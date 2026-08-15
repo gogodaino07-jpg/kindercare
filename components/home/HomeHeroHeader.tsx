@@ -53,11 +53,11 @@ export default function HomeHeroHeader({
   return (
     <View>
       <View style={styles.topIconsRow}>
-        <Pressable style={[styles.iconButton, { backgroundColor: colors.purpleBg }]} onPress={() => router.push('/calendar')}>
-          <Text style={styles.iconEmoji}>📅</Text>
+        <Pressable style={styles.iconButton} onPress={() => router.push('/calendar')}>
+          <Text style={styles.iconEmoji}>🗓️</Text>
         </Pressable>
-        <Pressable style={[styles.iconButton, { backgroundColor: colors.pinkBg }]} onPress={() => router.push('/settings')}>
-          <Text style={styles.iconEmoji}>⚙️</Text>
+        <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
+          <Text style={styles.iconEmoji}>🧰</Text>
         </Pressable>
       </View>
 
@@ -188,15 +188,11 @@ function createStyles(colors: ThemeColors) {
     iconButton: {
       width: ICON_BUTTON_SIZE,
       height: ICON_BUTTON_SIZE,
-      borderRadius: ICON_BUTTON_SIZE / 2,
       alignItems: 'center',
       justifyContent: 'center',
-      ...SHADOW,
-      shadowOpacity: 0.06,
-      elevation: 1,
     },
     iconEmoji: {
-      fontSize: 15,
+      fontSize: 20,
     },
     greetingSection: {
       alignItems: 'center',
