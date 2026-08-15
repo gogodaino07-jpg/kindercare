@@ -86,7 +86,7 @@ interface AppDataContextValue {
   dismissAdForToday: () => void;
 
   // Account deletion
-  resetAllData: () => Promise<void>;
+  resetAllData: (options?: { preserveAccount?: boolean }) => Promise<void>;
   requestWithdrawal: () => Promise<void>;
   cancelWithdrawal: (email: string) => Promise<void>;
   purgeCloudData: (email: string) => Promise<void>;
@@ -959,19 +959,25 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   // 회원탈퇴: wipes every piece of this app's persisted state and puts the
   // in-memory data back to the same shape a fresh install would have, then
   // the caller navigates back to onboarding.
-  const resetAllData = async () => {
-    await AsyncStorage.multiRemove([
+  //
+  // `preserveAccount` is for the account-switch path in google-signin.tsx: the
+  // user just successfully signed in as a different provider account, so we
+  // only want to clear the previous owner's cached data — not the session we
+  // just established (that would incorrectly bounce them back to splash).
+  const resetAllData = async (options?: { preserveAccount?: boolean }) => {
+    const keysToRemove = [
       HAS_ONBOARDED_KEY,
       FONT_SIZE_KEY,
       EVENTS_KEY,
-      GOOGLE_ACCOUNT_KEY,
       CHILDREN_KEY,
       SELECTED_CHILD_ID_KEY,
       NOTIFICATION_SETTINGS_KEY,
       FAMILY_MEMBERS_KEY,
       DATA_OWNER_EMAIL_KEY,
       FAMILY_KEY_KEY,
-    ]).catch(() => {});
+    ];
+    if (!options?.preserveAccount) keysToRemove.push(GOOGLE_ACCOUNT_KEY);
+    await AsyncStorage.multiRemove(keysToRemove).catch(() => {});
     if (googleAccount?.email) {
       await AIUsageLimitService.resetUsage(googleAccount.email);
     }
@@ -986,7 +992,9 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setFontSizeChoiceState(DEFAULT_FONT_SIZE);
     setChalkboardThemeId(DEFAULT_CHALKBOARD_THEME_ID);
     setAdDismissedDate(null);
-    setGoogleAccount(null);
+    if (!options?.preserveAccount) {
+      setGoogleAccount(null);
+    }
     setDataOwnerEmail(null);
   };
 

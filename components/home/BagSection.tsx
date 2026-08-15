@@ -29,9 +29,9 @@ function lighten(hex: string, amount: number): string {
 }
 
 function getCategoryStyle(event: Event, colors: ThemeColors) {
-  if (event.needsReview) return { bg: colors.pastelOrange, mutedBg: colors.orangeLight1, accent: colors.pastelOrangeAccent };
-  if (event.source === 'manual') return { bg: colors.pastelPink, mutedBg: colors.tomorrowRedBg, accent: colors.pastelPinkAccent };
-  return { bg: colors.pastelBlue, mutedBg: colors.lightBlueBg, accent: colors.pastelBlueAccent };
+  if (event.needsReview) return { bg: colors.pastelOrange, accent: colors.pastelOrangeAccent };
+  if (event.source === 'manual') return { bg: colors.pastelPink, accent: colors.pastelPinkAccent };
+  return { bg: colors.pastelBlue, accent: colors.pastelBlueAccent };
 }
 
 export default function BagSection({ mainEvents, secondaryEvents, displayType, onEventPress }: BagSectionProps) {
@@ -134,7 +134,7 @@ function BagCard({
   // "내일" cards (tomorrow's items shown as the main focus) get a paler card
   // background than usual — button color stays the normal accent.
   const isTomorrowCard = !muted && badgeText === '내일';
-  const cardBg = muted ? category.mutedBg : (isTomorrowCard ? lighten(category.bg, 0.6) : category.bg);
+  const cardBg = muted ? colors.gray100 : (isTomorrowCard ? lighten(category.bg, 0.6) : category.bg);
 
   // Fades the whole card when marked done, so "완료" reads as a finished
   // task rather than just a button color flip.
@@ -197,7 +197,7 @@ function BagCard({
           style={[
             styles.completeButton,
             muted
-              ? [styles.completeButtonMuted, { borderColor: category.accent }, isDone && { backgroundColor: category.accent }]
+              ? [styles.completeButtonMuted, { borderColor: colors.gray400 }, isDone && { backgroundColor: colors.gray400, borderColor: colors.gray400 }]
               : { backgroundColor: isDone ? colors.gray900 : category.accent },
             { transform: [{ scale: buttonScale }] },
           ]}
@@ -211,13 +211,13 @@ function BagCard({
           <MaterialIcons
             name="check"
             size={14}
-            color={muted && !isDone ? category.accent : '#FFFFFF'}
+            color={muted && !isDone ? colors.gray500 : '#FFFFFF'}
           />
         </Animated.View>
         <Text
           style={[
             styles.completeButtonText,
-            muted && !isDone && { color: category.accent },
+            muted && !isDone && { color: colors.gray500 },
           ]}
         >
           {isDone ? '완료!' : '확인'}

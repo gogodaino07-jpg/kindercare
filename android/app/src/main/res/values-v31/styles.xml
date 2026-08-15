@@ -1,0 +1,15 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+  <!--
+    Android 12+ (API 31) shows its own system SplashScreen before this
+    Activity's theme/windowBackground is even applied. Without this override
+    it defaults to the launcher icon, which briefly flashes before the app's
+    own branded splash (Theme.App.SplashScreen's windowBackground, then
+    BootSplashOverlay) takes over. Pointing it at the same splash logo makes
+    the two look continuous instead of like two different icons.
+  -->
+  <style name="Theme.App.SplashScreen" parent="Theme.SplashScreen">
+    <item name="windowSplashScreenBackground">@color/splashscreen_background</item>
+    <item name="windowSplashScreenAnimatedIcon">@drawable/splashscreen_logo</item>
+    <item name="postSplashScreenTheme">@style/AppTheme</item>
+  </style>
+</resources>

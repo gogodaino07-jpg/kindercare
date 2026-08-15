@@ -105,28 +105,13 @@ export default function GoogleSignInScreen() {
       }
 
       // [Device Ownership Check]
-      // If there's local data from a different owner, ask to wipe or cancel.
+      // Local data is just a device-level cache for whoever was last signed in.
+      // Switching to a different account silently clears it — the new account's
+      // own data (cloud restore or a fresh start) takes over right after, so
+      // there's nothing here worth interrupting the user to confirm.
       if (dataOwnerEmail && account.email !== dataOwnerEmail) {
-        const shouldWipe = await new Promise<boolean>((resolve) => {
-          showAlert({
-            title: '다른 계정 데이터 발견',
-            message: '이 기기에는 다른 사용자의 데이터가 있습니다. 기존 데이터를 삭제하고 현재 계정으로 새롭게 시작하시겠습니까?',
-            buttons: [
-              { text: '취소', style: 'cancel', onPress: () => resolve(false) },
-              { text: '데이터 삭제 후 시작', style: 'destructive', onPress: () => resolve(true) },
-            ],
-          });
-        });
-
-        if (shouldWipe) {
-          setLoading(true);
-          await resetAllData();
-          showToast('기존 데이터가 삭제되었습니다.');
-        } else {
-          await signOutGoogle();
-          setLoading(false);
-          return;
-        }
+        setLoading(true);
+        await resetAllData({ preserveAccount: true });
       }
 
       // [Flow Logic]
@@ -271,27 +256,12 @@ export default function GoogleSignInScreen() {
       }
 
       // [Device Ownership Check]
+      // Local data is just a device-level cache for whoever was last signed in.
+      // Switching to a different account silently clears it — see the Google
+      // handler above for the full reasoning.
       if (dataOwnerEmail && account.email !== dataOwnerEmail) {
-        const shouldWipe = await new Promise<boolean>((resolve) => {
-          showAlert({
-            title: '다른 계정 데이터 발견',
-            message: '이 기기에는 다른 사용자의 데이터가 있습니다. 기존 데이터를 삭제하고 현재 계정으로 새롭게 시작하시겠습니까?',
-            buttons: [
-              { text: '취소', style: 'cancel', onPress: () => resolve(false) },
-              { text: '데이터 삭제 후 시작', style: 'destructive', onPress: () => resolve(true) },
-            ],
-          });
-        });
-
-        if (shouldWipe) {
-          setLoading(true);
-          await resetAllData();
-          showToast('기존 데이터가 삭제되었습니다.');
-        } else {
-          await signOutKakao();
-          setLoading(false);
-          return;
-        }
+        setLoading(true);
+        await resetAllData({ preserveAccount: true });
       }
 
       // [Flow Logic]
@@ -409,27 +379,12 @@ export default function GoogleSignInScreen() {
       }
 
       // [Device Ownership Check]
+      // Local data is just a device-level cache for whoever was last signed in.
+      // Switching to a different account silently clears it — see the Google
+      // handler above for the full reasoning.
       if (dataOwnerEmail && account.email !== dataOwnerEmail) {
-        const shouldWipe = await new Promise<boolean>((resolve) => {
-          showAlert({
-            title: '다른 계정 데이터 발견',
-            message: '이 기기에는 다른 사용자의 데이터가 있습니다. 기존 데이터를 삭제하고 현재 계정으로 새롭게 시작하시겠습니까?',
-            buttons: [
-              { text: '취소', style: 'cancel', onPress: () => resolve(false) },
-              { text: '데이터 삭제 후 시작', style: 'destructive', onPress: () => resolve(true) },
-            ],
-          });
-        });
-
-        if (shouldWipe) {
-          setLoading(true);
-          await resetAllData();
-          showToast('기존 데이터가 삭제되었습니다.');
-        } else {
-          await signOutNaver();
-          setLoading(false);
-          return;
-        }
+        setLoading(true);
+        await resetAllData({ preserveAccount: true });
       }
 
       // [Flow Logic]

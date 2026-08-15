@@ -24,6 +24,19 @@ export default function PatternGrid({ colors, showTrail, onComplete, size = 240 
   const [path, setPath] = useState<number[]>([]);
   const [dragPoint, setDragPoint] = useState<{ x: number; y: number } | null>(null);
   const pathRef = useRef<number[]>([]);
+  const containerRef = useRef<View>(null);
+  // Screen-absolute position of the grid, measured on layout. `locationX/Y` from
+  // touch events are relative to whichever view the finger is currently over —
+  // during a fast drag that can briefly be a sibling element, making the reported
+  // point jump outside the grid. Converting from `pageX/Y` (always screen-absolute)
+  // via this offset keeps the trail line locked to the actual finger position.
+  const containerOffset = useRef({ x: 0, y: 0 });
+
+  const measureContainer = () => {
+    containerRef.current?.measureInWindow((x, y) => {
+      containerOffset.current = { x, y };
+    });
+  };
 
   const centers = useMemo(
     () => Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, i) => centerFor(i, cell)),
@@ -37,7 +50,9 @@ export default function PatternGrid({ colors, showTrail, onComplete, size = 240 
   onCompleteRef.current = onComplete;
 
   const handleTouch = (evt: GestureResponderEvent) => {
-    let { locationX, locationY } = evt.nativeEvent;
+    const { pageX, pageY } = evt.nativeEvent;
+    let locationX = pageX - containerOffset.current.x;
+    let locationY = pageY - containerOffset.current.y;
 
     // Clamp coordinates to stay within the grid boundaries
     locationX = Math.max(0, Math.min(size, locationX));
@@ -64,6 +79,7 @@ export default function PatternGrid({ colors, showTrail, onComplete, size = 240 
       onPanResponderGrant: (evt) => {
         pathRef.current = [];
         setPath([]);
+        measureContainer();
         handleTouch(evt);
       },
       onPanResponderMove: (evt) => handleTouch(evt),
@@ -91,6 +107,8 @@ export default function PatternGrid({ colors, showTrail, onComplete, size = 240 
 
   return (
     <View
+      ref={containerRef}
+      onLayout={measureContainer}
       style={[styles.container, { width: size, height: size }]}
       {...panResponder.panHandlers}
     >
