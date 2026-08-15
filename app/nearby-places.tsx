@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../components/ScreenBackground';
 import Text from '../components/common/AppText';
@@ -17,7 +17,7 @@ import {
   PlaceSort,
 } from '../features/nearby-places';
 import { withExternalAction } from '../utils/externalAction';
-import { openYanoljaSearch, openYeogiSearch } from '../utils/travelLinks';
+import { openYeogiSearch } from '../utils/travelLinks';
 
 const DEFAULT_AREA_CODE = '1'; // 서울
 
@@ -115,37 +115,31 @@ export default function NearbyPlacesScreen() {
             )}
           </Pressable>
 
-          <FilterSection title="지역" colors={colors}>
-            {AREA_OPTIONS.map((area) => (
-              <Chip
-                key={area.code}
-                label={area.label}
-                selected={!coords && areaCode === area.code}
-                onPress={() => handleSelectArea(area.code)}
-                colors={colors}
-              />
-            ))}
-          </FilterSection>
-
-          <FilterSection title="카테고리" colors={colors}>
-            {CATEGORY_OPTIONS.map((opt) => (
-              <Chip
-                key={opt.id}
-                label={opt.label}
-                selected={category === opt.id}
-                onPress={() => setCategory(opt.id)}
-                colors={colors}
-              />
-            ))}
-          </FilterSection>
+          <View style={styles.dropdownRow}>
+            <Dropdown
+              label="지역"
+              options={AREA_OPTIONS.map((area) => ({ value: area.code, label: area.label }))}
+              selectedValue={areaCode}
+              selectedLabel={coords ? '현재 위치' : (AREA_OPTIONS.find((a) => a.code === areaCode)?.label ?? '지역')}
+              onSelect={handleSelectArea}
+              colors={colors}
+            />
+            <Dropdown
+              label="카테고리"
+              options={CATEGORY_OPTIONS.map((opt) => ({ value: opt.id, label: opt.label }))}
+              selectedValue={category}
+              selectedLabel={CATEGORY_OPTIONS.find((opt) => opt.id === category)?.label ?? '전체'}
+              onSelect={(value) => setCategory(value as PlaceCategory)}
+              colors={colors}
+            />
+          </View>
 
           <FilterSection title="정렬" colors={colors}>
             <Chip label="추천순" selected={sort === 'recommend'} onPress={() => setSort('recommend')} colors={colors} />
             <Chip
               label="거리순"
               selected={sort === 'distance'}
-              onPress={() => coords && setSort('distance')}
-              disabled={!coords}
+              onPress={() => (coords ? setSort('distance') : handlePressLocate())}
               colors={colors}
             />
           </FilterSection>
@@ -224,6 +218,67 @@ function Chip({
   );
 }
 
+function Dropdown({
+  label,
+  options,
+  selectedValue,
+  selectedLabel,
+  onSelect,
+  colors,
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  selectedValue: string;
+  selectedLabel: string;
+  onSelect: (value: string) => void;
+  colors: ThemeColors;
+}) {
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Pressable style={styles.dropdownButton} onPress={() => setOpen(true)}>
+        <Text style={styles.dropdownLabel}>{label}</Text>
+        <View style={styles.dropdownValueRow}>
+          <Text style={styles.dropdownValue} numberOfLines={1}>
+            {selectedLabel}
+          </Text>
+          <Text style={styles.dropdownChevron}>▾</Text>
+        </View>
+      </Pressable>
+
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={styles.dropdownOverlay} onPress={() => setOpen(false)}>
+          <Pressable style={styles.dropdownSheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.dropdownSheetTitle}>{label} 선택</Text>
+            <ScrollView>
+              {options.map((opt) => {
+                const selected = opt.value === selectedValue;
+                return (
+                  <Pressable
+                    key={opt.value}
+                    style={[styles.dropdownOption, selected && styles.dropdownOptionSelected]}
+                    onPress={() => {
+                      onSelect(opt.value);
+                      setOpen(false);
+                    }}
+                  >
+                    <Text style={[styles.dropdownOptionText, selected && styles.dropdownOptionTextSelected]}>
+                      {opt.label}
+                    </Text>
+                    {selected && <Text style={styles.dropdownCheck}>✓</Text>}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
 function PlaceCard({ place, colors }: { place: NearbyPlace; colors: ThemeColors }) {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const distance = formatDistance(place.distanceMeters);
@@ -245,20 +300,12 @@ function PlaceCard({ place, colors }: { place: NearbyPlace; colors: ThemeColors 
           {place.address}
           {distance ? ` · ${distance}` : ''}
         </Text>
-        <View style={styles.cardButtonRow}>
-          <Pressable
-            style={[styles.cardButton, styles.cardButtonYeogi]}
-            onPress={() => openYeogiSearch(place.title)}
-          >
-            <Text style={styles.cardButtonYeogiText}>여기어때에서 보기</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.cardButton, styles.cardButtonYanolja]}
-            onPress={() => openYanoljaSearch(place.title)}
-          >
-            <Text style={styles.cardButtonYanoljaText}>야놀자에서 보기</Text>
-          </Pressable>
-        </View>
+        <Pressable
+          style={[styles.cardButton, styles.cardButtonYeogi]}
+          onPress={() => openYeogiSearch(place.title)}
+        >
+          <Text style={styles.cardButtonYeogiText}>여기어때에서 보기</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -375,12 +422,7 @@ function createStyles(colors: ThemeColors) {
       marginTop: 2,
       marginBottom: 8,
     },
-    cardButtonRow: {
-      flexDirection: 'row',
-      gap: 6,
-    },
     cardButton: {
-      flex: 1,
       borderRadius: 10,
       paddingVertical: 8,
       alignItems: 'center',
@@ -393,13 +435,89 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '700',
       color: colors.pinkText,
     },
-    cardButtonYanolja: {
-      backgroundColor: colors.lightBlueBg,
+    dropdownRow: {
+      flexDirection: 'row',
+      gap: 10,
+      marginBottom: 16,
     },
-    cardButtonYanoljaText: {
+    dropdownButton: {
+      flex: 1,
+      backgroundColor: colors.cardWhite,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    dropdownLabel: {
       fontSize: 11,
       fontWeight: '700',
+      color: colors.textSecondary,
+      marginBottom: 2,
+    },
+    dropdownValueRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    dropdownValue: {
+      flexShrink: 1,
+      fontSize: 14,
+      fontWeight: '800',
+      color: colors.textPrimary,
+    },
+    dropdownChevron: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginLeft: 6,
+    },
+    dropdownOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(20, 24, 22, 0.45)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+    },
+    dropdownSheet: {
+      width: '100%',
+      maxWidth: 360,
+      maxHeight: '70%',
+      backgroundColor: colors.skyBackground,
+      borderRadius: 20,
+      padding: 16,
+      ...SHADOW,
+    },
+    dropdownSheetTitle: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: colors.gray900,
+      marginBottom: 10,
+      textAlign: 'center',
+    },
+    dropdownOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+      paddingHorizontal: 10,
+      borderRadius: 12,
+    },
+    dropdownOptionSelected: {
+      backgroundColor: colors.lightBlueBg,
+    },
+    dropdownOptionText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    dropdownOptionTextSelected: {
       color: colors.blue500,
+      fontWeight: '800',
+    },
+    dropdownCheck: {
+      fontSize: 14,
+      color: colors.blue500,
+      fontWeight: '800',
     },
   });
 }
