@@ -108,9 +108,6 @@ async function fetchCategory(
     _type: 'json',
     numOfRows: '20',
     pageNo: '1',
-    listYN: 'Y',
-    // 거리순(S)/제목순(A) — 위치기반 검색이 아니면 어차피 클라이언트에서 다시 정렬함
-    arrangeType: useLocation ? 'S' : 'A',
     contentTypeId: CATEGORY_CONTENT_TYPE[category],
   });
 
