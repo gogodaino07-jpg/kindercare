@@ -336,7 +336,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     fabContainer: {
       position: 'absolute',
-      bottom: 118 + bottomInset, // Increased from 95 to avoid overlap with ad banner
+      bottom: 100 + bottomInset, // Above the ad banner (~85 + inset), below the event list
       right: 20,
       zIndex: 100,
     },
