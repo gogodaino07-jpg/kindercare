@@ -1,4 +1,4 @@
-import { Dongle_400Regular } from '@expo-google-fonts/dongle';
+import { Dongle_400Regular, Dongle_700Bold } from '@expo-google-fonts/dongle';
 import { EastSeaDokdo_400Regular } from '@expo-google-fonts/east-sea-dokdo';
 import { GamjaFlower_400Regular } from '@expo-google-fonts/gamja-flower';
 import { Gaegu_400Regular } from '@expo-google-fonts/gaegu';
@@ -196,6 +196,7 @@ export default function RootLayout() {
     PoorStory_400Regular,
     Jua_400Regular,
     Dongle_400Regular,
+    Dongle_700Bold,
     YeonSung_400Regular,
     Sunflower_500Medium,
     EastSeaDokdo_400Regular,

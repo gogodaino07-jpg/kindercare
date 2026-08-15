@@ -44,7 +44,7 @@ export default function WeekendOutingBanner() {
   }, []);
 
   // Pop the speech bubble in, then keep it wiggling side-to-side with a
-  // scale pulse — reads as the mascot excitedly chiming in "저요 저요!",
+  // scale pulse — reads as the mascot excitedly chiming in "IT'S ME!!",
   // not just decoration.
   useEffect(() => {
     if (!place) return;
@@ -57,17 +57,17 @@ export default function WeekendOutingBanner() {
     }).start(() => {
       const loop = Animated.loop(
         Animated.sequence([
-          Animated.delay(500),
+          Animated.delay(900),
           Animated.parallel([
             Animated.sequence([
-              Animated.timing(bubbleWiggle, { toValue: -1, duration: 90, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-              Animated.timing(bubbleWiggle, { toValue: 1, duration: 90, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-              Animated.timing(bubbleWiggle, { toValue: -0.6, duration: 90, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-              Animated.timing(bubbleWiggle, { toValue: 0, duration: 90, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+              Animated.timing(bubbleWiggle, { toValue: -1, duration: 170, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+              Animated.timing(bubbleWiggle, { toValue: 1, duration: 170, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+              Animated.timing(bubbleWiggle, { toValue: -0.6, duration: 170, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+              Animated.timing(bubbleWiggle, { toValue: 0, duration: 170, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
             ]),
             Animated.sequence([
-              Animated.timing(bubbleScale, { toValue: 1.14, duration: 150, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-              Animated.timing(bubbleScale, { toValue: 1, duration: 210, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+              Animated.timing(bubbleScale, { toValue: 1.14, duration: 280, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+              Animated.timing(bubbleScale, { toValue: 1, duration: 400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
             ]),
           ]),
         ])
@@ -84,9 +84,9 @@ export default function WeekendOutingBanner() {
     if (!place) return;
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(arrowNudge, { toValue: 5, duration: 400, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.timing(arrowNudge, { toValue: 0, duration: 400, easing: Easing.in(Easing.quad), useNativeDriver: true }),
-        Animated.delay(500),
+        Animated.timing(arrowNudge, { toValue: 5, duration: 600, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(arrowNudge, { toValue: 0, duration: 600, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+        Animated.delay(700),
       ])
     );
     loop.start();
@@ -125,16 +125,17 @@ export default function WeekendOutingBanner() {
 
         <Animated.View style={[styles.ctaButton, { transform: [{ scale: ctaScale }] }]}>
           <Text style={styles.ctaButtonText}>보러가기</Text>
-          <Animated.Text style={[styles.ctaButtonArrow, { transform: [{ translateX: arrowNudge }] }]}>
-            →
-          </Animated.Text>
+          <Animated.View style={[styles.ctaButtonArrowWrap, { transform: [{ translateX: arrowNudge }] }]}>
+            <Text style={[styles.ctaButtonArrow, styles.ctaButtonArrowShadow]}>→</Text>
+            <Text style={styles.ctaButtonArrow}>→</Text>
+          </Animated.View>
         </Animated.View>
 
         <View style={styles.mascotWrap}>
           <Animated.View
             style={[styles.bubble, { transform: [{ scale: bubbleScale }, { rotate: bubbleRotate }] }]}
           >
-            <Text style={styles.bubbleText}>저요 저요!</Text>
+            <Text style={styles.bubbleText}>IT'S ME!!</Text>
             <View style={styles.bubbleTail} />
           </Animated.View>
           <Text style={styles.mascot}>🧸</Text>
@@ -201,11 +202,19 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '900',
       color: '#5B21B6',
     },
+    ctaButtonArrowWrap: {
+      marginLeft: 6,
+      position: 'relative',
+    },
     ctaButtonArrow: {
       fontSize: 18,
       fontWeight: '900',
       color: '#DB2777',
-      marginLeft: 6,
+    },
+    ctaButtonArrowShadow: {
+      position: 'absolute',
+      left: 0.6,
+      top: 0.6,
     },
     mascotWrap: {
       position: 'absolute',
@@ -219,19 +228,19 @@ function createStyles(colors: ThemeColors) {
     },
     bubble: {
       position: 'absolute',
-      top: -34,
+      top: -36,
       left: -4,
       backgroundColor: '#FFFFFF',
       borderRadius: 999,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
       ...SHADOW,
       shadowOpacity: 0.15,
       elevation: 3,
     },
     bubbleText: {
-      fontSize: 12,
-      fontWeight: '800',
+      fontFamily: 'Dongle_700Bold',
+      fontSize: 24,
       color: colors.purpleDeep,
     },
     bubbleTail: {
