@@ -128,6 +128,7 @@ export default function HomeScreen() {
             onPressMeal={() => setMealSheetOpen(true)}
             weatherDays={weather.days}
             weatherLoading={weather.loading}
+            locationLabel={weather.locationLabel}
             onPressDate={onDatePress}
           />
         ) : (
@@ -145,6 +146,7 @@ export default function HomeScreen() {
               onPressMeal={() => setMealSheetOpen(true)}
               weatherDays={weather.days}
               weatherLoading={weather.loading}
+              locationLabel={weather.locationLabel}
               onPressDate={onDatePress}
             />
             <View onLayout={(e) => { progressYRef.current = e.nativeEvent.layout.y; }}>

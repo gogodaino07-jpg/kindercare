@@ -14,6 +14,7 @@ interface HomeEmptyContentProps {
   onPressMeal: () => void;
   weatherDays: WeatherDay[] | null;
   weatherLoading: boolean;
+  locationLabel?: string;
   onPressDate: (date: string) => void;
 }
 
@@ -22,6 +23,7 @@ export default function HomeEmptyContent({
   onPressMeal,
   weatherDays,
   weatherLoading,
+  locationLabel,
   onPressDate,
 }: HomeEmptyContentProps) {
   const router = useRouter();
@@ -35,6 +37,7 @@ export default function HomeEmptyContent({
           onPressMeal={onPressMeal}
           weatherDays={weatherDays}
           weatherLoading={weatherLoading}
+          locationLabel={locationLabel}
           onPressDate={onPressDate}
         />
 

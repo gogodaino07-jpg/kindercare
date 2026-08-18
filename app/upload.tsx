@@ -349,15 +349,12 @@ export default function UploadScreen() {
     setRemainingAnalyses(count);
     setAnalyzing(false);
 
-    // Meal plans don't need review — save them right away so they show up
-    // in the home screen's meal popup even if the user never finishes
-    // reviewing/saving the events below (or there are no events at all).
-    if (mealPlans.length > 0) {
-      addMealPlans(mealPlans);
-    }
-
     // 급식 메뉴 전용 스캔은 일정과 무관하게 급식 메뉴만 가져오면 끝 — 검수 화면으로 보내지 않는다.
+    // 종합(가정통신문) 스캔에서는 급식 메뉴가 감지돼도 저장하지 않는다 — 급식은 반드시 전용 스캔으로만 등록.
     if (isMealMode) {
+      if (mealPlans.length > 0) {
+        addMealPlans(mealPlans);
+      }
       AnalysisResultStore.clearPendingSession();
       showToast(mealPlans.length > 0 ? '급식 메뉴를 등록했어요 🍱' : '사진에서 급식 메뉴를 찾지 못했어요. 다른 사진으로 시도해보세요.');
       router.back();
@@ -525,6 +522,21 @@ export default function UploadScreen() {
             </View>
           </View>
 
+          {/* 급식 메뉴는 이 화면에서 등록되지 않으므로 전용 스캔 화면으로 안내 */}
+          {!isMealMode && (
+            <Pressable
+              style={styles.mealBanner}
+              onPress={() => router.push({ pathname: '/upload', params: { mode: 'meal' } })}
+            >
+              <Text style={styles.mealBannerIcon}>🍱</Text>
+              <View style={styles.mealBannerTextBlock}>
+                <Text style={styles.mealBannerTitle}>급식 메뉴만 등록하고 싶으신가요?</Text>
+                <Text style={styles.mealBannerSubtitle}>여기를 눌러 급식 메뉴 스캔으로 이동하세요</Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={20} color={colors.pastelOrangeAccent} />
+            </Pressable>
+          )}
+
           {/* 3. Text Info (Shown only when empty) */}
           {docs.length === 0 && (
             <>
@@ -665,6 +677,36 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       paddingTop: 32,
       alignItems: 'center',
       flex: 1,
+    },
+    mealBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '100%',
+      backgroundColor: colors.orangeLight1,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.pastelOrange,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      marginBottom: 16,
+      gap: 10,
+    },
+    mealBannerIcon: {
+      fontSize: 22,
+    },
+    mealBannerTextBlock: {
+      flex: 1,
+    },
+    mealBannerTitle: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: colors.gray900,
+    },
+    mealBannerSubtitle: {
+      fontSize: 11.5,
+      fontWeight: '600',
+      color: colors.gray500,
+      marginTop: 2,
     },
     illustrationContainer: {
       width: 220,

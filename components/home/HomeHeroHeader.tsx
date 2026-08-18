@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
-import { WeatherDay } from '../../hooks/useWeeklyWeather';
+import { WEATHER_SOURCE_LABEL, WeatherDay } from '../../hooks/useWeeklyWeather';
 import { Child } from '../../types/models';
 import { formatMD, toISODate, WEEKDAY_KO } from '../../utils/date';
 import { describeGuideTip, describeMiniTip, describeTempCompareTip } from '../../utils/weatherCode';
@@ -14,6 +14,7 @@ interface HomeHeroHeaderProps {
   onPressMeal: () => void;
   weatherDays: WeatherDay[] | null;
   weatherLoading: boolean;
+  locationLabel?: string;
   onPressDate: (date: string) => void;
 }
 
@@ -81,6 +82,7 @@ export default function HomeHeroHeader({
   onPressMeal,
   weatherDays,
   weatherLoading,
+  locationLabel,
   onPressDate,
 }: HomeHeroHeaderProps) {
   const colors = useThemeColors();
@@ -135,12 +137,17 @@ export default function HomeHeroHeader({
           ) : (
             <Pressable style={styles.todayCardPressable} onPress={() => today && onPressDate(today.date)}>
               <LinearGradient
-                colors={[colors.blue500, colors.accent]}
+                colors={getWeatherGradient(today?.label ?? '')}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.todayCard}
               >
-                <Text style={styles.todayDateText}>오늘 {today ? formatMD(today.date) : ''}</Text>
+                <View style={styles.todayHeaderRow}>
+                  <Text style={styles.todayDateText}>오늘 {today ? formatMD(today.date) : ''}</Text>
+                  {!!locationLabel && (
+                    <Text style={styles.todayLocationText} numberOfLines={1}>📍{locationLabel}</Text>
+                  )}
+                </View>
                 <View style={styles.todayTipCenter}>
                   <View style={styles.todayTipBox}>
                     <AnimatedWeatherEmoji
@@ -166,6 +173,7 @@ export default function HomeHeroHeader({
                 {tempCompareTip && (
                   <Text style={styles.todayCompareText} numberOfLines={1}>{tempCompareTip}</Text>
                 )}
+                <Text style={styles.todaySourceText}>{WEATHER_SOURCE_LABEL} 제공</Text>
               </LinearGradient>
             </Pressable>
           )}
@@ -190,6 +198,16 @@ export default function HomeHeroHeader({
       </View>
     </View>
   );
+}
+
+/** 오늘 날씨 조건에 맞춰 카드 그라디언트 색을 바꿔준다(하늘/구름/비/눈/뇌우). */
+function getWeatherGradient(label: string): [string, string] {
+  if (label === '맑음' || label === '대체로 맑음') return ['#38BDF8', '#FACC15'];
+  if (label === '흐림' || label === '안개') return ['#94A3B8', '#CBD5E1'];
+  if (label === '이슬비' || label === '비' || label === '소나기') return ['#475569', '#3B82F6'];
+  if (label === '눈' || label === '눈 소나기') return ['#93C5FD', '#E0E7FF'];
+  if (label === '뇌우') return ['#4C1D95', '#1E293B'];
+  return ['#3B82F6', '#6366F1'];
 }
 
 /** 오늘 날씨 이모지에 조건별로 은은한 움직임(해 회전, 구름 흔들림, 비/눈 낙하)을 더해준다. */
@@ -390,10 +408,28 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.gray100,
       borderRadius: 26,
     },
+    todayHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 6,
+    },
     todayDateText: {
       fontSize: 14,
       fontWeight: '700',
       color: 'rgba(255,255,255,0.9)',
+    },
+    todayLocationText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: 'rgba(255,255,255,0.85)',
+      flexShrink: 1,
+    },
+    todaySourceText: {
+      fontSize: 9,
+      fontWeight: '600',
+      color: 'rgba(255,255,255,0.6)',
+      marginTop: 4,
     },
     todayEmoji: {
       fontSize: 20,

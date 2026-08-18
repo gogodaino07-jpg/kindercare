@@ -70,10 +70,6 @@ export default function CoupangBanner({ style }: CoupangBannerProps) {
       <View style={styles.topLine} />
 
       <View style={styles.contentWrapper}>
-        <View style={styles.disclosureRow}>
-          <Text style={styles.disclosure}>ⓘ 광고</Text>
-        </View>
-
         <View style={[styles.webviewContainer, { height: bannerHeight }]}>
           {isReady ? (
             <WebView
@@ -85,7 +81,7 @@ export default function CoupangBanner({ style }: CoupangBannerProps) {
               showsHorizontalScrollIndicator={false}
               showsVerticalScrollIndicator={false}
               backgroundColor="transparent"
-              androidLayerType={Platform.OS === 'android' ? 'software' : 'none'}
+              androidLayerType={Platform.OS === 'android' ? 'hardware' : 'none'}
               domStorageEnabled={true}
               javaScriptEnabled={true}
               mixedContentMode="always"
@@ -135,16 +131,6 @@ const createStyles = (colors: any) => StyleSheet.create({
   webview: {
     flex: 1,
     backgroundColor: 'transparent',
-  },
-  disclosureRow: {
-    width: '100%',
-    alignItems: 'flex-end',
-    paddingHorizontal: 20,
-    marginBottom: 2,
-  },
-  disclosure: {
-    fontSize: 9,
-    color: colors.gray400,
   },
   legalDisclosure: {
     fontSize: 8,

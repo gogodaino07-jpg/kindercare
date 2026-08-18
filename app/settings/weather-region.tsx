@@ -1,52 +1,116 @@
-import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import * as Location from 'expo-location';
+import React, { useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackground from '../../components/ScreenBackground';
 import Text from '../../components/common/AppText';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { WEATHER_REGIONS } from '../../constants/weatherRegions';
+import { useAlert } from '../../context/AlertContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { invalidateWeatherCache } from '../../hooks/useWeeklyWeather';
 import { useWeatherRegion } from '../../hooks/useWeatherRegion';
 
 export default function WeatherRegionSettingsScreen() {
-  const { regionCode, setRegionCode } = useWeatherRegion();
+  const { region, setRegion } = useWeatherRegion();
+  const { showAlert } = useAlert();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
 
-  const handleSelect = (code: string | null) => {
-    setRegionCode(code);
+  const applyQuickRegion = (code: string | null) => {
+    if (!code) {
+      setRegion(null);
+    } else {
+      const found = WEATHER_REGIONS.find((r) => r.code === code);
+      if (found) setRegion({ code: found.code, label: found.label, latitude: found.latitude, longitude: found.longitude });
+    }
     invalidateWeatherCache();
   };
+
+  const handleSearch = async () => {
+    const trimmed = query.trim();
+    if (!trimmed || searching) return;
+    setSearching(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        showAlert({ title: '위치 권한이 필요해요', message: '구/동 검색을 사용하려면 위치 권한을 허용해주세요.' });
+        return;
+      }
+      const results = await Location.geocodeAsync(trimmed);
+      if (results.length === 0) {
+        showAlert({ title: '위치를 찾지 못했어요', message: '다른 동/구 이름으로 다시 검색해주세요.' });
+        return;
+      }
+      setRegion({ label: trimmed, latitude: results[0].latitude, longitude: results[0].longitude });
+      invalidateWeatherCache();
+      setQuery('');
+    } catch {
+      showAlert({ title: '검색 중 문제가 발생했어요', message: '잠시 후 다시 시도해주세요.' });
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const isCustomActive = !!region && !region.code;
 
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.subtitle}>홈 화면 날씨를 조회할 지역을 골라주세요. 자동을 고르면 기기 위치(GPS)를 사용해요.</Text>
 
+          <Text style={styles.sectionLabel}>구/동까지 검색하기</Text>
+          <View style={styles.searchRow}>
+            <TextInput
+              style={styles.searchInput}
+              value={query}
+              onChangeText={setQuery}
+              placeholder="예: 강남구 역삼동"
+              placeholderTextColor={colors.gray400}
+              onSubmitEditing={handleSearch}
+              returnKeyType="search"
+            />
+            <Pressable style={styles.searchButton} onPress={handleSearch} disabled={searching}>
+              {searching ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.searchButtonText}>검색</Text>}
+            </Pressable>
+          </View>
+
+          {isCustomActive && (
+            <View style={[styles.row, styles.rowActive]}>
+              <View style={[styles.radio, styles.radioActive]}>
+                <View style={styles.radioDot} />
+              </View>
+              <Text style={styles.rowLabel}>{region!.label}</Text>
+            </View>
+          )}
+
+          <Text style={styles.sectionLabel}>주요 도시에서 선택하기</Text>
+
           <Pressable
-            style={[styles.row, regionCode === null && styles.rowActive]}
-            onPress={() => handleSelect(null)}
+            style={[styles.row, region === null && styles.rowActive]}
+            onPress={() => applyQuickRegion(null)}
           >
-            <View style={[styles.radio, regionCode === null && styles.radioActive]}>
-              {regionCode === null ? <View style={styles.radioDot} /> : null}
+            <View style={[styles.radio, region === null && styles.radioActive]}>
+              {region === null ? <View style={styles.radioDot} /> : null}
             </View>
             <Text style={styles.rowLabel}>자동 (기기 위치 사용)</Text>
           </Pressable>
 
-          {WEATHER_REGIONS.map((region) => {
-            const isSelected = regionCode === region.code;
+          {WEATHER_REGIONS.map((r) => {
+            const isSelected = region?.code === r.code;
             return (
               <Pressable
-                key={region.code}
+                key={r.code}
                 style={[styles.row, isSelected && styles.rowActive]}
-                onPress={() => handleSelect(region.code)}
+                onPress={() => applyQuickRegion(r.code)}
               >
                 <View style={[styles.radio, isSelected && styles.radioActive]}>
                   {isSelected ? <View style={styles.radioDot} /> : null}
                 </View>
-                <Text style={styles.rowLabel}>{region.label}</Text>
+                <Text style={styles.rowLabel}>{r.label}</Text>
               </Pressable>
             );
           })}
@@ -65,6 +129,41 @@ function createStyles(colors: ThemeColors) {
       color: colors.textSecondary,
       marginBottom: 16,
       lineHeight: 18,
+    },
+    sectionLabel: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.textSecondary,
+      marginTop: 8,
+      marginBottom: 8,
+    },
+    searchRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 12,
+    },
+    searchInput: {
+      flex: 1,
+      backgroundColor: colors.cardWhite,
+      borderRadius: 14,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      fontSize: 14,
+      color: colors.textPrimary,
+      ...SHADOW,
+    },
+    searchButton: {
+      minWidth: 64,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.accent,
+      borderRadius: 14,
+      paddingHorizontal: 16,
+    },
+    searchButtonText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '800',
     },
     row: {
       flexDirection: 'row',

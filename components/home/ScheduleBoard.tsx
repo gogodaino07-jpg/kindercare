@@ -9,6 +9,8 @@ import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { EventDateGroup } from '../../hooks/useUpcomingEvents';
 import { Event } from '../../types/models';
 import { formatMD, parseISODate, startOfDay, toISODate } from '../../utils/date';
+import { openCoupangSearch } from '../../utils/coupang';
+import { isValidCoupangKeyword } from '../../utils/validation';
 import Text from '../common/AppText';
 import EventIcon from '../common/EventIcon';
 
@@ -53,6 +55,8 @@ function getCategoryVisual(category: string | undefined, colors: ThemeColors) {
       return { icon: 'event' as const, bg: colors.pastelPink, accent: colors.pastelPinkAccent };
     case '공지':
       return { icon: 'campaign' as const, bg: colors.gray100, accent: colors.gray500 };
+    case '휴원/방학':
+      return { icon: 'event-busy' as const, bg: colors.purpleBg, accent: colors.purple500 };
     case '준비물':
     default:
       return { icon: 'inventory-2' as const, bg: colors.pastelOrange, accent: colors.pastelOrangeAccent };
@@ -187,8 +191,8 @@ export default function ScheduleBoard({
             <MaterialIcons name="share" size={16} color={colors.purple500} />
           </View>
           <View style={styles.shareTextBlock}>
-            <Text style={styles.shareTitle}>부모님 함께 보기</Text>
-            <Text style={styles.shareSubtitle}>오늘 챙길 준비물을 배우자에게 전달해보세요.</Text>
+            <Text style={styles.shareTitle}>가족과 함께 보기</Text>
+            <Text style={styles.shareSubtitle}>오늘 챙길 준비물을 가족에게 전달해보세요.</Text>
           </View>
         </View>
         <Pressable style={styles.shareButton} onPress={handleShare}>
@@ -301,6 +305,15 @@ function ScheduleCard({
                   color={checked ? colors.green500 : colors.gray400}
                 />
                 <Text style={[styles.itemText, checked && styles.itemTextChecked]}>{item.name}</Text>
+                {!checked && isValidCoupangKeyword(item.name) && (
+                  <Pressable
+                    style={styles.buyButton}
+                    hitSlop={6}
+                    onPress={() => openCoupangSearch(item.name)}
+                  >
+                    <Text style={styles.buyButtonText}>구매하기</Text>
+                  </Pressable>
+                )}
                 <View style={[styles.itemStatusPill, checked ? styles.itemStatusPillDone : styles.itemStatusPillTodo]}>
                   <Text style={[styles.itemStatusPillText, checked ? styles.itemStatusPillTextDone : styles.itemStatusPillTextTodo]}>
                     {checked ? '챙김 완료' : '준비 필요'}
@@ -423,6 +436,14 @@ function createStyles(colors: ThemeColors) {
     itemRowChecked: { backgroundColor: colors.green50 },
     itemText: { fontSize: 13, fontWeight: '600', color: colors.gray900, flex: 1 },
     itemTextChecked: { color: colors.gray500, textDecorationLine: 'line-through' },
+    buyButton: {
+      borderRadius: 999,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      backgroundColor: colors.purpleBg,
+      marginRight: 6,
+    },
+    buyButtonText: { fontSize: 10, fontWeight: '800', color: colors.purple500 },
     itemStatusPill: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
     itemStatusPillTodo: { backgroundColor: lighten(colors.pastelOrangeAccent, 0.85) },
     itemStatusPillDone: { backgroundColor: lighten(colors.green500, 0.85) },

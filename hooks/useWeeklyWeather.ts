@@ -20,7 +20,11 @@ export interface WeatherDay {
 interface WeatherResult {
   days: WeatherDay[];
   usingFallbackLocation: boolean;
+  locationLabel: string;
 }
+
+/** 날씨 데이터의 실제 출처 — 홈 화면에 그대로 노출되므로 사실과 다른 값(예: 기상청)을 쓰지 않는다. */
+export const WEATHER_SOURCE_LABEL = 'Open-Meteo';
 
 const SEOUL_COORDS = { latitude: 37.5665, longitude: 126.978 };
 
@@ -37,43 +41,62 @@ export function invalidateWeatherCache(): void {
   cachedAt = 0;
 }
 
-async function resolveCoords(): Promise<{ coords: { latitude: number; longitude: number }; usingFallback: boolean }> {
+/** GPS 좌표를 "시 구" 정도의 짧은 표기로 역지오코딩. 실패하면 '내 위치'. */
+async function resolveLocationLabel(coords: { latitude: number; longitude: number }): Promise<string> {
+  try {
+    const results = await Location.reverseGeocodeAsync(coords);
+    const place = results[0];
+    if (!place) return '내 위치';
+    const parts = [place.city ?? place.region ?? undefined, place.district ?? undefined].filter(
+      (v): v is string => !!v
+    );
+    return parts.length > 0 ? parts.join(' ') : '내 위치';
+  } catch {
+    return '내 위치';
+  }
+}
+
+async function resolveCoords(): Promise<{
+  coords: { latitude: number; longitude: number };
+  usingFallback: boolean;
+  locationLabel: string;
+}> {
   // 설정에서 지역을 수동으로 골랐으면 GPS보다 우선한다.
   const manualRegion = await getStoredWeatherRegionCoords();
   if (manualRegion) {
-    return { coords: { latitude: manualRegion.latitude, longitude: manualRegion.longitude }, usingFallback: false };
+    return {
+      coords: { latitude: manualRegion.latitude, longitude: manualRegion.longitude },
+      usingFallback: false,
+      locationLabel: manualRegion.label,
+    };
   }
 
   try {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
-      return { coords: SEOUL_COORDS, usingFallback: true };
+      return { coords: SEOUL_COORDS, usingFallback: true, locationLabel: '서울' };
     }
 
     // Try to get the last known location first for near-instant results.
     const lastKnown = await Location.getLastKnownPositionAsync({});
     if (lastKnown) {
-      return {
-        coords: { latitude: lastKnown.coords.latitude, longitude: lastKnown.coords.longitude },
-        usingFallback: false,
-      };
+      const coords = { latitude: lastKnown.coords.latitude, longitude: lastKnown.coords.longitude };
+      return { coords, usingFallback: false, locationLabel: await resolveLocationLabel(coords) };
     }
 
     // Fall back to current position with Balanced accuracy (faster than High).
     const position = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
     });
-    return {
-      coords: { latitude: position.coords.latitude, longitude: position.coords.longitude },
-      usingFallback: false,
-    };
+    const coords = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+    return { coords, usingFallback: false, locationLabel: await resolveLocationLabel(coords) };
   } catch {
-    return { coords: SEOUL_COORDS, usingFallback: true };
+    return { coords: SEOUL_COORDS, usingFallback: true, locationLabel: '서울' };
   }
 }
 
 async function fetchWeeklyWeather(): Promise<WeatherResult> {
-  const { coords, usingFallback } = await resolveCoords();
+  const { coords, usingFallback, locationLabel } = await resolveCoords();
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}` +
     `&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7&past_days=1`;
@@ -109,7 +132,7 @@ async function fetchWeeklyWeather(): Promise<WeatherResult> {
     };
   });
 
-  return { days, usingFallbackLocation: usingFallback };
+  return { days, usingFallbackLocation: usingFallback, locationLabel };
 }
 
 export function useWeeklyWeather() {
@@ -117,6 +140,7 @@ export function useWeeklyWeather() {
   const [usingFallbackLocation, setUsingFallbackLocation] = useState(
     cachedResult?.usingFallbackLocation ?? false
   );
+  const [locationLabel, setLocationLabel] = useState(cachedResult?.locationLabel ?? '');
   const [loading, setLoading] = useState(!cachedResult);
   const [error, setError] = useState<string | null>(null);
 
@@ -140,6 +164,7 @@ export function useWeeklyWeather() {
     if (isFresh && !force) {
       setRawDays(cachedResult!.days);
       setUsingFallbackLocation(cachedResult!.usingFallbackLocation);
+      setLocationLabel(cachedResult!.locationLabel);
       setLoading(false);
       setError(null);
       return;
@@ -152,6 +177,7 @@ export function useWeeklyWeather() {
       cachedAt = Date.now();
       setRawDays(result.days);
       setUsingFallbackLocation(result.usingFallbackLocation);
+      setLocationLabel(result.locationLabel);
     } catch (e) {
       setError(e instanceof Error ? e.message : '날씨 정보를 가져오지 못했어요');
     } finally {
@@ -173,5 +199,5 @@ export function useWeeklyWeather() {
 
   const retry = useCallback(() => load(true), [load]);
 
-  return { days, loading, error, retry, usingFallbackLocation };
+  return { days, loading, error, retry, usingFallbackLocation, locationLabel };
 }

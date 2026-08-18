@@ -28,11 +28,14 @@ import { useThemeColors } from '../context/ThemeContext';
 import { WEEKDAY_KO, parseISODate, toISODate, formatMD } from '../utils/date';
 import { getHolidayName, isHoliday } from '../utils/holidays';
 
-const DOT_COLORS = {
-  ai: '#3B82F6',
-  review: '#F59E0B',
-  manual: '#F43F5E',
-};
+/** 홈 화면 일정 카테고리 배지와 톤을 맞춘 점 색상. */
+function getDotColors(colors: ThemeColors) {
+  return {
+    ai: colors.pastelBlueAccent,
+    review: colors.pastelOrangeAccent,
+    manual: colors.pastelPinkAccent,
+  };
+}
 
 /** Blends a hex color toward white by `amount` (0-1) to make it a paler shade. */
 function lighten(hex: string, amount: number): string {
@@ -96,10 +99,14 @@ const SearchHeader = React.memo(({
   );
 });
 
-function dotColorFor(source: 'ai' | 'manual', needsReview?: boolean): string {
-  if (needsReview) return DOT_COLORS.review;
-  if (source === 'manual') return DOT_COLORS.manual;
-  return DOT_COLORS.ai;
+function dotColorFor(
+  dotColors: ReturnType<typeof getDotColors>,
+  source: 'ai' | 'manual',
+  needsReview?: boolean
+): string {
+  if (needsReview) return dotColors.review;
+  if (source === 'manual') return dotColors.manual;
+  return dotColors.ai;
 }
 
 function createStyles(colors: ThemeColors, bottomInset: number) {
@@ -411,6 +418,7 @@ export default function CalendarScreen() {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
+  const dotColors = useMemo(() => getDotColors(colors), [colors]);
 
   const [monthCursor, setMonthCursor] = useState(() => {
     const now = new Date();
@@ -647,7 +655,7 @@ export default function CalendarScreen() {
                               key={e.id}
                               style={[
                                 styles.dot,
-                                { backgroundColor: dotColorFor(e.source, e.needsReview) },
+                                { backgroundColor: dotColorFor(dotColors, e.source, e.needsReview) },
                               ]}
                             />
                           ))}
@@ -659,7 +667,7 @@ export default function CalendarScreen() {
                             key={e.id}
                             style={[
                               styles.dot,
-                              { backgroundColor: dotColorFor(e.source, e.needsReview) },
+                              { backgroundColor: dotColorFor(dotColors, e.source, e.needsReview) },
                             ]}
                           />
                         ))
@@ -673,14 +681,14 @@ export default function CalendarScreen() {
           </View>
 
           <View style={styles.legendContainer}>
-            <View style={[styles.legendItem, { backgroundColor: lighten(DOT_COLORS.ai, 0.8) }]}>
-              <Text style={[styles.legendText, { color: DOT_COLORS.ai }]}>유치원 일정</Text>
+            <View style={[styles.legendItem, { backgroundColor: lighten(dotColors.ai, 0.8) }]}>
+              <Text style={[styles.legendText, { color: dotColors.ai }]}>유치원 일정</Text>
             </View>
-            <View style={[styles.legendItem, { backgroundColor: lighten(DOT_COLORS.review, 0.8) }]}>
-              <Text style={[styles.legendText, { color: DOT_COLORS.review }]}>확인 필요</Text>
+            <View style={[styles.legendItem, { backgroundColor: lighten(dotColors.review, 0.8) }]}>
+              <Text style={[styles.legendText, { color: dotColors.review }]}>확인 필요</Text>
             </View>
-            <View style={[styles.legendItem, { backgroundColor: lighten(DOT_COLORS.manual, 0.8) }]}>
-              <Text style={[styles.legendText, { color: DOT_COLORS.manual }]}>등록된 일정</Text>
+            <View style={[styles.legendItem, { backgroundColor: lighten(dotColors.manual, 0.8) }]}>
+              <Text style={[styles.legendText, { color: dotColors.manual }]}>등록된 일정</Text>
             </View>
           </View>
         </View>
@@ -711,7 +719,7 @@ export default function CalendarScreen() {
             showsVerticalScrollIndicator={false}
           >
             {selectedDateEvents.map((e) => {
-              const tint = dotColorFor(e.source, e.needsReview);
+              const tint = dotColorFor(dotColors, e.source, e.needsReview);
               return (
                 <View key={e.id} style={[styles.eventCardWrapper, { backgroundColor: lighten(tint, 0.88) }]}>
                   <View style={styles.eventCardRow}>
