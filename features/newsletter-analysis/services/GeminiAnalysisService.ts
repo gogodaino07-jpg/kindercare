@@ -4,12 +4,6 @@ import { Child, Event, MealPlan, UploadedDoc } from '../../../types/models';
 import { toISODate } from '../../../utils/date';
 import { getVertexAIModel } from './firebaseAI';
 
-const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-const GEMINI_MODEL = 'gemini-3.6-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-
-const IS_PROD = process.env.EXPO_PUBLIC_APP_ENV === 'production';
-
 export class GeminiAnalysisError extends Error {}
 
 interface GeminiExtractedEvent {
@@ -32,40 +26,6 @@ export interface GeminiAnalysisResult {
   mealPlans: Omit<MealPlan, 'id'>[];
 }
 
-const RESPONSE_SCHEMA = {
-  type: 'object',
-  properties: {
-    events: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          date: { type: 'string' },
-          title: { type: 'string' },
-          note: { type: 'string' },
-          memo: { type: 'string' },
-          icon: { type: 'string' },
-          needsReview: { type: 'boolean' },
-          reviewReason: { type: 'string' },
-        },
-        required: ['date', 'title'],
-      },
-    },
-    mealPlan: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          date: { type: 'string' },
-          menu: { type: 'array', items: { type: 'string' } },
-        },
-        required: ['date', 'menu'],
-      },
-    },
-  },
-  required: ['events'],
-};
-
 function extractMealPlans(
   raw: GeminiExtractedMealPlan[] | undefined,
   childId: string
@@ -82,104 +42,9 @@ function extractMealPlans(
 }
 
 export const GeminiAnalysisService = {
+  /** Firebase(Vertex AI) 경유로만 Gemini를 호출 — 앱에 개인 API 키를 하드코딩하지 않음. */
   async analyze(docs: UploadedDoc[], child: Child): Promise<GeminiAnalysisResult> {
-    if (IS_PROD) {
-      return this.analyzeWithVertexAI(docs, child);
-    }
-
-    if (!GEMINI_API_KEY) {
-      throw new GeminiAnalysisError(
-        'Gemini API 키가 설정되지 않았어요. .env의 EXPO_PUBLIC_GEMINI_API_KEY를 확인해주세요.'
-      );
-    }
-
-    const todayISO = toISODate(new Date());
-    const parts = await Promise.all(docs.map(async (doc) => {
-      const { base64, mimeType } = await this.getOptimizedBase64(doc);
-      return {
-        inline_data: {
-          mime_type: mimeType,
-          data: base64
-        }
-      };
-    }));
-
-    const body = {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: this.buildPrompt(todayISO, child) }, ...parts],
-        },
-      ],
-      generation_config: {
-        response_mime_type: 'application/json',
-        response_schema: RESPONSE_SCHEMA,
-      },
-    };
-
-    let response: Response;
-    try {
-      response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-    } catch {
-      throw new GeminiAnalysisError('네트워크 연결을 확인해주세요.');
-    }
-
-    if (!response.ok) {
-      let message = `문서 분석에 실패했어요 (HTTP ${response.status})`;
-      try {
-        const errJson = await response.json();
-        console.error('[Gemini API Error Detail]:', JSON.stringify(errJson, null, 2));
-        if (response.status === 429) {
-          message = 'AI 분석 요청이 너무 많습니다. 1분만 기다렸다가 다시 시도해 주세요.';
-        } else if (errJson?.error?.message) {
-          message = `Gemini 오류 (${response.status}): ${errJson.error.message}`;
-        }
-      } catch (e) {
-        console.error('[Gemini API Parse Error]:', e);
-      }
-      throw new GeminiAnalysisError(message);
-    }
-
-    const json = await response.json();
-    const rawText: string | undefined = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) {
-      throw new GeminiAnalysisError('분석 결과를 읽지 못했어요. 다시 시도해주세요.');
-    }
-
-    let parsed: { events?: GeminiExtractedEvent[]; mealPlan?: GeminiExtractedMealPlan[] };
-    try {
-      parsed = JSON.parse(rawText);
-    } catch {
-      throw new GeminiAnalysisError('분석 결과 형식이 올바르지 않아요.');
-    }
-
-    const extracted = (parsed.events ?? []).filter(
-      (e): e is Required<Pick<GeminiExtractedEvent, 'date' | 'title'>> & GeminiExtractedEvent =>
-        !!e.date && !!e.title
-    );
-
-    if (extracted.length === 0) {
-      throw new GeminiAnalysisError('문서에서 일정을 찾지 못했어요. 더 선명한 사진으로 다시 시도해주세요.');
-    }
-
-    return {
-      events: extracted.map((e) => ({
-        date: e.date,
-        title: e.title.trim(),
-        note: e.note?.trim() || undefined,
-        memo: e.memo?.trim() || undefined,
-        childId: child.id,
-        source: 'ai' as const,
-        icon: e.icon?.trim() || '📌',
-        needsReview: e.needsReview || undefined,
-        reviewReason: e.reviewReason?.trim() || undefined,
-      })),
-      mealPlans: extractMealPlans(parsed.mealPlan, child.id),
-    };
+    return this.analyzeWithVertexAI(docs, child);
   },
 
   async analyzeWithVertexAI(docs: UploadedDoc[], child: Child): Promise<GeminiAnalysisResult> {
