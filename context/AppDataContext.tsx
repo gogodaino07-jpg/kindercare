@@ -28,6 +28,8 @@ import { AIUsageLimitService } from '../features/newsletter-analysis';
 
 const HAS_ONBOARDED_KEY = 'kindercare_has_onboarded';
 const FONT_SIZE_KEY = 'kindercare_font_size';
+const FONT_CHOICE_KEY = 'kindercare_font_choice';
+const CHALKBOARD_THEME_KEY = 'kindercare_chalkboard_theme';
 const EVENTS_KEY = 'kindercare_events';
 const MEAL_PLANS_KEY = 'kindercare_mealplans';
 const CHILDREN_KEY = 'kindercare_children';
@@ -85,10 +87,6 @@ interface AppDataContextValue {
   chalkboardThemeId: string;
   setChalkboardThemeId: (id: string) => void;
 
-  // Home ad popup
-  adDismissedDate: string | null;
-  dismissAdForToday: () => void;
-
   // Account deletion
   resetAllData: (options?: { preserveAccount?: boolean }) => Promise<void>;
   requestWithdrawal: () => Promise<void>;
@@ -144,7 +142,6 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const [fontChoiceId, setFontChoiceId] = useState<FontChoiceId>(DEFAULT_FONT_ID);
   const [fontSizeChoice, setFontSizeChoiceState] = useState<FontSizeChoice>(DEFAULT_FONT_SIZE);
   const [chalkboardThemeId, setChalkboardThemeId] = useState(DEFAULT_CHALKBOARD_THEME_ID);
-  const [adDismissedDate, setAdDismissedDate] = useState<string | null>(null);
   const [googleAccount, setGoogleAccount] = useState<GoogleAccount | null>(null);
   const [dataOwnerEmail, setDataOwnerEmail] = useState<string | null>(null);
   const [syncChecked, setSyncChecked] = useState(false);
@@ -171,6 +168,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       AsyncStorage.getItem(FAMILY_MEMBERS_KEY),
       AsyncStorage.getItem(DATA_OWNER_EMAIL_KEY),
       AsyncStorage.getItem(FAMILY_KEY_KEY),
+      AsyncStorage.getItem(FONT_CHOICE_KEY),
+      AsyncStorage.getItem(CHALKBOARD_THEME_KEY),
     ])
       .then(
         ([
@@ -185,10 +184,18 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
           storedFamilyMembers,
           storedDataOwnerEmail,
           storedFamilyKey,
+          storedFontChoice,
+          storedChalkboardTheme,
         ]) => {
           if (storedOnboarded === 'true') setHasOnboarded(true);
           if (storedFontSize && FONT_SIZE_OPTIONS.some((o) => o.id === storedFontSize)) {
             setFontSizeChoiceState(storedFontSize as FontSizeChoice);
+          }
+          if (storedFontChoice) {
+            setFontChoiceId(storedFontChoice as FontChoiceId);
+          }
+          if (storedChalkboardTheme) {
+            setChalkboardThemeId(storedChalkboardTheme);
           }
           if (storedFamilyKey) {
             setFamilyKey(storedFamilyKey);
@@ -306,6 +313,18 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     if (!onboardingLoaded) return;
     AsyncStorage.setItem(FAMILY_KEY_KEY, familyKey).catch(() => {});
   }, [familyKey, onboardingLoaded]);
+
+  // Persist font choice after initial load
+  useEffect(() => {
+    if (!onboardingLoaded) return;
+    AsyncStorage.setItem(FONT_CHOICE_KEY, fontChoiceId).catch(() => {});
+  }, [fontChoiceId, onboardingLoaded]);
+
+  // Persist chalkboard theme after initial load
+  useEffect(() => {
+    if (!onboardingLoaded) return;
+    AsyncStorage.setItem(CHALKBOARD_THEME_KEY, chalkboardThemeId).catch(() => {});
+  }, [chalkboardThemeId, onboardingLoaded]);
 
   // Persist notification settings after initial load
   useEffect(() => {
@@ -785,10 +804,6 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setNotificationSettings((prev) => ({ ...prev, ...input }));
   };
 
-  const dismissAdForToday = () => {
-    setAdDismissedDate(toISODate(new Date()));
-  };
-
   // Real Google OAuth handshake using @react-native-google-signin/google-signin.
   const signInWithGoogle = async (): Promise<GoogleAccount> => {
     return await withExternalAction(async () => {
@@ -973,6 +988,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     const keysToRemove = [
       HAS_ONBOARDED_KEY,
       FONT_SIZE_KEY,
+      FONT_CHOICE_KEY,
+      CHALKBOARD_THEME_KEY,
       EVENTS_KEY,
       MEAL_PLANS_KEY,
       CHILDREN_KEY,
@@ -998,7 +1015,6 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setFontChoiceId(DEFAULT_FONT_ID);
     setFontSizeChoiceState(DEFAULT_FONT_SIZE);
     setChalkboardThemeId(DEFAULT_CHALKBOARD_THEME_ID);
-    setAdDismissedDate(null);
     if (!options?.preserveAccount) {
       setGoogleAccount(null);
     }
@@ -1136,9 +1152,6 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     fontScale,
     chalkboardThemeId,
     setChalkboardThemeId,
-
-    adDismissedDate,
-    dismissAdForToday,
 
     resetAllData,
     requestWithdrawal,

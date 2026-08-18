@@ -2,7 +2,6 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   ScrollView,
   Animated,
@@ -11,6 +10,7 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
+import Text from '../components/common/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { useAppData } from '../context/AppDataContext';
