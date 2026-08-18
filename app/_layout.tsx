@@ -23,6 +23,7 @@ import { AlertProvider } from '../context/AlertContext';
 import { AppDataProvider, useAppData } from '../context/AppDataContext';
 import { AppLockProvider, useAppLock } from '../context/AppLockContext';
 import { NotificationCenterProvider } from '../context/NotificationCenterContext';
+import { SubscriptionProvider } from '../context/SubscriptionContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
 
@@ -155,6 +156,7 @@ function ThemedNavigation() {
               <Stack.Screen name="edit-event" options={{ title: '일정 수정' }} />
               <Stack.Screen name="stamp-board" options={{ title: '참 잘했어요 도장판' }} />
               <Stack.Screen name="settings/index" options={{ title: '설정' }} />
+              <Stack.Screen name="settings/subscription" options={{ title: '프리미엄 구독' }} />
               <Stack.Screen name="settings/family" options={{ title: '가족 계정' }} />
               <Stack.Screen name="settings/notifications" options={{ title: '알림 설정' }} />
               <Stack.Screen name="settings/font" options={{ title: '글씨체' }} />
@@ -221,15 +223,17 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ThemeProvider>
           <AppDataProvider>
-            <NotificationCenterProvider>
-              <ToastProvider>
-                <AlertProvider>
-                  <AppLockProvider>
-                    <ThemedNavigation />
-                  </AppLockProvider>
-                </AlertProvider>
-              </ToastProvider>
-            </NotificationCenterProvider>
+            <SubscriptionProvider>
+              <NotificationCenterProvider>
+                <ToastProvider>
+                  <AlertProvider>
+                    <AppLockProvider>
+                      <ThemedNavigation />
+                    </AppLockProvider>
+                  </AlertProvider>
+                </ToastProvider>
+              </NotificationCenterProvider>
+            </SubscriptionProvider>
           </AppDataProvider>
         </ThemeProvider>
       </SafeAreaProvider>

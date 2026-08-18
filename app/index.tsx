@@ -17,13 +17,14 @@ import CoupangBanner from '../components/common/CoupangBanner';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useLocalChecklist } from '../hooks/useLocalChecklist';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
 import { toISODate } from '../utils/date';
 
-function createStyles(colors: ThemeColors, bottomInset: number) {
+function createStyles(colors: ThemeColors, bottomInset: number, hasAdBanner: boolean) {
   return StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -32,7 +33,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       flex: 1,
     },
     scrollContainer: {
-      paddingBottom: 150 + bottomInset,
+      paddingBottom: (hasAdBanner ? 150 : 24) + bottomInset,
     },
     adBanner: {
       position: 'absolute',
@@ -48,9 +49,13 @@ export default function HomeScreen() {
   const router = useRouter();
   const { hasOnboarded, selectedChild, events, googleAccount, onboardingLoaded } = useAppData();
   const { isLocked } = useAppLock();
+  const { isSubscribed } = useSubscription();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
+  const styles = useMemo(
+    () => createStyles(colors, insets.bottom, !isSubscribed),
+    [colors, insets.bottom, isSubscribed]
+  );
   const upcoming = useUpcomingEvents();
   const weather = useWeeklyWeather();
   const checklist = useLocalChecklist();
@@ -97,14 +102,14 @@ export default function HomeScreen() {
   // z-index and would visually jump the ad in front of the pattern/biometric
   // prompt on cold start.
   useEffect(() => {
-    if (!adShownRef.current && onboardingLoaded && hasOnboarded && googleAccount && !isLocked) {
+    if (!adShownRef.current && onboardingLoaded && hasOnboarded && googleAccount && !isLocked && !isSubscribed) {
       const timer = setTimeout(() => {
         setAdPopupVisible(true);
         adShownRef.current = true;
       }, 1500); // 1.5s delay for better UX
       return () => clearTimeout(timer);
     }
-  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked]);
+  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, isSubscribed]);
 
   const handleEventPress = useCallback(
     (event: { date: string }) => router.push({ pathname: '/calendar', params: { date: event.date } }),
@@ -175,12 +180,12 @@ export default function HomeScreen() {
         )}
       </SafeAreaView>
 
-      <CoupangBanner style={styles.adBanner} />
+      {!isSubscribed && <CoupangBanner style={styles.adBanner} />}
 
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
       <MealPlanSheet visible={mealSheetOpen} onClose={() => setMealSheetOpen(false)} />
-      {!upcoming.isEmpty && !isLocked && <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />}
+      {!upcoming.isEmpty && !isLocked && !isSubscribed && <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />}
     </ScreenBackground>
   );
 }

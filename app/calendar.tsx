@@ -24,6 +24,7 @@ import EventIcon from '../components/common/EventIcon';
 import EventCard from '../components/home/EventCard';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { WEEKDAY_KO, parseISODate, toISODate, formatMD } from '../utils/date';
 import { getHolidayName, isHoliday } from '../utils/holidays';
@@ -415,6 +416,7 @@ export default function CalendarScreen() {
   const router = useRouter();
   const { date: dateParam } = useLocalSearchParams<{ date?: string }>();
   const { events, selectedChild } = useAppData();
+  const { isSubscribed } = useSubscription();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
@@ -760,7 +762,7 @@ export default function CalendarScreen() {
         </TouchableOpacity>
       </View>
 
-      <CoupangBanner style={styles.adBanner} />
+      {!isSubscribed && <CoupangBanner style={styles.adBanner} />}
 
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
     </SafeAreaView>

@@ -23,6 +23,7 @@ import { SHADOW, ThemeColors } from '../constants/theme';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { isSimilarEvent } from '../data/mockAIResult';
@@ -31,7 +32,9 @@ import { Event, MealPlan, UploadedDoc } from '../types/models';
 import {
   AIUsageLimitService,
   AnalysisResultStore,
-  FREE_USAGE_LIMIT,
+  FREE_WEEKLY_LIMIT,
+  PREMIUM_MONTHLY_LIMIT,
+  PREMIUM_WEEKLY_LIMIT,
   GeminiAnalysisError,
   GeminiAnalysisService,
 } from '../features/newsletter-analysis';
@@ -44,6 +47,7 @@ export default function UploadScreen() {
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const isMealMode = mode === 'meal';
   const { selectedChild, events, googleAccount, addMealPlans } = useAppData();
+  const { isSubscribed } = useSubscription();
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
   const { showToast } = useToast();
@@ -112,8 +116,10 @@ export default function UploadScreen() {
   }, [navigation]);
 
   useEffect(() => {
-    AIUsageLimitService.getRemainingCount(googleAccount?.email).then(setRemainingAnalyses);
+    AIUsageLimitService.getRemainingCount(googleAccount?.email, isSubscribed).then(setRemainingAnalyses);
+  }, [googleAccount?.email, isSubscribed]);
 
+  useEffect(() => {
     // Check for pending analysis session from a previous app instance
     const checkPendingSession = async () => {
       const pending = await AnalysisResultStore.getPendingSession();
@@ -345,7 +351,7 @@ export default function UploadScreen() {
       setAnalyzing(false);
       return;
     }
-    const count = await AIUsageLimitService.consume(googleAccount?.email);
+    const count = await AIUsageLimitService.consume(googleAccount?.email, isSubscribed);
     setRemainingAnalyses(count);
     setAnalyzing(false);
 
@@ -413,23 +419,31 @@ export default function UploadScreen() {
       return;
     }
     if (remainingAnalyses !== null && remainingAnalyses <= 0) {
+      if (isSubscribed) {
+        showAlert({
+          title: '이번 한도를 모두 사용했어요',
+          message: `프리미엄은 1주일 최대 ${PREMIUM_WEEKLY_LIMIT}회, 1달 최대 ${PREMIUM_MONTHLY_LIMIT}회까지 스캔할 수 있어요. 다음 기간에 다시 시도해주세요.`,
+          icon: '⏳',
+        });
+        return;
+      }
       showAlert({
         title: '무료 횟수 소진',
         message: (
           <Text style={{ textAlign: 'center' }}>
-            이번 주 무료 횟수({FREE_USAGE_LIMIT}회)를 모두 사용했어요.{"\n"}
+            이번 주 무료 횟수({FREE_WEEKLY_LIMIT}회)를 모두 사용했어요.{"\n"}
             <Text style={{ color: colors.coralPink, fontWeight: 'bold' }}>프리미엄</Text>
-            으로 업그레이드하시면{" "}
-            <Text style={{ color: colors.coralPink, fontWeight: 'bold' }}>무제한</Text>
-            으로 이용하실 수 있습니다.
+            으로 구독하시면{" "}
+            <Text style={{ color: colors.coralPink, fontWeight: 'bold' }}>월 {PREMIUM_MONTHLY_LIMIT}회 · 광고 없이</Text>
+            이용하실 수 있습니다.
           </Text>
         ),
         icon: '💎',
         buttons: [
           { text: '확인', style: 'cancel' },
           {
-            text: '프리미엄 안내 (준비중)',
-            onPress: () => showToast('프리미엄 기능을 준비 중입니다.')
+            text: '프리미엄 구독 안내',
+            onPress: () => router.push('/settings/subscription'),
           },
         ],
       });
@@ -440,10 +454,12 @@ export default function UploadScreen() {
       return;
     }
 
-    const earnedReward = await requestAndShow();
-    if (!earnedReward) {
-      showAlert({ title: '광고 시청이 필요해요', message: '광고를 끝까지 시청해야 분석을 진행할 수 있어요. 다시 시도해주세요.' });
-      return;
+    if (!isSubscribed) {
+      const earnedReward = await requestAndShow();
+      if (!earnedReward) {
+        showAlert({ title: '광고 시청이 필요해요', message: '광고를 끝까지 시청해야 분석을 진행할 수 있어요. 다시 시도해주세요.' });
+        return;
+      }
     }
 
     await performAnalysis(docs, selectedChild);
@@ -502,7 +518,7 @@ export default function UploadScreen() {
                 ]}>
                   <Text style={styles.robotBalloonText}>
                     {remainingAnalyses === 0
-                      ? '이번 주 무료 횟수를 다 썼어요'
+                      ? '이번 기간 스캔 횟수를 다 썼어요'
                       : docs.length > 0
                         ? '✨ 분석하기 누르기 가능!'
                         : isMealMode
@@ -510,7 +526,7 @@ export default function UploadScreen() {
                           : '가정통신문을 올려주세요'}
                   </Text>
                   <Text style={styles.robotUsageText}>
-                    이번 주 무료 횟수: <Text style={styles.highlightCount}>{remainingAnalyses ?? '-'}</Text>회 남음
+                    {isSubscribed ? '이번 주 남은 프리미엄 횟수' : '이번 주 무료 횟수'}: <Text style={styles.highlightCount}>{remainingAnalyses ?? '-'}</Text>회 남음
                   </Text>
                   <View style={styles.robotBalloonArrow} />
                 </Animated.View>

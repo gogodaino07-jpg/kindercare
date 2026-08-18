@@ -19,6 +19,7 @@ import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
 import { useAppLock } from '../../context/AppLockContext';
 import { useNotificationCenter } from '../../context/NotificationCenterContext';
+import { useSubscription } from '../../context/SubscriptionContext';
 import { THEME_MODE_LABELS, useTheme } from '../../context/ThemeContext';
 
 export default function SettingsScreen() {
@@ -30,6 +31,7 @@ export default function SettingsScreen() {
   const { resetAllData, requestWithdrawal, googleAccount, signOutGoogle } = useAppData();
   const { resetLock } = useAppLock();
   const { clearNotifications } = useNotificationCenter();
+  const { isSubscribed } = useSubscription();
 
   const appVersion = Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.0';
 
@@ -187,6 +189,17 @@ export default function SettingsScreen() {
               isProfile={true}
             />
             <SettingItem title="로그아웃" onPress={handleLogout} showDivider={false} />
+          </SettingSection>
+
+          {/* 멤버십 섹션 */}
+          <SettingSection emoji="💎" title="멤버십">
+            <SettingItem
+              title="프리미엄 구독"
+              subtitle={isSubscribed ? '구독 중' : '주 5회 → 주 10회·월 50회, 광고 제거'}
+              highlightSubtitle={isSubscribed}
+              onPress={() => router.push('/settings/subscription')}
+              showDivider={false}
+            />
           </SettingSection>
 
           {/* 알림 섹션 */}
