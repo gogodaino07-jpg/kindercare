@@ -228,7 +228,8 @@ export default function SettingsScreen() {
               }
             />
             <SettingItem title="글씨체 설정" onPress={() => router.push('/settings/font')} />
-            <SettingItem title="글자 크기 설정" onPress={() => router.push('/settings/font-size')} showDivider={false} />
+            <SettingItem title="글자 크기 설정" onPress={() => router.push('/settings/font-size')} />
+            <SettingItem title="날씨 지역 설정" onPress={() => router.push('/settings/weather-region')} showDivider={false} />
           </SettingSection>
 
           {/* 보안 섹션 */}

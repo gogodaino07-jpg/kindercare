@@ -159,6 +159,7 @@ function ThemedNavigation() {
               <Stack.Screen name="settings/font-size" options={{ title: '글자 크기' }} />
               <Stack.Screen name="settings/chalkboard-theme" options={{ title: '팝업 테마' }} />
               <Stack.Screen name="settings/theme" options={{ title: '테마' }} />
+              <Stack.Screen name="settings/weather-region" options={{ title: '날씨 지역 설정' }} />
               <Stack.Screen name="settings/app-lock" options={{ title: '잠금화면 설정' }} />
               <Stack.Screen name="settings/privacy" options={{ title: '개인정보 처리방침' }} />
               <Stack.Screen name="settings/licenses" options={{ title: '오픈소스 라이선스' }} />

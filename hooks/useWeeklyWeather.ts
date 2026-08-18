@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getStoredWeatherRegionCoords } from './useWeatherRegion';
 import { formatMD, toISODate } from '../utils/date';
 import { withExternalAction } from '../utils/externalAction';
 import { describeWeatherCode } from '../utils/weatherCode';
@@ -30,7 +31,19 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 /** Background auto-refresh cadence — manual refresh is now pull-to-refresh only. */
 const AUTO_REFRESH_MS = 60 * 60 * 1000;
 
+/** 설정에서 날씨 지역을 바꿨을 때 다음 조회가 캐시된 이전 지역 값을 쓰지 않도록 무효화. */
+export function invalidateWeatherCache(): void {
+  cachedResult = null;
+  cachedAt = 0;
+}
+
 async function resolveCoords(): Promise<{ coords: { latitude: number; longitude: number }; usingFallback: boolean }> {
+  // 설정에서 지역을 수동으로 골랐으면 GPS보다 우선한다.
+  const manualRegion = await getStoredWeatherRegionCoords();
+  if (manualRegion) {
+    return { coords: { latitude: manualRegion.latitude, longitude: manualRegion.longitude }, usingFallback: false };
+  }
+
   try {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
