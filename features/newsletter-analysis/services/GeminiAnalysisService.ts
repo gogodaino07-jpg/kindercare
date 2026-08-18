@@ -2,9 +2,29 @@ import { EncodingType, readAsStringAsync } from 'expo-file-system/legacy';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Child, Event, MealPlan, UploadedDoc } from '../../../types/models';
 import { toISODate } from '../../../utils/date';
-import { getVertexAIModel } from './firebaseAI';
+import { getDb } from '../../../utils/firebase';
+
+const GEMINI_MODEL = 'gemini-3.6-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 export class GeminiAnalysisError extends Error {}
+
+let cachedGeminiApiKey: string | null = null;
+
+/** 앱에 키를 박아두지 않고, Firestore(config/aiConfig.geminiApiKey)에서 실행 시점에 읽어옴. */
+async function getGeminiApiKey(): Promise<string> {
+  if (cachedGeminiApiKey) return cachedGeminiApiKey;
+
+  const snap = await getDb().collection('config').doc('aiConfig').get();
+  const key: string | undefined = snap.exists ? snap.data()?.geminiApiKey : undefined;
+  if (!key) {
+    throw new GeminiAnalysisError(
+      'AI 분석 설정을 불러오지 못했어요. 잠시 후 다시 시도해주세요.'
+    );
+  }
+  cachedGeminiApiKey = key;
+  return key;
+}
 
 interface GeminiExtractedEvent {
   date?: string;
@@ -26,6 +46,40 @@ export interface GeminiAnalysisResult {
   mealPlans: Omit<MealPlan, 'id'>[];
 }
 
+const RESPONSE_SCHEMA = {
+  type: 'object',
+  properties: {
+    events: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          date: { type: 'string' },
+          title: { type: 'string' },
+          note: { type: 'string' },
+          memo: { type: 'string' },
+          icon: { type: 'string' },
+          needsReview: { type: 'boolean' },
+          reviewReason: { type: 'string' },
+        },
+        required: ['date', 'title'],
+      },
+    },
+    mealPlan: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          date: { type: 'string' },
+          menu: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['date', 'menu'],
+      },
+    },
+  },
+  required: ['events'],
+};
+
 function extractMealPlans(
   raw: GeminiExtractedMealPlan[] | undefined,
   childId: string
@@ -42,63 +96,96 @@ function extractMealPlans(
 }
 
 export const GeminiAnalysisService = {
-  /** Firebase(Vertex AI) 경유로만 Gemini를 호출 — 앱에 개인 API 키를 하드코딩하지 않음. */
+  /** 키를 앱에 하드코딩하지 않고 Firestore에서 실행 시점에 읽어와 Gemini를 직접 호출. */
   async analyze(docs: UploadedDoc[], child: Child): Promise<GeminiAnalysisResult> {
-    return this.analyzeWithVertexAI(docs, child);
-  },
-
-  async analyzeWithVertexAI(docs: UploadedDoc[], child: Child): Promise<GeminiAnalysisResult> {
-    try {
-      const model = getVertexAIModel();
-      const todayISO = toISODate(new Date());
-      const prompt = this.buildPrompt(todayISO, child);
-
-      const parts = await Promise.all(docs.map(async (doc) => {
-        const { base64, mimeType } = await this.getOptimizedBase64(doc);
-        return {
-          inlineData: {
-            mimeType,
-            data: base64,
-          }
-        };
-      }));
-
-      const result = await model.generateContent([prompt, ...parts]);
-      const response = await result.response;
-      const text = response.text();
-
-      const parsed: { events?: GeminiExtractedEvent[]; mealPlan?: GeminiExtractedMealPlan[] } = JSON.parse(text);
-      const extracted = (parsed.events ?? []).filter(
-        (e): e is Required<Pick<GeminiExtractedEvent, 'date' | 'title'>> & GeminiExtractedEvent =>
-          !!e.date && !!e.title
-      );
-
-      if (extracted.length === 0) {
-        throw new GeminiAnalysisError('문서에서 일정을 찾지 못했어요.');
-      }
-
+    const apiKey = await getGeminiApiKey();
+    const todayISO = toISODate(new Date());
+    const parts = await Promise.all(docs.map(async (doc) => {
+      const { base64, mimeType } = await this.getOptimizedBase64(doc);
       return {
-        events: extracted.map((e) => ({
-          date: e.date,
-          title: e.title.trim(),
-          note: e.note?.trim() || undefined,
-          memo: e.memo?.trim() || undefined,
-          childId: child.id,
-          source: 'ai' as const,
-          icon: e.icon?.trim() || '📌',
-          needsReview: e.needsReview || undefined,
-          reviewReason: e.reviewReason?.trim() || undefined,
-        })),
-        mealPlans: extractMealPlans(parsed.mealPlan, child.id),
+        inline_data: {
+          mime_type: mimeType,
+          data: base64
+        }
       };
-    } catch (err: any) {
-      console.error('[VertexAI] Error:', err);
-      let message = err.message || '프로덕션 분석 엔진 오류가 발생했습니다.';
-      if (message.includes('429') || message.toLowerCase().includes('quota')) {
-        message = '현재 분석 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.';
+    }));
+
+    const body = {
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: this.buildPrompt(todayISO, child) }, ...parts],
+        },
+      ],
+      generation_config: {
+        response_mime_type: 'application/json',
+        response_schema: RESPONSE_SCHEMA,
+      },
+    };
+
+    let response: Response;
+    try {
+      response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      throw new GeminiAnalysisError('네트워크 연결을 확인해주세요.');
+    }
+
+    if (!response.ok) {
+      let message = `문서 분석에 실패했어요 (HTTP ${response.status})`;
+      try {
+        const errJson = await response.json();
+        console.error('[Gemini API Error Detail]:', JSON.stringify(errJson, null, 2));
+        if (response.status === 429) {
+          message = 'AI 분석 요청이 너무 많습니다. 1분만 기다렸다가 다시 시도해 주세요.';
+        } else if (errJson?.error?.message) {
+          message = `Gemini 오류 (${response.status}): ${errJson.error.message}`;
+        }
+      } catch (e) {
+        console.error('[Gemini API Parse Error]:', e);
       }
       throw new GeminiAnalysisError(message);
     }
+
+    const json = await response.json();
+    const rawText: string | undefined = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) {
+      throw new GeminiAnalysisError('분석 결과를 읽지 못했어요. 다시 시도해주세요.');
+    }
+
+    let parsed: { events?: GeminiExtractedEvent[]; mealPlan?: GeminiExtractedMealPlan[] };
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      throw new GeminiAnalysisError('분석 결과 형식이 올바르지 않아요.');
+    }
+
+    const extracted = (parsed.events ?? []).filter(
+      (e): e is Required<Pick<GeminiExtractedEvent, 'date' | 'title'>> & GeminiExtractedEvent =>
+        !!e.date && !!e.title
+    );
+
+    if (extracted.length === 0) {
+      throw new GeminiAnalysisError('문서에서 일정을 찾지 못했어요. 더 선명한 사진으로 다시 시도해주세요.');
+    }
+
+    return {
+      events: extracted.map((e) => ({
+        date: e.date,
+        title: e.title.trim(),
+        note: e.note?.trim() || undefined,
+        memo: e.memo?.trim() || undefined,
+        childId: child.id,
+        source: 'ai' as const,
+        icon: e.icon?.trim() || '📌',
+        needsReview: e.needsReview || undefined,
+        reviewReason: e.reviewReason?.trim() || undefined,
+      })),
+      mealPlans: extractMealPlans(parsed.mealPlan, child.id),
+    };
   },
 
   async getOptimizedBase64(doc: UploadedDoc): Promise<{ base64: string; mimeType: string }> {
