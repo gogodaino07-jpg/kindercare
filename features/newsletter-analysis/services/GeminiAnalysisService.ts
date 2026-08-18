@@ -1,14 +1,82 @@
+import TextRecognition, { TextRecognitionScript } from '@react-native-ml-kit/text-recognition';
 import { EncodingType, readAsStringAsync } from 'expo-file-system/legacy';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Child, Event, MealPlan, UploadedDoc } from '../../../types/models';
 import { toISODate } from '../../../utils/date';
 import { getVertexAIModel } from './firebaseAI';
 
-const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-const GEMINI_MODEL = 'gemini-3.6-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+// "8월 20일" 같은 월/일 표기 (연도 없음)
+const MONTH_DAY_RE = /(\d{1,2})\s*월\s*(\d{1,2})\s*일/;
+// "2026.8.20" / "2026-08-20" / "2026/8/20" 같은 연-월-일 표기
+const FULL_DATE_RE = /(\d{4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/;
 
-const IS_PROD = process.env.EXPO_PUBLIC_APP_ENV === 'production';
+function toDateISO(year: number, month: number, day: number): string | null {
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const mm = String(month).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  return `${year}-${mm}-${dd}`;
+}
+
+/** 줄 텍스트에서 날짜를 찾아 ISO 문자열로 변환. 연도가 없으면 오늘 날짜 기준으로 보정. */
+function extractDateFromLine(line: string, todayISO: string): { date: string; matchedText: string } | null {
+  const fullMatch = line.match(FULL_DATE_RE);
+  if (fullMatch) {
+    const date = toDateISO(Number(fullMatch[1]), Number(fullMatch[2]), Number(fullMatch[3]));
+    if (date) return { date, matchedText: fullMatch[0] };
+  }
+
+  const monthDayMatch = line.match(MONTH_DAY_RE);
+  if (monthDayMatch) {
+    const todayYear = Number(todayISO.slice(0, 4));
+    const month = Number(monthDayMatch[1]);
+    const day = Number(monthDayMatch[2]);
+    let date = toDateISO(todayYear, month, day);
+    if (date) {
+      // 오늘보다 두 달 이상 과거면 연도가 넘어간 공지일 가능성이 높아 다음 해로 보정
+      if (date < todayISO && todayISO.slice(0, 10) > `${todayYear}-${String(Math.max(month, 1)).padStart(2, '0')}-01`) {
+        const monthsBehind = (new Date(todayISO).getFullYear() - todayYear) * 12
+          + (new Date(todayISO).getMonth() + 1 - month);
+        if (monthsBehind >= 2) {
+          date = toDateISO(todayYear + 1, month, day);
+        }
+      }
+      if (date) return { date, matchedText: monthDayMatch[0] };
+    }
+  }
+
+  return null;
+}
+
+/** OCR로 뽑아낸 줄 목록에서 날짜가 포함된 줄을 찾아 일정으로 변환 (온디바이스 규칙 기반 — Gemini 대비 정확도가 낮음). */
+function buildEventsFromLines(lines: string[], todayISO: string, childId: string): Omit<Event, 'id'>[] {
+  const events: Omit<Event, 'id'>[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const found = extractDateFromLine(line, todayISO);
+    if (!found) continue;
+
+    let title = line.replace(found.matchedText, '').trim().replace(/^[:\-–,.\s]+/, '');
+    if (title.length < 2 && lines[i + 1]?.trim()) {
+      title = lines[i + 1].trim();
+    }
+    if (!title) title = '일정 확인 필요';
+
+    events.push({
+      date: found.date,
+      title: title.length > 30 ? `${title.slice(0, 30)}…` : title,
+      childId,
+      source: 'ai' as const,
+      icon: '📌',
+      needsReview: true,
+      reviewReason: '온디바이스 텍스트 인식 결과예요. 날짜/내용을 꼭 확인해주세요.',
+    });
+  }
+
+  return events;
+}
 
 export class GeminiAnalysisError extends Error {}
 
@@ -32,40 +100,6 @@ export interface GeminiAnalysisResult {
   mealPlans: Omit<MealPlan, 'id'>[];
 }
 
-const RESPONSE_SCHEMA = {
-  type: 'object',
-  properties: {
-    events: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          date: { type: 'string' },
-          title: { type: 'string' },
-          note: { type: 'string' },
-          memo: { type: 'string' },
-          icon: { type: 'string' },
-          needsReview: { type: 'boolean' },
-          reviewReason: { type: 'string' },
-        },
-        required: ['date', 'title'],
-      },
-    },
-    mealPlan: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          date: { type: 'string' },
-          menu: { type: 'array', items: { type: 'string' } },
-        },
-        required: ['date', 'menu'],
-      },
-    },
-  },
-  required: ['events'],
-};
-
 function extractMealPlans(
   raw: GeminiExtractedMealPlan[] | undefined,
   childId: string
@@ -82,104 +116,38 @@ function extractMealPlans(
 }
 
 export const GeminiAnalysisService = {
+  /** 서버 호출 없이 기기 안에서만 OCR + 규칙 기반으로 일정을 추출. Gemini API는 전혀 호출하지 않음. */
   async analyze(docs: UploadedDoc[], child: Child): Promise<GeminiAnalysisResult> {
-    if (IS_PROD) {
-      return this.analyzeWithVertexAI(docs, child);
-    }
-
-    if (!GEMINI_API_KEY) {
-      throw new GeminiAnalysisError(
-        'Gemini API 키가 설정되지 않았어요. .env의 EXPO_PUBLIC_GEMINI_API_KEY를 확인해주세요.'
-      );
+    const imageDocs = docs.filter((d) => d.kind === 'image');
+    if (imageDocs.length === 0) {
+      throw new GeminiAnalysisError('온디바이스 분석은 사진만 지원해요. PDF 대신 사진으로 올려주세요.');
     }
 
     const todayISO = toISODate(new Date());
-    const parts = await Promise.all(docs.map(async (doc) => {
-      const { base64, mimeType } = await this.getOptimizedBase64(doc);
-      return {
-        inline_data: {
-          mime_type: mimeType,
-          data: base64
-        }
-      };
-    }));
+    const allLines: string[] = [];
 
-    const body = {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: this.buildPrompt(todayISO, child) }, ...parts],
-        },
-      ],
-      generation_config: {
-        response_mime_type: 'application/json',
-        response_schema: RESPONSE_SCHEMA,
-      },
-    };
-
-    let response: Response;
-    try {
-      response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-    } catch {
-      throw new GeminiAnalysisError('네트워크 연결을 확인해주세요.');
-    }
-
-    if (!response.ok) {
-      let message = `문서 분석에 실패했어요 (HTTP ${response.status})`;
+    for (const doc of imageDocs) {
       try {
-        const errJson = await response.json();
-        console.error('[Gemini API Error Detail]:', JSON.stringify(errJson, null, 2));
-        if (response.status === 429) {
-          message = 'AI 분석 요청이 너무 많습니다. 1분만 기다렸다가 다시 시도해 주세요.';
-        } else if (errJson?.error?.message) {
-          message = `Gemini 오류 (${response.status}): ${errJson.error.message}`;
+        const result = await TextRecognition.recognize(doc.uri, TextRecognitionScript.KOREAN);
+        for (const block of result.blocks) {
+          for (const line of block.lines) {
+            allLines.push(line.text);
+          }
         }
       } catch (e) {
-        console.error('[Gemini API Parse Error]:', e);
+        console.warn('[OnDeviceOCR] Failed to recognize text for doc:', doc.uri, e);
       }
-      throw new GeminiAnalysisError(message);
     }
 
-    const json = await response.json();
-    const rawText: string | undefined = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) {
-      throw new GeminiAnalysisError('분석 결과를 읽지 못했어요. 다시 시도해주세요.');
+    const events = buildEventsFromLines(allLines, todayISO, child.id);
+    if (events.length === 0) {
+      throw new GeminiAnalysisError(
+        '사진에서 날짜가 포함된 일정을 찾지 못했어요. 더 선명한 사진으로 다시 시도하거나 직접 입력해주세요.'
+      );
     }
 
-    let parsed: { events?: GeminiExtractedEvent[]; mealPlan?: GeminiExtractedMealPlan[] };
-    try {
-      parsed = JSON.parse(rawText);
-    } catch {
-      throw new GeminiAnalysisError('분석 결과 형식이 올바르지 않아요.');
-    }
-
-    const extracted = (parsed.events ?? []).filter(
-      (e): e is Required<Pick<GeminiExtractedEvent, 'date' | 'title'>> & GeminiExtractedEvent =>
-        !!e.date && !!e.title
-    );
-
-    if (extracted.length === 0) {
-      throw new GeminiAnalysisError('문서에서 일정을 찾지 못했어요. 더 선명한 사진으로 다시 시도해주세요.');
-    }
-
-    return {
-      events: extracted.map((e) => ({
-        date: e.date,
-        title: e.title.trim(),
-        note: e.note?.trim() || undefined,
-        memo: e.memo?.trim() || undefined,
-        childId: child.id,
-        source: 'ai' as const,
-        icon: e.icon?.trim() || '📌',
-        needsReview: e.needsReview || undefined,
-        reviewReason: e.reviewReason?.trim() || undefined,
-      })),
-      mealPlans: extractMealPlans(parsed.mealPlan, child.id),
-    };
+    // 온디바이스 규칙 기반 파서는 표 형태의 식단표까지 구조화하지 못해 급식표는 추출하지 않음.
+    return { events, mealPlans: [] };
   },
 
   async analyzeWithVertexAI(docs: UploadedDoc[], child: Child): Promise<GeminiAnalysisResult> {
