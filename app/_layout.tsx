@@ -153,6 +153,7 @@ function ThemedNavigation() {
               <Stack.Screen name="nearby-places" options={{ headerShown: false }} />
               <Stack.Screen name="child-profile" options={{ title: '아이 프로필 설정' }} />
               <Stack.Screen name="edit-event" options={{ title: '일정 수정' }} />
+              <Stack.Screen name="stamp-board" options={{ title: '참 잘했어요 도장판' }} />
               <Stack.Screen name="settings/index" options={{ title: '설정' }} />
               <Stack.Screen name="settings/family" options={{ title: '가족 계정' }} />
               <Stack.Screen name="settings/notifications" options={{ title: '알림 설정' }} />

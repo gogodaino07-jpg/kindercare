@@ -11,6 +11,7 @@ import Text from '../common/AppText';
 import CalendarIcon from '../common/CalendarIcon';
 import MoodSparkleIcon from '../common/MoodSparkleIcon';
 import SettingsIcon from '../common/SettingsIcon';
+import StampIcon from '../common/StampIcon';
 import NotificationCenterModal from './NotificationCenterModal';
 
 interface HomeProfileBarProps {
@@ -112,6 +113,9 @@ export default function HomeProfileBar({ selectedChild, onPressChild }: HomeProf
       </Pressable>
 
       <View style={styles.topIconsRow}>
+        <Pressable style={styles.iconButton} onPress={() => router.push('/stamp-board')}>
+          <StampIcon size={24} color={colors.gray600} />
+        </Pressable>
         <Pressable style={styles.iconButton} onPress={() => router.push('/calendar')}>
           <CalendarIcon size={24} color={colors.gray600} />
         </Pressable>
