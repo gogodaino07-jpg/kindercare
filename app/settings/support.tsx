@@ -5,6 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import ScreenBackground from '../../components/ScreenBackground';
 import Text from '../../components/common/AppText';
 import { SHADOW, ThemeColors } from '../../constants/theme';
+import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { stripInvalidCharacters } from '../../utils/validation';
@@ -25,10 +26,16 @@ export default function SupportScreen() {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { googleAccount } = useAppData();
 
-  const [emailId, setEmailId] = useState('');
-  const [domainOption, setDomainOption] = useState<DomainValue>('naver.com');
-  const [customDomain, setCustomDomain] = useState('');
+  const [accountId, accountDomain] = (googleAccount?.email ?? '').split('@');
+  const matchedDomain = DOMAIN_OPTIONS.find((o) => o.value === accountDomain);
+
+  const [emailId, setEmailId] = useState(accountId ?? '');
+  const [domainOption, setDomainOption] = useState<DomainValue>(
+    matchedDomain ? matchedDomain.value : accountDomain ? 'custom' : 'naver.com'
+  );
+  const [customDomain, setCustomDomain] = useState(!matchedDomain ? (accountDomain ?? '') : '');
   const [domainMenuOpen, setDomainMenuOpen] = useState(false);
   const [content, setContent] = useState('');
 

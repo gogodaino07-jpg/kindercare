@@ -337,9 +337,9 @@ export default function AppLockSettingsScreen() {
                           <Text style={[styles.rowDesc, { color: colors.textSecondary }]}>{option.description}</Text>
                         ) : null}
                       </View>
-                      {isSelected && (
-                        <Text style={{ fontSize: 20, color: '#22C55E' }}>✅</Text>
-                      )}
+                      <View style={[styles.radioOuter, { borderColor: isSelected ? colors.accent : colors.border }]}>
+                        {isSelected && <View style={[styles.radioInner, { backgroundColor: colors.accent }]} />}
+                      </View>
                     </Pressable>
                     {idx < LOCK_OPTIONS.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
                   </View>
@@ -407,6 +407,19 @@ function createStyles(colors: any) {
       paddingHorizontal: 20,
     },
     rowInfo: { flex: 1 },
+    radioOuter: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      borderWidth: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    radioInner: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+    },
     rowTitle: { fontSize: 16, fontWeight: '700' },
     rowDesc: { fontSize: 12, marginTop: 2 },
     divider: { height: 1, marginHorizontal: 20 },
