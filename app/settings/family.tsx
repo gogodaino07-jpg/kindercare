@@ -34,7 +34,7 @@ function formatPhoneNumber(raw: string): string {
 export default function FamilyMembersScreen() {
   const { title: titleParam } = useLocalSearchParams<{ title?: string }>();
   const isManagementMode = titleParam === '구성원 관리';
-  const isReissueMode = titleParam === '키 재발급';
+  const isReissueMode = titleParam === '키 공유 / 재발급';
 
   const { familyKey, familyMembers, removeMember, leaveFamily, regenerateFamilyKey, updateMemberPhone } =
     useAppData();

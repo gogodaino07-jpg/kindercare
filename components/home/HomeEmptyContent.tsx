@@ -11,7 +11,6 @@ import HomeHeroHeader from './HomeHeroHeader';
 
 interface HomeEmptyContentProps {
   selectedChild: Child | undefined;
-  onPressChild: () => void;
   onPressMeal: () => void;
   weatherDays: WeatherDay[] | null;
   weatherLoading: boolean;
@@ -20,7 +19,6 @@ interface HomeEmptyContentProps {
 
 export default function HomeEmptyContent({
   selectedChild,
-  onPressChild,
   onPressMeal,
   weatherDays,
   weatherLoading,
@@ -31,17 +29,16 @@ export default function HomeEmptyContent({
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
-    <ScrollView style={styles.flexFill} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      <HomeHeroHeader
-        selectedChild={selectedChild}
-        onPressChild={onPressChild}
-        onPressMeal={onPressMeal}
-        weatherDays={weatherDays}
-        weatherLoading={weatherLoading}
-        onPressDate={onPressDate}
-      />
+      <ScrollView style={styles.flexFill} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <HomeHeroHeader
+          selectedChild={selectedChild}
+          onPressMeal={onPressMeal}
+          weatherDays={weatherDays}
+          weatherLoading={weatherLoading}
+          onPressDate={onPressDate}
+        />
 
-      <SectionHeader emoji="🎒" title="가방에 쏙쏙!" />
+        <SectionHeader emoji="🎒" title="가방에 쏙쏙!" />
       <View style={styles.card}>
         <View style={[styles.iconCircle, { backgroundColor: colors.purpleBg }]}>
           <Text style={styles.iconCircleEmoji}>🪄</Text>

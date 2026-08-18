@@ -1,12 +1,13 @@
 import { Redirect, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdPopupModal from '../components/home/AdPopupModal';
 import BlackboardModal from '../components/home/BlackboardModal';
 import ChildSwitcherSheet from '../components/home/ChildSwitcherSheet';
 import HomeEmptyContent from '../components/home/HomeEmptyContent';
 import HomeHeroHeader from '../components/home/HomeHeroHeader';
+import HomeProfileBar from '../components/home/HomeProfileBar';
 import MealPlanSheet from '../components/home/MealPlanSheet';
 import ScheduleBoard, { ScheduleTab } from '../components/home/ScheduleBoard';
 import TodayPrepProgress from '../components/home/TodayPrepProgress';
@@ -34,7 +35,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     adBanner: {
       position: 'absolute',
-      bottom: 4 + bottomInset,
+      bottom: bottomInset,
       left: 0,
       right: 0,
       zIndex: 100,
@@ -57,10 +58,28 @@ export default function HomeScreen() {
   const [mealSheetOpen, setMealSheetOpen] = useState(false);
   const [adPopupVisible, setAdPopupVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<ScheduleTab>('all');
+  const [refreshing, setRefreshing] = useState(false);
   const adShownRef = useRef(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const progressYRef = useRef(0);
 
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
   const todayProgress = useMemo(() => checklist.getProgress(upcoming.mainEvents), [checklist, upcoming.mainEvents]);
+
+  // 아래로 당겨서 새로고침 — 날씨를 강제로 다시 조회(이벤트/체크리스트는 실시간 구독이라 재조회 불필요).
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await weather.retry();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [weather]);
+
+  // "오늘 등원 준비물 챙기기" 배너를 누르면 그 배너가 화면 상단(고정 프로필 헤더 바로 아래)으로 오도록 스크롤.
+  const scrollToProgress = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: Math.max(progressYRef.current - 8, 0), animated: true });
+  }, []);
 
   // 오늘/내일/모레 날씨 카드를 누르면 스크롤 대신 해당 탭으로 바로 전환.
   // 오늘은 "전체" 탭 맨 위에 이미 노출되므로 오늘 카드를 누르면 전체 탭으로 전환.
@@ -102,10 +121,10 @@ export default function HomeScreen() {
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <HomeProfileBar selectedChild={selectedChild} onPressChild={() => setSwitcherOpen(true)} />
         {upcoming.isEmpty ? (
           <HomeEmptyContent
             selectedChild={selectedChild}
-            onPressChild={() => setSwitcherOpen(true)}
             onPressMeal={() => setMealSheetOpen(true)}
             weatherDays={weather.days}
             weatherLoading={weather.loading}
@@ -113,25 +132,30 @@ export default function HomeScreen() {
           />
         ) : (
           <ScrollView
+            ref={scrollRef}
             style={styles.mainContainer}
             contentContainerStyle={styles.scrollContainer}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="always"
             nestedScrollEnabled={true}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           >
             <HomeHeroHeader
               selectedChild={selectedChild}
-              onPressChild={() => setSwitcherOpen(true)}
               onPressMeal={() => setMealSheetOpen(true)}
               weatherDays={weather.days}
               weatherLoading={weather.loading}
               onPressDate={onDatePress}
             />
-            <TodayPrepProgress
-              total={todayProgress.total}
-              checked={todayProgress.checked}
-              percent={todayProgress.percent}
-            />
+            <View onLayout={(e) => { progressYRef.current = e.nativeEvent.layout.y; }}>
+              <Pressable onPress={scrollToProgress} disabled={todayProgress.total === 0}>
+                <TodayPrepProgress
+                  total={todayProgress.total}
+                  checked={todayProgress.checked}
+                  percent={todayProgress.percent}
+                />
+              </Pressable>
+            </View>
             <ScheduleBoard
               mainEvents={upcoming.mainEvents}
               secondaryEvents={upcoming.secondaryEvents}

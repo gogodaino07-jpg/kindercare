@@ -386,6 +386,7 @@ function createStyles(colors: ThemeColors) {
       gap: 2,
       paddingVertical: 6,
       paddingHorizontal: 8,
+      minWidth: 64,
       borderRadius: 12,
       borderWidth: 1,
       borderColor: colors.border,

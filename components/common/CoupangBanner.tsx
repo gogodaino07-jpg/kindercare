@@ -70,7 +70,7 @@ export default function CoupangBanner({ style }: CoupangBannerProps) {
       <View style={styles.topLine} />
 
       <View style={styles.contentWrapper}>
-        <View style={styles.disclosureContainer}>
+        <View style={styles.disclosureRow}>
           <Text style={styles.disclosure}>ⓘ 광고</Text>
         </View>
 
@@ -136,11 +136,11 @@ const createStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  disclosureContainer: {
-    position: 'absolute',
-    top: 4,
-    right: 20,
-    zIndex: 10,
+  disclosureRow: {
+    width: '100%',
+    alignItems: 'flex-end',
+    paddingHorizontal: 20,
+    marginBottom: 2,
   },
   disclosure: {
     fontSize: 9,

@@ -51,4 +51,4 @@ export const FONT_SIZE_OPTIONS: FontSizeOption[] = [
   { id: 'xl', label: '아주 크게', scale: 1.45 },
 ];
 
-export const DEFAULT_FONT_SIZE: FontSizeChoice = 'l';
+export const DEFAULT_FONT_SIZE: FontSizeChoice = 'm';

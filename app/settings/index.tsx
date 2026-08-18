@@ -197,7 +197,7 @@ export default function SettingsScreen() {
           {/* 가족 계정 섹션 */}
           <SettingSection emoji="👨‍👩‍👧" title="가족 계정">
             <SettingItem title="구성원 관리" onPress={() => router.push({ pathname: '/settings/family', params: { title: '구성원 관리' } })} />
-            <SettingItem title="키 재발급" onPress={() => router.push({ pathname: '/settings/family', params: { title: '키 재발급' } })} showDivider={false} />
+            <SettingItem title="키 공유 / 재발급" onPress={() => router.push({ pathname: '/settings/family', params: { title: '키 공유 / 재발급' } })} showDivider={false} />
           </SettingSection>
 
           {/* 디스플레이 설정 섹션 */}

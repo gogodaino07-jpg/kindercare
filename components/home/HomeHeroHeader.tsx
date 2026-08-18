@@ -1,21 +1,16 @@
-import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Image, Pressable, StyleSheet, View } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
-import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { WeatherDay } from '../../hooks/useWeeklyWeather';
 import { Child } from '../../types/models';
 import { formatMD, toISODate, WEEKDAY_KO } from '../../utils/date';
 import { describeGuideTip, describeMiniTip, describeTempCompareTip } from '../../utils/weatherCode';
 import Text from '../common/AppText';
-import NotificationCenterModal from './NotificationCenterModal';
 
 interface HomeHeroHeaderProps {
   selectedChild: Child | undefined;
-  onPressChild: () => void;
   onPressMeal: () => void;
   weatherDays: WeatherDay[] | null;
   weatherLoading: boolean;
@@ -34,13 +29,6 @@ function hasFinalConsonant(text: string): boolean {
 function stripSurname(name: string): string {
   const trimmed = name.trim();
   return trimmed.length >= 3 ? trimmed.slice(1) : trimmed;
-}
-
-/** "햇살" -> "햇살반" / "햇살반" -> "햇살반" 그대로. */
-function formatClassName(className?: string): string | undefined {
-  const trimmed = className?.trim();
-  if (!trimmed) return undefined;
-  return trimmed.endsWith('반') ? trimmed : `${trimmed}반`;
 }
 
 /** 이름+조사(아/야) 앞뒤에 붙는 문구. 자연스러운 구어체가 되도록 이름이 문장 맨 앞에 오는 형태를 섞음. */
@@ -87,32 +75,16 @@ function pickDailyGreetingTemplate(): { before: string; after: string } {
   return GREETING_TEMPLATES[hash % GREETING_TEMPLATES.length];
 }
 
-/** 실제 기분 데이터가 없어 장식용으로만 하루 단위로 고정 로테이션되는 문구. */
-const MOOD_LABELS = ['신나요! 😄', '즐거워요! 🥰', '씩씩해요! 💪', '상쾌해요! 😊', '기대돼요! ✨', '평온해요! 🙂', '반짝반짝해요! ⭐'];
-
-function pickDailyMoodLabel(): string {
-  const todayKey = `${toISODate(new Date())}-mood`;
-  let hash = 0;
-  for (let i = 0; i < todayKey.length; i++) {
-    hash = (hash * 31 + todayKey.charCodeAt(i)) >>> 0;
-  }
-  return MOOD_LABELS[hash % MOOD_LABELS.length];
-}
-
-/** Shared greeting header + weather hero, used for both the empty and has-data home states so the top of the screen never differs. */
+/** Shared greeting banner + weather hero, used for both the empty and has-data home states so the top of the screen never differs. */
 export default function HomeHeroHeader({
   selectedChild,
-  onPressChild,
   onPressMeal,
   weatherDays,
   weatherLoading,
   onPressDate,
 }: HomeHeroHeaderProps) {
-  const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { unreadCount } = useNotificationCenter();
-  const [notifVisible, setNotifVisible] = useState(false);
 
   const today = weatherDays?.find((d) => d.isToday);
   const tomorrow = weatherDays?.find((d) => d.isTomorrow);
@@ -128,53 +100,11 @@ export default function HomeHeroHeader({
   const greetingName = selectedChild?.name ? stripSurname(selectedChild.name) : undefined;
   const particle = greetingName ? (hasFinalConsonant(greetingName) ? '아' : '야') : '';
   const greetingTemplate = pickDailyGreetingTemplate();
-  const moodLabel = pickDailyMoodLabel();
   const now = new Date();
   const bannerDateText = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${WEEKDAY_KO[now.getDay()]}요일`;
 
   return (
     <View>
-      <View style={styles.topRow}>
-        <Pressable style={styles.profileRow} onPress={onPressChild}>
-          <View style={styles.avatarSmallContainer}>
-            {selectedChild?.photoUri ? (
-              <Image source={{ uri: selectedChild.photoUri }} style={styles.avatarSmall} />
-            ) : (
-              <View style={styles.avatarSmallPlaceholder}>
-                <Text style={styles.avatarSmallIcon}>🧒</Text>
-              </View>
-            )}
-            <View style={styles.onlineDot} />
-          </View>
-          <View style={styles.profileTextBlock}>
-            <View style={styles.nameRow}>
-              <Text style={styles.profileName} numberOfLines={1}>{greetingName ?? '우리 아이'}</Text>
-              {selectedChild && (
-                <View style={styles.miniBadge}>
-                  <Text style={styles.miniBadgeText}>
-                    {[`${selectedChild.age}세`, formatClassName(selectedChild.className)].filter(Boolean).join(' ')}
-                  </Text>
-                </View>
-              )}
-            </View>
-            <Text style={styles.moodText} numberOfLines={1}>☺ 오늘 기분: {moodLabel}</Text>
-          </View>
-        </Pressable>
-
-        <View style={styles.topIconsRow}>
-          <Pressable style={styles.iconButton} onPress={() => router.push('/calendar')}>
-            <Image source={require('../../assets/icon_calendar_cute.png')} style={styles.iconImage} resizeMode="contain" />
-          </Pressable>
-          <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
-            <Image source={require('../../assets/icon_settings_cute.png')} style={styles.iconImage} resizeMode="contain" />
-          </Pressable>
-          <Pressable style={styles.iconButton} onPress={() => setNotifVisible(true)}>
-            <MaterialIcons name="notifications-none" size={24} color={colors.gray600} />
-            {unreadCount > 0 && <View style={styles.bellDot} />}
-          </Pressable>
-        </View>
-      </View>
-
       <LinearGradient
         colors={['#FBBF24', '#FCD34D', '#FDE68A']}
         start={{ x: 0, y: 0 }}
@@ -258,8 +188,6 @@ export default function HomeHeroHeader({
           />
         </View>
       </View>
-
-      <NotificationCenterModal visible={notifVisible} onClose={() => setNotifVisible(false)} />
     </View>
   );
 }
@@ -365,124 +293,18 @@ function MiniWeatherCard({
           </Text>
         )}
       </View>
-      <Text style={styles.temp}>{day ? `${day.tempMax}°` : '--'}</Text>
+      <View style={styles.tempRow}>
+        <Text style={styles.temp}>{day ? `${day.tempMax}°` : '--'}</Text>
+        {day && <Text style={styles.tempMin}>{day.tempMin}°</Text>}
+      </View>
     </Pressable>
   );
 }
 
-const AVATAR_SMALL_SIZE = 46;
-const ICON_BUTTON_SIZE = 32;
 const TODAY_CARD_HEIGHT = 192;
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    topRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 20,
-      paddingTop: 8,
-      paddingBottom: 4,
-    },
-    profileRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      flexShrink: 1,
-      gap: 10,
-    },
-    avatarSmallContainer: {
-      width: AVATAR_SMALL_SIZE,
-      height: AVATAR_SMALL_SIZE,
-      position: 'relative',
-    },
-    avatarSmall: {
-      width: AVATAR_SMALL_SIZE,
-      height: AVATAR_SMALL_SIZE,
-      borderRadius: AVATAR_SMALL_SIZE / 2,
-      borderWidth: 2,
-      borderColor: colors.orangeBorder,
-    },
-    avatarSmallPlaceholder: {
-      width: AVATAR_SMALL_SIZE,
-      height: AVATAR_SMALL_SIZE,
-      borderRadius: AVATAR_SMALL_SIZE / 2,
-      backgroundColor: colors.orangeLight2,
-      borderWidth: 2,
-      borderColor: colors.orangeBorder,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    avatarSmallIcon: {
-      fontSize: 22,
-    },
-    onlineDot: {
-      position: 'absolute',
-      bottom: -1,
-      right: -1,
-      width: 13,
-      height: 13,
-      borderRadius: 7,
-      backgroundColor: colors.statusGreen,
-      borderWidth: 2,
-      borderColor: colors.skyBackground,
-    },
-    profileTextBlock: {
-      flexShrink: 1,
-    },
-    nameRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-    },
-    profileName: {
-      fontSize: 16,
-      fontWeight: '800',
-      color: colors.gray900,
-    },
-    miniBadge: {
-      alignSelf: 'center',
-      backgroundColor: '#FFE066',
-      borderRadius: 999,
-      paddingHorizontal: 9,
-      paddingVertical: 2,
-    },
-    miniBadgeText: {
-      fontSize: 11,
-      fontWeight: '800',
-      color: '#5C4A1E',
-    },
-    moodText: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: colors.gray500,
-      marginTop: 2,
-    },
-    topIconsRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-    },
-    iconButton: {
-      width: ICON_BUTTON_SIZE,
-      height: ICON_BUTTON_SIZE,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    iconImage: {
-      width: ICON_BUTTON_SIZE,
-      height: ICON_BUTTON_SIZE,
-    },
-    bellDot: {
-      position: 'absolute',
-      top: 4,
-      right: 5,
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: colors.tomorrowRed,
-      borderWidth: 1.5,
-      borderColor: colors.skyBackground,
-    },
     greetingBanner: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -677,10 +499,20 @@ function createMiniCardStyles(colors: ThemeColors) {
     emoji: {
       fontSize: 16,
     },
+    tempRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 4,
+    },
     temp: {
       fontSize: 18,
       fontWeight: '800',
       color: colors.gray900,
+    },
+    tempMin: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.gray400,
     },
     tip: {
       fontSize: 11,
