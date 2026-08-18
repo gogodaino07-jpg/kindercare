@@ -10,6 +10,7 @@ import { EventDateGroup } from '../../hooks/useUpcomingEvents';
 import { Event } from '../../types/models';
 import { formatMD, parseISODate, startOfDay, toISODate } from '../../utils/date';
 import { openCoupangSearch } from '../../utils/coupang';
+import { getSpecialEventTheme } from '../../utils/specialEventTheme';
 import { isValidCoupangKeyword } from '../../utils/validation';
 import Text from '../common/AppText';
 import EventIcon from '../common/EventIcon';
@@ -228,29 +229,62 @@ function ScheduleCard({
   const category = getCategoryVisual(event.category, colors);
   const isToday = computeDday(event.date) === 'D-DAY';
   const metaLine = [event.time, event.location].filter(Boolean).join(' · ');
+  const specialTheme = getSpecialEventTheme(event.title);
 
   return (
     <View style={[styles.card, isToday && styles.cardToday]}>
-      <View style={[styles.cardHeaderRow, isToday && styles.cardHeaderRowToday]}>
-        <View style={styles.cardHeaderLeft}>
-          {isToday && (
-            <View style={styles.ddayBadge}>
-              <Text style={styles.ddayBadgeText}>D-DAY</Text>
+      {specialTheme ? (
+        <LinearGradient
+          colors={specialTheme.gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.specialHeader}
+        >
+          <View style={styles.cardHeaderLeft}>
+            {isToday && (
+              <View style={styles.ddayBadgeOnDark}>
+                <Text style={styles.ddayBadgeTextOnDark}>D-DAY</Text>
+              </View>
+            )}
+            <Text style={styles.dateTextOnDark}>{dateText}</Text>
+          </View>
+          <View style={styles.specialLabelPill}>
+            <Text style={styles.specialLabelPillText}>{specialTheme.emoji} {specialTheme.label}</Text>
+          </View>
+        </LinearGradient>
+      ) : (
+        <View style={[styles.cardHeaderRow, isToday && styles.cardHeaderRowToday]}>
+          <View style={styles.cardHeaderLeft}>
+            {isToday && (
+              <View style={styles.ddayBadge}>
+                <Text style={styles.ddayBadgeText}>D-DAY</Text>
+              </View>
+            )}
+            <Text style={[styles.dateText, isToday && styles.dateTextToday]}>{dateText}</Text>
+          </View>
+          {event.category && (
+            <View style={[styles.categoryBadge, { backgroundColor: lighten(category.accent, 0.85) }]}>
+              <Text style={[styles.categoryBadgeText, { color: category.accent }]}>{event.category}</Text>
             </View>
           )}
-          <Text style={[styles.dateText, isToday && styles.dateTextToday]}>{dateText}</Text>
         </View>
-        {event.category && (
-          <View style={[styles.categoryBadge, { backgroundColor: lighten(category.accent, 0.85) }]}>
-            <Text style={[styles.categoryBadgeText, { color: category.accent }]}>{event.category}</Text>
-          </View>
-        )}
-      </View>
+      )}
+
+      {specialTheme && (
+        <LinearGradient
+          colors={specialTheme.gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.specialMessageBlock}
+        >
+          <Text style={styles.specialMessageText}>{specialTheme.message}</Text>
+        </LinearGradient>
+      )}
 
       <Pressable onPress={onPress} style={styles.cardBody}>
         <View style={styles.cardTitleRow}>
-          <View style={[styles.iconCircle, { backgroundColor: lighten(category.accent, 0.85) }]}>
-            <EventIcon icon={event.icon} size={22} />
+          <View style={[styles.iconCircle, { backgroundColor: specialTheme ? lighten(specialTheme.gradient[0], 0.85) : lighten(category.accent, 0.85) }]}>
+            {specialTheme ? <Text style={styles.specialIconEmoji}>{specialTheme.emoji}</Text> : <EventIcon icon={event.icon} size={22} />}
           </View>
           <View style={styles.cardTitleTextBlock}>
             <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
@@ -387,6 +421,21 @@ function createStyles(colors: ThemeColors) {
     dateTextToday: { color: colors.pastelOrangeAccent },
     categoryBadge: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
     categoryBadgeText: { fontSize: 11, fontWeight: '800' },
+    specialHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    ddayBadgeOnDark: { backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+    ddayBadgeTextOnDark: { fontSize: 10, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.3 },
+    dateTextOnDark: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.9)' },
+    specialLabelPill: { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+    specialLabelPillText: { fontSize: 11, fontWeight: '800', color: '#FFFFFF' },
+    specialMessageBlock: { paddingHorizontal: 14, paddingBottom: 12, paddingTop: 2 },
+    specialMessageText: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
+    specialIconEmoji: { fontSize: 22 },
     cardBody: { padding: 14 },
     cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     iconCircle: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

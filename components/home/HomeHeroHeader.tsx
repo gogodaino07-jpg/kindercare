@@ -32,6 +32,14 @@ function stripSurname(name: string): string {
   return trimmed.length >= 3 ? trimmed.slice(1) : trimmed;
 }
 
+/** birthdate(YYYY-MM-DD)의 월-일이 오늘과 같으면 생일. */
+function isBirthdayToday(birthdate?: string): boolean {
+  if (!birthdate) return false;
+  const monthDay = birthdate.slice(5); // "MM-DD"
+  const todayMonthDay = toISODate(new Date()).slice(5);
+  return monthDay === todayMonthDay;
+}
+
 /** 이름+조사(아/야) 앞뒤에 붙는 문구. 자연스러운 구어체가 되도록 이름이 문장 맨 앞에 오는 형태를 섞음. */
 const GREETING_TEMPLATES: { before: string; after: string }[] = [
   { before: '', after: ', 오늘도 신나게 놀자!' },
@@ -102,24 +110,36 @@ export default function HomeHeroHeader({
   const greetingName = selectedChild?.name ? stripSurname(selectedChild.name) : undefined;
   const particle = greetingName ? (hasFinalConsonant(greetingName) ? '아' : '야') : '';
   const greetingTemplate = pickDailyGreetingTemplate();
+  const isBirthday = isBirthdayToday(selectedChild?.birthdate);
 
   return (
     <View>
       <LinearGradient
-        colors={['#FBBF24', '#FCD34D', '#FDE68A']}
+        colors={isBirthday ? ['#F472B6', '#C084FC', '#818CF8'] : ['#FBBF24', '#FCD34D', '#FDE68A']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.greetingBanner}
       >
         <View style={styles.greetingBannerTextBlock}>
-          <Text
-            style={styles.bannerGreetingText}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.6}
-          >
-            {greetingTemplate.before}<Text style={styles.bannerGreetingName}>{greetingName ?? '우리 아이'}{particle}</Text>{greetingTemplate.after}
-          </Text>
+          {isBirthday ? (
+            <Text
+              style={[styles.bannerGreetingText, styles.bannerGreetingTextOnBirthday]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              🎂 오늘은 {greetingName ?? '우리 아이'} 생일이에요! 축하해요!
+            </Text>
+          ) : (
+            <Text
+              style={styles.bannerGreetingText}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              {greetingTemplate.before}<Text style={styles.bannerGreetingName}>{greetingName ?? '우리 아이'}{particle}</Text>{greetingTemplate.after}
+            </Text>
+          )}
         </View>
         <Pressable style={styles.mealBannerButton} onPress={onPressMeal}>
           <Text style={styles.mealBannerButtonIcon}>🍴</Text>
@@ -349,6 +369,9 @@ function createStyles(colors: ThemeColors) {
     },
     bannerGreetingName: {
       color: colors.purpleDeep,
+    },
+    bannerGreetingTextOnBirthday: {
+      color: '#FFFFFF',
     },
     mealBannerButton: {
       flexDirection: 'row',

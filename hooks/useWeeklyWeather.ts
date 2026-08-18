@@ -56,7 +56,7 @@ async function resolveLocationLabel(coords: { latitude: number; longitude: numbe
   }
 }
 
-async function resolveCoords(): Promise<{
+export async function resolveCoords(): Promise<{
   coords: { latitude: number; longitude: number };
   usingFallback: boolean;
   locationLabel: string;

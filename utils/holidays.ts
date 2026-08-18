@@ -39,3 +39,31 @@ export function isHoliday(iso: string): boolean {
 export function getHolidayName(iso: string): string | undefined {
   return HOLIDAYS[iso];
 }
+
+export interface HolidayInfo {
+  summary: string;
+  activity: string;
+  food: string;
+}
+
+/** 홈 화면 안내 카드에 쓰는 공휴일 소개 문구. "설날 연휴"처럼 연휴가 붙은 이름은 기본 이름으로 매칭. */
+const HOLIDAY_INFO: Record<string, HolidayInfo> = {
+  신정: { summary: '새해 첫날이에요.', activity: '새해 소원을 이야기하며 하루를 보내요.', food: '떡국을 먹어요.' },
+  설날: { summary: '음력 새해 첫날, 우리나라 대표 명절이에요.', activity: '세배를 드리고 윷놀이·연날리기를 해요.', food: '떡국과 만두를 먹어요.' },
+  삼일절: { summary: '1919년 3월 1일 독립 만세운동을 기념하는 날이에요.', activity: '태극기를 달고 나라를 위해 애쓴 분들을 기억해요.', food: '' },
+  어린이날: { summary: '어린이의 행복을 위해 만들어진 날이에요.', activity: '가족과 나들이를 가거나 선물을 주고받아요.', food: '' },
+  부처님오신날: { summary: '부처님이 태어나신 날을 기념해요.', activity: '연등을 달고 절에 가서 소원을 빌어요.', food: '' },
+  현충일: { summary: '나라를 위해 희생하신 분들을 기리는 날이에요.', activity: '오전 10시에 사이렌이 울리면 잠깐 묵념을 해요.', food: '' },
+  광복절: { summary: '1945년 광복을 맞이한 것을 기념하는 날이에요.', activity: '태극기를 달고 광복의 의미를 되새겨요.', food: '' },
+  추석: { summary: '한 해 농사를 감사하는 우리나라 대표 명절이에요.', activity: '성묘를 하고 강강술래·송편 빚기를 해요.', food: '송편과 전을 먹어요.' },
+  개천절: { summary: '단군왕검이 우리나라를 세운 것을 기념하는 날이에요.', activity: '태극기를 달아요.', food: '' },
+  한글날: { summary: '세종대왕이 한글을 만드신 것을 기념하는 날이에요.', activity: '한글로 예쁜 글씨를 써보거나 그림책을 읽어요.', food: '' },
+  크리스마스: { summary: '아기 예수님의 탄생을 기념하는 날이에요.', activity: '트리를 꾸미고 선물을 주고받아요.', food: '케이크를 먹어요.' },
+};
+
+/** "설날 연휴"처럼 접미사가 붙은 이름도 기본 이름으로 찾아준다. */
+export function getHolidayInfo(name: string): HolidayInfo | undefined {
+  if (HOLIDAY_INFO[name]) return HOLIDAY_INFO[name];
+  const base = name.replace(/\s*연휴$/, '');
+  return HOLIDAY_INFO[base];
+}
