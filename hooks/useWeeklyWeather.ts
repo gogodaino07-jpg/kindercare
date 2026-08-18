@@ -13,6 +13,7 @@ export interface WeatherDay {
   label: string;
   isToday: boolean;
   isTomorrow: boolean;
+  isYesterday: boolean;
 }
 
 interface WeatherResult {
@@ -62,7 +63,7 @@ async function fetchWeeklyWeather(): Promise<WeatherResult> {
   const { coords, usingFallback } = await resolveCoords();
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}` +
-    `&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`;
+    `&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7&past_days=1`;
 
   const response = await fetch(url);
   if (!response.ok) {
@@ -78,6 +79,7 @@ async function fetchWeeklyWeather(): Promise<WeatherResult> {
 
   const today = toISODate(new Date());
   const tomorrow = toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+  const yesterday = toISODate(new Date(Date.now() - 24 * 60 * 60 * 1000));
 
   const days: WeatherDay[] = time.map((date, i) => {
     const { emoji, label } = describeWeatherCode(weather_code[i]);
@@ -90,6 +92,7 @@ async function fetchWeeklyWeather(): Promise<WeatherResult> {
       label,
       isToday: date === today,
       isTomorrow: date === tomorrow,
+      isYesterday: date === yesterday,
     };
   });
 
@@ -109,11 +112,13 @@ export function useWeeklyWeather() {
     if (!rawDays) return null;
     const todayISO = toISODate(new Date());
     const tomorrowISO = toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+    const yesterdayISO = toISODate(new Date(Date.now() - 24 * 60 * 60 * 1000));
 
     return rawDays.map(d => ({
       ...d,
       isToday: d.date === todayISO,
       isTomorrow: d.date === tomorrowISO,
+      isYesterday: d.date === yesterdayISO,
     }));
   }, [rawDays]);
 

@@ -19,6 +19,7 @@ import { useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
+import { toISODate } from '../utils/date';
 import Text from '../components/common/AppText';
 
 function createStyles(colors: ThemeColors, bottomInset: number) {
@@ -129,7 +130,12 @@ export default function HomeScreen() {
   }, [highlightedDate]);
 
   const onDatePress = useCallback((date: string) => {
-    const hasEvents = upcoming.laterGroups.some(g => g.date === date);
+    const todayISO = toISODate(new Date());
+    const tomorrowISO = toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+    const hasEvents =
+      upcoming.laterGroups.some(g => g.date === date) ||
+      (date === todayISO && upcoming.mainEvents.length > 0) ||
+      (date === tomorrowISO && upcoming.secondaryEvents.length > 0);
 
     if (!hasEvents) {
       setToastMessage('이 날에 해당하는 일정이 아직 없어요');
@@ -147,7 +153,7 @@ export default function HomeScreen() {
     } else {
       setToastMessage('잠시 후 다시 시도해 주세요.');
     }
-  }, [upcoming.laterGroups]);
+  }, [upcoming.laterGroups, upcoming.mainEvents, upcoming.secondaryEvents]);
 
   const onItemLayout = useCallback((date: string, y: number) => {
     // Only capture coordinates once per date for stability, or update if significant change
@@ -190,14 +196,24 @@ export default function HomeScreen() {
       />
     );
 
+    const bagSectionTodayISO = toISODate(new Date());
+    const bagSectionTomorrowISO = toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
     elements.push(
-      <BagSection
-        key="bag"
-        mainEvents={upcoming.mainEvents}
-        secondaryEvents={upcoming.secondaryEvents}
-        displayType={upcoming.displayType}
-        onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
-      />
+      <View
+        key="bag-wrapper"
+        collapsable={false}
+        onLayout={(e) => {
+          onItemLayout(bagSectionTodayISO, e.nativeEvent.layout.y);
+          onItemLayout(bagSectionTomorrowISO, e.nativeEvent.layout.y);
+        }}
+      >
+        <BagSection
+          mainEvents={upcoming.mainEvents}
+          secondaryEvents={upcoming.secondaryEvents}
+          displayType={upcoming.displayType}
+          onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
+        />
+      </View>
     );
 
     elements.push(<AdventureHeader key="adventure-header" />);

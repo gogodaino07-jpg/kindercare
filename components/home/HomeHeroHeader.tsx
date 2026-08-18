@@ -8,7 +8,7 @@ import { useThemeColors } from '../../context/ThemeContext';
 import { WeatherDay } from '../../hooks/useWeeklyWeather';
 import { Child } from '../../types/models';
 import { formatMD, toISODate } from '../../utils/date';
-import { describeGuideTip, describeMiniTip } from '../../utils/weatherCode';
+import { describeGuideTip, describeMiniTip, describeTempCompareTip } from '../../utils/weatherCode';
 import Text from '../common/AppText';
 
 interface HomeHeroHeaderProps {
@@ -102,6 +102,8 @@ export default function HomeHeroHeader({
 
   const today = weatherDays?.find((d) => d.isToday);
   const tomorrow = weatherDays?.find((d) => d.isTomorrow);
+  const yesterday = weatherDays?.find((d) => d.isYesterday);
+  const tempCompareTip = today ? describeTempCompareTip(today.tempMax, yesterday?.tempMax) : null;
   const dayAfter = useMemo(() => {
     if (!weatherDays) return undefined;
     const todayIdx = weatherDays.findIndex((d) => d.isToday);
@@ -164,7 +166,7 @@ export default function HomeHeroHeader({
       <View style={styles.weatherHeroRow}>
         <View style={styles.todayCardWrapper}>
           {weatherLoading && !today ? (
-            <View style={[styles.todayCard, styles.skeleton]} />
+            <SkeletonBox style={[styles.todayCard, styles.skeleton]} />
           ) : (
             <Pressable style={styles.todayCardPressable} onPress={() => today && onPressDate(today.date)}>
               <LinearGradient
@@ -182,7 +184,13 @@ export default function HomeHeroHeader({
                     </Text>
                   </View>
                 </View>
-                <Text style={styles.todayTempText}>{today?.tempMax ?? '--'}°</Text>
+                <View style={styles.todayTempRow}>
+                  <Text style={styles.todayTempText}>{today?.tempMax ?? '--'}°</Text>
+                  <Text style={styles.todayTempMinText}>{today?.tempMin ?? '--'}°</Text>
+                </View>
+                {tempCompareTip && (
+                  <Text style={styles.todayCompareText} numberOfLines={1}>{tempCompareTip}</Text>
+                )}
               </LinearGradient>
             </Pressable>
           )}
@@ -207,6 +215,24 @@ export default function HomeHeroHeader({
       </View>
     </View>
   );
+}
+
+/** Pulsing placeholder box shown while weather data is loading. */
+function SkeletonBox({ style }: { style: any }) {
+  const opacity = useRef(new Animated.Value(0.5)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.5, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
+
+  return <Animated.View style={[style, { opacity }]} />;
 }
 
 /** A cartoon "thought bubble" over the avatar's head — idle-bounces to invite a tap. `mirror` flips it to the left side of the avatar, tail included. */
@@ -285,7 +311,7 @@ function MiniWeatherCard({
   const styles = useMemo(() => createMiniCardStyles(colors), [colors]);
 
   if (loading) {
-    return <View style={[styles.container, styles.skeleton]} />;
+    return <SkeletonBox style={[styles.container, styles.skeleton]} />;
   }
 
   return (
@@ -452,11 +478,28 @@ function createStyles(colors: ThemeColors) {
     todayEmoji: {
       fontSize: 20,
     },
+    todayTempRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 6,
+    },
     todayTempText: {
       fontSize: 40,
       fontWeight: '800',
       color: '#FFFFFF',
       letterSpacing: -1,
+    },
+    todayTempMinText: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: 'rgba(255,255,255,0.75)',
+      letterSpacing: -0.5,
+    },
+    todayCompareText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: 'rgba(255,255,255,0.85)',
+      marginTop: 2,
     },
     todayTipBox: {
       flexDirection: 'row',

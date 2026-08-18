@@ -42,6 +42,17 @@ export function describeShortTip(label: string): string {
   return '즐거운 하루 보내세요';
 }
 
+/** 어제 대비 오늘 최고기온 비교 안내 문구. 어제 데이터가 없으면 null. */
+export function describeTempCompareTip(todayMax: number, yesterdayMax?: number): string | null {
+  if (yesterdayMax === undefined) return null;
+  const diff = todayMax - yesterdayMax;
+  if (diff >= 5) return `어제보다 훨씬 더워요 (+${diff}°) 🥵`;
+  if (diff >= 2) return `어제보다 더워요 (+${diff}°) ☀️`;
+  if (diff <= -5) return `어제보다 훨씬 추워요 (${diff}°) 🥶`;
+  if (diff <= -2) return `어제보다 추워요 (${diff}°) 🧥`;
+  return '어제와 비슷한 날씨예요 🙂';
+}
+
 /** Ultra-short guide text (under ~6자) for the narrow mini weather cards, so it fits on one line next to the emoji. */
 export function describeMiniTip(label: string): string {
   if (label === '맑음' || label === '대체로 맑음') return '화창해요';
