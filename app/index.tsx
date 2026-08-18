@@ -200,8 +200,6 @@ export default function HomeScreen() {
       />
     );
 
-    elements.push(<WeekendOutingBanner key="weekend-outing-banner" />);
-
     elements.push(<AdventureHeader key="adventure-header" />);
 
     if (upcoming.laterGroups.length > 0) {
