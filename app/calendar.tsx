@@ -26,6 +26,7 @@ import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { WEEKDAY_KO, parseISODate, toISODate, formatMD } from '../utils/date';
+import { getHolidayName, isHoliday } from '../utils/holidays';
 
 const DOT_COLORS = {
   ai: '#3B82F6',
@@ -170,10 +171,17 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     dayCellContainer: {
       width: '14.28%',
-      height: 38, // Restoration of recommended height
+      height: 48, // 32(원) + dotRow + 공휴일 라벨 한 줄 여유
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 2,
+    },
+    holidayLabel: {
+      fontSize: 8,
+      lineHeight: 10,
+      height: 10,
+      color: colors.tomorrowRed,
+      fontWeight: '600',
     },
     dayCell: {
       width: 32, // Restoration of recommended larger circle
@@ -194,6 +202,9 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       fontSize: 14, // Restoration of recommended font size
       color: colors.textPrimary,
       fontWeight: '500',
+    },
+    dayTextHoliday: {
+      color: colors.tomorrowRed,
     },
     dayTextSelected: {
       color: colors.tomorrowRed,
@@ -607,6 +618,7 @@ export default function CalendarScreen() {
               const isToday = iso === todayISO;
               const dayNum = iso.split('-')[2].replace(/^0/, '');
               const dayEvents = eventsByDate.get(iso) ?? [];
+              const holidayName = getHolidayName(iso);
 
               return (
                 <View key={iso} style={styles.dayCellContainer}>
@@ -621,6 +633,7 @@ export default function CalendarScreen() {
                   >
                     <Text style={[
                       styles.dayText,
+                      isHoliday(iso) && !isToday && styles.dayTextHoliday,
                       isSelected && !isToday && styles.dayTextSelected,
                       isToday && styles.dayTextToday
                     ]}>
@@ -653,6 +666,7 @@ export default function CalendarScreen() {
                       )}
                     </View>
                   </TouchableOpacity>
+                  <Text style={styles.holidayLabel} numberOfLines={1}>{holidayName ?? ''}</Text>
                 </View>
               );
             })}
