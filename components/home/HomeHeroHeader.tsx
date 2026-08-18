@@ -91,11 +91,8 @@ export default function HomeHeroHeader({
           )}
         </Pressable>
 
-        {/* Thought bubbles "hovering" over the avatar, tails pointing down at
-            it — read as the kid's own thoughts, not part of the profile tap target. */}
-        <View style={styles.placesButtonSlot}>
-          <ThoughtBubble text={'오늘은\n어디가지? 🗺️'} onPress={onPressPlaces} mirror />
-        </View>
+        {/* Thought bubble "hovering" over the avatar, tail pointing down at
+            it — read as the kid's own thought, not part of the profile tap target. */}
         <View style={styles.mealButtonSlot}>
           <ThoughtBubble text={'오늘 점심은\n뭐지? 🍚'} onPress={onPressMeal} />
         </View>
