@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { StyleSheet, View, ViewStyle, useWindowDimensions, Platform } from 'react-native';
+import { StyleSheet, View, ViewStyle, useWindowDimensions, Platform, PixelRatio } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -29,6 +29,11 @@ export default function CoupangBanner({ style }: CoupangBannerProps) {
 
   // Adjusting dimensions for the WebView container
   const bannerHeight = 50;
+  // 위젯이 CSS 픽셀 기준으로만 렌더링해서 고밀도 화면에서 확대돼 뿌옇게 보이는 문제 완화:
+  // 실제 기기 배율만큼 더 큰 캔버스로 요청한 뒤 화면에는 다시 원래 크기로 축소해서 보여준다.
+  const dpr = PixelRatio.get();
+  const scaledWidth = Math.round(windowWidth * dpr);
+  const scaledHeight = Math.round(bannerHeight * dpr);
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -56,8 +61,8 @@ export default function CoupangBanner({ style }: CoupangBannerProps) {
             "id": 1010655,
             "template": "carousel",
             "trackingCode": "AF5391104",
-            "width": "${windowWidth}",
-            "height": "${bannerHeight}"
+            "width": "${scaledWidth}",
+            "height": "${scaledHeight}"
           });
         </script>
       </body>
@@ -76,7 +81,15 @@ export default function CoupangBanner({ style }: CoupangBannerProps) {
               key={`coupang-banner-${windowWidth}-${googleAccount?.email || 'guest'}`}
               originWhitelist={['*']}
               source={{ html: htmlContent, baseUrl: 'https://ads-partners.coupang.com' }}
-              style={styles.webview}
+              style={[
+                styles.webview,
+                {
+                  width: scaledWidth,
+                  height: scaledHeight,
+                  transform: [{ scale: 1 / dpr }],
+                  transformOrigin: 'top left',
+                },
+              ]}
               scrollEnabled={false}
               showsHorizontalScrollIndicator={false}
               showsVerticalScrollIndicator={false}

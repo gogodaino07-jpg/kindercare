@@ -5,7 +5,7 @@ import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { WEATHER_SOURCE_LABEL, WeatherDay } from '../../hooks/useWeeklyWeather';
 import { Child } from '../../types/models';
-import { formatMD, toISODate, WEEKDAY_KO } from '../../utils/date';
+import { formatMD, toISODate } from '../../utils/date';
 import { describeGuideTip, describeMiniTip, describeTempCompareTip } from '../../utils/weatherCode';
 import Text from '../common/AppText';
 
@@ -102,8 +102,6 @@ export default function HomeHeroHeader({
   const greetingName = selectedChild?.name ? stripSurname(selectedChild.name) : undefined;
   const particle = greetingName ? (hasFinalConsonant(greetingName) ? '아' : '야') : '';
   const greetingTemplate = pickDailyGreetingTemplate();
-  const now = new Date();
-  const bannerDateText = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${WEEKDAY_KO[now.getDay()]}요일`;
 
   return (
     <View>
@@ -114,7 +112,6 @@ export default function HomeHeroHeader({
         style={styles.greetingBanner}
       >
         <View style={styles.greetingBannerTextBlock}>
-          <Text style={styles.bannerDateText}>{bannerDateText}</Text>
           <Text
             style={styles.bannerGreetingText}
             numberOfLines={1}
@@ -130,6 +127,14 @@ export default function HomeHeroHeader({
         </Pressable>
       </LinearGradient>
 
+      {!!locationLabel && (
+        <View style={styles.weatherMetaRow}>
+          <Text style={styles.weatherMetaText} numberOfLines={1}>
+            📍{locationLabel} · {WEATHER_SOURCE_LABEL} 제공
+          </Text>
+        </View>
+      )}
+
       <View style={styles.weatherHeroRow}>
         <View style={styles.todayCardWrapper}>
           {weatherLoading && !today ? (
@@ -142,12 +147,7 @@ export default function HomeHeroHeader({
                 end={{ x: 1, y: 1 }}
                 style={styles.todayCard}
               >
-                <View style={styles.todayHeaderRow}>
-                  <Text style={styles.todayDateText}>오늘 {today ? formatMD(today.date) : ''}</Text>
-                  {!!locationLabel && (
-                    <Text style={styles.todayLocationText} numberOfLines={1}>📍{locationLabel}</Text>
-                  )}
-                </View>
+                <Text style={styles.todayDateText}>오늘 {today ? formatMD(today.date) : ''}</Text>
                 <View style={styles.todayTipCenter}>
                   <View style={styles.todayTipBox}>
                     <AnimatedWeatherEmoji
@@ -173,7 +173,6 @@ export default function HomeHeroHeader({
                 {tempCompareTip && (
                   <Text style={styles.todayCompareText} numberOfLines={1}>{tempCompareTip}</Text>
                 )}
-                <Text style={styles.todaySourceText}>{WEATHER_SOURCE_LABEL} 제공</Text>
               </LinearGradient>
             </Pressable>
           )}
@@ -342,12 +341,6 @@ function createStyles(colors: ThemeColors) {
       flex: 1,
       minWidth: 0,
     },
-    bannerDateText: {
-      fontSize: 11.5,
-      fontWeight: '700',
-      color: '#7A5A12',
-      opacity: 0.85,
-    },
     bannerGreetingText: {
       fontSize: 16,
       fontWeight: '800',
@@ -376,6 +369,15 @@ function createStyles(colors: ThemeColors) {
       fontSize: 12.5,
       fontWeight: '800',
       color: '#5C4A1E',
+    },
+    weatherMetaRow: {
+      paddingHorizontal: 24,
+      marginBottom: 6,
+    },
+    weatherMetaText: {
+      fontSize: 10.5,
+      fontWeight: '600',
+      color: colors.gray400,
     },
     weatherHeroRow: {
       flexDirection: 'row',
@@ -408,28 +410,10 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.gray100,
       borderRadius: 26,
     },
-    todayHeaderRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 6,
-    },
     todayDateText: {
       fontSize: 14,
       fontWeight: '700',
       color: 'rgba(255,255,255,0.9)',
-    },
-    todayLocationText: {
-      fontSize: 11,
-      fontWeight: '700',
-      color: 'rgba(255,255,255,0.85)',
-      flexShrink: 1,
-    },
-    todaySourceText: {
-      fontSize: 9,
-      fontWeight: '600',
-      color: 'rgba(255,255,255,0.6)',
-      marginTop: 4,
     },
     todayEmoji: {
       fontSize: 20,

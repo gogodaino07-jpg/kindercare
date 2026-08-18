@@ -6,10 +6,8 @@ import { ThemeColors } from '../../constants/theme';
 import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Child } from '../../types/models';
-import { toISODate } from '../../utils/date';
 import Text from '../common/AppText';
 import CalendarIcon from '../common/CalendarIcon';
-import MoodSparkleIcon from '../common/MoodSparkleIcon';
 import SettingsIcon from '../common/SettingsIcon';
 import StampIcon from '../common/StampIcon';
 import NotificationCenterModal from './NotificationCenterModal';
@@ -26,49 +24,6 @@ function formatClassName(className?: string): string | undefined {
   return trimmed.endsWith('반') ? trimmed : `${trimmed}반`;
 }
 
-/** 실제 기분 데이터가 없어 장식용으로만 하루 단위로 고정 로테이션되는 문구. */
-const MOOD_LABELS = [
-  '신나요! 😄',
-  '즐거워요! 🥰',
-  '씩씩해요! 💪',
-  '상쾌해요! 😊',
-  '기대돼요! ✨',
-  '평온해요! 🙂',
-  '반짝반짝해요! ⭐',
-  '행복해요! 😆',
-  '두근두근해요! 💓',
-  '활기차요! 🤸',
-  '뿌듯해요! 😌',
-  '용감해요! 🦁',
-  '포근해요! 🐻',
-  '방긋방긋해요! 😁',
-  '든든해요! 🥰',
-  '재미있어요! 🎈',
-  '따뜻해요! ☺️',
-  '자신만만해요! 😎',
-  '사랑스러워요! 💖',
-  '기운 넘쳐요! ⚡',
-  '느긋해요! 🐢',
-  '호기심 가득해요! 🧐',
-  '상냥해요! 🌷',
-  '명랑해요! 🎶',
-  '싱글벙글해요! 😊',
-  '씩씩발랄해요! 🌈',
-  '평화로워요! 🕊️',
-  '기분 최고예요! 🌟',
-  '웃음 가득해요! 😃',
-  '알콩달콩해요! 🍭',
-];
-
-function pickDailyMoodLabel(): string {
-  const todayKey = `${toISODate(new Date())}-mood`;
-  let hash = 0;
-  for (let i = 0; i < todayKey.length; i++) {
-    hash = (hash * 31 + todayKey.charCodeAt(i)) >>> 0;
-  }
-  return MOOD_LABELS[hash % MOOD_LABELS.length];
-}
-
 const AVATAR_SMALL_SIZE = 46;
 const ICON_BUTTON_SIZE = 32;
 
@@ -79,7 +34,6 @@ export default function HomeProfileBar({ selectedChild, onPressChild }: HomeProf
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { unreadCount } = useNotificationCenter();
   const [notifVisible, setNotifVisible] = useState(false);
-  const moodLabel = pickDailyMoodLabel();
 
   return (
     <View style={styles.topRow}>
@@ -105,10 +59,6 @@ export default function HomeProfileBar({ selectedChild, onPressChild }: HomeProf
               </View>
             )}
           </View>
-          <View style={styles.moodRow}>
-            <MoodSparkleIcon size={11} color={colors.gray500} />
-            <Text style={styles.moodText} numberOfLines={1}> 오늘 기분: {moodLabel}</Text>
-          </View>
         </View>
       </Pressable>
 
@@ -119,12 +69,12 @@ export default function HomeProfileBar({ selectedChild, onPressChild }: HomeProf
         <Pressable style={styles.iconButton} onPress={() => router.push('/calendar')}>
           <CalendarIcon size={24} color={colors.gray600} />
         </Pressable>
-        <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
-          <SettingsIcon size={24} color={colors.gray600} />
-        </Pressable>
         <Pressable style={styles.iconButton} onPress={() => setNotifVisible(true)}>
           <MaterialIcons name="notifications-none" size={24} color={colors.gray600} />
           {unreadCount > 0 && <View style={styles.bellDot} />}
+        </Pressable>
+        <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
+          <SettingsIcon size={24} color={colors.gray600} />
         </Pressable>
       </View>
 
@@ -210,16 +160,6 @@ function createStyles(colors: ThemeColors) {
       fontSize: 11,
       fontWeight: '800',
       color: '#5C4A1E',
-    },
-    moodRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: 2,
-    },
-    moodText: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: colors.gray500,
     },
     topIconsRow: {
       flexDirection: 'row',

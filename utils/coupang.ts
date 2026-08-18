@@ -56,18 +56,11 @@ export async function openCoupangSearch(keyword: string): Promise<void> {
   markExternalActionBriefly();
 
   const encoded = encodeURIComponent(smartKeyword);
-  const appUrl = `coupang://search?q=${encoded}`;
   const webUrl = `https://m.coupang.com/nm/search?q=${encoded}`;
 
   try {
-    const supported = await Linking.canOpenURL(appUrl);
-    if (supported) {
-      await Linking.openURL(appUrl);
-    } else {
-      await Linking.openURL(webUrl);
-    }
+    await Linking.openURL(webUrl);
   } catch (err) {
     console.error('Coupang Link Error:', err);
-    Linking.openURL(webUrl).catch(() => {});
   }
 }
