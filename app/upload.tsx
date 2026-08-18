@@ -1,6 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { Stack, useRouter, useNavigation } from 'expo-router';
+import { Stack, useRouter, useNavigation, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import {
   ActivityIndicator,
@@ -26,10 +26,12 @@ import { useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { isSimilarEvent } from '../data/mockAIResult';
+import { useScanRewardedAd } from '../hooks/useScanRewardedAd';
 import { Event, MealPlan, UploadedDoc } from '../types/models';
 import {
   AIUsageLimitService,
   AnalysisResultStore,
+  FREE_USAGE_LIMIT,
   GeminiAnalysisError,
   GeminiAnalysisService,
 } from '../features/newsletter-analysis';
@@ -39,10 +41,13 @@ const MAX_DOCS = 5;
 export default function UploadScreen() {
   const router = useRouter();
   const navigation = useNavigation();
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
+  const isMealMode = mode === 'meal';
   const { selectedChild, events, googleAccount, addMealPlans } = useAppData();
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
   const { showToast } = useToast();
+  const { requestAndShow } = useScanRewardedAd();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
@@ -351,6 +356,14 @@ export default function UploadScreen() {
       addMealPlans(mealPlans);
     }
 
+    // 급식 메뉴 전용 스캔은 일정과 무관하게 급식 메뉴만 가져오면 끝 — 검수 화면으로 보내지 않는다.
+    if (isMealMode) {
+      AnalysisResultStore.clearPendingSession();
+      showToast(mealPlans.length > 0 ? '급식 메뉴를 등록했어요 🍱' : '사진에서 급식 메뉴를 찾지 못했어요. 다른 사진으로 시도해보세요.');
+      router.back();
+      return;
+    }
+
     // Check for duplicate/similar events already in calendar
     const duplicateResults = result.filter((newEvent) =>
       events.some(
@@ -407,7 +420,7 @@ export default function UploadScreen() {
         title: '무료 횟수 소진',
         message: (
           <Text style={{ textAlign: 'center' }}>
-            이번 달 무료 횟수(3회)를 모두 사용했어요.{"\n"}
+            이번 주 무료 횟수({FREE_USAGE_LIMIT}회)를 모두 사용했어요.{"\n"}
             <Text style={{ color: colors.coralPink, fontWeight: 'bold' }}>프리미엄</Text>
             으로 업그레이드하시면{" "}
             <Text style={{ color: colors.coralPink, fontWeight: 'bold' }}>무제한</Text>
@@ -430,6 +443,12 @@ export default function UploadScreen() {
       return;
     }
 
+    const earnedReward = await requestAndShow();
+    if (!earnedReward) {
+      showAlert({ title: '광고 시청이 필요해요', message: '광고를 끝까지 시청해야 분석을 진행할 수 있어요. 다시 시도해주세요.' });
+      return;
+    }
+
     await performAnalysis(docs, selectedChild);
   };
 
@@ -437,7 +456,7 @@ export default function UploadScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: '가정통신문 업로드' }} />
+      <Stack.Screen options={{ title: isMealMode ? '급식 메뉴 스캔' : '가정통신문 업로드' }} />
 
       <ScrollView
         scrollEnabled={docs.length > 0}
@@ -486,13 +505,15 @@ export default function UploadScreen() {
                 ]}>
                   <Text style={styles.robotBalloonText}>
                     {remainingAnalyses === 0
-                      ? '이번 달 무료 횟수를 다 썼어요'
+                      ? '이번 주 무료 횟수를 다 썼어요'
                       : docs.length > 0
                         ? '✨ 분석하기 누르기 가능!'
-                        : '가정통신문을 올려주세요'}
+                        : isMealMode
+                          ? '급식 메뉴 사진을 올려주세요'
+                          : '가정통신문을 올려주세요'}
                   </Text>
                   <Text style={styles.robotUsageText}>
-                    이번 달 무료 횟수: <Text style={styles.highlightCount}>{remainingAnalyses ?? '-'}</Text>회 남음
+                    이번 주 무료 횟수: <Text style={styles.highlightCount}>{remainingAnalyses ?? '-'}</Text>회 남음
                   </Text>
                   <View style={styles.robotBalloonArrow} />
                 </Animated.View>
@@ -507,7 +528,9 @@ export default function UploadScreen() {
           {/* 3. Text Info (Shown only when empty) */}
           {docs.length === 0 && (
             <>
-              <Text style={styles.mainTitle}>가정통신문을 분석해 드릴게요!</Text>
+              <Text style={styles.mainTitle}>
+                {isMealMode ? '오늘의 급식 메뉴를 스캔해 드릴게요!' : '가정통신문을 분석해 드릴게요!'}
+              </Text>
               <Text style={styles.subDescription}>
                 우측 하단의 + 버튼을 눌러{'\n'}사진이나 파일을 올려주세요 ☺️
               </Text>

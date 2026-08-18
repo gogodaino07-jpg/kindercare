@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus, BackHandler, Keyboard, LogBox, ToastAndroid, View, Platform, Animated, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import mobileAds from 'react-native-google-mobile-ads';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppLockScreen from '../components/AppLockScreen';
 import BootSplashOverlay from '../components/BootSplashOverlay';
@@ -205,6 +206,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     // We handle splash screen hiding in ThemedNavigation once all data is ready.
+    mobileAds()
+      .initialize()
+      .catch(() => {});
   }, []);
 
   if (!fontsLoaded) {

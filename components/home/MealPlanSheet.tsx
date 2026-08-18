@@ -1,4 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
@@ -88,6 +89,7 @@ const sparkleStyles = StyleSheet.create({
 });
 
 export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) {
+  const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { mealPlans, selectedChild } = useAppData();
@@ -137,6 +139,11 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
     ]).start(() => onClose());
   };
 
+  const handleScanMeal = () => {
+    onClose();
+    router.push({ pathname: '/upload', params: { mode: 'meal' } });
+  };
+
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
       <View style={styles.overlay}>
@@ -168,7 +175,16 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
               <Text style={styles.mealCardText}>{todayMenu.menu.join(', ')}</Text>
             </View>
           ) : (
-            <Text style={styles.emptyText}>오늘은 등록된 식단이 없어요</Text>
+            <View>
+              <Text style={styles.emptyText}>오늘은 등록된 식단이 없어요</Text>
+              <Pressable
+                style={({ pressed }) => [styles.scanMealButton, pressed && { opacity: 0.85 }]}
+                onPress={handleScanMeal}
+              >
+                <MaterialIcons name="camera-alt" size={16} color="#FFFFFF" />
+                <Text style={styles.scanMealButtonText}>급식 메뉴 스캔하기</Text>
+              </Pressable>
+            </View>
           )}
 
           <Pressable
@@ -304,6 +320,24 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '600',
       paddingVertical: 16,
       textAlign: 'center',
+    },
+    scanMealButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      alignSelf: 'center',
+      backgroundColor: colors.pastelOrangeAccent,
+      borderRadius: 999,
+      paddingHorizontal: 18,
+      paddingVertical: 10,
+      marginTop: -4,
+      marginBottom: 6,
+    },
+    scanMealButtonText: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: '#FFFFFF',
     },
     expandButton: {
       alignSelf: 'center',
