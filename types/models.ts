@@ -9,15 +9,34 @@ export interface Child {
   photoUri?: string;
 }
 
+export interface EventItem {
+  id: string;
+  name: string;
+}
+
 export interface Event {
   id: string;
   /** ISO date string, e.g. "2026-07-21" */
   date: string;
   title: string;
-  /** 준비물 — also used as the Coupang shopping-search keyword. */
+  /**
+   * 준비물 — also used as the Coupang shopping-search keyword.
+   * Kept in sync with `items` (newline-joined) for backward compatibility
+   * with screens that still read `note` directly.
+   */
   note?: string;
   /** 메모 — free-form notes, kept separate from 준비물. */
   memo?: string;
+  /** 구조화된 준비물 목록. 체크 여부는 Event에 저장하지 않고 기기 로컬(useLocalChecklist)에서 관리. */
+  items?: EventItem[];
+  /** 카테고리 뱃지 — 예: '준비물' | '특별활동' | '행사' | '공지' */
+  category?: string;
+  /** 장소 — 통신문에 명시된 경우만 채움 */
+  location?: string;
+  /** 표시용 시간 문자열 — 예: "오전 10:30", "하루 종일" */
+  time?: string;
+  /** 카드 상단에 보여줄 1~2문장 공지 요약 */
+  noticeText?: string;
   /** 등원 전날 저녁 알림 수신 여부 — defaults to true when unset. */
   notifyDayBefore?: boolean;
   childId: string;

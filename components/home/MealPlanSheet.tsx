@@ -1,3 +1,4 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
@@ -86,38 +87,6 @@ const sparkleStyles = StyleSheet.create({
   },
 });
 
-/** Each menu item springs in from above, one after another, instead of all appearing at once. */
-function StaggeredMenuItem({ text, index }: { text: string; index: number }) {
-  const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-  const chipColors = [colors.orangeLight1, colors.lightBlueBg, colors.green50, colors.pinkBg];
-  const anim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.spring(anim, {
-      toValue: 1,
-      delay: index * 90,
-      friction: 6,
-      tension: 90,
-      useNativeDriver: true,
-    }).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] });
-
-  return (
-    <Animated.View style={{ opacity: anim, transform: [{ translateY }], width: '100%' }}>
-      <View style={[styles.menuItemRow, { backgroundColor: chipColors[index % chipColors.length] }]}>
-        <View style={styles.menuItemIconCircle}>
-          <Text style={styles.menuItemIcon}>🍚</Text>
-        </View>
-        <Text style={styles.menuItemText}>{text}</Text>
-      </View>
-    </Animated.View>
-  );
-}
-
 export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -147,6 +116,10 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
     () => mealPlans.find((m) => m.childId === selectedChild?.id && m.date === todayISO),
     [mealPlans, selectedChild, todayISO]
   );
+  const todayDateLabel = useMemo(() => {
+    const d = parseISODate(todayISO);
+    return `${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAY_KO[d.getDay()]}요일)`;
+  }, [todayISO]);
 
   const weekDays = useMemo(() => {
     const mondayISO = getMondayISO(new Date());
@@ -172,13 +145,27 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
         <Animated.View style={[styles.sheet, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]}>
           <SparkleBurst trigger={sparkleTrigger} />
 
-          <Text style={styles.title}>🍱 오늘의 급식 메뉴</Text>
+          <View style={styles.headerRow}>
+            <View style={styles.headerLeft}>
+              <View style={styles.headerIconCircle}>
+                <Text style={styles.headerIconEmoji}>🍴</Text>
+              </View>
+              <View>
+                <Text style={styles.title}>오늘의 급식 메뉴</Text>
+                <Text style={styles.dateSubtitle}>{todayDateLabel}</Text>
+              </View>
+            </View>
+            <Pressable hitSlop={8} onPress={handleClose}>
+              <MaterialIcons name="close" size={22} color={colors.gray400} />
+            </Pressable>
+          </View>
 
           {todayMenu ? (
-            <View style={styles.menuList}>
-              {todayMenu.menu.map((item, idx) => (
-                <StaggeredMenuItem key={`${item}-${idx}`} text={item} index={idx} />
-              ))}
+            <View style={styles.mealCard}>
+              <View style={styles.mealCardTag}>
+                <Text style={styles.mealCardTagText}>점심 식단</Text>
+              </View>
+              <Text style={styles.mealCardText}>{todayMenu.menu.join(', ')}</Text>
             </View>
           ) : (
             <Text style={styles.emptyText}>오늘은 등록된 식단이 없어요</Text>
@@ -222,10 +209,10 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
           )}
 
           <Pressable
-            style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.8 }]}
+            style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.85 }]}
             onPress={handleClose}
           >
-            <Text style={styles.closeButtonText}>닫기</Text>
+            <Text style={styles.closeButtonText}>확인 완료</Text>
           </Pressable>
         </Animated.View>
       </View>
@@ -250,44 +237,65 @@ function createStyles(colors: ThemeColors) {
       paddingTop: 26,
       paddingBottom: 20,
       paddingHorizontal: 22,
-      alignItems: 'center',
+      alignItems: 'stretch',
       ...SHADOW,
     },
-    title: {
-      fontSize: 18,
-      fontWeight: '900',
-      color: colors.gray900,
-      marginBottom: 12,
-    },
-    menuList: {
-      width: '100%',
-      gap: 8,
-      marginBottom: 6,
-    },
-    menuItemRow: {
+    headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      width: '100%',
-      borderRadius: 14,
-      paddingVertical: 10,
-      paddingHorizontal: 12,
+      justifyContent: 'space-between',
+      marginBottom: 16,
+      paddingBottom: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
-    menuItemIconCircle: {
-      width: 28,
-      height: 28,
+    headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
+    headerIconCircle: {
+      width: 40,
+      height: 40,
       borderRadius: 14,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.orangeLight1,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 10,
     },
-    menuItemIcon: {
-      fontSize: 14,
+    headerIconEmoji: { fontSize: 18 },
+    title: {
+      fontSize: 16,
+      fontWeight: '900',
+      color: colors.gray900,
     },
-    menuItemText: {
-      flex: 1,
-      fontSize: 15,
+    dateSubtitle: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.gray500,
+      marginTop: 2,
+    },
+    mealCard: {
+      width: '100%',
+      backgroundColor: colors.orangeLight1,
+      borderRadius: 16,
+      borderWidth: 1.5,
+      borderColor: colors.pastelOrange,
+      padding: 16,
+      marginBottom: 6,
+    },
+    mealCardTag: {
+      alignSelf: 'flex-start',
+      backgroundColor: colors.pastelOrange,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      marginBottom: 10,
+    },
+    mealCardTagText: {
+      fontSize: 11.5,
+      fontWeight: '800',
+      color: colors.peachOrangeDeep,
+    },
+    mealCardText: {
+      fontSize: 14.5,
       fontWeight: '700',
+      lineHeight: 21,
       color: colors.gray900,
     },
     emptyText: {
@@ -295,8 +303,10 @@ function createStyles(colors: ThemeColors) {
       color: colors.gray500,
       fontWeight: '600',
       paddingVertical: 16,
+      textAlign: 'center',
     },
     expandButton: {
+      alignSelf: 'center',
       marginTop: 12,
       paddingVertical: 10,
       paddingHorizontal: 16,
@@ -363,12 +373,12 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 14,
       borderRadius: 14,
       alignItems: 'center',
-      backgroundColor: colors.gray100,
+      backgroundColor: colors.pastelOrangeAccent,
     },
     closeButtonText: {
       fontSize: 14,
       fontWeight: '800',
-      color: colors.gray900,
+      color: '#FFFFFF',
     },
   });
 }

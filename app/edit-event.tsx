@@ -10,9 +10,25 @@ import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
+import { EventItem } from '../types/models';
 import { formatMD, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
 import { EVENT_ICON_OPTIONS } from '../utils/eventIcon';
 import { stripInvalidCharacters } from '../utils/validation';
+
+let editEventItemIdCounter = 0;
+function newEventItemId(): string {
+  return `manual-${Date.now()}-${editEventItemIdCounter++}`;
+}
+
+/** 과거 이벤트의 note는 화면마다 구분자가 달라서(줄바꿈/콤마) 둘 다 지원. */
+function deriveItemsFromNote(note: string | undefined): EventItem[] {
+  if (!note) return [];
+  return note
+    .split(/\n|,\s*/)
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((name) => ({ id: newEventItemId(), name }));
+}
 
 const TITLE_MAX_LENGTH = 20;
 const MEMO_MAX_LENGTH = 200;
@@ -244,7 +260,7 @@ export default function EditEventScreen() {
   const [showPicker, setShowPicker] = useState(Platform.OS === 'web');
   const [title, setTitle] = useState('');
   const [itemInput, setItemInput] = useState('');
-  const [items, setItems] = useState<string[]>([]);
+  const [items, setItems] = useState<EventItem[]>([]);
   const [memo, setMemo] = useState('');
   const [titleError, setTitleError] = useState(false);
   const [icon, setIcon] = useState(EVENT_ICON_OPTIONS[0]);
@@ -253,7 +269,7 @@ export default function EditEventScreen() {
     if (existingEvent) {
       setDate(parseISODate(existingEvent.date));
       setTitle(existingEvent.title);
-      setItems(existingEvent.note ? existingEvent.note.split(', ').filter(Boolean) : []);
+      setItems(existingEvent.items ?? deriveItemsFromNote(existingEvent.note));
       setMemo(existingEvent.memo ?? '');
       setIcon(existingEvent.icon || EVENT_ICON_OPTIONS[0]);
     } else {
@@ -264,16 +280,16 @@ export default function EditEventScreen() {
   const addItem = () => {
     const trimmed = itemInput.trim();
     if (!trimmed) return;
-    if (items.includes(trimmed)) {
+    if (items.some((i) => i.name === trimmed)) {
       showToast('이미 추가된 항목입니다.');
       return;
     }
-    setItems([...items, trimmed]);
+    setItems([...items, { id: newEventItemId(), name: trimmed }]);
     setItemInput('');
   };
 
-  const removeItem = (target: string) => {
-    setItems(items.filter((i) => i !== target));
+  const removeItem = (targetId: string) => {
+    setItems(items.filter((i) => i.id !== targetId));
   };
 
   const handleUpdate = () => {
@@ -284,13 +300,14 @@ export default function EditEventScreen() {
     }
     if (!id) return;
 
-    const noteString = items.join(', ');
+    const noteString = items.map((i) => i.name).join('\n');
 
     try {
       updateEvent(id, {
         date: toISODate(date),
         title: title.trim(),
         note: noteString || undefined,
+        items: items.length > 0 ? items : undefined,
         memo: memo.trim() || undefined,
         icon,
       });
@@ -325,10 +342,11 @@ export default function EditEventScreen() {
 
   if (!existingEvent) return null;
 
+  const originalItemNames = (existingEvent.items ?? deriveItemsFromNote(existingEvent.note)).map((i) => i.name).join('\n');
   const isChanged =
     toISODate(date) !== existingEvent.date ||
     title.trim() !== existingEvent.title ||
-    items.join(', ') !== (existingEvent.note ?? '') ||
+    items.map((i) => i.name).join('\n') !== originalItemNames ||
     memo.trim() !== (existingEvent.memo ?? '') ||
     icon !== (existingEvent.icon || EVENT_ICON_OPTIONS[0]);
 
@@ -438,10 +456,10 @@ export default function EditEventScreen() {
               </View>
               {items.length > 0 && (
                 <View style={styles.chipsContainer}>
-                  {items.map((item, idx) => (
-                    <View key={idx} style={styles.chip}>
-                      <Text style={styles.chipText}>{item}</Text>
-                      <TouchableOpacity onPress={() => removeItem(item)} hitSlop={8}>
+                  {items.map((item) => (
+                    <View key={item.id} style={styles.chip}>
+                      <Text style={styles.chipText}>{item.name}</Text>
+                      <TouchableOpacity onPress={() => removeItem(item.id)} hitSlop={8}>
                         <Text style={styles.chipClose}>✕</Text>
                       </TouchableOpacity>
                     </View>

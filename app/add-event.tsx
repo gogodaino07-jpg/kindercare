@@ -11,9 +11,15 @@ import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
+import { EventItem } from '../types/models';
 import { formatMD, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
 import { EVENT_ICON_OPTIONS, suggestEventIcon } from '../utils/eventIcon';
 import { stripInvalidCharacters } from '../utils/validation';
+
+let addEventItemIdCounter = 0;
+function newEventItemId(): string {
+  return `manual-${Date.now()}-${addEventItemIdCounter++}`;
+}
 
 const COUPANG_LINK = 'https://link.coupang.com/a/fHdMU98clE';
 const TITLE_MAX_LENGTH = 20;
@@ -240,7 +246,7 @@ export default function AddEventScreen() {
   const [showPicker, setShowPicker] = useState(Platform.OS === 'web');
   const [title, setTitle] = useState('');
   const [itemInput, setItemInput] = useState('');
-  const [items, setItems] = useState<string[]>([]);
+  const [items, setItems] = useState<EventItem[]>([]);
   const [memo, setMemo] = useState('');
   const [titleError, setTitleError] = useState(false);
   const [icon, setIcon] = useState(EVENT_ICON_OPTIONS[0]);
@@ -257,16 +263,16 @@ export default function AddEventScreen() {
   const addItem = () => {
     const trimmed = itemInput.trim();
     if (!trimmed) return;
-    if (items.includes(trimmed)) {
+    if (items.some((i) => i.name === trimmed)) {
       showToast('이미 추가된 항목입니다.');
       return;
     }
-    setItems([...items, trimmed]);
+    setItems([...items, { id: newEventItemId(), name: trimmed }]);
     setItemInput('');
   };
 
-  const removeItem = (target: string) => {
-    setItems(items.filter((i) => i !== target));
+  const removeItem = (targetId: string) => {
+    setItems(items.filter((i) => i.id !== targetId));
   };
 
   const handleSave = () => {
@@ -282,13 +288,14 @@ export default function AddEventScreen() {
       return;
     }
 
-    const noteString = items.join(', ');
+    const noteString = items.map((i) => i.name).join('\n');
 
     try {
       const eventData = {
         date: toISODate(date),
         title: title.trim(),
         note: noteString || undefined,
+        items: items.length > 0 ? items : undefined,
         memo: memo.trim() || undefined,
         notifyDayBefore: true,
         childId: selectedChild.id,
@@ -411,10 +418,10 @@ export default function AddEventScreen() {
               </View>
               {items.length > 0 && (
                 <View style={styles.chipsContainer}>
-                  {items.map((item, idx) => (
-                    <View key={idx} style={styles.chip}>
-                      <Text style={styles.chipText}>{item}</Text>
-                      <TouchableOpacity onPress={() => removeItem(item)} hitSlop={8}>
+                  {items.map((item) => (
+                    <View key={item.id} style={styles.chip}>
+                      <Text style={styles.chipText}>{item.name}</Text>
+                      <TouchableOpacity onPress={() => removeItem(item.id)} hitSlop={8}>
                         <Text style={styles.chipClose}>✕</Text>
                       </TouchableOpacity>
                     </View>

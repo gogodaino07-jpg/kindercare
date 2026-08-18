@@ -1,6 +1,6 @@
 import { EncodingType, readAsStringAsync } from 'expo-file-system/legacy';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import { Child, Event, MealPlan, UploadedDoc } from '../../../types/models';
+import { Child, Event, EventItem, MealPlan, UploadedDoc } from '../../../types/models';
 import { toISODate } from '../../../utils/date';
 import { getDb } from '../../../utils/firebase';
 
@@ -31,6 +31,11 @@ interface GeminiExtractedEvent {
   title?: string;
   note?: string;
   memo?: string;
+  items?: string[];
+  category?: string;
+  location?: string;
+  time?: string;
+  noticeText?: string;
   icon?: string;
   needsReview?: boolean;
   reviewReason?: string;
@@ -58,6 +63,11 @@ const RESPONSE_SCHEMA = {
           title: { type: 'string' },
           note: { type: 'string' },
           memo: { type: 'string' },
+          items: { type: 'array', items: { type: 'string' } },
+          category: { type: 'string' },
+          location: { type: 'string' },
+          time: { type: 'string' },
+          noticeText: { type: 'string' },
           icon: { type: 'string' },
           needsReview: { type: 'boolean' },
           reviewReason: { type: 'string' },
@@ -79,6 +89,13 @@ const RESPONSE_SCHEMA = {
   },
   required: ['events'],
 };
+
+let itemIdCounter = 0;
+function buildEventItems(raw: string[] | undefined): EventItem[] | undefined {
+  const names = (raw ?? []).map((n) => n.trim()).filter(Boolean);
+  if (names.length === 0) return undefined;
+  return names.map((name) => ({ id: `ai-${Date.now()}-${itemIdCounter++}`, name }));
+}
 
 function extractMealPlans(
   raw: GeminiExtractedMealPlan[] | undefined,
@@ -173,17 +190,25 @@ export const GeminiAnalysisService = {
     }
 
     return {
-      events: extracted.map((e) => ({
-        date: e.date,
-        title: e.title.trim(),
-        note: e.note?.trim() || undefined,
-        memo: e.memo?.trim() || undefined,
-        childId: child.id,
-        source: 'ai' as const,
-        icon: e.icon?.trim() || '📌',
-        needsReview: e.needsReview || undefined,
-        reviewReason: e.reviewReason?.trim() || undefined,
-      })),
+      events: extracted.map((e) => {
+        const items = buildEventItems(e.items);
+        return {
+          date: e.date,
+          title: e.title.trim(),
+          note: items ? items.map((i) => i.name).join('\n') : e.note?.trim() || undefined,
+          memo: e.memo?.trim() || undefined,
+          items,
+          category: e.category?.trim() || undefined,
+          location: e.location?.trim() || undefined,
+          time: e.time?.trim() || undefined,
+          noticeText: e.noticeText?.trim() || undefined,
+          childId: child.id,
+          source: 'ai' as const,
+          icon: e.icon?.trim() || '📌',
+          needsReview: e.needsReview || undefined,
+          reviewReason: e.reviewReason?.trim() || undefined,
+        };
+      }),
       mealPlans: extractMealPlans(parsed.mealPlan, child.id),
     };
   },
@@ -254,9 +279,13 @@ export const GeminiAnalysisService = {
 
 3. 필드 작성:
    - title: 15자 이내 (예: "여름 소풍", "6세 현장학습")
-   - note: 반드시 챙겨야 할 '물건' 이름만 담으세요. 쇼핑 검색이 용이하도록 "금액"이나 "포장 조건" 등은 제외하고 핵심 물건 명칭만 적으세요. (예: "물통\\n도시락\\n운동화")
-   - memo: 금액, 장소, 시간, 복장, 혹은 "3,000원 이내", "개별 포장" 같은 구체적인 조건을 요약하세요.
-   - 구매 판별 중요: '독서통장', '원복', '교재' 등 유치원에서 지급되어 가져가기만 하면 되는 항목이나 '제출'이 들어가는 항목은 구매가 불필요하므로 가급적 note가 아닌 memo에 포함시키거나, note에 넣더라도 명확히 표기하세요.
+   - items: 반드시 챙겨야 할 '물건'을 하나씩 개별 문자열로 나눈 배열로 담으세요. 각 항목은 쇼핑 검색이 용이하도록 "금액"이나 "포장 조건" 등은 제외하고 핵심 물건 명칭만 적으세요. (예: ["물통", "도시락", "운동화"]). 챙길 물건이 없으면 빈 배열([])로 두세요.
+   - category: 이 일정의 성격을 아래 중 하나로 분류하세요 — "준비물"(물건을 챙겨야 함), "특별활동"(요리/체육 등 평소와 다른 활동), "행사"(현장학습/생일파티/발표회 등), "공지"(단순 안내, 제출/챙길 것 없음).
+   - location: 통신문에 장소가 명시되어 있을 때만 적으세요 (예: "조리실습실", "서울대공원"). 없으면 생략하세요.
+   - time: 통신문에 시간이 명시되어 있을 때만 자연스러운 한국어로 적으세요 (예: "오전 10:30", "하루 종일"). 없으면 생략하세요.
+   - noticeText: 학부모가 카드 상단에서 바로 읽을 수 있는 1~2문장 요약 안내문을 작성하세요 (예: "수박 화채 만들기 활동을 진행합니다. 옷이 더러워질 수 있어요.").
+   - memo: 금액, 복장, 혹은 "3,000원 이내", "개별 포장" 같은 구체적인 조건을 요약하세요. noticeText와 중복되지 않게, memo는 세부 조건 위주로 적으세요.
+   - 구매 판별 중요: '독서통장', '원복', '교재' 등 유치원에서 지급되어 가져가기만 하면 되는 항목이나 '제출'이 들어가는 항목은 구매가 불필요하므로 가급적 items가 아닌 memo에 포함시키거나, items에 넣더라도 항목명에 명확히 표기하세요.
    - icon: 성격에 맞는 이모지 1개
 
 4. 출력 및 신뢰도:

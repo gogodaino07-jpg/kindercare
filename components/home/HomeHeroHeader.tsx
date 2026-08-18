@@ -1,21 +1,22 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Image, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
+import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { WeatherDay } from '../../hooks/useWeeklyWeather';
 import { Child } from '../../types/models';
-import { formatMD, toISODate } from '../../utils/date';
+import { formatMD, toISODate, WEEKDAY_KO } from '../../utils/date';
 import { describeGuideTip, describeMiniTip, describeTempCompareTip } from '../../utils/weatherCode';
 import Text from '../common/AppText';
+import NotificationCenterModal from './NotificationCenterModal';
 
 interface HomeHeroHeaderProps {
   selectedChild: Child | undefined;
   onPressChild: () => void;
   onPressMeal: () => void;
-  onPressPlaces: () => void;
   weatherDays: WeatherDay[] | null;
   weatherLoading: boolean;
   onPressDate: (date: string) => void;
@@ -86,12 +87,23 @@ function pickDailyGreetingTemplate(): { before: string; after: string } {
   return GREETING_TEMPLATES[hash % GREETING_TEMPLATES.length];
 }
 
+/** 실제 기분 데이터가 없어 장식용으로만 하루 단위로 고정 로테이션되는 문구. */
+const MOOD_LABELS = ['신나요! 😄', '즐거워요! 🥰', '씩씩해요! 💪', '상쾌해요! 😊', '기대돼요! ✨', '평온해요! 🙂', '반짝반짝해요! ⭐'];
+
+function pickDailyMoodLabel(): string {
+  const todayKey = `${toISODate(new Date())}-mood`;
+  let hash = 0;
+  for (let i = 0; i < todayKey.length; i++) {
+    hash = (hash * 31 + todayKey.charCodeAt(i)) >>> 0;
+  }
+  return MOOD_LABELS[hash % MOOD_LABELS.length];
+}
+
 /** Shared greeting header + weather hero, used for both the empty and has-data home states so the top of the screen never differs. */
 export default function HomeHeroHeader({
   selectedChild,
   onPressChild,
   onPressMeal,
-  onPressPlaces,
   weatherDays,
   weatherLoading,
   onPressDate,
@@ -99,6 +111,8 @@ export default function HomeHeroHeader({
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { unreadCount } = useNotificationCenter();
+  const [notifVisible, setNotifVisible] = useState(false);
 
   const today = weatherDays?.find((d) => d.isToday);
   const tomorrow = weatherDays?.find((d) => d.isTomorrow);
@@ -114,54 +128,75 @@ export default function HomeHeroHeader({
   const greetingName = selectedChild?.name ? stripSurname(selectedChild.name) : undefined;
   const particle = greetingName ? (hasFinalConsonant(greetingName) ? '아' : '야') : '';
   const greetingTemplate = pickDailyGreetingTemplate();
+  const moodLabel = pickDailyMoodLabel();
+  const now = new Date();
+  const bannerDateText = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${WEEKDAY_KO[now.getDay()]}요일`;
 
   return (
     <View>
-      <View style={styles.topIconsRow}>
-        <Pressable style={styles.iconButton} onPress={() => router.push('/calendar')}>
-          <Image source={require('../../assets/icon_calendar_cute.png')} style={styles.iconImage} resizeMode="contain" />
-        </Pressable>
-        <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
-          <Image source={require('../../assets/icon_settings_cute.png')} style={styles.iconImage} resizeMode="contain" />
-        </Pressable>
-      </View>
-
-      <View style={styles.greetingArea}>
-        <Pressable style={styles.greetingSection} onPress={onPressChild}>
-          <View style={styles.avatarContainer}>
+      <View style={styles.topRow}>
+        <Pressable style={styles.profileRow} onPress={onPressChild}>
+          <View style={styles.avatarSmallContainer}>
             {selectedChild?.photoUri ? (
-              <Image source={{ uri: selectedChild.photoUri }} style={styles.avatar} />
+              <Image source={{ uri: selectedChild.photoUri }} style={styles.avatarSmall} />
             ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarIcon}>🧒</Text>
+              <View style={styles.avatarSmallPlaceholder}>
+                <Text style={styles.avatarSmallIcon}>🧒</Text>
               </View>
             )}
+            <View style={styles.onlineDot} />
           </View>
+          <View style={styles.profileTextBlock}>
+            <View style={styles.nameRow}>
+              <Text style={styles.profileName} numberOfLines={1}>{greetingName ?? '우리 아이'}</Text>
+              {selectedChild && (
+                <View style={styles.miniBadge}>
+                  <Text style={styles.miniBadgeText}>
+                    {[`${selectedChild.age}세`, formatClassName(selectedChild.className)].filter(Boolean).join(' ')}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.moodText} numberOfLines={1}>☺ 오늘 기분: {moodLabel}</Text>
+          </View>
+        </Pressable>
 
+        <View style={styles.topIconsRow}>
+          <Pressable style={styles.iconButton} onPress={() => router.push('/calendar')}>
+            <Image source={require('../../assets/icon_calendar_cute.png')} style={styles.iconImage} resizeMode="contain" />
+          </Pressable>
+          <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
+            <Image source={require('../../assets/icon_settings_cute.png')} style={styles.iconImage} resizeMode="contain" />
+          </Pressable>
+          <Pressable style={styles.iconButton} onPress={() => setNotifVisible(true)}>
+            <MaterialIcons name="notifications-none" size={24} color={colors.gray600} />
+            {unreadCount > 0 && <View style={styles.bellDot} />}
+          </Pressable>
+        </View>
+      </View>
+
+      <LinearGradient
+        colors={['#FBBF24', '#FCD34D', '#FDE68A']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.greetingBanner}
+      >
+        <View style={styles.greetingBannerTextBlock}>
+          <Text style={styles.bannerDateText}>{bannerDateText}</Text>
           <Text
-            style={styles.greetingText}
+            style={styles.bannerGreetingText}
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.6}
           >
-            {greetingTemplate.before}<Text style={styles.greetingName}>{greetingName ?? '우리 아이'}{particle}</Text>{greetingTemplate.after}
+            {greetingTemplate.before}<Text style={styles.bannerGreetingName}>{greetingName ?? '우리 아이'}{particle}</Text>{greetingTemplate.after}
           </Text>
-
-          {selectedChild && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {[`${selectedChild.age}세`, formatClassName(selectedChild.className)].filter(Boolean).join(' ')}
-              </Text>
-            </View>
-          )}
-        </Pressable>
-
-        {/* Thought bubble "hovering" over the avatar, tail pointing down at
-            it — read as the kid's own thought, not part of the profile tap target. */}
-        <View style={styles.mealButtonSlot}>
-          <ThoughtBubble text={'오늘 점심은\n뭐지? 🍚'} onPress={onPressMeal} />
         </View>
-      </View>
+        <Pressable style={styles.mealBannerButton} onPress={onPressMeal}>
+          <Text style={styles.mealBannerButtonIcon}>🍴</Text>
+          <Text style={styles.mealBannerButtonText}>점심 메뉴</Text>
+        </Pressable>
+      </LinearGradient>
 
       <View style={styles.weatherHeroRow}>
         <View style={styles.todayCardWrapper}>
@@ -178,15 +213,25 @@ export default function HomeHeroHeader({
                 <Text style={styles.todayDateText}>오늘 {today ? formatMD(today.date) : ''}</Text>
                 <View style={styles.todayTipCenter}>
                   <View style={styles.todayTipBox}>
-                    <Text style={styles.todayEmoji}>{today?.emoji ?? '🌤️'}</Text>
+                    <AnimatedWeatherEmoji
+                      emoji={today?.emoji ?? '🌤️'}
+                      label={today?.label ?? ''}
+                      style={styles.todayEmoji}
+                    />
                     <Text style={styles.todayTipText} numberOfLines={2}>
                       {describeGuideTip(today?.label ?? '')}
                     </Text>
                   </View>
                 </View>
                 <View style={styles.todayTempRow}>
-                  <Text style={styles.todayTempText}>{today?.tempMax ?? '--'}°</Text>
-                  <Text style={styles.todayTempMinText}>{today?.tempMin ?? '--'}°</Text>
+                  <View style={styles.todayTempItem}>
+                    <Text style={styles.todayTempLabel}>최고</Text>
+                    <Text style={styles.todayTempText}>{today?.tempMax ?? '--'}°</Text>
+                  </View>
+                  <View style={styles.todayTempItem}>
+                    <Text style={styles.todayTempLabel}>최저</Text>
+                    <Text style={styles.todayTempMinText}>{today?.tempMin ?? '--'}°</Text>
+                  </View>
                 </View>
                 {tempCompareTip && (
                   <Text style={styles.todayCompareText} numberOfLines={1}>{tempCompareTip}</Text>
@@ -213,8 +258,55 @@ export default function HomeHeroHeader({
           />
         </View>
       </View>
+
+      <NotificationCenterModal visible={notifVisible} onClose={() => setNotifVisible(false)} />
     </View>
   );
+}
+
+/** 오늘 날씨 이모지에 조건별로 은은한 움직임(해 회전, 구름 흔들림, 비/눈 낙하)을 더해준다. */
+function AnimatedWeatherEmoji({ emoji, label, style }: { emoji: string; label: string; style?: any }) {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  const kind: 'sun' | 'cloud' | 'fall' | 'still' =
+    label === '맑음' || label === '대체로 맑음'
+      ? 'sun'
+      : label === '흐림' || label === '안개'
+      ? 'cloud'
+      : label === '이슬비' || label === '비' || label === '소나기' || label === '눈' || label === '눈 소나기'
+      ? 'fall'
+      : 'still';
+
+  useEffect(() => {
+    if (kind === 'still') return;
+    anim.setValue(0);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: kind === 'sun' ? 3200 : 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0, duration: kind === 'sun' ? 3200 : 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [anim, kind]);
+
+  if (kind === 'sun') {
+    const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['-8deg', '8deg'] });
+    const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] });
+    return (
+      <Animated.Text style={[style, { transform: [{ rotate }, { scale }] }]}>{emoji}</Animated.Text>
+    );
+  }
+  if (kind === 'cloud') {
+    const translateX = anim.interpolate({ inputRange: [0, 1], outputRange: [-3, 3] });
+    return <Animated.Text style={[style, { transform: [{ translateX }] }]}>{emoji}</Animated.Text>;
+  }
+  if (kind === 'fall') {
+    const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [-2, 4] });
+    const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.7] });
+    return <Animated.Text style={[style, { opacity, transform: [{ translateY }] }]}>{emoji}</Animated.Text>;
+  }
+  return <Text style={style}>{emoji}</Text>;
 }
 
 /** Pulsing placeholder box shown while weather data is loading. */
@@ -233,65 +325,6 @@ function SkeletonBox({ style }: { style: any }) {
   }, [opacity]);
 
   return <Animated.View style={[style, { opacity }]} />;
-}
-
-/** A cartoon "thought bubble" over the avatar's head — idle-bounces to invite a tap. `mirror` flips it to the left side of the avatar, tail included. */
-function ThoughtBubble({ text, onPress, mirror }: { text: string; onPress: () => void; mirror?: boolean }) {
-  const colors = useThemeColors();
-  const styles = useMemo(() => createMealButtonStyles(colors), [colors]);
-  const bounceAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bounceAnim, {
-          toValue: -4,
-          duration: 700,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(bounceAnim, {
-          toValue: 0,
-          duration: 700,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.delay(600),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [bounceAnim]);
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.92, useNativeDriver: true, friction: 5 }).start();
-  };
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, friction: 3, tension: 200 }).start();
-  };
-  const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    onPress();
-  };
-
-  return (
-    <Animated.View
-      style={[
-        mirror ? styles.wrapperMirror : styles.wrapper,
-        { transform: [{ translateY: bounceAnim }, { scale: scaleAnim }] },
-      ]}
-    >
-      <Pressable onPress={handlePress} onPressIn={handlePressIn} onPressOut={handlePressOut} hitSlop={10}>
-        <View style={styles.bubble}>
-          <Text style={styles.bubbleText}>{text}</Text>
-        </View>
-        {/* Trailing thought-bubble dots, curling down toward the avatar */}
-        <View style={mirror ? styles.tailDotMediumMirror : styles.tailDotMedium} />
-        <View style={mirror ? styles.tailDotSmallMirror : styles.tailDotSmall} />
-      </Pressable>
-    </Animated.View>
-  );
 }
 
 function MiniWeatherCard({
@@ -337,20 +370,97 @@ function MiniWeatherCard({
   );
 }
 
-const AVATAR_SIZE = 84;
+const AVATAR_SMALL_SIZE = 46;
 const ICON_BUTTON_SIZE = 32;
 const TODAY_CARD_HEIGHT = 192;
-const BUBBLE_GAP = 6;
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingTop: 8,
+      paddingBottom: 4,
+    },
+    profileRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexShrink: 1,
+      gap: 10,
+    },
+    avatarSmallContainer: {
+      width: AVATAR_SMALL_SIZE,
+      height: AVATAR_SMALL_SIZE,
+      position: 'relative',
+    },
+    avatarSmall: {
+      width: AVATAR_SMALL_SIZE,
+      height: AVATAR_SMALL_SIZE,
+      borderRadius: AVATAR_SMALL_SIZE / 2,
+      borderWidth: 2,
+      borderColor: colors.orangeBorder,
+    },
+    avatarSmallPlaceholder: {
+      width: AVATAR_SMALL_SIZE,
+      height: AVATAR_SMALL_SIZE,
+      borderRadius: AVATAR_SMALL_SIZE / 2,
+      backgroundColor: colors.orangeLight2,
+      borderWidth: 2,
+      borderColor: colors.orangeBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarSmallIcon: {
+      fontSize: 22,
+    },
+    onlineDot: {
+      position: 'absolute',
+      bottom: -1,
+      right: -1,
+      width: 13,
+      height: 13,
+      borderRadius: 7,
+      backgroundColor: colors.statusGreen,
+      borderWidth: 2,
+      borderColor: colors.skyBackground,
+    },
+    profileTextBlock: {
+      flexShrink: 1,
+    },
+    nameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    profileName: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.gray900,
+    },
+    miniBadge: {
+      alignSelf: 'center',
+      backgroundColor: '#FFE066',
+      borderRadius: 999,
+      paddingHorizontal: 9,
+      paddingVertical: 2,
+    },
+    miniBadgeText: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: '#5C4A1E',
+    },
+    moodText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.gray500,
+      marginTop: 2,
+    },
     topIconsRow: {
       flexDirection: 'row',
-      justifyContent: 'flex-end',
       alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingTop: 8,
-      gap: 8,
+      gap: 6,
     },
     iconButton: {
       width: ICON_BUTTON_SIZE,
@@ -362,80 +472,68 @@ function createStyles(colors: ThemeColors) {
       width: ICON_BUTTON_SIZE,
       height: ICON_BUTTON_SIZE,
     },
-    greetingArea: {
-      position: 'relative',
-    },
-    greetingSection: {
-      alignItems: 'center',
-      paddingHorizontal: 24,
-      paddingTop: 4,
-      paddingBottom: 20,
-    },
-    // Anchored off the avatar's known center + fixed size (not a measured
-    // layout) so both bubbles land an identical gap from the avatar on any
-    // platform/font, regardless of how wide each bubble's own text renders.
-    mealButtonSlot: {
+    bellDot: {
       position: 'absolute',
-      top: 14,
-      left: '50%',
-      transform: [{ translateX: AVATAR_SIZE / 2 + BUBBLE_GAP }],
-    },
-    placesButtonSlot: {
-      position: 'absolute',
-      top: 14,
-      right: '50%',
-      transform: [{ translateX: -(AVATAR_SIZE / 2 + BUBBLE_GAP) }],
-    },
-    avatarContainer: {
-      width: AVATAR_SIZE,
-      height: AVATAR_SIZE,
-      borderRadius: AVATAR_SIZE / 2,
-      backgroundColor: colors.orangeLight2,
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden',
+      top: 4,
+      right: 5,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.tomorrowRed,
       borderWidth: 1.5,
-      borderColor: colors.orangeBorder,
-      marginBottom: 12,
+      borderColor: colors.skyBackground,
     },
-    avatar: {
-      width: AVATAR_SIZE,
-      height: AVATAR_SIZE,
-      borderRadius: AVATAR_SIZE / 2,
-    },
-    avatarPlaceholder: {
-      width: AVATAR_SIZE,
-      height: AVATAR_SIZE,
+    greetingBanner: {
+      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-    },
-    avatarIcon: {
-      fontSize: 42,
-    },
-    greetingText: {
-      fontSize: 23,
-      fontWeight: '800',
-      color: colors.gray900,
-      textAlign: 'center',
-      letterSpacing: -0.3,
-    },
-    greetingName: {
-      color: colors.purple500,
-      fontWeight: '900',
-    },
-    badge: {
-      marginTop: 12,
-      backgroundColor: '#FFE066',
-      borderRadius: 6,
+      justifyContent: 'space-between',
+      marginHorizontal: 20,
+      marginTop: 10,
+      marginBottom: 16,
+      borderRadius: 18,
+      paddingVertical: 12,
       paddingHorizontal: 16,
-      paddingVertical: 6,
-      transform: [{ rotate: '-1.5deg' }],
+      gap: 10,
       ...SHADOW,
       shadowOpacity: 0.1,
       elevation: 2,
     },
-    badgeText: {
-      fontSize: 15,
+    greetingBannerTextBlock: {
+      flex: 1,
+      minWidth: 0,
+    },
+    bannerDateText: {
+      fontSize: 11.5,
+      fontWeight: '700',
+      color: '#7A5A12',
+      opacity: 0.85,
+    },
+    bannerGreetingText: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: '#3D2E06',
+      marginTop: 2,
+    },
+    bannerGreetingName: {
+      color: colors.purpleDeep,
+    },
+    mealBannerButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      backgroundColor: 'rgba(255,255,255,0.9)',
+      borderRadius: 12,
+      paddingVertical: 9,
+      paddingHorizontal: 12,
+      ...SHADOW,
+      shadowOpacity: 0.08,
+      elevation: 1,
+    },
+    mealBannerButtonIcon: {
+      fontSize: 14,
+    },
+    mealBannerButtonText: {
+      fontSize: 12.5,
       fontWeight: '800',
       color: '#5C4A1E',
     },
@@ -480,8 +578,18 @@ function createStyles(colors: ThemeColors) {
     },
     todayTempRow: {
       flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: 10,
+    },
+    todayTempItem: {
+      flexDirection: 'row',
       alignItems: 'baseline',
-      gap: 6,
+      gap: 4,
+    },
+    todayTempLabel: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: 'rgba(255,255,255,0.75)',
     },
     todayTempText: {
       fontSize: 40,
@@ -528,81 +636,6 @@ function createStyles(colors: ThemeColors) {
   });
 }
 
-function createMealButtonStyles(colors: ThemeColors) {
-  return StyleSheet.create({
-    wrapper: {
-      alignItems: 'flex-end',
-    },
-    wrapperMirror: {
-      alignItems: 'flex-start',
-    },
-    bubble: {
-      minWidth: 114,
-      backgroundColor: colors.cardWhite,
-      borderRadius: 22,
-      borderWidth: 2,
-      borderColor: colors.orangeBorder,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      ...SHADOW,
-      shadowOpacity: 0.15,
-      elevation: 3,
-    },
-    bubbleText: {
-      fontSize: 14,
-      fontWeight: '800',
-      color: colors.gray800,
-      textAlign: 'center',
-      lineHeight: 18,
-    },
-    // Small trailing circles that curl the bubble's tail down toward the avatar,
-    // the classic comic "thought bubble" shape instead of a pointed speech tail.
-    tailDotMedium: {
-      position: 'absolute',
-      bottom: -9,
-      left: 22,
-      width: 12,
-      height: 12,
-      borderRadius: 6,
-      backgroundColor: colors.cardWhite,
-      borderWidth: 2,
-      borderColor: colors.orangeBorder,
-    },
-    tailDotSmall: {
-      position: 'absolute',
-      bottom: -16,
-      left: 12,
-      width: 7,
-      height: 7,
-      borderRadius: 3.5,
-      backgroundColor: colors.cardWhite,
-      borderWidth: 2,
-      borderColor: colors.orangeBorder,
-    },
-    tailDotMediumMirror: {
-      position: 'absolute',
-      bottom: -9,
-      right: 22,
-      width: 12,
-      height: 12,
-      borderRadius: 6,
-      backgroundColor: colors.cardWhite,
-      borderWidth: 2,
-      borderColor: colors.orangeBorder,
-    },
-    tailDotSmallMirror: {
-      position: 'absolute',
-      bottom: -16,
-      right: 12,
-      width: 7,
-      height: 7,
-      borderRadius: 3.5,
-      backgroundColor: colors.cardWhite,
-      borderWidth: 2,
-      borderColor: colors.orangeBorder,
-    },
-  });
-}
 
 function createMiniCardStyles(colors: ThemeColors) {
   return StyleSheet.create({

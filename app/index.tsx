@@ -3,24 +3,23 @@ import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdPopupModal from '../components/home/AdPopupModal';
-import { AdventureHeader, AdventureNode } from '../components/home/AdventureTimeline';
-import BagSection from '../components/home/BagSection';
 import BlackboardModal from '../components/home/BlackboardModal';
 import ChildSwitcherSheet from '../components/home/ChildSwitcherSheet';
 import HomeEmptyContent from '../components/home/HomeEmptyContent';
 import HomeHeroHeader from '../components/home/HomeHeroHeader';
 import MealPlanSheet from '../components/home/MealPlanSheet';
-import WeekendOutingBanner from '../components/home/WeekendOutingBanner';
+import ScheduleBoard, { ScheduleTab } from '../components/home/ScheduleBoard';
+import TodayPrepProgress from '../components/home/TodayPrepProgress';
 import ScreenBackground from '../components/ScreenBackground';
 import CoupangBanner from '../components/common/CoupangBanner';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
+import { useLocalChecklist } from '../hooks/useLocalChecklist';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
 import { toISODate } from '../utils/date';
-import Text from '../components/common/AppText';
 
 function createStyles(colors: ThemeColors, bottomInset: number) {
   return StyleSheet.create({
@@ -40,56 +39,6 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       right: 0,
       zIndex: 100,
     },
-    toastContainer: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      alignItems: 'center',
-      zIndex: 1000, // Higher than any other UI
-      elevation: 20, // Max for Android
-    },
-    toast: {
-      backgroundColor: 'rgba(0, 0, 0, 0.75)',
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-      borderRadius: 999,
-    },
-    toastText: {
-      color: '#FFFFFF',
-      fontSize: 14,
-      fontWeight: '600',
-    },
-    emptyUpcomingCard: {
-      marginHorizontal: 20,
-      marginTop: 12,
-      paddingVertical: 32,
-      paddingHorizontal: 24,
-      backgroundColor: colors.gray50,
-      borderRadius: 24,
-      borderWidth: 1.5,
-      borderColor: colors.border,
-      borderStyle: 'dashed',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    emptyUpcomingEmoji: {
-      fontSize: 36,
-      marginBottom: 12,
-    },
-    emptyUpcomingTitle: {
-      fontSize: 16,
-      fontWeight: '800',
-      color: colors.gray900,
-      marginBottom: 8,
-      textAlign: 'center',
-    },
-    emptyUpcomingSubtitle: {
-      fontSize: 13,
-      color: colors.gray500,
-      textAlign: 'center',
-      lineHeight: 19,
-      fontWeight: '500',
-    },
   });
 }
 
@@ -102,64 +51,25 @@ export default function HomeScreen() {
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
   const upcoming = useUpcomingEvents();
   const weather = useWeeklyWeather();
+  const checklist = useLocalChecklist();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [mealSheetOpen, setMealSheetOpen] = useState(false);
   const [adPopupVisible, setAdPopupVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState<ScheduleTab>('all');
   const adShownRef = useRef(false);
 
-  const scrollRef = useRef<ScrollView>(null);
-  const layoutMap = useRef<Record<string, number>>({});
-  const [highlightedDate, setHighlightedDate] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
+  const todayProgress = useMemo(() => checklist.getProgress(upcoming.mainEvents), [checklist, upcoming.mainEvents]);
 
-  useEffect(() => {
-    if (toastMessage) {
-      const timer = setTimeout(() => setToastMessage(null), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [toastMessage]);
-
-  useEffect(() => {
-    if (highlightedDate) {
-      const timer = setTimeout(() => setHighlightedDate(null), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [highlightedDate]);
-
+  // 오늘/내일/모레 날씨 카드를 누르면 스크롤 대신 해당 탭으로 바로 전환.
+  // 오늘은 "전체" 탭 맨 위에 이미 노출되므로 오늘 카드를 누르면 전체 탭으로 전환.
   const onDatePress = useCallback((date: string) => {
-    const todayISO = toISODate(new Date());
     const tomorrowISO = toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
-    const hasEvents =
-      upcoming.laterGroups.some(g => g.date === date) ||
-      (date === todayISO && upcoming.mainEvents.length > 0) ||
-      (date === tomorrowISO && upcoming.secondaryEvents.length > 0);
-
-    if (!hasEvents) {
-      setToastMessage('이 날에 해당하는 일정이 아직 없어요');
-      return;
-    }
-
-    const yPos = layoutMap.current[date];
-    if (yPos !== undefined && yPos > 0) {
-      // Precise offset calculation for sticky header (~110px)
-      scrollRef.current?.scrollTo({
-        y: Math.max(0, yPos - 110),
-        animated: true,
-      });
-      setHighlightedDate(date);
-    } else {
-      setToastMessage('잠시 후 다시 시도해 주세요.');
-    }
-  }, [upcoming.laterGroups, upcoming.mainEvents, upcoming.secondaryEvents]);
-
-  const onItemLayout = useCallback((date: string, y: number) => {
-    // Only capture coordinates once per date for stability, or update if significant change
-    if (y > 100 && (!layoutMap.current[date] || Math.abs(layoutMap.current[date] - y) > 50)) {
-      layoutMap.current[date] = y;
-    }
+    const dayAfterTomorrowISO = toISODate(new Date(Date.now() + 2 * 24 * 60 * 60 * 1000));
+    if (date === tomorrowISO) setActiveTab('tomorrow');
+    else if (date === dayAfterTomorrowISO) setActiveTab('dayAfterTomorrow');
+    else setActiveTab('all');
   }, []);
 
   // Show ad popup once when app is ready — never while the app-lock screen is
@@ -176,79 +86,10 @@ export default function HomeScreen() {
     }
   }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked]);
 
-  const upcomingElements = useMemo(() => {
-    if (upcoming.isEmpty) {
-      return [] as React.ReactNode[];
-    }
-
-    const elements: React.ReactNode[] = [];
-
-    elements.push(
-      <HomeHeroHeader
-        key="hero-header"
-        selectedChild={selectedChild}
-        onPressChild={() => setSwitcherOpen(true)}
-        onPressMeal={() => setMealSheetOpen(true)}
-        onPressPlaces={() => router.push('/nearby-places')}
-        weatherDays={weather.days}
-        weatherLoading={weather.loading}
-        onPressDate={onDatePress}
-      />
-    );
-
-    const bagSectionTodayISO = toISODate(new Date());
-    const bagSectionTomorrowISO = toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
-    elements.push(
-      <View
-        key="bag-wrapper"
-        collapsable={false}
-        onLayout={(e) => {
-          onItemLayout(bagSectionTodayISO, e.nativeEvent.layout.y);
-          onItemLayout(bagSectionTomorrowISO, e.nativeEvent.layout.y);
-        }}
-      >
-        <BagSection
-          mainEvents={upcoming.mainEvents}
-          secondaryEvents={upcoming.secondaryEvents}
-          displayType={upcoming.displayType}
-          onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
-        />
-      </View>
-    );
-
-    elements.push(<AdventureHeader key="adventure-header" />);
-
-    if (upcoming.laterGroups.length > 0) {
-      upcoming.laterGroups.forEach((group, idx) => {
-        elements.push(
-          <View
-            key={`card-wrapper-${group.date}`}
-            collapsable={false}
-            onLayout={(e) => onItemLayout(group.date, e.nativeEvent.layout.y)}
-          >
-            <AdventureNode
-              group={group}
-              index={idx}
-              isLast={idx === upcoming.laterGroups.length - 1}
-              isHighlighted={highlightedDate === group.date}
-              onEventPress={(event) => router.push({ pathname: '/calendar', params: { date: event.date } })}
-            />
-          </View>
-        );
-      });
-    } else {
-      elements.push(
-        <View key="empty-upcoming" style={styles.emptyUpcomingCard}>
-          <Text style={styles.emptyUpcomingEmoji}>🏝️</Text>
-          <Text style={styles.emptyUpcomingTitle}>이번 주는 특별한 일정이 없어요</Text>
-          <Text style={styles.emptyUpcomingSubtitle}>여유롭고 평화로운 한 주를 보내세요!</Text>
-        </View>
-      );
-    }
-
-    return elements;
-
-  }, [upcoming, selectedChild, weather, styles, router, onDatePress, onItemLayout, highlightedDate]);
+  const handleEventPress = useCallback(
+    (event: { date: string }) => router.push({ pathname: '/calendar', params: { date: event.date } }),
+    [router]
+  );
 
   if (!onboardingLoaded) {
     return null;
@@ -266,32 +107,45 @@ export default function HomeScreen() {
             selectedChild={selectedChild}
             onPressChild={() => setSwitcherOpen(true)}
             onPressMeal={() => setMealSheetOpen(true)}
-            onPressPlaces={() => router.push('/nearby-places')}
             weatherDays={weather.days}
             weatherLoading={weather.loading}
             onPressDate={onDatePress}
           />
         ) : (
           <ScrollView
-            ref={scrollRef}
             style={styles.mainContainer}
             contentContainerStyle={styles.scrollContainer}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="always"
             nestedScrollEnabled={true}
           >
-            {upcomingElements}
+            <HomeHeroHeader
+              selectedChild={selectedChild}
+              onPressChild={() => setSwitcherOpen(true)}
+              onPressMeal={() => setMealSheetOpen(true)}
+              weatherDays={weather.days}
+              weatherLoading={weather.loading}
+              onPressDate={onDatePress}
+            />
+            <TodayPrepProgress
+              total={todayProgress.total}
+              checked={todayProgress.checked}
+              percent={todayProgress.percent}
+            />
+            <ScheduleBoard
+              mainEvents={upcoming.mainEvents}
+              secondaryEvents={upcoming.secondaryEvents}
+              laterGroups={upcoming.laterGroups}
+              activeTab={activeTab}
+              onChangeTab={setActiveTab}
+              onEventPress={handleEventPress}
+              isItemChecked={checklist.isChecked}
+              onToggleItem={checklist.toggle}
+              onToggleAll={checklist.setAllChecked}
+            />
           </ScrollView>
         )}
       </SafeAreaView>
-
-      {toastMessage && (
-        <View style={[styles.toastContainer, { bottom: 100 + insets.bottom }]}>
-          <View style={styles.toast}>
-            <Text style={styles.toastText}>{toastMessage}</Text>
-          </View>
-        </View>
-      )}
 
       <CoupangBanner style={styles.adBanner} />
 
