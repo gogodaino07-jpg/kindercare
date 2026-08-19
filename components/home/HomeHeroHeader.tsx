@@ -16,6 +16,8 @@ interface HomeHeroHeaderProps {
   weatherLoading: boolean;
   locationLabel?: string;
   onPressDate: (date: string) => void;
+  /** 오늘 등록된 급식의 메인 메뉴. 있으면 인사말 대신 "오늘은 OO를 먹어요~" 문구를 보여줌. */
+  todayMainMenu?: string;
 }
 
 /** Korean 아/야 particle: true when the syllable ends with a batchim (final consonant). */
@@ -92,6 +94,7 @@ export default function HomeHeroHeader({
   weatherLoading,
   locationLabel,
   onPressDate,
+  todayMainMenu,
 }: HomeHeroHeaderProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -129,6 +132,16 @@ export default function HomeHeroHeader({
               minimumFontScale={0.6}
             >
               🎂 오늘은 {greetingName ?? '우리 아이'} 생일이에요! 축하해요!
+            </Text>
+          ) : todayMainMenu ? (
+            <Text
+              style={styles.bannerGreetingText}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              🍽️ 오늘은 <Text style={styles.bannerGreetingName}>{todayMainMenu}</Text>
+              {hasFinalConsonant(todayMainMenu) ? '을' : '를'} 먹어요~
             </Text>
           ) : (
             <Text

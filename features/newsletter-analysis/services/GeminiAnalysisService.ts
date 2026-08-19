@@ -44,6 +44,7 @@ interface GeminiExtractedEvent {
 interface GeminiExtractedMealPlan {
   date?: string;
   menu?: string[];
+  mainMenu?: string;
 }
 
 export interface GeminiAnalysisResult {
@@ -82,6 +83,7 @@ const RESPONSE_SCHEMA = {
         properties: {
           date: { type: 'string' },
           menu: { type: 'array', items: { type: 'string' } },
+          mainMenu: { type: 'string' },
         },
         required: ['date', 'menu'],
       },
@@ -108,6 +110,7 @@ function extractMealPlans(
     .map((m) => ({
       date: m.date,
       menu: (m.menu ?? []).map((item) => item.trim()).filter(Boolean),
+      mainMenu: m.mainMenu?.trim() || undefined,
       childId,
     }));
 }
@@ -311,6 +314,7 @@ ${
 [급식 식단표 추출]
 - 가정통신문에 주간 또는 월간 식단표(요일별/날짜별 급식 메뉴가 나열된 표)가 포함되어 있다면, "mealPlan" 배열로 별도 추출하세요.
 - 각 항목은 날짜(date, "YYYY-MM-DD")와 그날의 메뉴 목록(menu, 문자열 배열 — 예: ["흰쌀밥", "미역국", "제육볶음", "배추김치"])으로 구성하세요.
+- mainMenu: menu 항목들 중 그날의 "메인 반찬"(단백질 위주의 주요리, 예: 제육볶음/돈까스/불고기/생선구이 등)에 해당하는 항목을 하나 골라 그대로 적으세요. 밥류("흰쌀밥", "잡곡밥" 등), 국/찌개류, 김치·나물 등 기본 반찬은 mainMenu로 고르지 마세요. 메뉴가 전부 밥/국/김치뿐이라 뚜렷한 메인 반찬이 없다면 mainMenu는 생략하세요.
 - 요일만 적혀 있고 날짜가 명시되지 않았다면, [현재 기준 날짜]를 기준으로 그 주(월~금)의 실제 날짜로 환산하세요.
 - 식단표가 아예 없으면 "mealPlan"은 빈 배열([])로 반환하세요. 이는 오류가 아니라 정상적인 결과입니다.`;
   }

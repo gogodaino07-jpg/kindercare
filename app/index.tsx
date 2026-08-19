@@ -47,7 +47,7 @@ function createStyles(colors: ThemeColors, bottomInset: number, hasAdBanner: boo
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { hasOnboarded, selectedChild, events, googleAccount, onboardingLoaded } = useAppData();
+  const { hasOnboarded, selectedChild, events, googleAccount, onboardingLoaded, mealPlans } = useAppData();
   const { isLocked } = useAppLock();
   const { isSubscribed } = useSubscription();
   const insets = useSafeAreaInsets();
@@ -58,6 +58,10 @@ export default function HomeScreen() {
   );
   const upcoming = useUpcomingEvents();
   const weather = useWeeklyWeather();
+  const todayMainMenu = useMemo(() => {
+    const todayISO = toISODate(new Date());
+    return mealPlans.find((m) => m.childId === selectedChild?.id && m.date === todayISO)?.mainMenu;
+  }, [mealPlans, selectedChild]);
   const checklist = useLocalChecklist();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -154,6 +158,7 @@ export default function HomeScreen() {
               weatherLoading={weather.loading}
               locationLabel={weather.locationLabel}
               onPressDate={onDatePress}
+              todayMainMenu={todayMainMenu}
             />
             <View onLayout={(e) => { progressYRef.current = e.nativeEvent.layout.y; }}>
               <Pressable onPress={scrollToProgress} disabled={todayProgress.total === 0}>

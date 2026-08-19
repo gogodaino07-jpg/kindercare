@@ -53,6 +53,8 @@ export interface MealPlan {
   date: string;
   /** 메뉴 항목들 */
   menu: string[];
+  /** menu 중 메인 반찬(주요리)에 해당하는 항목. 홈 화면 인사말 등에 노출할 때 사용. */
+  mainMenu?: string;
   /** Event처럼 아이(=소속 기관) 기준으로 스코프 */
   childId: string;
 }
