@@ -11,6 +11,7 @@ interface AIReviewBottomSheetProps {
   insets: EdgeInsets;
   onSave: () => void;
   isSaveDisabled: boolean;
+  summaryText?: string;
   children: React.ReactNode;
 }
 
@@ -21,6 +22,7 @@ export const AIReviewBottomSheet = ({
   insets,
   onSave,
   isSaveDisabled,
+  summaryText,
   children,
 }: AIReviewBottomSheetProps) => {
   const styles = createStyles(colors);
@@ -30,6 +32,7 @@ export const AIReviewBottomSheet = ({
       <View style={styles.sheetHeader} {...panHandlers}>
         <View style={styles.handle} />
         <Text style={styles.sheetTitle}>AI 분석 결과 검수</Text>
+        {!!summaryText && <Text style={styles.summaryText}>{summaryText}</Text>}
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -64,6 +67,7 @@ function createStyles(colors: ThemeColors) {
     sheetHeader: { alignItems: 'center', paddingVertical: 12 },
     handle: { width: 40, height: 5, backgroundColor: colors.border, borderRadius: 3, marginBottom: 8 },
     sheetTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+    summaryText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginTop: 4 },
     content: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 150 },
     footer: {
       position: 'absolute',

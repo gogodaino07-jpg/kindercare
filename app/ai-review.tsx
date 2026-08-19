@@ -154,6 +154,16 @@ export default function AIReviewScreen() {
       .map(([date, evs]) => ({ date, events: evs }));
   }, [draftEvents]);
 
+  const summaryCounts = useMemo(() => {
+    const todayISO = toISODate(new Date());
+    const tomorrowISO = toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+    return {
+      total: draftEvents.length,
+      today: draftEvents.filter((e) => e.date === todayISO).length,
+      tomorrow: draftEvents.filter((e) => e.date === tomorrowISO).length,
+    };
+  }, [draftEvents]);
+
   const updateDraft = (localId: string, patch: Partial<DraftEvent>) => {
     setDraftEvents((prev) => prev.map((e) => (e.localId === localId ? { ...e, ...patch } : e)));
   };
@@ -244,6 +254,7 @@ export default function AIReviewScreen() {
         insets={insets}
         onSave={handleSave}
         isSaveDisabled={draftEvents.length === 0}
+        summaryText={`전체 ${summaryCounts.total}건 · 오늘 ${summaryCounts.today}건 · 내일 ${summaryCounts.tomorrow}건`}
       >
         {groups.map((group) => {
           const collapsed = group.events.length >= 2 && collapsedDates.has(group.date);
