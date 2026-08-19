@@ -130,24 +130,11 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     scrollContent: {
       paddingBottom: 190 + bottomInset,
     },
-    calendarHeaderCard: {
+    calendarCard: {
       backgroundColor: colors.cardWhite,
       borderRadius: 24,
       marginHorizontal: 16,
       marginTop: -32,
-      marginBottom: 10,
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderWidth: 1,
-      borderColor: colors.border,
-      ...SHADOW,
-      shadowOpacity: 0.04,
-      elevation: 3,
-    },
-    gridCard: {
-      backgroundColor: colors.cardWhite,
-      borderRadius: 24,
-      marginHorizontal: 16,
       paddingVertical: 8,
       paddingHorizontal: 16,
       borderWidth: 1,
@@ -276,6 +263,10 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
+      marginTop: 12,
+      paddingTop: 10,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
       gap: 8,
     },
     legendItem: {
@@ -460,22 +451,17 @@ export default function CalendarScreen() {
   const scrollHandler = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
   });
-  const animatedGridStyle = useAnimatedStyle(() => {
+  // 달력 전체(월 선택+요일+날짜 그리드+범례)를 하나로 묶어 위로 밀려나듯
+  // 살짝 축소시킨다. 실제 스크롤 콘텐츠가 아닌 고정 요소라 제스처 충돌 없이
+  // 아래 ScrollView의 오프셋만 공유해서 애니메이션한다.
+  const animatedCalendarStyle = useAnimatedStyle(() => {
     const progress = interpolate(scrollY.value, [0, COLLAPSE_DISTANCE], [0, 1], Extrapolation.CLAMP);
     return {
-      transform: [{ scale: interpolate(progress, [0, 1], [1, 0.9]) }],
-      marginBottom: interpolate(progress, [0, 1], [0, -30]),
-    };
-  });
-  const animatedLegendStyle = useAnimatedStyle(() => {
-    const progress = interpolate(scrollY.value, [0, COLLAPSE_DISTANCE], [0, 1], Extrapolation.CLAMP);
-    return {
-      opacity: interpolate(progress, [0, 0.6, 1], [1, 0, 0]),
-      height: interpolate(progress, [0, 1], [40, 0], Extrapolation.CLAMP),
-      marginTop: interpolate(progress, [0, 1], [12, 0]),
-      paddingTop: interpolate(progress, [0, 1], [10, 0]),
-      borderTopWidth: interpolate(progress, [0, 1], [1, 0]),
-      overflow: 'hidden',
+      transform: [
+        { scale: interpolate(progress, [0, 1], [1, 0.9]) },
+        { translateY: interpolate(progress, [0, 1], [0, -14]) },
+      ],
+      marginBottom: interpolate(progress, [0, 1], [10, -25]),
     };
   });
 
@@ -637,9 +623,11 @@ export default function CalendarScreen() {
         </View>
       )}
 
-      {/* Fixed month + weekday header — always visible, doesn't scroll */}
+      {/* 달력 전체(월 선택+요일+날짜 그리드+범례) — 아래 ScrollView 오프셋에 맞춰
+          위로 밀려나듯 살짝 축소된다. 스크롤 콘텐츠 밖의 고정 요소라 스와이프
+          제스처와 충돌하지 않는다. */}
       <GestureDetector gesture={swipeGesture}>
-        <View style={styles.calendarHeaderCard}>
+        <Animated.View style={[styles.calendarCard, animatedCalendarStyle]}>
           <View style={styles.monthSelector}>
             <TouchableOpacity style={styles.arrowButton} onPress={goToPrevMonth}>
               <Text style={styles.arrowIcon}>◀</Text>
@@ -666,18 +654,7 @@ export default function CalendarScreen() {
               </Text>
             ))}
           </View>
-        </View>
-      </GestureDetector>
 
-      <Animated.ScrollView
-        style={styles.scrollFlex}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
-      >
-        {/* Days grid + legend — shrinks slightly as the list below is scrolled */}
-        <Animated.View style={[styles.gridCard, animatedGridStyle]}>
           <View style={styles.daysGrid}>
             {cells.map((iso, index) => {
               if (!iso) return <View key={`pad-${index}`} style={styles.dayCellContainer} />;
@@ -747,7 +724,7 @@ export default function CalendarScreen() {
             })}
           </View>
 
-          <Animated.View style={[styles.legendContainer, animatedLegendStyle]}>
+          <View style={styles.legendContainer}>
             <View style={[styles.legendItem, { backgroundColor: lighten(dotColors.ai, 0.8) }]}>
               <Text style={[styles.legendText, { color: dotColors.ai }]}>유치원 일정</Text>
             </View>
@@ -757,9 +734,17 @@ export default function CalendarScreen() {
             <View style={[styles.legendItem, { backgroundColor: lighten(dotColors.manual, 0.8) }]}>
               <Text style={[styles.legendText, { color: dotColors.manual }]}>등록된 일정</Text>
             </View>
-          </Animated.View>
+          </View>
         </Animated.View>
+      </GestureDetector>
 
+      <Animated.ScrollView
+        style={styles.scrollFlex}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+      >
         <View style={styles.scheduleSection}>
           <View style={styles.dateHeader}>
             <MaterialCommunityIcons name="calendar-blank" size={16} color={colors.peachOrangeDeep} />
