@@ -355,12 +355,13 @@ export default function UploadScreen() {
     setRemainingAnalyses(count);
     setAnalyzing(false);
 
+    // 급식 메뉴는 감지되면 스캔 모드와 무관하게 바로 저장한다(검수 없이 자동 등록).
+    if (mealPlans.length > 0) {
+      addMealPlans(mealPlans);
+    }
+
     // 급식 메뉴 전용 스캔은 일정과 무관하게 급식 메뉴만 가져오면 끝 — 검수 화면으로 보내지 않는다.
-    // 종합(가정통신문) 스캔에서는 급식 메뉴가 감지돼도 저장하지 않는다 — 급식은 반드시 전용 스캔으로만 등록.
     if (isMealMode) {
-      if (mealPlans.length > 0) {
-        addMealPlans(mealPlans);
-      }
       AnalysisResultStore.clearPendingSession();
       showToast(mealPlans.length > 0 ? '급식 메뉴를 등록했어요 🍱' : '사진에서 급식 메뉴를 찾지 못했어요. 다른 사진으로 시도해보세요.');
       router.back();
