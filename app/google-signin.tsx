@@ -353,7 +353,11 @@ export default function GoogleSignInScreen() {
       // Kakao specific cancel codes or generic errors
       const errorMessage = String(e?.message || '').toLowerCase();
       if (!errorMessage.includes('cancel') && !errorMessage.includes('user_cancelled')) {
-        showToast(`❌ 카카오 로그인 오류: 다시 시도해 주세요.`);
+        const friendlyMessage =
+          e?.code === 'auth/account-exists-with-different-credential' && e?.message
+            ? `❌ ${e.message}`
+            : '❌ 카카오 로그인 오류: 다시 시도해 주세요.';
+        showToast(friendlyMessage);
         setToastActive(true);
         setTimeout(() => setToastActive(false), 2500);
       }
