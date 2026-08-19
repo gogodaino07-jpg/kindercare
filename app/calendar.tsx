@@ -21,6 +21,7 @@ import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import BlackboardModal from '../components/home/BlackboardModal';
@@ -37,6 +38,9 @@ import { getHolidayName, isHoliday } from '../utils/holidays';
 
 /** 달력이 살짝 축소되는 스크롤 구간(px). 이 거리 안에서 progress가 0→1로 바뀐다. */
 const COLLAPSE_DISTANCE = 130;
+
+/** 드래그 핸들을 이 거리(px)만큼 당기면 달력이 완전히 접힌다. */
+const HANDLE_FOLD_DISTANCE = 90;
 
 /** 홈 화면 일정 카테고리 배지와 톤을 맞춘 점 색상. */
 function getDotColors(colors: ThemeColors) {
@@ -124,11 +128,29 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     safeArea: {
       flex: 1,
     },
+    // 달력 카드와 elevation(3)이 겹칠 때 안드로이드가 그리기 순서를 elevation
+    // 기준으로 재정렬하면서 헤더/첫 카드가 잠깐 가려졌다 나타나는 깜빡임이
+    // 있었다. 달력보다 높은 zIndex/elevation을 줘서 항상 위에 그려지도록 고정.
+    scrollContainer: {
+      flex: 1,
+      zIndex: 1,
+      elevation: 4,
+    },
     scrollFlex: {
       flex: 1,
     },
     scrollContent: {
       paddingBottom: 190 + bottomInset,
+    },
+    dragHandleContainer: {
+      alignItems: 'center',
+      paddingVertical: 8,
+    },
+    dragHandleBar: {
+      width: 40,
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: colors.border,
     },
     calendarCard: {
       backgroundColor: colors.cardWhite,
@@ -449,27 +471,62 @@ export default function CalendarScreen() {
   // 달력이 살짝 축소되는 스크롤 연동 애니메이션 — 아래로 스크롤할수록 progress가 0→1로
   // 커지고, 다시 맨 위로 스크롤하면 자동으로 원래 크기로 돌아온다(오프셋 기반).
   const scrollY = useSharedValue(0);
+  // 드래그 핸들로 달력을 완전히 접은 정도(0=펼침, 1=완전히 접힘). 핸들을 위로
+  // 당기면 1로, 아래로 당기거나(핸들) 리스트를 맨 위로 스크롤하면 0으로 돌아온다.
+  const foldProgress = useSharedValue(0);
+  const foldStart = useSharedValue(0);
+  // 달력 카드의 실제(축소 전) 레이아웃 높이. transform은 레이아웃을 바꾸지
+  // 않으므로 아래 스크롤 콘텐츠를 얼마나 끌어올려야 하는지 계산하는 데 쓴다.
+  const calendarHeight = useSharedValue(0);
+
   const scrollHandler = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
+    if (event.contentOffset.y <= 0 && foldProgress.value > 0) {
+      foldProgress.value = withSpring(0, { damping: 18, stiffness: 180 });
+    }
   });
+
+  const handleFoldGesture = Gesture.Pan()
+    .hitSlop({ top: 12, bottom: 12 })
+    .onStart(() => {
+      foldStart.value = foldProgress.value;
+    })
+    .onUpdate((e) => {
+      const delta = -e.translationY / HANDLE_FOLD_DISTANCE;
+      foldProgress.value = Math.min(1, Math.max(0, foldStart.value + delta));
+    })
+    .onEnd((e) => {
+      const shouldFold = foldProgress.value > 0.5 || e.velocityY < -500;
+      foldProgress.value = withSpring(shouldFold ? 1 : 0, { damping: 18, stiffness: 180 });
+    });
+
   // 달력 전체(월 선택+요일+날짜 그리드+범례)를 하나로 묶어 위로 밀려나듯
-  // 절반 크기로 축소시킨다. 가로 폭은 그대로 두고 scaleY만 줄여서(가로 사이즈
-  // 고정) transformOrigin을 위쪽에 고정해 상단은 그대로 두고 아래쪽만
-  // 절반으로 줄어드는 느낌을 준다.
+  // 축소시킨다. 가로 폭은 그대로 두고 scaleY만 줄여서(가로 사이즈 고정)
+  // transformOrigin을 위쪽에 고정해 상단은 그대로 두고 아래쪽만 줄어드는
+  // 느낌을 준다. 스크롤(최대 절반 축소)과 드래그 핸들(완전히 접힘)이 같은
+  // scaleY 위에서 곱해져 두 상호작용이 자연스럽게 합쳐진다.
   const animatedCalendarStyle = useAnimatedStyle(() => {
-    const progress = interpolate(scrollY.value, [0, COLLAPSE_DISTANCE], [0, 1], Extrapolation.CLAMP);
+    const scrollProgress = interpolate(scrollY.value, [0, COLLAPSE_DISTANCE], [0, 1], Extrapolation.CLAMP);
+    const scrollScale = interpolate(scrollProgress, [0, 1], [1, 0.5]);
+    const scale = scrollScale * (1 - foldProgress.value);
     return {
-      transform: [{ scaleY: interpolate(progress, [0, 1], [1, 0.5]) }],
+      transform: [{ scaleY: scale }],
       transformOrigin: 'top',
+      opacity: interpolate(foldProgress.value, [0, 1], [1, 0], Extrapolation.CLAMP),
     };
   });
-  // 카드가 줄어들며 생기는 빈 공간만큼 아래 스크롤 콘텐츠를 끌어올린다.
-  // marginBottom 같은 레이아웃 속성 대신 translateY(transform)만 사용해
-  // 프레임마다 레이아웃 재계산이 일어나지 않도록 해 스크롤 시 버벅임을 방지.
+  // 카드가 줄어들며 생기는 빈 공간만큼 드래그 핸들+아래 스크롤 콘텐츠를
+  // 끌어올린다. marginBottom 같은 레이아웃 속성 대신 translateY(transform)만
+  // 사용해 프레임마다 레이아웃 재계산이 일어나지 않도록 해 버벅임을 방지.
+  // 실측한 달력 높이(calendarHeight) 기준으로 계산해 기기별 크기 차이에도
+  // 항상 정확히 맞물린다.
   const animatedScrollStyle = useAnimatedStyle(() => {
-    const progress = interpolate(scrollY.value, [0, COLLAPSE_DISTANCE], [0, 1], Extrapolation.CLAMP);
+    const scrollProgress = interpolate(scrollY.value, [0, COLLAPSE_DISTANCE], [0, 1], Extrapolation.CLAMP);
+    const scrollScale = interpolate(scrollProgress, [0, 1], [1, 0.5]);
+    const scale = scrollScale * (1 - foldProgress.value);
+    const shrinkAmount = calendarHeight.value * (1 - scale);
     return {
-      transform: [{ translateY: interpolate(progress, [0, 1], [0, -170]) }],
+      transform: [{ translateY: -shrinkAmount }],
     };
   });
 
@@ -635,7 +692,10 @@ export default function CalendarScreen() {
           위로 밀려나듯 살짝 축소된다. 스크롤 콘텐츠 밖의 고정 요소라 스와이프
           제스처와 충돌하지 않는다. */}
       <GestureDetector gesture={swipeGesture}>
-        <Animated.View style={[styles.calendarCard, animatedCalendarStyle]}>
+        <Animated.View
+          style={[styles.calendarCard, animatedCalendarStyle]}
+          onLayout={(e) => { calendarHeight.value = e.nativeEvent.layout.height; }}
+        >
           <View style={styles.monthSelector}>
             <TouchableOpacity style={styles.arrowButton} onPress={goToPrevMonth}>
               <Text style={styles.arrowIcon}>◀</Text>
@@ -746,59 +806,70 @@ export default function CalendarScreen() {
         </Animated.View>
       </GestureDetector>
 
-      <Animated.ScrollView
-        style={[styles.scrollFlex, animatedScrollStyle]}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
-      >
-        <View style={styles.scheduleSection}>
-          <View style={styles.dateHeader}>
-            <MaterialCommunityIcons name="calendar-blank" size={16} color={colors.peachOrangeDeep} />
-            <Text style={styles.scheduleDateText}>{selectedDate}</Text>
-            <View style={styles.dayBadge}>
-              <Text style={styles.dayBadgeText}>{weekdayLabel}요일</Text>
-            </View>
+      {/* 드래그 핸들 + 일정 리스트를 한 덩어리로 묶어 함께 끌어올린다(translateY).
+          핸들을 위로 당기면 달력이 완전히 접히고 리스트가 화면 위쪽까지 확장되며,
+          아래로 당기거나(핸들) 리스트를 맨 위로 스크롤하면 다시 펼쳐진다. */}
+      <Animated.View style={[styles.scrollContainer, animatedScrollStyle]}>
+        <GestureDetector gesture={handleFoldGesture}>
+          <View style={styles.dragHandleContainer}>
+            <View style={styles.dragHandleBar} />
           </View>
+        </GestureDetector>
 
-          {selectedDateEvents.length === 0 ? (
-            <View style={{ paddingHorizontal: 44 }}>
-              <View style={styles.emptyStateCard}>
-                <View style={styles.emptyIconContainer}>
-                  <Text style={styles.emptyIcon}>☁️</Text>
-                </View>
-                <Text style={styles.emptyTitle}>이 날짜엔 일정이 없어요</Text>
-                <Text style={styles.emptySubtitle}>새로운 일정을 추가해 보세요!</Text>
+        <Animated.ScrollView
+          style={styles.scrollFlex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+        >
+          <View style={styles.scheduleSection}>
+            <View style={styles.dateHeader}>
+              <MaterialCommunityIcons name="calendar-blank" size={16} color={colors.peachOrangeDeep} />
+              <Text style={styles.scheduleDateText}>{selectedDate}</Text>
+              <View style={styles.dayBadge}>
+                <Text style={styles.dayBadgeText}>{weekdayLabel}요일</Text>
               </View>
             </View>
-          ) : (
-            <View style={styles.eventList}>
-              {selectedDateEvents.map((e) => {
-                const tint = dotColorFor(dotColors, e.source, e.needsReview);
-                return (
-                  <View key={e.id} style={styles.eventCardWrapper}>
-                    <View style={styles.eventCardRow}>
-                      <View style={[styles.eventCardIconCircle, { backgroundColor: lighten(tint, 0.85) }]}>
-                        <EventIcon icon={e.icon} size={20} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <EventCard
-                          event={e}
-                          showCoupangButton
-                          wrapNote
-                          hideCheckbox
-                          onPress={() => router.push({ pathname: '/edit-event', params: { id: e.id } })}
-                        />
+
+            {selectedDateEvents.length === 0 ? (
+              <View style={{ paddingHorizontal: 44 }}>
+                <View style={styles.emptyStateCard}>
+                  <View style={styles.emptyIconContainer}>
+                    <Text style={styles.emptyIcon}>☁️</Text>
+                  </View>
+                  <Text style={styles.emptyTitle}>이 날짜엔 일정이 없어요</Text>
+                  <Text style={styles.emptySubtitle}>새로운 일정을 추가해 보세요!</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.eventList}>
+                {selectedDateEvents.map((e) => {
+                  const tint = dotColorFor(dotColors, e.source, e.needsReview);
+                  return (
+                    <View key={e.id} style={styles.eventCardWrapper}>
+                      <View style={styles.eventCardRow}>
+                        <View style={[styles.eventCardIconCircle, { backgroundColor: lighten(tint, 0.85) }]}>
+                          <EventIcon icon={e.icon} size={20} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <EventCard
+                            event={e}
+                            showCoupangButton
+                            wrapNote
+                            hideCheckbox
+                            onPress={() => router.push({ pathname: '/edit-event', params: { id: e.id } })}
+                          />
+                        </View>
                       </View>
                     </View>
-                  </View>
-                );
-              })}
-            </View>
-          )}
-        </View>
-      </Animated.ScrollView>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        </Animated.ScrollView>
+      </Animated.View>
 
       {/* Floating Action Button */}
       <View style={styles.fabContainer}>
