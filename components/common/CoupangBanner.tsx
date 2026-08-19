@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { StyleSheet, View, ViewStyle, useWindowDimensions, Platform } from 'react-native';
+import { PixelRatio, StyleSheet, View, ViewStyle, useWindowDimensions, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -30,6 +30,14 @@ export default function CoupangBanner({ style }: CoupangBannerProps) {
   // Adjusting dimensions for the WebView container
   const bannerHeight = 50;
 
+  // Coupang's widget serves thumbnail images sized to the width/height we request.
+  // Requesting at native pixel density (then scaling the DOM back down with CSS)
+  // makes the browser rasterize the images at full resolution instead of stretching
+  // low-res assets across a high-density screen — fixing the blurry thumbnail.
+  const dpr = Math.min(PixelRatio.get(), 3);
+  const scaledWidth = Math.round(windowWidth * dpr);
+  const scaledHeight = Math.round(bannerHeight * dpr);
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -43,23 +51,28 @@ export default function CoupangBanner({ style }: CoupangBannerProps) {
             height: 100%;
             overflow: hidden;
             background-color: transparent;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+          }
+          #scaleWrap {
+            width: ${scaledWidth}px;
+            height: ${scaledHeight}px;
+            transform: scale(${1 / dpr});
+            transform-origin: top left;
           }
         </style>
       </head>
       <body>
-        <script src="https://ads-partners.coupang.com/g.js"></script>
-        <script>
-          new PartnersCoupang.G({
-            "id": 1010655,
-            "template": "carousel",
-            "trackingCode": "AF5391104",
-            "width": "${windowWidth}",
-            "height": "${bannerHeight}"
-          });
-        </script>
+        <div id="scaleWrap">
+          <script src="https://ads-partners.coupang.com/g.js"></script>
+          <script>
+            new PartnersCoupang.G({
+              "id": 1010655,
+              "template": "carousel",
+              "trackingCode": "AF5391104",
+              "width": "${scaledWidth}",
+              "height": "${scaledHeight}"
+            });
+          </script>
+        </div>
       </body>
     </html>
   `;
