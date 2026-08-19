@@ -12,6 +12,13 @@ export function useScanRewardedAd() {
   const resolverRef = useRef<((earned: boolean) => void) | null>(null);
   const pendingShowRef = useRef(false);
 
+  // 분석 버튼을 누르는 시점엔 이미 로드가 끝나 있도록, 화면 진입 시 미리 광고를 요청해둔다.
+  // (버튼 누른 후에야 요청하면 AdMob 응답을 기다리는 동안 체감 지연이 생김)
+  useEffect(() => {
+    if (AD_UNIT_ID) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (isLoaded && pendingShowRef.current) {
       pendingShowRef.current = false;
@@ -25,6 +32,11 @@ export function useScanRewardedAd() {
       resolverRef.current = null;
       resolve(!!isEarnedReward);
     }
+    // 방금 본 광고는 소진됐으니, 다음 스캔을 위해 새 광고를 다시 미리 로드해둔다.
+    if (isClosed && AD_UNIT_ID) {
+      load();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClosed, isEarnedReward]);
 
   useEffect(() => {
@@ -36,15 +48,20 @@ export function useScanRewardedAd() {
     }
   }, [error]);
 
-  /** 광고를 로드/노출하고, 사용자가 끝까지 봐서 보상을 받으면 true, 아니면 false로 resolve. */
+  /** 광고를 노출하고, 사용자가 끝까지 봐서 보상을 받으면 true, 아니면 false로 resolve.
+   * 미리 로드가 끝나 있으면 바로 보여주고, 아직이면 로드를 기다렸다가 보여준다. */
   const requestAndShow = useCallback((): Promise<boolean> => {
     if (!AD_UNIT_ID) return Promise.resolve(true); // 광고 단위 ID 미설정 시 스캔을 막지 않음
     return new Promise((resolve) => {
       resolverRef.current = resolve;
-      pendingShowRef.current = true;
-      load();
+      if (isLoaded) {
+        show();
+      } else {
+        pendingShowRef.current = true;
+        load();
+      }
     });
-  }, [load]);
+  }, [isLoaded, load, show]);
 
   return { requestAndShow };
 }
