@@ -362,11 +362,12 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       .onSnapshot((snap) => {
         if (!snap) return;
         const cloudChildren = snap.docs.map(doc => doc.data() as Child);
-        console.log(`📥 Cloud Sync: Received ${cloudChildren.length} children`);
+        console.log(`📥 Cloud Sync: Received ${cloudChildren.length} children (fromCache: ${snap.metadata.fromCache})`);
 
-        // Trust cloud only if we've already done our initial sync-up check.
-        // This prevents accidental wipes on cold start.
-        if (cloudChildren.length > 0 || syncChecked) {
+        // A transient empty snapshot served from Firestore's local cache (e.g. right
+        // after an app update, before the real server data arrives) must not wipe
+        // local data. Only trust an empty result once the server has confirmed it.
+        if (cloudChildren.length > 0 || !snap.metadata.fromCache) {
           setChildProfiles(prev => {
             // Keep local children that aren't in cloud yet (e.g. just added but not pushed)
             const localOnlyChildren = prev.filter(p => !cloudChildren.some(c => c.id === p.id));
@@ -393,10 +394,12 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       .onSnapshot((snap) => {
         if (!snap) return;
         const cloudEvents = snap.docs.map(doc => doc.data() as Event);
-        console.log(`📥 Cloud Sync: Received ${cloudEvents.length} events`);
+        console.log(`📥 Cloud Sync: Received ${cloudEvents.length} events (fromCache: ${snap.metadata.fromCache})`);
 
-        // Trust cloud only if we've already done our initial sync-up check.
-        if (cloudEvents.length > 0 || syncChecked) {
+        // A transient empty snapshot served from Firestore's local cache (e.g. right
+        // after an app update, before the real server data arrives) must not wipe
+        // local data. Only trust an empty result once the server has confirmed it.
+        if (cloudEvents.length > 0 || !snap.metadata.fromCache) {
           setEvents(cloudEvents);
         }
       }, (err) => console.error('❌ Firestore Events Listener Error:', err));
@@ -409,10 +412,12 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       .onSnapshot((snap) => {
         if (!snap) return;
         const cloudMealPlans = snap.docs.map(doc => doc.data() as MealPlan);
-        console.log(`📥 Cloud Sync: Received ${cloudMealPlans.length} meal plans`);
+        console.log(`📥 Cloud Sync: Received ${cloudMealPlans.length} meal plans (fromCache: ${snap.metadata.fromCache})`);
 
-        // Trust cloud only if we've already done our initial sync-up check.
-        if (cloudMealPlans.length > 0 || syncChecked) {
+        // A transient empty snapshot served from Firestore's local cache (e.g. right
+        // after an app update, before the real server data arrives) must not wipe
+        // local data. Only trust an empty result once the server has confirmed it.
+        if (cloudMealPlans.length > 0 || !snap.metadata.fromCache) {
           setMealPlans(cloudMealPlans);
         }
       }, (err) => console.error('❌ Firestore Meal Plans Listener Error:', err));
