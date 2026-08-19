@@ -356,7 +356,7 @@ export default function GoogleSignInScreen() {
         const friendlyMessage =
           e?.code === 'auth/account-exists-with-different-credential' && e?.message
             ? `❌ ${e.message}`
-            : '❌ 카카오 로그인 오류: 다시 시도해 주세요.';
+            : `❌ 카카오 로그인 오류 (${e?.code || 'unknown'}): 다시 시도해 주세요.`;
         showToast(friendlyMessage);
         setToastActive(true);
         setTimeout(() => setToastActive(false), 2500);
