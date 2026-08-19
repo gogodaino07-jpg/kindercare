@@ -357,7 +357,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     eventCardRow: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       gap: 10,
     },
     eventCardIconCircle: {
