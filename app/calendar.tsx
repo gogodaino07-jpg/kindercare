@@ -135,6 +135,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       borderRadius: 24,
       marginHorizontal: 16,
       marginTop: -32,
+      marginBottom: 10,
       paddingVertical: 8,
       paddingHorizontal: 16,
       borderWidth: 1,
@@ -452,16 +453,23 @@ export default function CalendarScreen() {
     scrollY.value = event.contentOffset.y;
   });
   // 달력 전체(월 선택+요일+날짜 그리드+범례)를 하나로 묶어 위로 밀려나듯
-  // 절반 크기로 축소시킨다. 실제 스크롤 콘텐츠가 아닌 고정 요소라 제스처
-  // 충돌 없이 아래 ScrollView의 오프셋만 공유해서 애니메이션한다.
-  // transformOrigin을 위쪽에 고정해 상단은 그대로 두고 아래쪽만 절반으로
-  // 줄어드는 느낌을 준다.
+  // 절반 크기로 축소시킨다. 가로 폭은 그대로 두고 scaleY만 줄여서(가로 사이즈
+  // 고정) transformOrigin을 위쪽에 고정해 상단은 그대로 두고 아래쪽만
+  // 절반으로 줄어드는 느낌을 준다.
   const animatedCalendarStyle = useAnimatedStyle(() => {
     const progress = interpolate(scrollY.value, [0, COLLAPSE_DISTANCE], [0, 1], Extrapolation.CLAMP);
     return {
-      transform: [{ scale: interpolate(progress, [0, 1], [1, 0.5]) }],
+      transform: [{ scaleY: interpolate(progress, [0, 1], [1, 0.5]) }],
       transformOrigin: 'top',
-      marginBottom: interpolate(progress, [0, 1], [10, -195]),
+    };
+  });
+  // 카드가 줄어들며 생기는 빈 공간만큼 아래 스크롤 콘텐츠를 끌어올린다.
+  // marginBottom 같은 레이아웃 속성 대신 translateY(transform)만 사용해
+  // 프레임마다 레이아웃 재계산이 일어나지 않도록 해 스크롤 시 버벅임을 방지.
+  const animatedScrollStyle = useAnimatedStyle(() => {
+    const progress = interpolate(scrollY.value, [0, COLLAPSE_DISTANCE], [0, 1], Extrapolation.CLAMP);
+    return {
+      transform: [{ translateY: interpolate(progress, [0, 1], [0, -170]) }],
     };
   });
 
@@ -739,7 +747,7 @@ export default function CalendarScreen() {
       </GestureDetector>
 
       <Animated.ScrollView
-        style={styles.scrollFlex}
+        style={[styles.scrollFlex, animatedScrollStyle]}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         onScroll={scrollHandler}
