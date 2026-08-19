@@ -36,7 +36,7 @@ import { WEEKDAY_KO, parseISODate, toISODate, formatMD } from '../utils/date';
 import { getHolidayName, isHoliday } from '../utils/holidays';
 
 /** 달력이 살짝 축소되는 스크롤 구간(px). 이 거리 안에서 progress가 0→1로 바뀐다. */
-const COLLAPSE_DISTANCE = 70;
+const COLLAPSE_DISTANCE = 130;
 
 /** 홈 화면 일정 카테고리 배지와 톤을 맞춘 점 색상. */
 function getDotColors(colors: ThemeColors) {
@@ -452,16 +452,16 @@ export default function CalendarScreen() {
     scrollY.value = event.contentOffset.y;
   });
   // 달력 전체(월 선택+요일+날짜 그리드+범례)를 하나로 묶어 위로 밀려나듯
-  // 살짝 축소시킨다. 실제 스크롤 콘텐츠가 아닌 고정 요소라 제스처 충돌 없이
-  // 아래 ScrollView의 오프셋만 공유해서 애니메이션한다.
+  // 절반 크기로 축소시킨다. 실제 스크롤 콘텐츠가 아닌 고정 요소라 제스처
+  // 충돌 없이 아래 ScrollView의 오프셋만 공유해서 애니메이션한다.
+  // transformOrigin을 위쪽에 고정해 상단은 그대로 두고 아래쪽만 절반으로
+  // 줄어드는 느낌을 준다.
   const animatedCalendarStyle = useAnimatedStyle(() => {
     const progress = interpolate(scrollY.value, [0, COLLAPSE_DISTANCE], [0, 1], Extrapolation.CLAMP);
     return {
-      transform: [
-        { scale: interpolate(progress, [0, 1], [1, 0.9]) },
-        { translateY: interpolate(progress, [0, 1], [0, -14]) },
-      ],
-      marginBottom: interpolate(progress, [0, 1], [10, -25]),
+      transform: [{ scale: interpolate(progress, [0, 1], [1, 0.5]) }],
+      transformOrigin: 'top',
+      marginBottom: interpolate(progress, [0, 1], [10, -195]),
     };
   });
 
