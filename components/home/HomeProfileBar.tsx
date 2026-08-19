@@ -24,7 +24,7 @@ function formatClassName(className?: string): string | undefined {
   return trimmed.endsWith('반') ? trimmed : `${trimmed}반`;
 }
 
-const AVATAR_SMALL_SIZE = 46;
+const AVATAR_SMALL_SIZE = 56;
 const ICON_BUTTON_SIZE = 32;
 
 /** 홈 화면 최상단 아이 프로필 행 — 스크롤해도 화면 상단에 고정되는 헤더로 app/index.tsx에서 ScrollView 바깥에 렌더링된다. */
@@ -98,7 +98,7 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       flexShrink: 1,
-      gap: 10,
+      gap: 12,
     },
     avatarSmallContainer: {
       width: AVATAR_SMALL_SIZE,
@@ -123,15 +123,15 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'center',
     },
     avatarSmallIcon: {
-      fontSize: 22,
+      fontSize: 27,
     },
     onlineDot: {
       position: 'absolute',
       bottom: -1,
       right: -1,
-      width: 13,
-      height: 13,
-      borderRadius: 7,
+      width: 15,
+      height: 15,
+      borderRadius: 8,
       backgroundColor: colors.statusGreen,
       borderWidth: 2,
       borderColor: colors.skyBackground,
@@ -142,10 +142,10 @@ function createStyles(colors: ThemeColors) {
     nameRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      gap: 7,
     },
     profileName: {
-      fontSize: 16,
+      fontSize: 19,
       fontWeight: '800',
       color: colors.gray900,
     },
@@ -153,11 +153,11 @@ function createStyles(colors: ThemeColors) {
       alignSelf: 'center',
       backgroundColor: '#FFE066',
       borderRadius: 999,
-      paddingHorizontal: 9,
-      paddingVertical: 2,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
     },
     miniBadgeText: {
-      fontSize: 11,
+      fontSize: 13,
       fontWeight: '800',
       color: '#5C4A1E',
     },
