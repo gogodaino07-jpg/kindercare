@@ -81,7 +81,9 @@ export default function ChildProfileScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const [age, setAge] = useState<ChildAge | null>(editingChild?.age ?? null);
-  const [className, setClassName] = useState(editingChild?.className ?? '');
+  const [className, setClassName] = useState(
+    editingChild ? editingChild.className ?? '없음' : ''
+  );
   const [attemptedSave, setAttemptedSave] = useState(false);
 
   const handleBirthdateChange = (event: any, selectedDate?: Date) => {
@@ -134,10 +136,11 @@ export default function ChildProfileScreen() {
       setAttemptedSave(true);
       return;
     }
+    const trimmedClassName = className.trim();
     const input = {
       name: name.trim(),
       age,
-      className: className.trim(),
+      className: trimmedClassName === '없음' ? undefined : trimmedClassName,
       photoUri: photoUri ?? undefined,
       birthdate: birthdate ? toISODate(birthdate) : undefined
     };
@@ -238,7 +241,7 @@ export default function ChildProfileScreen() {
             value={className}
             onChangeText={(text) => setClassName(stripInvalidCharacters(text))}
             onFocus={scrollToClassNameInput}
-            placeholder="예: 병아리반, 7세반"
+            placeholder="예: 병아리반, 7세반 (반 구분이 없으면 '없음' 입력)"
             placeholderTextColor="#94A3B8"
           />
         </View>

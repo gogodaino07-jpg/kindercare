@@ -102,11 +102,12 @@ export default function OnboardingChildSetupScreen() {
       return;
     }
     setError(false);
+    const trimmedClassName = className.trim();
     addChild({
       name: name.trim(),
       age: ageFromBirthdate(birthdate),
       birthdate: toISODate(birthdate),
-      className: className.trim(),
+      className: trimmedClassName === '없음' ? undefined : trimmedClassName,
       photoUri: photoUri ?? undefined
     });
     setShowPermissionModal(true);
@@ -228,7 +229,7 @@ export default function OnboardingChildSetupScreen() {
               setError(false);
             }}
             onFocus={scrollToClassNameInput}
-            placeholder="예: 병아리반, 7세반"
+            placeholder="예: 병아리반, 7세반 (반 구분이 없으면 '없음' 입력)"
             placeholderTextColor={colors.textSecondary}
           />
           {error && !className.trim() ? (
