@@ -1,8 +1,8 @@
 import * as ImagePicker from 'expo-image-picker';
 import { ImagePickerAsset } from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import React, { useMemo, useRef, useState } from 'react';
+import { useLocalSearchParams, useRouter, useNavigation, Stack } from 'expo-router';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -39,6 +39,7 @@ function formatBirthdate(date: Date): string {
 
 export default function ChildProfileScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { children, addChild, updateChild, deleteChild } = useAppData();
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
@@ -85,6 +86,41 @@ export default function ChildProfileScreen() {
     editingChild ? editingChild.className ?? '없음' : ''
   );
   const [attemptedSave, setAttemptedSave] = useState(false);
+
+  // 진입 시점 값 스냅샷 — 저장 없이 뒤로가기 시도할 때 변경 여부를 판단하는 기준.
+  const initialSnapshot = useRef({
+    name: editingChild?.name ?? '',
+    className: editingChild ? editingChild.className ?? '없음' : '',
+    age: editingChild?.age ?? null,
+    birthdate: editingChild?.birthdate ?? null,
+    photoUri: editingChild?.photoUri ?? null,
+  }).current;
+  const justSavedRef = useRef(false);
+
+  const hasUnsavedChanges =
+    name !== initialSnapshot.name ||
+    className !== initialSnapshot.className ||
+    age !== initialSnapshot.age ||
+    (birthdate ? toISODate(birthdate) : null) !== initialSnapshot.birthdate ||
+    photoUri !== initialSnapshot.photoUri;
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (justSavedRef.current || !hasUnsavedChanges) return;
+
+      e.preventDefault();
+      showAlert({
+        title: '변경사항을 저장하지 않았어요',
+        message: '지금 나가면 수정한 내용이 사라져요. 그래도 나가시겠어요?',
+        buttons: [
+          { text: '계속 수정', style: 'cancel' },
+          { text: '나가기', style: 'destructive', onPress: () => navigation.dispatch(e.data.action) },
+        ],
+      });
+    });
+
+    return unsubscribe;
+  }, [navigation, hasUnsavedChanges, showAlert]);
 
   const handleBirthdateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
@@ -146,6 +182,7 @@ export default function ChildProfileScreen() {
     };
     if (editingChild) updateChild(editingChild.id, input);
     else addChild(input);
+    justSavedRef.current = true;
     showToast('저장이 완료되었습니다.');
     router.back();
   };
@@ -164,6 +201,7 @@ export default function ChildProfileScreen() {
           style: 'destructive',
           onPress: () => {
             deleteChild(editingChild.id);
+            justSavedRef.current = true;
             router.back();
           },
         },
