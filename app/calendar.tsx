@@ -14,7 +14,14 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  runOnJS,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import BlackboardModal from '../components/home/BlackboardModal';
 import ScreenBackground from '../components/ScreenBackground';
@@ -27,6 +34,9 @@ import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { WEEKDAY_KO, parseISODate, toISODate, formatMD } from '../utils/date';
 import { getHolidayName, isHoliday } from '../utils/holidays';
+
+/** 달력이 살짝 축소되는 스크롤 구간(px). 이 거리 안에서 progress가 0→1로 바뀐다. */
+const COLLAPSE_DISTANCE = 70;
 
 /** 홈 화면 일정 카테고리 배지와 톤을 맞춘 점 색상. */
 function getDotColors(colors: ThemeColors) {
@@ -114,14 +124,30 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     safeArea: {
       flex: 1,
     },
-    scrollContent: {
-      paddingBottom: 180 + bottomInset,
+    scrollFlex: {
+      flex: 1,
     },
-    calendarCard: {
+    scrollContent: {
+      paddingBottom: 190 + bottomInset,
+    },
+    calendarHeaderCard: {
       backgroundColor: colors.cardWhite,
-      borderRadius: 28,
+      borderRadius: 24,
       marginHorizontal: 16,
       marginTop: -32,
+      marginBottom: 10,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...SHADOW,
+      shadowOpacity: 0.04,
+      elevation: 3,
+    },
+    gridCard: {
+      backgroundColor: colors.cardWhite,
+      borderRadius: 24,
+      marginHorizontal: 16,
       paddingVertical: 8,
       paddingHorizontal: 16,
       borderWidth: 1,
@@ -151,7 +177,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     monthText: {
       fontSize: 17,
-      fontWeight: 'bold',
+      fontWeight: '800',
       color: colors.textPrimary,
     },
     weekDaysRow: {
@@ -202,8 +228,13 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       borderWidth: 1,
       borderColor: colors.tomorrowRed,
     },
-    dayCellToday: {
-      backgroundColor: colors.purple500,
+    dayCellTodayGradient: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: 16,
     },
     dayText: {
       fontSize: 14, // Restoration of recommended font size
@@ -245,10 +276,6 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      marginTop: 12,
-      paddingTop: 10,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
       gap: 8,
     },
     legendItem: {
@@ -258,23 +285,23 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     legendText: {
       fontSize: 12,
-      fontWeight: '700',
+      fontWeight: '800',
     },
     scheduleSection: {
       marginTop: 16,
       paddingHorizontal: 16,
-      flex: 1,
     },
     dateHeader: {
       flexDirection: 'row',
       alignItems: 'center',
+      gap: 6,
       marginBottom: 16,
       marginLeft: 4,
       paddingHorizontal: 44,
     },
     scheduleDateText: {
       fontSize: 15,
-      fontWeight: 'bold',
+      fontWeight: '800',
       color: colors.textPrimary,
       marginRight: 8,
     },
@@ -290,10 +317,10 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       color: colors.textSecondary,
     },
     emptyStateCard: {
-      backgroundColor: colors.cardWhite,
-      opacity: 0.8,
-      borderWidth: 1,
+      backgroundColor: colors.gray50,
+      borderWidth: 1.5,
       borderColor: colors.border,
+      borderStyle: 'dashed',
       borderRadius: 20,
       paddingVertical: 40,
       alignItems: 'center',
@@ -322,23 +349,20 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       fontSize: 13,
       color: colors.textSecondary,
     },
-    eventListContainer: {
-      maxHeight: 320,
-    },
     eventList: {
       gap: 8,
       paddingLeft: 44,
       paddingRight: 76, // Wider than the floating add-event button's footprint (right 20 + width 48) so cards never render under it
-      paddingBottom: 190 + bottomInset,
     },
     eventCardWrapper: {
       backgroundColor: colors.cardWhite,
-      borderRadius: 16,
+      borderRadius: 20,
       padding: 10,
       borderWidth: 1,
       borderColor: colors.border,
       ...SHADOW,
-      shadowOpacity: 0.03,
+      shadowOpacity: 0.05,
+      elevation: 2,
     },
     eventCardRow: {
       flexDirection: 'row',
@@ -346,9 +370,9 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       gap: 10,
     },
     eventCardIconCircle: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 42,
+      height: 42,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -429,6 +453,31 @@ export default function CalendarScreen() {
 
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // 달력이 살짝 축소되는 스크롤 연동 애니메이션 — 아래로 스크롤할수록 progress가 0→1로
+  // 커지고, 다시 맨 위로 스크롤하면 자동으로 원래 크기로 돌아온다(오프셋 기반).
+  const scrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+  const animatedGridStyle = useAnimatedStyle(() => {
+    const progress = interpolate(scrollY.value, [0, COLLAPSE_DISTANCE], [0, 1], Extrapolation.CLAMP);
+    return {
+      transform: [{ scale: interpolate(progress, [0, 1], [1, 0.9]) }],
+      marginBottom: interpolate(progress, [0, 1], [0, -30]),
+    };
+  });
+  const animatedLegendStyle = useAnimatedStyle(() => {
+    const progress = interpolate(scrollY.value, [0, COLLAPSE_DISTANCE], [0, 1], Extrapolation.CLAMP);
+    return {
+      opacity: interpolate(progress, [0, 0.6, 1], [1, 0, 0]),
+      height: interpolate(progress, [0, 1], [40, 0], Extrapolation.CLAMP),
+      marginTop: interpolate(progress, [0, 1], [12, 0]),
+      paddingTop: interpolate(progress, [0, 1], [10, 0]),
+      borderTopWidth: interpolate(progress, [0, 1], [1, 0]),
+      overflow: 'hidden',
+    };
+  });
 
   useEffect(() => {
     if (!dateParam) return;
@@ -588,9 +637,9 @@ export default function CalendarScreen() {
         </View>
       )}
 
-      {/* Fixed Calendar Card */}
+      {/* Fixed month + weekday header — always visible, doesn't scroll */}
       <GestureDetector gesture={swipeGesture}>
-        <View style={styles.calendarCard}>
+        <View style={styles.calendarHeaderCard}>
           <View style={styles.monthSelector}>
             <TouchableOpacity style={styles.arrowButton} onPress={goToPrevMonth}>
               <Text style={styles.arrowIcon}>◀</Text>
@@ -617,7 +666,18 @@ export default function CalendarScreen() {
               </Text>
             ))}
           </View>
+        </View>
+      </GestureDetector>
 
+      <Animated.ScrollView
+        style={styles.scrollFlex}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+      >
+        {/* Days grid + legend — shrinks slightly as the list below is scrolled */}
+        <Animated.View style={[styles.gridCard, animatedGridStyle]}>
           <View style={styles.daysGrid}>
             {cells.map((iso, index) => {
               if (!iso) return <View key={`pad-${index}`} style={styles.dayCellContainer} />;
@@ -634,11 +694,18 @@ export default function CalendarScreen() {
                     style={[
                       styles.dayCell,
                       isSelected && !isToday && styles.dayCellSelected,
-                      isToday && styles.dayCellToday
                     ]}
                     activeOpacity={0.7}
                     onPress={() => setSelectedDate(iso)}
                   >
+                    {isToday && (
+                      <LinearGradient
+                        colors={[colors.purple500, colors.purpleDeep]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.dayCellTodayGradient}
+                      />
+                    )}
                     <Text style={[
                       styles.dayText,
                       isHoliday(iso) && !isToday && styles.dayTextHoliday,
@@ -680,7 +747,7 @@ export default function CalendarScreen() {
             })}
           </View>
 
-          <View style={styles.legendContainer}>
+          <Animated.View style={[styles.legendContainer, animatedLegendStyle]}>
             <View style={[styles.legendItem, { backgroundColor: lighten(dotColors.ai, 0.8) }]}>
               <Text style={[styles.legendText, { color: dotColors.ai }]}>유치원 일정</Text>
             </View>
@@ -690,58 +757,55 @@ export default function CalendarScreen() {
             <View style={[styles.legendItem, { backgroundColor: lighten(dotColors.manual, 0.8) }]}>
               <Text style={[styles.legendText, { color: dotColors.manual }]}>등록된 일정</Text>
             </View>
-          </View>
-        </View>
-      </GestureDetector>
+          </Animated.View>
+        </Animated.View>
 
-      <View style={styles.scheduleSection}>
-        <View style={styles.dateHeader}>
-          <Text style={styles.scheduleDateText}>{selectedDate}</Text>
-          <View style={styles.dayBadge}>
-            <Text style={styles.dayBadgeText}>{weekdayLabel}요일</Text>
-          </View>
-        </View>
-
-        {selectedDateEvents.length === 0 ? (
-          <View style={{ paddingHorizontal: 44 }}>
-            <View style={styles.emptyStateCard}>
-              <View style={styles.emptyIconContainer}>
-                <Text style={styles.emptyIcon}>☁️</Text>
-              </View>
-              <Text style={styles.emptyTitle}>이 날짜엔 일정이 없어요</Text>
-              <Text style={styles.emptySubtitle}>새로운 일정을 추가해 보세요!</Text>
+        <View style={styles.scheduleSection}>
+          <View style={styles.dateHeader}>
+            <MaterialCommunityIcons name="calendar-blank" size={16} color={colors.peachOrangeDeep} />
+            <Text style={styles.scheduleDateText}>{selectedDate}</Text>
+            <View style={styles.dayBadge}>
+              <Text style={styles.dayBadgeText}>{weekdayLabel}요일</Text>
             </View>
           </View>
-        ) : (
-          <ScrollView
-            style={styles.eventListContainer}
-            contentContainerStyle={styles.eventList}
-            showsVerticalScrollIndicator={false}
-          >
-            {selectedDateEvents.map((e) => {
-              const tint = dotColorFor(dotColors, e.source, e.needsReview);
-              return (
-                <View key={e.id} style={[styles.eventCardWrapper, { backgroundColor: lighten(tint, 0.88) }]}>
-                  <View style={styles.eventCardRow}>
-                    <View style={[styles.eventCardIconCircle, { backgroundColor: colors.cardWhite }]}>
-                      <EventIcon icon={e.icon} size={20} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <EventCard
-                        event={e}
-                        showCoupangButton
-                        wrapNote
-                        hideCheckbox
-                        onPress={() => router.push({ pathname: '/edit-event', params: { id: e.id } })}
-                      />
+
+          {selectedDateEvents.length === 0 ? (
+            <View style={{ paddingHorizontal: 44 }}>
+              <View style={styles.emptyStateCard}>
+                <View style={styles.emptyIconContainer}>
+                  <Text style={styles.emptyIcon}>☁️</Text>
+                </View>
+                <Text style={styles.emptyTitle}>이 날짜엔 일정이 없어요</Text>
+                <Text style={styles.emptySubtitle}>새로운 일정을 추가해 보세요!</Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.eventList}>
+              {selectedDateEvents.map((e) => {
+                const tint = dotColorFor(dotColors, e.source, e.needsReview);
+                return (
+                  <View key={e.id} style={styles.eventCardWrapper}>
+                    <View style={styles.eventCardRow}>
+                      <View style={[styles.eventCardIconCircle, { backgroundColor: lighten(tint, 0.85) }]}>
+                        <EventIcon icon={e.icon} size={20} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <EventCard
+                          event={e}
+                          showCoupangButton
+                          wrapNote
+                          hideCheckbox
+                          onPress={() => router.push({ pathname: '/edit-event', params: { id: e.id } })}
+                        />
+                      </View>
                     </View>
                   </View>
-                </View>
-              );
-            })}
-          </ScrollView>
-        )}
-      </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      </Animated.ScrollView>
 
       {/* Floating Action Button */}
       <View style={styles.fabContainer}>
