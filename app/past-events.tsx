@@ -121,6 +121,7 @@ export default function PastEventsScreen() {
     addNotification({
       title: '🕰️ 지난 일정 알림 테스트',
       body: '지난 일정도 알림으로 꼼꼼하게 챙겨보세요!',
+      childId: selectedChild?.id,
     });
 
     const yesterday = new Date();

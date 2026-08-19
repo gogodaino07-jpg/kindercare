@@ -4,6 +4,7 @@ import { AppState, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAppLock } from '../../context/AppLockContext';
+import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { NotificationCenterItem, useNotificationCenter } from '../../context/NotificationCenterContext';
 import { openCoupangSearch } from '../../utils/coupang';
@@ -41,20 +42,32 @@ export default function NotificationCenterModal({ visible, onClose }: Notificati
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { notifications, markRead, clearNotifications } = useNotificationCenter();
+  const { children } = useAppData();
   const { isLocked } = useAppLock();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.top), [colors, insets.top]);
+  const [activeChildId, setActiveChildId] = useState<string>('all');
+
+  // Reset the filter back to "전체" every time the modal is reopened.
+  useEffect(() => {
+    if (visible) setActiveChildId('all');
+  }, [visible]);
+
+  const filteredNotifications = useMemo(() => {
+    if (activeChildId === 'all') return notifications;
+    return notifications.filter((item) => item.childId === activeChildId);
+  }, [notifications, activeChildId]);
 
   // Group notifications by date
   const groupedNotifications = useMemo(() => {
     const groups: { [date: string]: NotificationCenterItem[] } = {};
-    notifications.forEach((item) => {
+    filteredNotifications.forEach((item) => {
       const dateStr = formatDate(item.createdAt);
       if (!groups[dateStr]) groups[dateStr] = [];
       groups[dateStr].push(item);
     });
     return Object.entries(groups).map(([date, items]) => ({ date, items }));
-  }, [notifications]);
+  }, [filteredNotifications]);
 
   useEffect(() => {
     if (isLocked && visible) onClose();
@@ -97,7 +110,43 @@ export default function NotificationCenterModal({ visible, onClose }: Notificati
             </View>
           </View>
 
-          {notifications.length === 0 ? (
+          {children.length > 1 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.childTabRow}
+              contentContainerStyle={styles.childTabContent}
+            >
+              <Pressable
+                style={[styles.childTab, activeChildId === 'all' && styles.childTabActive]}
+                onPress={() => setActiveChildId('all')}
+              >
+                <Text
+                  style={[styles.childTabText, activeChildId === 'all' && styles.childTabTextActive]}
+                >
+                  전체
+                </Text>
+              </Pressable>
+              {children.map((child) => (
+                <Pressable
+                  key={child.id}
+                  style={[styles.childTab, activeChildId === child.id && styles.childTabActive]}
+                  onPress={() => setActiveChildId(child.id)}
+                >
+                  <Text
+                    style={[
+                      styles.childTabText,
+                      activeChildId === child.id && styles.childTabTextActive,
+                    ]}
+                  >
+                    {child.name || '아이'}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+
+          {filteredNotifications.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Image
                 source={require('../../assets/mailbox_empty.png')}
@@ -201,6 +250,33 @@ function createStyles(colors: ThemeColors, topInset: number) {
       fontSize: 18,
       color: colors.textSecondary,
       fontWeight: '600',
+    },
+    childTabRow: {
+      flexGrow: 0,
+      marginBottom: 12,
+    },
+    childTabContent: {
+      gap: 8,
+    },
+    childTab: {
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      borderRadius: 16,
+      backgroundColor: colors.gray50,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    childTabActive: {
+      backgroundColor: colors.coralPink,
+      borderColor: colors.coralPink,
+    },
+    childTabText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    childTabTextActive: {
+      color: '#FFFFFF',
     },
     emptyContainer: {
       flex: 1,

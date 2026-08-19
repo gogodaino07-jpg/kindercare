@@ -7,6 +7,8 @@ export interface NotificationCenterItem {
   body: string;
   /** 준비물 keyword used for the item's "쿠팡에서 구매" link, if any. */
   keyword?: string;
+  /** 이 알림이 특정 아이와 관련된 경우, 알림 센터에서 아이별로 필터링하는 데 사용. */
+  childId?: string;
   /** ISO date of the related schedule, if any — used to deep-link into the calendar on tap. */
   date?: string;
   read: boolean;

@@ -200,6 +200,7 @@ export default function AIReviewScreen() {
       body: `${draftEvents.length}건의 일정이 캘린더에 저장됐어요.`,
       keyword,
       date: draftEvents[0]?.date,
+      childId: draftEvents[0]?.childId,
     });
 
     setIsSaved(true);
