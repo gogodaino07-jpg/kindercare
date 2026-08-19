@@ -11,7 +11,6 @@ import HomeProfileBar from '../components/home/HomeProfileBar';
 import MealPlanSheet from '../components/home/MealPlanSheet';
 import ScheduleBoard, { ScheduleTab } from '../components/home/ScheduleBoard';
 import TodayPrepProgress from '../components/home/TodayPrepProgress';
-import WeekendHighlightCard from '../components/home/WeekendHighlightCard';
 import ScreenBackground from '../components/ScreenBackground';
 import CoupangBanner from '../components/common/CoupangBanner';
 import { SHADOW, type ThemeColors } from '../constants/theme';
@@ -169,7 +168,6 @@ export default function HomeScreen() {
                 />
               </Pressable>
             </View>
-            <WeekendHighlightCard />
             <ScheduleBoard
               mainEvents={upcoming.mainEvents}
               secondaryEvents={upcoming.secondaryEvents}
