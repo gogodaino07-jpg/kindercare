@@ -1,0 +1,43 @@
+# EAS Build file inclusion rules.
+# By default EAS falls back to .gitignore, but google-services.json is
+# intentionally gitignored (Firebase secret) and Gradle needs it locally
+# in the archive to build, so we mirror .gitignore here minus that line.
+
+node_modules/
+.claude/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+/release-keystore/
+android/keystore.properties
+*.mobileprovision
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+*.pem
+.env
+.env*.local
+*.tsbuildinfo
+/ios
+.idea/
+*.iml
+app/.idea/
+.artifacts/
+android/build/
+app/build/
+build/
+.cxx/
+app/.cxx/
+android/local.properties
+android/.gradle/
+android/.kotlin/
+.git/
