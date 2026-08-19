@@ -223,12 +223,16 @@ export default function ChildProfileScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>나이 (생년월일 기준 자동 계산)</Text>
+          <Text style={styles.label}>나이 (생년월일 기준 자동 계산, 직접 선택 가능)</Text>
           <View style={styles.chipRow}>
             {AGE_OPTIONS.map((option) => (
-              <View key={option} style={[styles.chip, age === option && styles.chipSelected]}>
+              <Pressable
+                key={option}
+                style={[styles.chip, age === option && styles.chipSelected]}
+                onPress={() => setAge(option)}
+              >
                 <Text style={[styles.chipText, age === option && styles.chipTextSelected]}>{option}세</Text>
-              </View>
+              </Pressable>
             ))}
           </View>
         </View>
