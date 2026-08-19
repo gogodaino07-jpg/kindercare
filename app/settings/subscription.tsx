@@ -17,7 +17,7 @@ import {
 
 const BENEFITS = [
   { icon: 'bolt' as const, text: `스캔 횟수 대폭 확대 (주 ${PREMIUM_WEEKLY_LIMIT}회 · 월 ${PREMIUM_MONTHLY_LIMIT}회)` },
-  { icon: 'block' as const, text: '하단 배너·추천 팝업 광고 제거' },
+  { icon: 'block' as const, text: '홈 화면 진입 시 뜨는 추천 팝업 광고 제거' },
   { icon: 'movie-filter' as const, text: '스캔할 때마다 뜨던 광고 시청 없이 바로 분석' },
 ];
 

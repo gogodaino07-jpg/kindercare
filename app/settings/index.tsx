@@ -195,7 +195,7 @@ export default function SettingsScreen() {
           <SettingSection emoji="💎" title="멤버십">
             <SettingItem
               title="프리미엄 구독"
-              subtitle={isSubscribed ? '구독 중' : '주 5회 → 주 10회·월 50회, 광고 제거'}
+              subtitle={isSubscribed ? '구독 중' : '주 5회 → 주 10회·월 50회, 팝업 광고 제거'}
               highlightSubtitle={isSubscribed}
               onPress={() => router.push('/settings/subscription')}
               showDivider={false}

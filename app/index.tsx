@@ -24,7 +24,7 @@ import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
 import { toISODate } from '../utils/date';
 
-function createStyles(colors: ThemeColors, bottomInset: number, hasAdBanner: boolean) {
+function createStyles(colors: ThemeColors, bottomInset: number) {
   return StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -33,7 +33,7 @@ function createStyles(colors: ThemeColors, bottomInset: number, hasAdBanner: boo
       flex: 1,
     },
     scrollContainer: {
-      paddingBottom: (hasAdBanner ? 150 : 24) + bottomInset,
+      paddingBottom: 150 + bottomInset,
     },
     adBanner: {
       position: 'absolute',
@@ -53,8 +53,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(
-    () => createStyles(colors, insets.bottom, !isSubscribed),
-    [colors, insets.bottom, isSubscribed]
+    () => createStyles(colors, insets.bottom),
+    [colors, insets.bottom]
   );
   const upcoming = useUpcomingEvents();
   const weather = useWeeklyWeather();
@@ -185,7 +185,7 @@ export default function HomeScreen() {
         )}
       </SafeAreaView>
 
-      {!isSubscribed && <CoupangBanner style={styles.adBanner} />}
+      <CoupangBanner style={styles.adBanner} />
 
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
