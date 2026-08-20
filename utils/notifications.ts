@@ -35,9 +35,16 @@ function withTime(date: Date, time: TimeOfDay): Date {
   return result;
 }
 
-/** 챙길 준비물이 없는 일정(공지사항만 있거나 텅 빈 일정)은 알려줄 준비물이 없어 푸시 알림을 보낼 필요가 없다. */
-function hasPrepItems(event: Event): boolean {
-  return (event.items?.length ?? 0) > 0 || !!event.note?.trim();
+/** 준비물도 공지사항도 없이 제목만 있는 일정은 알려줄 내용이 없어 푸시 알림을 보낼 필요가 없다. */
+function hasNotifiableContent(event: Event): boolean {
+  return (event.items?.length ?? 0) > 0 || !!event.note?.trim() || !!event.noticeText?.trim();
+}
+
+/** 알림 본문에 보여줄 요약 — 준비물이 있으면 준비물을, 없으면 공지사항을 우선 보여준다. */
+function summaryLine(event: Event): string {
+  if (event.note?.trim()) return `준비물: ${event.note}`;
+  if (event.noticeText?.trim()) return event.noticeText;
+  return '일정을 확인해주세요';
 }
 
 export async function scheduleEventNotifications(
@@ -52,7 +59,7 @@ export async function scheduleEventNotifications(
 
   await ensureAndroidChannel();
 
-  const upcoming = events.filter((e) => !isPast(e.date) && hasPrepItems(e));
+  const upcoming = events.filter((e) => !isPast(e.date) && hasNotifiableContent(e));
 
   for (const event of upcoming) {
     const eventDate = parseISODate(event.date);
@@ -63,8 +70,8 @@ export async function scheduleEventNotifications(
     if (event.notifyDayBefore !== false && dayBeforeTrigger.getTime() > Date.now()) {
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: `내일 일정: ${event.title}`,
-          body: event.note ? `준비물: ${event.note}` : '준비물을 확인해주세요',
+          title: `🔵 내일  ${event.title}`,
+          body: summaryLine(event),
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -79,8 +86,8 @@ export async function scheduleEventNotifications(
       if (sameDayTrigger.getTime() > Date.now()) {
         await Notifications.scheduleNotificationAsync({
           content: {
-            title: `오늘 일정: ${event.title}`,
-            body: event.note ? `준비물: ${event.note}` : '오늘 일정이 있어요',
+            title: `🔴 오늘  ${event.title}`,
+            body: summaryLine(event),
           },
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
