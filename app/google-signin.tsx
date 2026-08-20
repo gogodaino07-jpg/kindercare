@@ -1,5 +1,6 @@
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, View, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
@@ -8,10 +9,13 @@ import OnboardingBackground from '../components/onboarding/OnboardingBackground'
 import GoogleLogo from '../components/common/GoogleLogo';
 import Text from '../components/common/AppText';
 import { SHADOW, ThemeColors } from '../constants/theme';
+import { STAMP_BOARD_THEMES } from '../constants/stampBoardThemes';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
+
+const BG_GRADIENT = STAMP_BOARD_THEMES.blue.bgGradient;
 
 export default function GoogleSignInScreen() {
   const router = useRouter();
@@ -371,25 +375,28 @@ export default function GoogleSignInScreen() {
   };
 
   return (
-    <OnboardingBackground>
+    <OnboardingBackground style={{ backgroundColor: 'transparent' }}>
+      <LinearGradient colors={BG_GRADIENT} style={StyleSheet.absoluteFill} />
       <Pressable style={styles.backButton} hitSlop={8} onPress={() => router.back()}>
         <Text style={styles.backText}>뒤로가기</Text>
       </Pressable>
 
       <View style={styles.content}>
-        <Animated.Image
-          source={require('../assets/logo_pure_chick_transparent.png')}
-          style={[
-            styles.logoImage,
-            {
-              transform: [
-                { translateY: floatAnim },
-                { scale: pulseAnim }
-              ]
-            }
-          ]}
-          resizeMode="contain"
-        />
+        <View style={styles.logoBadge}>
+          <Animated.Image
+            source={require('../assets/logo_pure_chick_transparent.png')}
+            style={[
+              styles.logoImage,
+              {
+                transform: [
+                  { translateY: floatAnim },
+                  { scale: pulseAnim }
+                ]
+              }
+            ]}
+            resizeMode="contain"
+          />
+        </View>
         <Text style={styles.title}>Kindercare 시작하기</Text>
         <Text style={styles.subtitle}>가족과 함께하는 일상의 시작,{'\n'}소셜 계정으로 1초 만에 가입하세요</Text>
 
@@ -439,15 +446,19 @@ export default function GoogleSignInScreen() {
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     backButton: {
-      paddingVertical: 8,
-      paddingHorizontal: 4,
-      marginLeft: 12,
-      marginTop: 4,
+      height: 36,
+      paddingHorizontal: 14,
+      marginLeft: 16,
+      marginTop: 8,
+      borderRadius: 18,
+      backgroundColor: 'rgba(255,255,255,0.7)',
+      justifyContent: 'center',
+      alignSelf: 'flex-start',
     },
     backText: {
-      fontSize: 15,
-      fontWeight: '600',
-      color: colors.textSecondary,
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#64748B',
     },
     content: {
       flex: 1,
@@ -455,24 +466,38 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'center',
       paddingHorizontal: 32,
     },
+    logoBadge: {
+      width: 168,
+      height: 168,
+      borderRadius: 40,
+      borderWidth: 1.5,
+      borderColor: 'rgba(255,255,255,0.85)',
+      backgroundColor: 'rgba(255,255,255,0.5)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 18,
+      ...SHADOW,
+      shadowOpacity: 0.08,
+      elevation: 3,
+    },
     logoImage: {
-      width: 180,
-      height: 180,
-      marginBottom: 10,
+      width: 128,
+      height: 128,
     },
     title: {
       fontSize: 22,
       fontWeight: '800',
-      color: colors.textPrimary,
+      color: '#1E293B',
       marginBottom: 8,
       textAlign: 'center',
     },
     subtitle: {
       fontSize: 14,
-      color: colors.textSecondary,
+      color: '#64748B',
       marginBottom: 32,
       textAlign: 'center',
       lineHeight: 20,
+      fontWeight: '600',
     },
     btnStack: {
       width: '100%',
@@ -524,7 +549,7 @@ function createStyles(colors: ThemeColors) {
     },
     disclaimer: {
       fontSize: 11,
-      color: colors.textSecondary,
+      color: '#64748B',
       textAlign: 'center',
       marginTop: 18,
       lineHeight: 16,
@@ -535,7 +560,7 @@ function createStyles(colors: ThemeColors) {
     },
     versionText: {
       fontSize: 12,
-      color: colors.textSecondary,
+      color: '#64748B',
       fontWeight: '500',
       opacity: 0.5,
     },

@@ -116,7 +116,7 @@ export default function SettingsScreen() {
           onPress: () => {
             signOutGoogle();
             router.dismissAll();
-            router.replace('/onboarding');
+            router.replace({ pathname: '/google-signin', params: { flow: 'relogin' } });
           },
         },
       ],
