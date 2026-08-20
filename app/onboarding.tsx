@@ -87,20 +87,18 @@ function FloatingBadge(props: { emoji?: string; bg?: string; border?: string; im
   const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, -14] });
   const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['-3deg', '3deg'] });
 
+  // 그림자(elevation)가 있는 뷰를 그대로 애니메이션시키면 안드로이드에서
+  // 트랜스폼 도중 그림자 레이어가 잠깐 불투명하게 튀는 현상이 있어,
+  // 그림자를 담당하는 정적 뷰와 움직이는 뷰를 분리한다.
   return (
-    <Animated.View
-      style={[
-        styles.badge,
-        bg ? { backgroundColor: bg } : null,
-        border ? { borderColor: border } : null,
-        { transform: [{ translateY: translateY }, { rotate: rotate }] },
-      ]}
-    >
-      {image ? (
-        <Image source={image} style={{ width: 140, height: 140 }} resizeMode="contain" />
-      ) : (
-        <Text style={{ fontSize: 54 }}>{emoji}</Text>
-      )}
+    <Animated.View style={{ transform: [{ translateY: translateY }, { rotate: rotate }] }}>
+      <View style={[styles.badge, bg ? { backgroundColor: bg } : null, border ? { borderColor: border } : null]}>
+        {image ? (
+          <Image source={image} style={{ width: 140, height: 140 }} resizeMode="contain" />
+        ) : (
+          <Text style={{ fontSize: 54 }}>{emoji}</Text>
+        )}
+      </View>
     </Animated.View>
   );
 }
