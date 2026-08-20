@@ -1,16 +1,13 @@
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { ThemeColors } from '../../constants/theme';
-import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Child } from '../../types/models';
 import Text from '../common/AppText';
 import CalendarIcon from '../common/CalendarIcon';
 import SettingsIcon from '../common/SettingsIcon';
 import StampIcon from '../common/StampIcon';
-import NotificationCenterModal from './NotificationCenterModal';
 
 interface HomeProfileBarProps {
   selectedChild: Child | undefined;
@@ -32,8 +29,6 @@ export default function HomeProfileBar({ selectedChild, onPressChild }: HomeProf
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { unreadCount } = useNotificationCenter();
-  const [notifVisible, setNotifVisible] = useState(false);
 
   return (
     <View style={styles.topRow}>
@@ -63,22 +58,16 @@ export default function HomeProfileBar({ selectedChild, onPressChild }: HomeProf
       </Pressable>
 
       <View style={styles.topIconsRow}>
-        <Pressable style={styles.iconButton} onPress={() => router.push('/stamp-board')}>
-          <StampIcon size={24} color={colors.gray600} />
-        </Pressable>
         <Pressable style={styles.iconButton} onPress={() => router.push('/calendar')}>
           <CalendarIcon size={24} color={colors.gray600} />
         </Pressable>
-        <Pressable style={styles.iconButton} onPress={() => setNotifVisible(true)}>
-          <MaterialIcons name="notifications-none" size={24} color={colors.gray600} />
-          {unreadCount > 0 && <View style={styles.bellDot} />}
+        <Pressable style={styles.iconButton} onPress={() => router.push('/stamp-board')}>
+          <StampIcon size={24} color={colors.gray600} />
         </Pressable>
         <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
           <SettingsIcon size={24} color={colors.gray600} />
         </Pressable>
       </View>
-
-      <NotificationCenterModal visible={notifVisible} onClose={() => setNotifVisible(false)} />
     </View>
   );
 }
@@ -171,17 +160,6 @@ function createStyles(colors: ThemeColors) {
       height: ICON_BUTTON_SIZE,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    bellDot: {
-      position: 'absolute',
-      top: 4,
-      right: 5,
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: colors.tomorrowRed,
-      borderWidth: 1.5,
-      borderColor: colors.skyBackground,
     },
   });
 }

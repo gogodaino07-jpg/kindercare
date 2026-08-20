@@ -15,7 +15,7 @@ import { toISODate } from '../../utils/date';
 import { calendarTheme as t } from './calendarTheme';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-const ROW_HEIGHT = 54;
+const ROW_HEIGHT = 46;
 const DRAG_RANGE = 90; // px of drag needed to fully toggle
 const DRAG_THRESHOLD = 18; // px
 
@@ -299,17 +299,17 @@ function WeekRow({
   );
 }
 
-const CELL_SIZE = 32;
+const CELL_SIZE = 27;
 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: t.cardWhite,
-    borderRadius: 24,
+    borderRadius: 22,
     marginHorizontal: 16,
-    marginBottom: 14,
-    paddingTop: 12,
-    paddingHorizontal: 12,
-    paddingBottom: 6,
+    marginBottom: 12,
+    paddingTop: 10,
+    paddingHorizontal: 10,
+    paddingBottom: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -329,18 +329,18 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   arrowButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: t.gray100,
     alignItems: 'center',
     justifyContent: 'center',
   },
   monthText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     color: t.textPrimary,
-    marginHorizontal: 6,
+    marginHorizontal: 5,
   },
   toggleBadge: {
     flexDirection: 'row',
@@ -348,11 +348,11 @@ const styles = StyleSheet.create({
     gap: 2,
     backgroundColor: t.gray100,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
   },
   toggleBadgeText: {
-    fontSize: 11.5,
+    fontSize: 10.5,
     fontWeight: '700',
     color: t.textSecondary,
   },
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   weekdayText: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: t.textSecondary,
   },
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   dayCell: {
     width: CELL_SIZE,
     height: CELL_SIZE,
-    borderRadius: 12,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: t.cardWhite,
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   dayNumber: {
-    fontSize: 13,
+    fontSize: 11.5,
     fontWeight: '600',
     color: t.textPrimary,
   },
@@ -420,19 +420,19 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   dot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    marginTop: 3,
-  },
-  ddayBadge: {
-    borderRadius: 6,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     marginTop: 2,
   },
+  ddayBadge: {
+    borderRadius: 5,
+    paddingHorizontal: 3,
+    paddingVertical: 1,
+    marginTop: 1,
+  },
   ddayBadgeText: {
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: '900',
     color: '#FFFFFF',
   },

@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useRouter } from 'expo-router';
+import { Stack, useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Dimensions, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,12 +42,14 @@ export default function AIReviewScreen() {
   });
 
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [showOriginal, setShowOriginal] = useState(true);
   const [showZoomModal, setShowZoomModal] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [dateTargetId, setDateTargetId] = useState<string | null>(null);
-  const [expandedKey, setExpandedKey] = useState<string | null>(null);
-  const [resolutionMap, setResolutionMap] = useState<Record<string, 'add' | 'overwrite'>>({});
+  const [expandedReviewId, setExpandedReviewId] = useState<string | null>(null);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateResolution, setDuplicateResolution] = useState<'add' | 'overwrite'>('add');
 
   // Prevent accidental navigation back
   useEffect(() => {
@@ -81,6 +83,7 @@ export default function AIReviewScreen() {
     return unsubscribe;
   }, [navigation, isSaved, draftEvents, showAlert]);
 
+  // 겹치는 기존 일정이 있는지 draftEvents 기준으로 한 번만 계산 — 초기 분석 결과 대비 기존 캘린더를 비교한다.
   const overlapMap = useMemo(() => {
     const map: Record<string, Event[]> = {};
     draftEvents.forEach((d) => {
@@ -88,7 +91,18 @@ export default function AIReviewScreen() {
       if (matches.length > 0) map[d.localId] = matches;
     });
     return map;
-  }, [draftEvents, events]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const overlappingTitles = useMemo(() => {
+    const set = new Set<string>();
+    Object.values(overlapMap).forEach((matches) => matches.forEach((m) => set.add(m.title)));
+    return Array.from(set);
+  }, [overlapMap]);
+
+  useEffect(() => {
+    if (overlappingTitles.length > 0) setShowDuplicateModal(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const sortedEvents = useMemo(
     () => [...draftEvents].sort((a, b) => a.date.localeCompare(b.date)),
@@ -125,15 +139,16 @@ export default function AIReviewScreen() {
   };
 
   const handleSave = async () => {
-    if (draftEvents.length === 0) return;
+    // isSaving 가드: 저장 완료 전(await 도중) 버튼을 빠르게 연타하면 addEvents가 두 번 불려
+    // 완전히 동일한 일정이 두 개 저장되는 문제가 있어, 첫 탭에서 바로 동기적으로 막는다.
+    if (draftEvents.length === 0 || isSaving || isSaved) return;
+    setIsSaving(true);
 
-    const idsToDelete = new Set<string>();
-    draftEvents.forEach((d) => {
-      if ((resolutionMap[d.localId] ?? 'add') === 'overwrite') {
-        (overlapMap[d.localId] ?? []).forEach((ex) => idsToDelete.add(ex.id));
-      }
-    });
-    if (idsToDelete.size > 0) deleteEvents(Array.from(idsToDelete));
+    if (duplicateResolution === 'overwrite') {
+      const idsToDelete = new Set<string>();
+      Object.values(overlapMap).forEach((matches) => matches.forEach((ex) => idsToDelete.add(ex.id)));
+      if (idsToDelete.size > 0) deleteEvents(Array.from(idsToDelete));
+    }
 
     const finalWithoutIds = draftEvents.map(({ localId, ...rest }) => rest);
     await AnalysisLogService.logCorrection(originalEvents, finalWithoutIds);
@@ -157,6 +172,8 @@ export default function AIReviewScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <Stack.Screen options={{ headerShown: false }} />
+
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Pressable onPress={() => router.back()} style={styles.backButton} hitSlop={6}>
@@ -245,19 +262,8 @@ export default function AIReviewScreen() {
           <EventReviewCard
             key={ev.localId}
             event={ev}
-            overlaps={overlapMap[ev.localId] ?? []}
-            resolution={resolutionMap[ev.localId] ?? 'add'}
-            onResolutionChange={(r) => setResolutionMap((prev) => ({ ...prev, [ev.localId]: r }))}
-            expandedBadge={
-              expandedKey === `${ev.localId}:review`
-                ? 'review'
-                : expandedKey === `${ev.localId}:overlap`
-                  ? 'overlap'
-                  : null
-            }
-            onToggleBadge={(which) =>
-              setExpandedKey((prev) => (prev === `${ev.localId}:${which}` ? null : `${ev.localId}:${which}`))
-            }
+            reviewExpanded={expandedReviewId === ev.localId}
+            onToggleReview={() => setExpandedReviewId((prev) => (prev === ev.localId ? null : ev.localId))}
             onUpdate={(patch) => updateDraft(ev.localId, patch)}
             onDelete={() => deleteDraft(ev.localId)}
             onDatePress={() => handleDatePress(ev.localId)}
@@ -273,8 +279,12 @@ export default function AIReviewScreen() {
       <View style={[styles.footer, { paddingBottom: 16 + insets.bottom }]}>
         <Pressable
           onPress={handleSave}
-          disabled={isSaved || draftEvents.length === 0}
-          style={[styles.saveButton, isSaved && styles.saveButtonSaved, draftEvents.length === 0 && styles.saveButtonDisabled]}
+          disabled={isSaved || isSaving || draftEvents.length === 0}
+          style={[
+            styles.saveButton,
+            isSaved && styles.saveButtonSaved,
+            (isSaving || draftEvents.length === 0) && styles.saveButtonDisabled,
+          ]}
         >
           {isSaved ? (
             <>
@@ -283,8 +293,10 @@ export default function AIReviewScreen() {
             </>
           ) : (
             <>
-              <Text style={styles.saveButtonText}>최종 검토 완료 & 캘린더 저장</Text>
-              <Feather name="arrow-right" size={16} color={C.white} />
+              <Text style={styles.saveButtonText}>
+                {isSaving ? '저장하는 중...' : '최종 검토 완료 & 캘린더 저장'}
+              </Text>
+              {!isSaving && <Feather name="arrow-right" size={16} color={C.white} />}
             </>
           )}
         </Pressable>
@@ -326,6 +338,47 @@ export default function AIReviewScreen() {
 
             <Pressable onPress={() => setShowZoomModal(false)} style={styles.zoomCloseFooter}>
               <Text style={styles.zoomCloseFooterText}>닫기</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showDuplicateModal} transparent animationType="fade">
+        <View style={styles.duplicateOverlay}>
+          <View style={styles.duplicateCard}>
+            <View style={styles.duplicateIconCircle}>
+              <Feather name="alert-triangle" size={22} color={C.amber700} />
+            </View>
+            <Text style={styles.duplicateTitle}>비슷한 일정이 이미 있어요</Text>
+            <Text style={styles.duplicateBody}>
+              <Text style={styles.duplicateBodyStrong}>{overlappingTitles.join(', ')}</Text>와(과) 겹치는 일정이
+              있어요. 어떻게 할까요?
+            </Text>
+
+            <Pressable
+              onPress={() => {
+                setDuplicateResolution('add');
+                setShowDuplicateModal(false);
+              }}
+              style={styles.duplicatePrimaryButtonWrap}
+            >
+              <LinearGradient
+                colors={[C.violet600, C.indigo600]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.duplicatePrimaryButton}
+              >
+                <Text style={styles.duplicatePrimaryButtonText}>새 일정으로 추가</Text>
+              </LinearGradient>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setDuplicateResolution('overwrite');
+                setShowDuplicateModal(false);
+              }}
+              style={styles.duplicateSecondaryButton}
+            >
+              <Text style={styles.duplicateSecondaryButtonText}>기존 일정 덮어쓰기</Text>
             </Pressable>
           </View>
         </View>
@@ -468,4 +521,48 @@ const styles = StyleSheet.create({
   },
   zoomCloseFooter: { backgroundColor: C.slate900, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
   zoomCloseFooterText: { fontSize: 12, fontWeight: '700', color: C.white },
+  duplicateOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  duplicateCard: {
+    width: '100%',
+    backgroundColor: C.white,
+    borderRadius: 32,
+    padding: 24,
+    alignItems: 'center',
+    gap: 6,
+  },
+  duplicateIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: C.amber50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  duplicateTitle: { fontSize: 16, fontWeight: '900', color: C.slate900 },
+  duplicateBody: {
+    fontSize: 12,
+    color: C.slate500,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  duplicateBodyStrong: { color: C.slate800, fontWeight: '800' },
+  duplicatePrimaryButtonWrap: { width: '100%', borderRadius: 16, overflow: 'hidden', marginBottom: 8 },
+  duplicatePrimaryButton: { paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
+  duplicatePrimaryButtonText: { fontSize: 13, fontWeight: '800', color: C.white },
+  duplicateSecondaryButton: {
+    width: '100%',
+    paddingVertical: 13,
+    borderRadius: 16,
+    alignItems: 'center',
+    backgroundColor: C.slate100,
+  },
+  duplicateSecondaryButtonText: { fontSize: 13, fontWeight: '700', color: C.slate600 },
 });
