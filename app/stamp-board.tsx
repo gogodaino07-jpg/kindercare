@@ -511,9 +511,8 @@ export default function StampBoardScreen() {
                 const [emoji, word] = preset.split(' ');
                 return (
                   <Pressable key={preset} onPress={() => setTempWish(preset)} style={styles.presetChip}>
-                    <Text style={styles.presetChipText}>
-                      {emoji} {word}
-                    </Text>
+                    <Text style={styles.presetChipEmoji}>{emoji}</Text>
+                    <Text style={styles.presetChipText}>{word}</Text>
                   </Pressable>
                 );
               })}
@@ -842,6 +841,9 @@ const styles = StyleSheet.create({
   },
   presetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   presetChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: '#F0F9FF',
     borderWidth: 1,
     borderColor: '#BAE6FD',
@@ -849,6 +851,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 6,
   },
+  presetChipEmoji: { fontSize: 12.5 },
   presetChipText: { fontSize: 11.5, fontWeight: '800', color: '#0369A1' },
   modalActionsRow: { flexDirection: 'row', gap: 10, marginTop: 2 },
   cancelButton: { flex: 1, backgroundColor: '#F1F5F9', borderRadius: 14, paddingVertical: 13, alignItems: 'center' },
