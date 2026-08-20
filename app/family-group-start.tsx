@@ -114,12 +114,15 @@ function createStyles(colors: ThemeColors) {
       textAlign: 'center',
       fontWeight: '600',
     },
+    // 안드로이드 elevation은 배경 없는(투명) 뷰에서 둥근 모서리를 무시하고
+    // 각진 그림자를 그려 흰 상자처럼 비치는 버그가 있어, 안드로이드에서는
+    // 그림자를 끄고 iOS 전용 그림자만 유지한다.
     primaryCardShadow: {
       borderRadius: 18,
       marginBottom: 14,
       ...SHADOW,
       shadowOpacity: 0.16,
-      elevation: 4,
+      elevation: 0,
     },
     primaryCard: {
       flexDirection: 'row',
@@ -134,7 +137,7 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 18,
       ...SHADOW,
       shadowOpacity: 0.06,
-      elevation: 2,
+      elevation: 0,
     },
     secondaryCard: {
       flexDirection: 'row',

@@ -229,11 +229,14 @@ const styles = StyleSheet.create({
   },
   skipText: { fontSize: 13, fontWeight: '700', color: COLORS.gray },
   slide: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 },
+  // 안드로이드 elevation은 배경이 없는(투명) 뷰에서 둥근 모서리를 무시하고
+  // 각진 그림자를 그려 흰 상자처럼 비치는 버그가 있어, 안드로이드에서는
+  // 그림자를 끄고(iOS 전용 그림자만 유지) 테두리로 카드 경계를 표현한다.
   badgeShadow: {
     borderRadius: 32,
     ...SHADOW,
     shadowOpacity: 0.08,
-    elevation: 3,
+    elevation: 0,
   },
   badge: {
     width: 128,
@@ -252,7 +255,7 @@ const styles = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 4, backgroundColor: '#CBD5E1', marginHorizontal: 3 },
   dotActive: { width: 20 },
   cta: { height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  ctaShadow: { marginHorizontal: 28, borderRadius: 16, ...SHADOW, shadowOpacity: 0.2, elevation: 5 },
+  ctaShadow: { marginHorizontal: 28, borderRadius: 16, ...SHADOW, shadowOpacity: 0.2, elevation: 0 },
   ctaText: { color: '#fff', fontSize: 16, fontWeight: '800' },
   back: {
     position: 'absolute',
