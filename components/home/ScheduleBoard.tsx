@@ -15,7 +15,7 @@ import { isValidCoupangKeyword } from '../../utils/validation';
 import Text from '../common/AppText';
 import EventIcon from '../common/EventIcon';
 
-export type ScheduleTab = 'all' | 'tomorrow' | 'dayAfterTomorrow';
+export type ScheduleTab = 'today' | 'tomorrow' | 'dayAfterTomorrow';
 
 interface ScheduleBoardProps {
   mainEvents: Event[];
@@ -104,16 +104,21 @@ export default function ScheduleBoard({
     return rows;
   }, [mainEvents, secondaryEvents, laterGroups, dayAfterTomorrowISO]);
 
+  const dayAfterTomorrowCount = useMemo(
+    () => laterGroups.find((g) => g.date === dayAfterTomorrowISO)?.events.length ?? 0,
+    [laterGroups, dayAfterTomorrowISO]
+  );
+
   const filtered = combined.filter((row) => {
+    if (activeTab === 'today') return row.dateCategory === 'today';
     if (activeTab === 'tomorrow') return row.dateCategory === 'tomorrow';
-    if (activeTab === 'dayAfterTomorrow') return row.dateCategory === 'dayAfterTomorrow';
-    return true;
+    return row.dateCategory === 'dayAfterTomorrow';
   });
 
   const TABS: { key: ScheduleTab; label: string }[] = [
-    { key: 'all', label: `전체 (${combined.length})` },
-    { key: 'tomorrow', label: '내일' },
-    { key: 'dayAfterTomorrow', label: '모레' },
+    { key: 'today', label: `오늘 (${mainEvents.length})` },
+    { key: 'tomorrow', label: `내일 (${secondaryEvents.length})` },
+    { key: 'dayAfterTomorrow', label: `모레 (${dayAfterTomorrowCount})` },
   ];
 
   const handleShare = () => {
@@ -161,12 +166,14 @@ export default function ScheduleBoard({
         ))}
       </View>
 
+      <Pressable style={styles.seeAllRow} onPress={() => router.push('/calendar')}>
+        <Text style={styles.seeAllText}>전체 일정 보기 ›</Text>
+      </Pressable>
+
       {filtered.length === 0 ? (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyEmoji}>🏝️</Text>
-          <Text style={styles.emptyTitle}>
-            {activeTab === 'all' ? '이번 주는 특별한 일정이 없어요' : '이 날은 특별한 일정이 없어요'}
-          </Text>
+          <Text style={styles.emptyTitle}>이 날은 특별한 일정이 없어요</Text>
         </View>
       ) : (
         <View style={styles.list}>
@@ -378,7 +385,9 @@ function createStyles(colors: ThemeColors) {
     },
     scanButtonIcon: { fontSize: 12 },
     scanButtonText: { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
-    tabRow: { flexDirection: 'row', backgroundColor: colors.gray100, padding: 4, borderRadius: 14, marginBottom: 14, gap: 4 },
+    tabRow: { flexDirection: 'row', backgroundColor: colors.gray100, padding: 4, borderRadius: 14, marginBottom: 8, gap: 4 },
+    seeAllRow: { alignItems: 'flex-end', marginBottom: 12 },
+    seeAllText: { fontSize: 12.5, fontWeight: '700', color: colors.purple500 },
     tabButton: {
       flex: 1,
       flexDirection: 'row',

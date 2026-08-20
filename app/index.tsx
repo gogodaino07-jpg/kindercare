@@ -71,7 +71,7 @@ export default function HomeScreen() {
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [mealSheetOpen, setMealSheetOpen] = useState(false);
   const [adPopupVisible, setAdPopupVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState<ScheduleTab>('all');
+  const [activeTab, setActiveTab] = useState<ScheduleTab>('today');
   const [refreshing, setRefreshing] = useState(false);
   const upcomingEmptyRef = useRef(upcoming.isEmpty);
   upcomingEmptyRef.current = upcoming.isEmpty;
@@ -97,13 +97,12 @@ export default function HomeScreen() {
   }, []);
 
   // 오늘/내일/모레 날씨 카드를 누르면 스크롤 대신 해당 탭으로 바로 전환.
-  // 오늘은 "전체" 탭 맨 위에 이미 노출되므로 오늘 카드를 누르면 전체 탭으로 전환.
   const onDatePress = useCallback((date: string) => {
     const tomorrowISO = toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
     const dayAfterTomorrowISO = toISODate(new Date(Date.now() + 2 * 24 * 60 * 60 * 1000));
     if (date === tomorrowISO) setActiveTab('tomorrow');
     else if (date === dayAfterTomorrowISO) setActiveTab('dayAfterTomorrow');
-    else setActiveTab('all');
+    else setActiveTab('today');
   }, []);
 
   // Show ad popup once per app session when app is ready — never while the
