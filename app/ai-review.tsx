@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Dimensions, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../components/common/AppText';
 import { useAlert } from '../context/AlertContext';
@@ -119,18 +120,28 @@ export default function AIReviewScreen() {
 
   const addDraftForDate = (date: string) => {
     const localId = `draft-new-${Date.now()}`;
-    setDraftEvents((prev) => [
-      ...prev,
-      {
-        localId,
-        date,
-        title: '새 일정',
-        note: '',
-        childId: selectedChild?.id ?? children[0]?.id ?? '',
-        source: 'ai',
-        icon: '📝',
-      },
-    ]);
+    const newDraft: DraftEvent = {
+      localId,
+      date,
+      title: '새 일정',
+      note: '',
+      childId: selectedChild?.id ?? children[0]?.id ?? '',
+      source: 'ai',
+      icon: '📝',
+    };
+    setDraftEvents((prev) => {
+      // 같은 날짜의 기존 일정이 있으면 그 바로 아래에 끼워 넣는다.
+      let insertIndex = prev.length;
+      for (let i = prev.length - 1; i >= 0; i--) {
+        if (prev[i].date === date) {
+          insertIndex = i + 1;
+          break;
+        }
+      }
+      const next = [...prev];
+      next.splice(insertIndex, 0, newDraft);
+      return next;
+    });
   };
 
   const handleDatePress = (localId: string) => {
@@ -270,7 +281,10 @@ export default function AIReviewScreen() {
           />
         ))}
 
-        <Pressable style={styles.addEventButton} onPress={() => addDraftForDate(toISODate(new Date()))}>
+        <Pressable
+          style={styles.addEventButton}
+          onPress={() => addDraftForDate(sortedEvents[sortedEvents.length - 1]?.date ?? toISODate(new Date()))}
+        >
           <Feather name="plus" size={13} color={C.violet600} />
           <Text style={styles.addEventButtonText}>새 일정 추가</Text>
         </Pressable>
@@ -317,7 +331,10 @@ export default function AIReviewScreen() {
       )}
 
       <Modal visible={showZoomModal} transparent animationType="fade" onRequestClose={() => setShowZoomModal(false)}>
-        <View style={styles.zoomOverlay}>
+        {/* RN Modal은 안드로이드에서 별도 네이티브 윈도우에 렌더링돼 앱 루트의
+            GestureHandlerRootView 밖에 놓이면서 핀치줌/팬 제스처가 먹지 않는다 —
+            Modal 내부에 별도로 하나 더 씌워줘야 제스처가 정상 동작한다. */}
+        <GestureHandlerRootView style={styles.zoomOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowZoomModal(false)} />
           <View style={styles.zoomCard}>
             <View style={styles.zoomHeader}>
@@ -340,7 +357,7 @@ export default function AIReviewScreen() {
               <Text style={styles.zoomCloseFooterText}>닫기</Text>
             </Pressable>
           </View>
-        </View>
+        </GestureHandlerRootView>
       </Modal>
 
       <Modal visible={showDuplicateModal} transparent animationType="fade">
