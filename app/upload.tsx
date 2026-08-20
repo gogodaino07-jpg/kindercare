@@ -350,7 +350,10 @@ export default function UploadScreen() {
             <Text style={styles.headerTitle}>AI 알림장 스마트 스캔</Text>
           </View>
 
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={[styles.scrollContent, docs.length === 0 && styles.scrollContentFill]}
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.gaugeCard}>
               <View style={styles.gaugeTopRow}>
                 <View style={styles.gaugeTopLeft}>
@@ -395,11 +398,11 @@ export default function UploadScreen() {
                 </View>
               </View>
             ) : (
-              <>
+              <View style={styles.emptyStateFill}>
                 <DropzoneCard onPress={handlePickFile} />
                 <RoadmapCard />
                 <TipBox />
-              </>
+              </View>
             )}
           </ScrollView>
 
@@ -410,7 +413,7 @@ export default function UploadScreen() {
                 disabled={docs.length >= MAX_DOCS}
                 style={[styles.dockButton, docs.length >= MAX_DOCS && styles.dockButtonDisabled]}
               >
-                <Feather name="camera" size={20} color={C.violet600} />
+                <Feather name="camera" size={22} color={C.violet600} />
                 <Text style={styles.dockButtonText}>카메라 촬영</Text>
               </Pressable>
               <Pressable
@@ -422,7 +425,7 @@ export default function UploadScreen() {
                   docs.length >= MAX_DOCS && styles.dockButtonDisabled,
                 ]}
               >
-                <Feather name="image" size={20} color={C.violet700} />
+                <Feather name="image" size={22} color={C.violet700} />
                 <Text style={styles.dockButtonTextAccent}>앨범 사진</Text>
               </Pressable>
               <Pressable
@@ -430,7 +433,7 @@ export default function UploadScreen() {
                 disabled={docs.length >= MAX_DOCS}
                 style={[styles.dockButton, docs.length >= MAX_DOCS && styles.dockButtonDisabled]}
               >
-                <Feather name="file-text" size={20} color={C.slate600} />
+                <Feather name="file-text" size={22} color={C.slate600} />
                 <Text style={styles.dockButtonText}>PDF / 문서</Text>
               </Pressable>
             </View>
@@ -447,7 +450,7 @@ export default function UploadScreen() {
                   end={{ x: 1, y: 0 }}
                   style={styles.analyzeButton}
                 >
-                  <Ionicons name="sparkles" size={16} color="#FCD34D" />
+                  <Ionicons name="sparkles" size={18} color="#FCD34D" />
                   <Text style={styles.analyzeButtonText}>AI로 내용 분석하기 (1회 차감)</Text>
                 </LinearGradient>
               </Pressable>
@@ -472,16 +475,12 @@ function DropzoneCard({ onPress }: { onPress: () => void }) {
   return (
     <Pressable style={styles.dropzoneCard} onPress={onPress}>
       <View style={styles.dropzoneIconBox}>
-        <Feather name="upload-cloud" size={26} color={C.violet600} />
+        <Feather name="upload-cloud" size={28} color={C.violet600} />
       </View>
       <Text style={styles.dropzoneTitle}>통신문 사진이나 문서를 터치하여 업로드</Text>
       <Text style={styles.dropzoneSubtitle}>
         가정통신문, 주간계획안, 식단표를 인식하여{'\n'}캘린더 일정과 준비물로 바꿔드려요 ✨
       </Text>
-      <View style={styles.dropzonePill}>
-        <Feather name="plus" size={12} color={C.violet700} />
-        <Text style={styles.dropzonePillText}>파일/사진 고르기</Text>
-      </View>
     </Pressable>
   );
 }
@@ -656,8 +655,10 @@ const styles = StyleSheet.create({
     borderBottomColor: C.slate100,
   },
   backButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 15, fontWeight: '800', color: C.slate900 },
+  headerTitle: { fontSize: 17, fontWeight: '800', color: C.slate900 },
   scrollContent: { padding: 16, gap: 14 },
+  scrollContentFill: { flexGrow: 1 },
+  emptyStateFill: { flex: 1, justifyContent: 'space-between', gap: 14 },
   gaugeCard: {
     backgroundColor: C.white,
     borderRadius: 20,
@@ -669,24 +670,24 @@ const styles = StyleSheet.create({
   gaugeTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   gaugeTopLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   gaugeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.violet600 },
-  gaugeLabel: { fontSize: 12, fontWeight: '900', color: C.slate800 },
-  gaugeValue: { fontSize: 12, fontWeight: '900', color: C.violet700 },
+  gaugeLabel: { fontSize: 14, fontWeight: '900', color: C.slate800 },
+  gaugeValue: { fontSize: 14, fontWeight: '900', color: C.violet700 },
   gaugeMax: { color: C.slate400, fontWeight: '400' },
   gaugeTrack: { flexDirection: 'row', gap: 4, height: 8 },
   gaugeSegment: { flex: 1, height: '100%', borderRadius: 999, backgroundColor: C.slate100 },
   gaugeSegmentFilled: { backgroundColor: C.violet600 },
   gaugeFootRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  gaugeFootText: { fontSize: 10, color: C.slate400, fontWeight: '500' },
-  gaugeExhaustedText: { fontSize: 10, color: C.rose600, fontWeight: '700' },
+  gaugeFootText: { fontSize: 12, color: C.slate400, fontWeight: '500' },
+  gaugeExhaustedText: { fontSize: 12, color: C.rose600, fontWeight: '700' },
   dropzoneCard: {
     borderWidth: 2,
     borderColor: C.violet200,
     borderStyle: 'dashed',
     borderRadius: 32,
-    paddingVertical: 32,
+    paddingVertical: 30,
     paddingHorizontal: 20,
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   dropzoneIconBox: {
     width: 64,
@@ -697,19 +698,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  dropzoneTitle: { fontSize: 14, fontWeight: '900', color: C.slate900, textAlign: 'center' },
-  dropzoneSubtitle: { fontSize: 11.5, color: C.slate400, textAlign: 'center', lineHeight: 17 },
-  dropzonePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: C.violet50,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    marginTop: 6,
-  },
-  dropzonePillText: { fontSize: 12, fontWeight: '800', color: C.violet700 },
+  dropzoneTitle: { fontSize: 16, fontWeight: '900', color: C.slate900, textAlign: 'center' },
+  dropzoneSubtitle: { fontSize: 13.5, color: C.slate400, textAlign: 'center', lineHeight: 20 },
   tipBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -718,9 +708,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.amber200,
     borderRadius: 16,
-    padding: 12,
+    padding: 14,
   },
-  tipText: { flex: 1, fontSize: 11.5, color: C.slate700, lineHeight: 17 },
+  tipText: { flex: 1, fontSize: 13.5, color: C.slate700, lineHeight: 20 },
   tipBold: { fontWeight: '900', color: C.amber700 },
   roadmapCard: {
     backgroundColor: C.white,
@@ -741,20 +731,20 @@ const styles = StyleSheet.create({
   },
   roadmapStepCircleAccent: { backgroundColor: C.violet600 },
   roadmapStepCircleDone: { backgroundColor: C.emerald50, borderWidth: 1, borderColor: C.emerald100 },
-  roadmapStepNumber: { fontSize: 12, fontWeight: '900', color: C.slate700 },
+  roadmapStepNumber: { fontSize: 14, fontWeight: '900', color: C.slate700 },
   roadmapTextBlock: { flex: 1, gap: 2 },
   roadmapTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  roadmapTitle: { fontSize: 12, fontWeight: '900', color: C.slate800 },
+  roadmapTitle: { fontSize: 14, fontWeight: '900', color: C.slate800 },
   roadmapTitleAccent: { color: C.violet950 },
-  roadmapDesc: { fontSize: 11, color: C.slate400, fontWeight: '400' },
+  roadmapDesc: { fontSize: 13, color: C.slate400, fontWeight: '400' },
   roadmapTag: { backgroundColor: C.slate100, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
   roadmapTagAccent: { backgroundColor: C.violet100 },
   roadmapTagDone: { backgroundColor: C.emerald100 },
-  roadmapTagText: { fontSize: 9, fontWeight: '900', color: C.slate500 },
+  roadmapTagText: { fontSize: 10.5, fontWeight: '900', color: C.slate500 },
   roadmapTagTextAccent: { color: C.violet700 },
   roadmapTagTextDone: { color: C.emerald800 },
   docsSection: { gap: 10 },
-  docsCountLabel: { fontSize: 11, fontWeight: '700', color: C.slate400 },
+  docsCountLabel: { fontSize: 13, fontWeight: '700', color: C.slate400 },
   docCard: {
     backgroundColor: C.white,
     borderRadius: 24,
@@ -782,7 +772,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  docCardTagText: { fontSize: 11, fontWeight: '800', color: C.violet700 },
+  docCardTagText: { fontSize: 13, fontWeight: '800', color: C.violet700 },
   docCardRemove: {
     width: 26,
     height: 26,
@@ -794,8 +784,8 @@ const styles = StyleSheet.create({
   docCardBodyRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   docCardThumb: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   docCardInfo: { flex: 1, gap: 2 },
-  docCardName: { fontSize: 12, fontWeight: '900', color: C.slate900 },
-  docCardMeta: { fontSize: 11, color: C.slate400 },
+  docCardName: { fontSize: 14, fontWeight: '900', color: C.slate900 },
+  docCardMeta: { fontSize: 12.5, color: C.slate400 },
   hintBox: {
     backgroundColor: C.slate50,
     borderWidth: 1,
@@ -806,7 +796,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 8,
   },
-  hintText: { flex: 1, fontSize: 11, color: C.slate600, lineHeight: 16 },
+  hintText: { flex: 1, fontSize: 13, color: C.slate600, lineHeight: 19 },
   hintBold: { fontWeight: '800', color: C.slate800 },
   dock: {
     backgroundColor: 'rgba(255,255,255,0.97)',
@@ -829,8 +819,8 @@ const styles = StyleSheet.create({
   },
   dockButtonAccent: { backgroundColor: C.violet50, borderColor: C.violet200 },
   dockButtonDisabled: { opacity: 0.4 },
-  dockButtonText: { fontSize: 12, fontWeight: '800', color: C.slate800 },
-  dockButtonTextAccent: { fontSize: 12, fontWeight: '800', color: C.violet900 },
+  dockButtonText: { fontSize: 14, fontWeight: '800', color: C.slate800 },
+  dockButtonTextAccent: { fontSize: 14, fontWeight: '800', color: C.violet900 },
   analyzeButtonWrap: { borderRadius: 16, overflow: 'hidden' },
   analyzeButtonWrapDisabled: { opacity: 0.5 },
   analyzeButton: {
@@ -840,13 +830,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  analyzeButtonText: { color: C.white, fontSize: 14, fontWeight: '900' },
+  analyzeButtonText: { color: C.white, fontSize: 16, fontWeight: '900' },
   analyzingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 20 },
   analyzingSpinnerWrap: { alignItems: 'center', justifyContent: 'center' },
-  analyzingRobot: { position: 'absolute', fontSize: 26 },
+  analyzingRobot: { position: 'absolute', fontSize: 30 },
   analyzingTextBlock: { alignItems: 'center', gap: 6 },
-  analyzingTitle: { fontSize: 15, fontWeight: '800', color: C.slate900, textAlign: 'center' },
-  analyzingSubtitle: { fontSize: 12, color: C.slate500, textAlign: 'center', lineHeight: 18 },
+  analyzingTitle: { fontSize: 17, fontWeight: '800', color: C.slate900, textAlign: 'center' },
+  analyzingSubtitle: { fontSize: 14, color: C.slate500, textAlign: 'center', lineHeight: 20 },
   analyzingPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -858,5 +848,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
-  analyzingPillText: { fontSize: 11, fontWeight: '700', color: C.slate600 },
+  analyzingPillText: { fontSize: 13, fontWeight: '700', color: C.slate600 },
 });
