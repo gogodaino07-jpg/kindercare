@@ -183,8 +183,8 @@ export const EventReviewCard = ({
             <View key={item.id} style={styles.itemBlock}>
               <View style={styles.itemRow}>
                 <View style={styles.itemLeft}>
-                  <View style={styles.checkBox}>
-                    <Feather name="check" size={11} color={C.white} />
+                  <View style={[styles.checkBox, item.needsReview && styles.checkBoxReview]}>
+                    <Feather name="check" size={11} color={item.needsReview ? C.amber700 : C.white} />
                   </View>
                   <Text style={styles.itemName}>{item.name}</Text>
                 </View>
@@ -316,6 +316,7 @@ const styles = StyleSheet.create({
   },
   itemLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
   checkBox: { width: 16, height: 16, borderRadius: 4, backgroundColor: C.slate900, alignItems: 'center', justifyContent: 'center' },
+  checkBoxReview: { backgroundColor: C.amber100 },
   itemName: { fontSize: 12, fontWeight: '700', color: C.slate800, flexShrink: 1 },
   itemDeleteButton: { padding: 4 },
   addItemRow: { flexDirection: 'row', gap: 6 },
