@@ -178,7 +178,6 @@ export default function HomeScreen() {
               contentContainerStyle={styles.scrollContainer}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="always"
-              nestedScrollEnabled={true}
               onScroll={handleScroll}
               scrollEventThrottle={16}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
