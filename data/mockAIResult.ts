@@ -55,13 +55,37 @@ export function generateMockAIEvents(child: Child | undefined): Omit<Event, 'id'
   ];
 }
 
+function levenshteinDistance(a: string, b: string): number {
+  const dp: number[][] = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+/**
+ * 같은 문서를 다시 스캔했을 때 AI가 제목을 살짝 다르게 뽑아내도(예: "가을 소풍" ↔
+ * "가을 소풍 안내") 같은 일정으로 잡아내도록, 완전 포함 관계뿐 아니라 편집 거리
+ * 기반 유사도(50% 이상)까지 함께 확인한다. 날짜는 정확히 같아야만 후보로 본다.
+ */
 export function isSimilarEvent(
   a: { date: string; title: string },
   b: { date: string; title: string }
 ): boolean {
   if (a.date !== b.date) return false;
-  const normalize = (s: string) => s.replace(/\s/g, '');
+  const normalize = (s: string) => s.replace(/[\s.,·\-()[\]~!?:;'"]/g, '');
   const at = normalize(a.title);
   const bt = normalize(b.title);
-  return at === bt || at.includes(bt) || bt.includes(at);
+  if (!at || !bt) return false;
+  if (at === bt || at.includes(bt) || bt.includes(at)) return true;
+
+  const distance = levenshteinDistance(at, bt);
+  const similarity = 1 - distance / Math.max(at.length, bt.length);
+  return similarity >= 0.5;
 }
