@@ -1,12 +1,13 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import Text from '../common/AppText';
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
+const SHIMMER_WIDTH = 90;
 
 interface TodayPrepProgressProps {
   total: number;
@@ -21,6 +22,8 @@ export default function TodayPrepProgress({ total, checked, percent }: TodayPrep
 
   const clampedPercent = Math.max(0, Math.min(percent, 100));
   const fillAnim = useRef(new Animated.Value(0)).current;
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const [containerWidth, setContainerWidth] = useState(0);
 
   useEffect(() => {
     Animated.timing(fillAnim, {
@@ -31,19 +34,43 @@ export default function TodayPrepProgress({ total, checked, percent }: TodayPrep
     }).start();
   }, [clampedPercent, fillAnim]);
 
+  // 채워진 초록 영역 위로 왼쪽->오른쪽으로 은은한 빛(오로라)이 계속 훑고 지나가는 연출.
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(shimmerAnim, { toValue: 1, duration: 1800, easing: Easing.linear, useNativeDriver: true })
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [shimmerAnim]);
+
   if (total === 0) return null;
 
   const animatedWidth = fillAnim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] });
+  const shimmerTranslateX = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-SHIMMER_WIDTH, Math.max(containerWidth, SHIMMER_WIDTH)],
+  });
+
+  const handleContainerLayout = (e: LayoutChangeEvent) => setContainerWidth(e.nativeEvent.layout.width);
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onLayout={handleContainerLayout}>
       {/* 카드 배경 자체가 진행률만큼 녹색으로 차오르는 큰 프로그레스바 역할을 한다. */}
       <AnimatedLinearGradient
         colors={[colors.statusGreen, colors.green500]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={[styles.fill, { width: animatedWidth }]}
-      />
+      >
+        <Animated.View style={[styles.shimmerBand, { transform: [{ translateX: shimmerTranslateX }] }]}>
+          <LinearGradient
+            colors={['transparent', 'rgba(255,255,255,0.55)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+      </AnimatedLinearGradient>
 
       <View style={styles.content}>
         <View style={styles.headerRow}>
@@ -94,6 +121,13 @@ function createStyles(colors: ThemeColors) {
       top: 0,
       left: 0,
       bottom: 0,
+      overflow: 'hidden',
+    },
+    shimmerBand: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      width: SHIMMER_WIDTH,
     },
     content: { padding: 16 },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
