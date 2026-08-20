@@ -11,7 +11,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AddEventModal from '../components/calendar/AddEventModal';
-import AiScanModal from '../components/calendar/AiScanModal';
 import BuyModal from '../components/calendar/BuyModal';
 import CalendarAccordion from '../components/calendar/CalendarAccordion';
 import { calendarTheme as t } from '../components/calendar/calendarTheme';
@@ -35,7 +34,6 @@ export default function CalendarScreen() {
   });
   const [selectedDate, setSelectedDate] = useState<string>(todayISO);
 
-  const [aiScanVisible, setAiScanVisible] = useState(false);
   const [addEventVisible, setAddEventVisible] = useState(false);
   const [buyState, setBuyState] = useState<{ event: Event; item: EventItem } | null>(null);
 
@@ -181,7 +179,6 @@ export default function CalendarScreen() {
           percent={percent}
           selectedDateLabel={selectedDateLabel}
           onBack={() => router.back()}
-          onOpenAiScan={() => setAiScanVisible(true)}
           onOpenAddEvent={() => setAddEventVisible(true)}
         />
 
@@ -232,7 +229,6 @@ export default function CalendarScreen() {
         onClose={() => setBuyState(null)}
         onMarkOrdered={handleMarkOrdered}
       />
-      <AiScanModal visible={aiScanVisible} onClose={() => setAiScanVisible(false)} />
       <AddEventModal
         visible={addEventVisible}
         initialDateISO={selectedDate}

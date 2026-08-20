@@ -11,7 +11,6 @@ interface CalendarHeaderProps {
   percent: number;
   selectedDateLabel: string;
   onBack: () => void;
-  onOpenAiScan: () => void;
   onOpenAddEvent: () => void;
 }
 
@@ -29,7 +28,6 @@ export default function CalendarHeader({
   percent,
   selectedDateLabel,
   onBack,
-  onOpenAiScan,
   onOpenAddEvent,
 }: CalendarHeaderProps) {
   const particle = useMemo(() => (hasFinalConsonant(childName) ? '이' : ''), [childName]);
@@ -65,11 +63,6 @@ export default function CalendarHeader({
           {selectedDateLabel} 등원 준비율 <Text style={styles.subtitlePercent}>{percent}%</Text>
         </Text>
       </View>
-
-      <Pressable style={styles.scanButton} onPress={onOpenAiScan}>
-        <Text style={styles.scanButtonIcon}>✨</Text>
-        <Text style={styles.scanButtonText}>AI 스캔</Text>
-      </Pressable>
 
       <Pressable style={styles.addButton} onPress={onOpenAddEvent}>
         <MaterialCommunityIcons name="plus" size={22} color="#FFFFFF" />
@@ -152,23 +145,6 @@ const styles = StyleSheet.create({
   subtitlePercent: {
     color: t.amberDeep,
     fontWeight: '800',
-  },
-  scanButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: t.slate,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-  },
-  scanButtonIcon: {
-    fontSize: 12,
-  },
-  scanButtonText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#FFFFFF',
   },
   addButton: {
     width: 36,
