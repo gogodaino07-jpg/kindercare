@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   interpolate,
   runOnJS,
@@ -109,6 +109,19 @@ export default function CalendarAccordion({
 
   const toggleBadge = () => setExpanded(isExpanded ? 0 : 1);
 
+  // 요일 행/날짜 그리드 영역에서 좌우로 스와이프하면 이전/다음 달로 이동한다.
+  const swipeLeftGesture = Gesture.Fling()
+    .direction(Directions.LEFT)
+    .onStart(() => {
+      runOnJS(onNextMonth)();
+    });
+  const swipeRightGesture = Gesture.Fling()
+    .direction(Directions.RIGHT)
+    .onStart(() => {
+      runOnJS(onPrevMonth)();
+    });
+  const monthSwipeGesture = Gesture.Race(swipeLeftGesture, swipeRightGesture);
+
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
@@ -134,38 +147,42 @@ export default function CalendarAccordion({
         </Pressable>
       </View>
 
-      <View style={styles.weekdayRow}>
-        {WEEKDAYS.map((day, idx) => (
-          <Text
-            key={day}
-            style={[
-              styles.weekdayText,
-              idx === 0 && styles.sunday,
-              idx === 6 && styles.saturday,
-            ]}
-          >
-            {day}
-          </Text>
-        ))}
-      </View>
+      <GestureDetector gesture={monthSwipeGesture}>
+        <View>
+          <View style={styles.weekdayRow}>
+            {WEEKDAYS.map((day, idx) => (
+              <Text
+                key={day}
+                style={[
+                  styles.weekdayText,
+                  idx === 0 && styles.sunday,
+                  idx === 6 && styles.saturday,
+                ]}
+              >
+                {day}
+              </Text>
+            ))}
+          </View>
 
-      <Animated.View style={[styles.gridContainer, containerAnimatedStyle]}>
-        <Animated.View style={gridAnimatedStyle}>
-          {Array.from({ length: rows }).map((_, rowIndex) => (
-            <WeekRow
-              key={rowIndex}
-              rowIndex={rowIndex}
-              isSelectedRow={rowIndex === selectedWeekIndex}
-              expandedProgress={expandedProgress}
-              days={cells.slice(rowIndex * 7, rowIndex * 7 + 7)}
-              selectedDate={selectedDate}
-              todayISO={todayISO}
-              eventsByDate={eventsByDate}
-              onSelectDate={onSelectDate}
-            />
-          ))}
-        </Animated.View>
-      </Animated.View>
+          <Animated.View style={[styles.gridContainer, containerAnimatedStyle]}>
+            <Animated.View style={gridAnimatedStyle}>
+              {Array.from({ length: rows }).map((_, rowIndex) => (
+                <WeekRow
+                  key={rowIndex}
+                  rowIndex={rowIndex}
+                  isSelectedRow={rowIndex === selectedWeekIndex}
+                  expandedProgress={expandedProgress}
+                  days={cells.slice(rowIndex * 7, rowIndex * 7 + 7)}
+                  selectedDate={selectedDate}
+                  todayISO={todayISO}
+                  eventsByDate={eventsByDate}
+                  onSelectDate={onSelectDate}
+                />
+              ))}
+            </Animated.View>
+          </Animated.View>
+        </View>
+      </GestureDetector>
 
       <GestureDetector gesture={hintGesture}>
         <View style={styles.hintArea}>

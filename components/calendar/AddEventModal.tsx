@@ -3,6 +3,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import Text from '../common/AppText';
+import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
 import { useToast } from '../../context/ToastContext';
 import { EventItem } from '../../types/models';
@@ -24,6 +25,7 @@ function newItemId(): string {
 export default function AddEventModal({ visible, initialDateISO, onClose }: AddEventModalProps) {
   const { selectedChild, addEvent } = useAppData();
   const { showToast } = useToast();
+  const { showAlert } = useAlert();
 
   const [date, setDate] = useState(() => parseISODate(initialDateISO));
   const [showPicker, setShowPicker] = useState(false);
@@ -73,16 +75,37 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
     onClose();
   };
 
+  const isDirty =
+    title.trim() !== '' ||
+    noticeText.trim() !== '' ||
+    itemsText.trim() !== '' ||
+    toISODate(date) !== initialDateISO;
+
+  const handleRequestClose = () => {
+    if (!isDirty) {
+      onClose();
+      return;
+    }
+    showAlert({
+      title: '작성 중인 내용이 있어요',
+      message: '지금 나가면 입력한 내용이 사라져요. 그래도 나가시겠어요?',
+      buttons: [
+        { text: '계속 작성', style: 'cancel' },
+        { text: '나가기', style: 'destructive', onPress: onClose },
+      ],
+    });
+  };
+
   const weekdayLabel = WEEKDAY_KO[date.getDay()];
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleRequestClose}>
       <View style={styles.overlay}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable style={StyleSheet.absoluteFill} onPress={handleRequestClose} />
         <View style={styles.card}>
           <View style={styles.headerRow}>
             <Text style={styles.title}>새 일정 등록</Text>
-            <Pressable onPress={onClose} hitSlop={8}>
+            <Pressable onPress={handleRequestClose} hitSlop={8}>
               <MaterialCommunityIcons name="close" size={20} color={t.textSecondary} />
             </Pressable>
           </View>
