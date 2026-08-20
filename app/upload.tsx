@@ -410,7 +410,7 @@ export default function UploadScreen() {
             )}
           </ScrollView>
 
-          <View style={styles.dock}>
+          <View style={[styles.dock, isSubscribed && { paddingBottom: 8 + insets.bottom }]}>
             <View style={styles.dockRow}>
               <Pressable
                 onPress={handleTakePhoto}
@@ -461,7 +461,7 @@ export default function UploadScreen() {
             )}
           </View>
 
-          <CoupangBanner style={{ paddingBottom: insets.bottom }} />
+          {!isSubscribed && <CoupangBanner style={{ paddingBottom: insets.bottom }} />}
         </>
       )}
 

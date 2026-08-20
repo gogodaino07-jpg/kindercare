@@ -23,6 +23,7 @@ import Text from '../components/common/AppText';
 import { RAINBOW_PROGRESS_GRADIENT, STAMP_BOARD_THEMES, WISH_PRESETS } from '../constants/stampBoardThemes';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { useStampBoard } from '../hooks/useStampBoard';
 
 function formatClassName(className?: string): string | undefined {
@@ -47,6 +48,7 @@ function DotPattern() {
 export default function StampBoardScreen() {
   const router = useRouter();
   const { selectedChild } = useAppData();
+  const { isSubscribed } = useSubscription();
   const { showAlert } = useAlert();
   const insets = useSafeAreaInsets();
   const {
@@ -321,7 +323,7 @@ export default function StampBoardScreen() {
           </View>
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, isSubscribed && { paddingBottom: 8 + insets.bottom }]}>
           <Animated.View style={{ transform: [{ scale: buttonScale }], width: '100%', alignItems: 'center' }}>
             <Pressable
               onPress={handleStamp}
@@ -362,7 +364,7 @@ export default function StampBoardScreen() {
           </View>
         </View>
 
-        <CoupangBanner style={{ paddingBottom: insets.bottom }} />
+        {!isSubscribed && <CoupangBanner style={{ paddingBottom: insets.bottom }} />}
       </SafeAreaView>
 
       {/* 목표 달성 축하 오버레이 */}

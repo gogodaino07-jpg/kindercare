@@ -195,7 +195,7 @@ export default function HomeScreen() {
         )}
       </SafeAreaView>
 
-      <CoupangBanner style={styles.adBanner} />
+      {!isSubscribed && <CoupangBanner style={styles.adBanner} />}
 
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
