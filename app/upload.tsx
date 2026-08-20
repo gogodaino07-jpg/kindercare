@@ -7,6 +7,7 @@ import { Stack, useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
@@ -406,7 +407,7 @@ export default function UploadScreen() {
             )}
           </ScrollView>
 
-          <View style={[styles.dock, { paddingBottom: 12 + insets.bottom }]}>
+          <View style={styles.dock}>
             <View style={styles.dockRow}>
               <Pressable
                 onPress={handleTakePhoto}
@@ -456,6 +457,8 @@ export default function UploadScreen() {
               </Pressable>
             )}
           </View>
+
+          <CoupangBanner style={{ paddingBottom: insets.bottom }} />
         </>
       )}
 
@@ -803,15 +806,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: C.slate100,
     paddingHorizontal: 16,
-    paddingTop: 12,
-    gap: 10,
+    paddingTop: 10,
+    paddingBottom: 8,
+    gap: 8,
   },
   dockRow: { flexDirection: 'row', gap: 8 },
   dockButton: {
     flex: 1,
     backgroundColor: C.slate50,
     borderRadius: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: '#E5EAF0',
     alignItems: 'center',

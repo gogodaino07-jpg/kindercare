@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDb } from '../../../utils/firebase';
 
 /** 무료 사용자의 주간 스캔 한도(알림장/급식 스캔이 이 한도를 공유). */
-export const FREE_WEEKLY_LIMIT = 5;
+export const FREE_WEEKLY_LIMIT = 3;
 /** 프리미엄 구독자의 주간/월간 스캔 한도 — 두 한도를 동시에 지켜야 함(둘 중 먼저 차는 쪽이 기준). */
 export const PREMIUM_WEEKLY_LIMIT = 10;
 export const PREMIUM_MONTHLY_LIMIT = 50;
