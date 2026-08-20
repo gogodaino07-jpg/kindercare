@@ -43,6 +43,7 @@ export const EventReviewCard = ({
     () => [event.noticeText, event.memo].filter(Boolean).join('\n')
   );
   const [newItemText, setNewItemText] = useState('');
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
   // 새 디자인은 memo를 별도로 노출하지 않으므로, 진입 시 한 번 noticeText로 합쳐서
   // 다른 화면(홈 카드/일별 상세 등)에서 memo와 noticeText가 중복 노출되지 않게 정리한다.
@@ -179,16 +180,29 @@ export const EventReviewCard = ({
 
         <View style={styles.itemList}>
           {items.map((item) => (
-            <View key={item.id} style={styles.itemRow}>
-              <View style={styles.itemLeft}>
-                <View style={styles.checkBox}>
-                  <Feather name="check" size={11} color={C.white} />
+            <View key={item.id} style={styles.itemBlock}>
+              <View style={styles.itemRow}>
+                <View style={styles.itemLeft}>
+                  <View style={styles.checkBox}>
+                    <Feather name="check" size={11} color={C.white} />
+                  </View>
+                  <Text style={styles.itemName}>{item.name}</Text>
                 </View>
-                <Text style={styles.itemName}>{item.name}</Text>
+                <Pressable onPress={() => removeItem(item.id)} style={styles.itemDeleteButton} hitSlop={8}>
+                  <Feather name="trash-2" size={14} color={C.slate400} />
+                </Pressable>
               </View>
-              <Pressable onPress={() => removeItem(item.id)} style={styles.itemDeleteButton} hitSlop={8}>
-                <Feather name="trash-2" size={14} color={C.slate400} />
-              </Pressable>
+              {item.needsReview && (
+                <ReviewBadgeAccordion
+                  label="확인필요"
+                  expanded={expandedItemId === item.id}
+                  onToggle={() => setExpandedItemId((prev) => (prev === item.id ? null : item.id))}
+                >
+                  <Text style={styles.reviewReasonText}>
+                    {item.reviewReason ?? '내용을 다시 한 번 확인해주세요.'}
+                  </Text>
+                </ReviewBadgeAccordion>
+              )}
             </View>
           ))}
         </View>
@@ -288,6 +302,7 @@ const styles = StyleSheet.create({
   countBadge: { backgroundColor: C.slate100, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2 },
   countBadgeText: { fontSize: 10, fontWeight: '700', color: C.slate700 },
   itemList: { gap: 6 },
+  itemBlock: { gap: 6 },
   itemRow: {
     backgroundColor: C.slate50,
     borderWidth: 1,

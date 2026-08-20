@@ -26,12 +26,18 @@ async function getGeminiApiKey(): Promise<string> {
   return key;
 }
 
+interface GeminiExtractedItem {
+  name?: string;
+  needsReview?: boolean;
+  reviewReason?: string;
+}
+
 interface GeminiExtractedEvent {
   date?: string;
   title?: string;
   note?: string;
   memo?: string;
-  items?: string[];
+  items?: GeminiExtractedItem[];
   category?: string;
   location?: string;
   time?: string;
@@ -64,7 +70,18 @@ const RESPONSE_SCHEMA = {
           title: { type: 'string' },
           note: { type: 'string' },
           memo: { type: 'string' },
-          items: { type: 'array', items: { type: 'string' } },
+          items: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                needsReview: { type: 'boolean' },
+                reviewReason: { type: 'string' },
+              },
+              required: ['name'],
+            },
+          },
           category: { type: 'string' },
           location: { type: 'string' },
           time: { type: 'string' },
@@ -93,10 +110,17 @@ const RESPONSE_SCHEMA = {
 };
 
 let itemIdCounter = 0;
-function buildEventItems(raw: string[] | undefined): EventItem[] | undefined {
-  const names = (raw ?? []).map((n) => n.trim()).filter(Boolean);
-  if (names.length === 0) return undefined;
-  return names.map((name) => ({ id: `ai-${Date.now()}-${itemIdCounter++}`, name }));
+function buildEventItems(raw: GeminiExtractedItem[] | undefined): EventItem[] | undefined {
+  const items = (raw ?? [])
+    .map((i) => ({ name: i.name?.trim() ?? '', needsReview: i.needsReview, reviewReason: i.reviewReason?.trim() }))
+    .filter((i) => i.name.length > 0);
+  if (items.length === 0) return undefined;
+  return items.map(({ name, needsReview, reviewReason }) => ({
+    id: `ai-${Date.now()}-${itemIdCounter++}`,
+    name,
+    needsReview: needsReview || undefined,
+    reviewReason: needsReview ? reviewReason : undefined,
+  }));
 }
 
 function extractMealPlans(
@@ -288,7 +312,7 @@ ${
 
 3. 필드 작성:
    - title: 15자 이내 (예: "여름 소풍", "6세 현장학습"). 원문에 "5세 운동회"처럼 나이 표기가 활동명과 함께 붙어있다면, 나이 정보를 빠뜨리지 말고 반드시 title에 포함하세요 (예: "5세 운동회"를 "운동회"로 줄이지 마세요). 단, 원문에 나이가 명시되어 있지 않은 항목에는 나이를 임의로 추가하지 마세요.
-   - items: 반드시 챙겨야 할 '물건'을 하나씩 개별 문자열로 나눈 배열로 담으세요. 각 항목은 쇼핑 검색이 용이하도록 "금액"이나 "포장 조건" 등은 제외하고 핵심 물건 명칭만 적으세요. (예: ["물통", "도시락", "운동화"]). 챙길 물건이 없으면 빈 배열([])로 두세요.
+   - items: 반드시 챙겨야 할 '물건'을 하나씩 개별 객체로 나눈 배열로 담으세요. 각 객체는 {name, needsReview?, reviewReason?} 형태이며, name에는 쇼핑 검색이 용이하도록 "금액"이나 "포장 조건" 등은 제외하고 핵심 물건 명칭만 적으세요 (예: [{"name": "물통"}, {"name": "도시락"}, {"name": "운동화"}]). 챙길 물건이 없으면 빈 배열([])로 두세요.
    - category: 이 일정의 성격을 아래 중 하나로 분류하세요 — "준비물"(물건을 챙겨야 함), "특별활동"(요리/체육 등 평소와 다른 활동), "행사"(현장학습/생일파티/발표회 등), "공지"(단순 안내, 제출/챙길 것 없음), "휴원/방학"(휴원일·재량휴업일·방학 안내).
    - location: 통신문에 장소가 명시되어 있을 때만 적으세요 (예: "조리실습실", "서울대공원"). 없으면 생략하세요.
    - time: 통신문에 시간이 명시되어 있을 때만 자연스러운 한국어로 적으세요 (예: "오전 10:30", "하루 종일"). 없으면 생략하세요.
@@ -309,7 +333,8 @@ ${
 
 7. 출력 및 신뢰도:
    - 반드시 정해진 JSON 형식으로만 결괏값을 출력하세요. 불필요한 서술이나 설명은 절대 포함하지 마세요.
-   - 확실하지 않은 날짜나 내용은 'needsReview: true'로 표시하고 이유를 'reviewReason'에 적으세요.
+   - 확실하지 않은 날짜나 제목 등 이벤트 전체에 대한 의문이 있으면 해당 이벤트의 'needsReview: true'로 표시하고 이유를 'reviewReason'에 적으세요.
+   - items 중 글씨가 흐릿하거나 표에서 일부가 잘려서 품명을 확신할 수 없는 항목이 있다면, 이벤트 전체가 아니라 그 항목 객체에만 'needsReview: true'와 구체적인 'reviewReason'(예: "글씨가 흐려 '수건'인지 '수영복'인지 확실하지 않아요")을 넣으세요. 확실한 항목에는 needsReview를 아예 넣지 마세요.
 
 [급식 식단표 추출]
 - 가정통신문에 주간 또는 월간 식단표(요일별/날짜별 급식 메뉴가 나열된 표)가 포함되어 있다면, "mealPlan" 배열로 별도 추출하세요.

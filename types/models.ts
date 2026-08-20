@@ -14,6 +14,9 @@ export interface EventItem {
   name: string;
   /** 준비물 챙김 완료 여부. 캘린더 화면의 준비물 체크리스트에서 사용. */
   completed?: boolean;
+  /** AI가 이 항목의 인식 결과를 확신하지 못할 때(글씨가 흐릿함 등) true. AI 확인·수정 화면에서 "확인필요" 배지로 표시. */
+  needsReview?: boolean;
+  reviewReason?: string;
 }
 
 export interface Event {
