@@ -13,8 +13,9 @@ interface SmartBannerProps {
 function bannerMessage(incompleteCount: number, totalCount: number, hasNotice: boolean): string {
   if (incompleteCount > 0 && hasNotice) return `오늘 챙겨야 할 준비물 ${incompleteCount}개 / 알림 1건 🔔`;
   if (incompleteCount > 0 && !hasNotice) return `오늘 챙겨야 할 준비물 ${incompleteCount}개 남음`;
-  if (incompleteCount === 0 && hasNotice) return '오늘 준비물은 없고 알림 1건이 있어요 🔔';
-  if (incompleteCount === 0 && !hasNotice && totalCount > 0) return '오늘 준비물을 모두 다 챙겼어요! 🎉';
+  if (incompleteCount === 0 && totalCount > 0 && hasNotice) return '오늘 준비물을 다 챙겼고 알림 1건이 있어요 🔔';
+  if (incompleteCount === 0 && totalCount > 0 && !hasNotice) return '오늘 준비물을 모두 다 챙겼어요! 🎉';
+  if (hasNotice) return '오늘 준비물은 없고 알림 1건이 있어요 🔔';
   return '등록된 준비물과 알림이 없어요 ✨';
 }
 
