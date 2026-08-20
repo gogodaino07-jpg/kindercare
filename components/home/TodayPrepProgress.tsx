@@ -40,7 +40,9 @@ export default function TodayPrepProgress({ total, checked, percent }: TodayPrep
       </View>
 
       <View style={styles.gaugeTrack}>
-        <View style={[styles.gaugeFill, { width: `${percent}%` }]} />
+        {Array.from({ length: total }).map((_, i) => (
+          <View key={i} style={[styles.gaugeSegment, i < checked && styles.gaugeSegmentFilled]} />
+        ))}
       </View>
 
       {percent === 100 && (
@@ -88,13 +90,16 @@ function createStyles(colors: ThemeColors) {
     gaugeTrack: {
       width: '100%',
       height: 10,
-      borderRadius: 999,
-      backgroundColor: 'rgba(0,0,0,0.18)',
-      overflow: 'hidden',
+      flexDirection: 'row',
+      gap: 4,
     },
-    gaugeFill: {
+    gaugeSegment: {
+      flex: 1,
       height: '100%',
       borderRadius: 999,
+      backgroundColor: 'rgba(0,0,0,0.18)',
+    },
+    gaugeSegmentFilled: {
       backgroundColor: '#FDE68A',
     },
     doneRow: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.25)' },
