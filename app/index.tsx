@@ -104,15 +104,21 @@ export default function HomeScreen() {
   // still up, since a native Modal always renders above it regardless of
   // z-index and would visually jump the ad in front of the pattern/biometric
   // prompt on cold start.
+  //
+  // upcoming.isEmpty must also gate this: the popup itself only renders when
+  // there are events (see below), but events load in asynchronously after a
+  // cold start. Without this check, the 1.5s timer could fire and mark
+  // adShownRef true before events finished loading, permanently suppressing
+  // the popup for the rest of the session even once events arrived.
   useEffect(() => {
-    if (!adShownRef.current && onboardingLoaded && hasOnboarded && googleAccount && !isLocked && !isSubscribed) {
+    if (!adShownRef.current && onboardingLoaded && hasOnboarded && googleAccount && !isLocked && !isSubscribed && !upcoming.isEmpty) {
       const timer = setTimeout(() => {
         setAdPopupVisible(true);
         adShownRef.current = true;
       }, 1500); // 1.5s delay for better UX
       return () => clearTimeout(timer);
     }
-  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, isSubscribed]);
+  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, isSubscribed, upcoming.isEmpty]);
 
   const handleEventPress = useCallback(
     (event: { date: string }) => router.push({ pathname: '/calendar', params: { date: event.date } }),
