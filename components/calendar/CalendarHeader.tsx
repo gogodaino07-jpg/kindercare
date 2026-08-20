@@ -11,7 +11,6 @@ interface CalendarHeaderProps {
   percent: number;
   selectedDateLabel: string;
   onBack: () => void;
-  onOpenAddEvent: () => void;
 }
 
 function hasFinalConsonant(text: string): boolean {
@@ -28,7 +27,6 @@ export default function CalendarHeader({
   percent,
   selectedDateLabel,
   onBack,
-  onOpenAddEvent,
 }: CalendarHeaderProps) {
   const particle = useMemo(() => (hasFinalConsonant(childName) ? '이' : ''), [childName]);
 
@@ -63,10 +61,6 @@ export default function CalendarHeader({
           {selectedDateLabel} 등원 준비율 <Text style={styles.subtitlePercent}>{percent}%</Text>
         </Text>
       </View>
-
-      <Pressable style={styles.addButton} onPress={onOpenAddEvent}>
-        <MaterialCommunityIcons name="plus" size={22} color="#FFFFFF" />
-      </Pressable>
     </View>
   );
 }
@@ -145,13 +139,5 @@ const styles = StyleSheet.create({
   subtitlePercent: {
     color: t.amberDeep,
     fontWeight: '800',
-  },
-  addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: t.amber,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

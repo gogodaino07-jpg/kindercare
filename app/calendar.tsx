@@ -181,7 +181,6 @@ export default function CalendarScreen() {
           percent={percent}
           selectedDateLabel={selectedDateLabel}
           onBack={() => router.back()}
-          onOpenAddEvent={() => setAddEventVisible(true)}
         />
 
         <SmartBanner
@@ -202,6 +201,7 @@ export default function CalendarScreen() {
           expandedProgress={expandedProgress}
           isExpanded={isExpanded}
           setExpanded={setExpanded}
+          onOpenAddEvent={() => setAddEventVisible(true)}
         />
 
         <GestureDetector gesture={Gesture.Simultaneous(pullToExpandGesture, nativeScrollGesture)}>

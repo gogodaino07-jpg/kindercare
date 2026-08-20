@@ -30,6 +30,7 @@ interface CalendarAccordionProps {
   expandedProgress: SharedValue<number>;
   isExpanded: boolean;
   setExpanded: (target: 0 | 1) => void;
+  onOpenAddEvent: () => void;
 }
 
 export default function CalendarAccordion({
@@ -43,6 +44,7 @@ export default function CalendarAccordion({
   expandedProgress,
   isExpanded,
   setExpanded,
+  onOpenAddEvent,
 }: CalendarAccordionProps) {
   const cells = useMemo(() => {
     const year = monthCursor.getFullYear();
@@ -109,14 +111,6 @@ export default function CalendarAccordion({
     })
     .onUpdate((e) => applyDragUpdate(e.translationY))
     .onEnd((e) => applyDragEnd(e.translationY));
-
-  const tapGesture = Gesture.Tap()
-    .hitSlop({ top: 16, bottom: 16, left: 24, right: 24 })
-    .onEnd(() => {
-      runOnJS(setExpanded)(isExpanded ? 0 : 1);
-    });
-
-  const hintGesture = Gesture.Race(dragGesture, tapGesture);
 
   const toggleBadge = () => setExpanded(isExpanded ? 0 : 1);
 
@@ -209,19 +203,23 @@ export default function CalendarAccordion({
         </View>
       </GestureDetector>
 
-      <GestureDetector gesture={hintGesture}>
+      <GestureDetector gesture={dragGesture}>
         <View style={styles.hintArea}>
           <View style={styles.hintBar} />
           <View style={styles.hintTextStack}>
             <Animated.Text style={[styles.hintText, collapsedHintStyle, styles.hintTextAbsolute]}>
-              터치하여 전체 달력 펼치기 ▾
+              아래로 당겨서 전체 달력 펼치기 ▾
             </Animated.Text>
             <Animated.Text style={[styles.hintText, expandedHintStyle, styles.hintTextAbsolute]}>
-              터치 또는 위로 밀어서 축소 ▴
+              위로 밀어서 축소 ▴
             </Animated.Text>
           </View>
         </View>
       </GestureDetector>
+
+      <Pressable style={styles.fab} onPress={onOpenAddEvent} hitSlop={4}>
+        <MaterialCommunityIcons name="plus" size={22} color="#FFFFFF" />
+      </Pressable>
     </View>
   );
 }
@@ -461,5 +459,21 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: t.amber,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
 });

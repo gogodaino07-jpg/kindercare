@@ -35,6 +35,11 @@ function withTime(date: Date, time: TimeOfDay): Date {
   return result;
 }
 
+/** 챙길 준비물이 없는 일정(공지사항만 있거나 텅 빈 일정)은 알려줄 준비물이 없어 푸시 알림을 보낼 필요가 없다. */
+function hasPrepItems(event: Event): boolean {
+  return (event.items?.length ?? 0) > 0 || !!event.note?.trim();
+}
+
 export async function scheduleEventNotifications(
   events: Event[],
   settings: NotificationSettings
@@ -47,7 +52,7 @@ export async function scheduleEventNotifications(
 
   await ensureAndroidChannel();
 
-  const upcoming = events.filter((e) => !isPast(e.date));
+  const upcoming = events.filter((e) => !isPast(e.date) && hasPrepItems(e));
 
   for (const event of upcoming) {
     const eventDate = parseISODate(event.date);
