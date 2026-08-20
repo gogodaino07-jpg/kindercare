@@ -86,6 +86,12 @@ export interface UploadedDoc {
   uri: string;
   kind: 'image' | 'file';
   name?: string;
+  /** 표시용 용량 문자열, 예: "2.4 MB" — 선택 시점에 계산해 채움. */
+  sizeLabel?: string;
+  /** 표시용 선택 일자, 예: "2026.08.20" — 선택 시점의 오늘 날짜. */
+  pickedAt?: string;
+  /** 어떤 버튼으로 첨부했는지 — 카드 상단 태그 라벨에 사용. */
+  pickSource?: 'camera' | 'gallery' | 'file';
 }
 
 export interface GoogleAccount {

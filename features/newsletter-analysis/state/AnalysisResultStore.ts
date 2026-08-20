@@ -5,7 +5,6 @@ interface AnalysisSession {
   docs: UploadedDoc[];
   initialEvents: Omit<Event, 'id'>[];
   mealPlans: Omit<MealPlan, 'id'>[];
-  shouldReplaceSimilar?: boolean;
 }
 
 interface PendingSession {

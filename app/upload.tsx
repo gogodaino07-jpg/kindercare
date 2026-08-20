@@ -1,53 +1,86 @@
+import { Feather, Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
+import { getInfoAsync } from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
-import { Stack, useRouter, useNavigation } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Stack, useNavigation, useRouter } from 'expo-router';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../components/common/AppText';
-import { ThemeColors } from '../constants/theme';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
 import { useSubscription } from '../context/SubscriptionContext';
-import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
-import { isSimilarEvent } from '../data/mockAIResult';
-import { useScanRewardedAd } from '../hooks/useScanRewardedAd';
-import { Event, MealPlan, UploadedDoc } from '../types/models';
 import {
   AIUsageLimitService,
   AnalysisResultStore,
   FREE_WEEKLY_LIMIT,
-  PREMIUM_MONTHLY_LIMIT,
-  PREMIUM_WEEKLY_LIMIT,
   GeminiAnalysisError,
   GeminiAnalysisService,
+  PREMIUM_MONTHLY_LIMIT,
+  PREMIUM_WEEKLY_LIMIT,
 } from '../features/newsletter-analysis';
+import { PremiumUpsellModal } from '../features/newsletter-analysis/components/PremiumUpsellModal';
+import { SCAN_COLORS as C } from '../features/newsletter-analysis/uiColors';
+import { useScanRewardedAd } from '../hooks/useScanRewardedAd';
+import { Event, MealPlan, UploadedDoc } from '../types/models';
+import { toISODate } from '../utils/date';
 
 const MAX_DOCS = 5;
 
-// UI는 전면 재설계 예정이라 비워둔 상태. 아래 상태/핸들러(업로드, 분석 호출,
-// 사용량 체크, 중복 검사, 세션 저장 등)는 실제 로직이라 그대로 유지 —
-// 새 UI에서 그대로 다시 연결해서 쓸 것.
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(0)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
+async function buildDocMeta(uri: string): Promise<{ sizeLabel?: string; pickedAt: string }> {
+  const pickedAt = toISODate(new Date()).replace(/-/g, '.');
+  try {
+    const info = await getInfoAsync(uri);
+    if (info.exists && typeof info.size === 'number') {
+      return { sizeLabel: formatFileSize(info.size), pickedAt };
+    }
+  } catch {
+    // 용량 조회 실패해도 첨부 자체는 계속 진행
+  }
+  return { pickedAt };
+}
+
+function docTagLabel(doc: UploadedDoc): string {
+  if (doc.pickSource === 'camera') return '카메라 촬영';
+  if (doc.pickSource === 'gallery') return '앨범 사진';
+  const ext = doc.name?.split('.').pop()?.toUpperCase();
+  return ext ? `${ext} 문서` : '문서 파일';
+}
+
+function fileIconColors(doc: UploadedDoc): [string, string] {
+  const lower = (doc.name ?? '').toLowerCase();
+  if (lower.endsWith('.pdf')) return [C.rose600, '#F43F5E'];
+  if (lower.endsWith('.hwp')) return [C.blue700, '#3B82F6'];
+  return [C.slate600, C.slate400];
+}
+
 export default function UploadScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const { selectedChild, events, googleAccount, addMealPlans } = useAppData();
+  const { selectedChild, googleAccount, addMealPlans } = useAppData();
   const { isSubscribed } = useSubscription();
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
   const { showToast } = useToast();
   const { requestAndShow } = useScanRewardedAd();
-  const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
 
   const [docs, setDocs] = useState<UploadedDoc[]>([]);
   const [remainingAnalyses, setRemainingAnalyses] = useState<number | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [lastUsedType, setLastUsedType] = useState<'camera' | 'gallery' | 'file' | null>(null);
+  const maxCredits = isSubscribed ? PREMIUM_WEEKLY_LIMIT : FREE_WEEKLY_LIMIT;
 
   // Prevent accidental navigation during analysis
   useEffect(() => {
@@ -61,7 +94,6 @@ export default function UploadScreen() {
         message: '분석을 중단하고 처음부터 다시 할까요? 아니면 마저 진행할까요?',
         icon: '🤖',
         onDismiss: () => {
-          // Hardware back button pressed while alert is visible
           setAnalyzing(false);
           AnalysisResultStore.clearPendingSession();
           router.replace('/');
@@ -82,7 +114,7 @@ export default function UploadScreen() {
     });
 
     return unsubscribe;
-  }, [navigation, analyzing]);
+  }, [navigation, analyzing, showAlert, router]);
 
   // Reset docs if coming back from an abandoned review session
   useEffect(() => {
@@ -100,7 +132,6 @@ export default function UploadScreen() {
   }, [googleAccount?.email, isSubscribed]);
 
   useEffect(() => {
-    // Check for pending analysis session from a previous app instance
     const checkPendingSession = async () => {
       const pending = await AnalysisResultStore.getPendingSession();
       if (pending && pending.docs.length > 0) {
@@ -118,15 +149,15 @@ export default function UploadScreen() {
               text: '네, 이어서 할게요',
               onPress: () => {
                 setDocs(pending.docs);
-                // Trigger analysis with recovered data
                 performAnalysis(pending.docs, pending.child);
               },
             },
-          ]
+          ],
         });
       }
     };
     checkPendingSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const addDoc = (doc: UploadedDoc) => {
@@ -151,9 +182,8 @@ export default function UploadScreen() {
     try {
       const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
       if (!result.canceled && result.assets[0]) {
-        addDoc({ id: `doc-${Date.now()}`, uri: result.assets[0].uri, kind: 'image' });
-        setLastUsedType('camera');
-        setIsMenuOpen(false);
+        const meta = await buildDocMeta(result.assets[0].uri);
+        addDoc({ id: `doc-${Date.now()}`, uri: result.assets[0].uri, kind: 'image', pickSource: 'camera', ...meta });
       }
     } finally {
       setPickerActive(false);
@@ -179,11 +209,16 @@ export default function UploadScreen() {
         selectionLimit: MAX_DOCS - docs.length,
       });
       if (!result.canceled) {
-        result.assets.forEach((asset) =>
-          addDoc({ id: `doc-${Date.now()}-${asset.assetId ?? asset.uri}`, uri: asset.uri, kind: 'image' })
+        const metas = await Promise.all(result.assets.map((a) => buildDocMeta(a.uri)));
+        result.assets.forEach((asset, i) =>
+          addDoc({
+            id: `doc-${Date.now()}-${asset.assetId ?? asset.uri}`,
+            uri: asset.uri,
+            kind: 'image',
+            pickSource: 'gallery',
+            ...metas[i],
+          })
         );
-        setLastUsedType('gallery');
-        setIsMenuOpen(false);
       }
     } finally {
       setPickerActive(false);
@@ -203,14 +238,15 @@ export default function UploadScreen() {
       });
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
+        const meta = await buildDocMeta(asset.uri);
         addDoc({
           id: `doc-${Date.now()}`,
           uri: asset.uri,
           kind: asset.mimeType?.startsWith('image/') ? 'image' : 'file',
           name: asset.name,
+          pickSource: 'file',
+          ...meta,
         });
-        setLastUsedType('file');
-        setIsMenuOpen(false);
       }
     } finally {
       setPickerActive(false);
@@ -224,15 +260,9 @@ export default function UploadScreen() {
   const goToAnalysis = (
     uploadedDocs: UploadedDoc[],
     result: Omit<Event, 'id'>[],
-    mealPlans: Omit<MealPlan, 'id'>[],
-    replaceSimilar: boolean = false
+    mealPlans: Omit<MealPlan, 'id'>[]
   ) => {
     AnalysisResultStore.setSession(uploadedDocs, result, mealPlans);
-    // Track if we should auto-delete existing similar events on save
-    if (replaceSimilar) {
-      const session = AnalysisResultStore.getSession();
-      if (session) session.shouldReplaceSimilar = true;
-    }
     showToast(mealPlans.length > 0 ? '분석 완료! 식단표도 함께 저장했어요 🍱' : '분석 완료하였습니다');
     router.push('/ai-review');
   };
@@ -240,7 +270,6 @@ export default function UploadScreen() {
   const performAnalysis = async (targetDocs: UploadedDoc[], targetChild: any) => {
     if (targetDocs.length === 0 || !targetChild) return;
 
-    // Save pending session state before starting long-running analysis
     await AnalysisResultStore.savePendingSession(targetDocs, targetChild);
 
     setAnalyzing(true);
@@ -263,54 +292,10 @@ export default function UploadScreen() {
     setRemainingAnalyses(count);
     setAnalyzing(false);
 
-    // 급식 메뉴가 감지되면 검수 없이 바로 저장한다.
     if (mealPlans.length > 0) {
       addMealPlans(mealPlans);
     }
 
-    // Check for duplicate/similar events already in calendar
-    const duplicateResults = result.filter((newEvent) =>
-      events.some(
-        (existing) => existing.childId === newEvent.childId && isSimilarEvent(existing, newEvent)
-      )
-    );
-
-    if (duplicateResults.length > 0) {
-      showAlert({
-        title: '비슷한 일정이 이미 있어요',
-        message: `분석된 ${result.length}개 일정 중 ${duplicateResults.length}개가 이미 캘린더에 등록된 것 같아요. 어떻게 처리할까요?`,
-        icon: '📅',
-        buttons: [
-          {
-            text: '중복 제외하고 보기',
-            onPress: () => {
-              const filtered = result.filter(
-                (nr) =>
-                  !events.some(
-                    (ex) => ex.childId === nr.childId && isSimilarEvent(ex, nr)
-                  )
-              );
-              if (filtered.length === 0) {
-                showToast('모든 일정이 이미 등록되어 있어 리뷰할 내용이 없습니다.');
-                AnalysisResultStore.clearPendingSession();
-              } else {
-                goToAnalysis(targetDocs, filtered, mealPlans, false);
-              }
-            },
-          },
-          {
-            text: '기존 일정 덮어쓰기',
-            onPress: () => goToAnalysis(targetDocs, result, mealPlans, true),
-          },
-          {
-            text: '취소',
-            style: 'cancel',
-            onPress: () => AnalysisResultStore.clearPendingSession(),
-          },
-        ],
-      });
-      return;
-    }
     goToAnalysis(targetDocs, result, mealPlans);
   };
 
@@ -328,26 +313,7 @@ export default function UploadScreen() {
         });
         return;
       }
-      showAlert({
-        title: '무료 횟수 소진',
-        message: (
-          <Text style={{ textAlign: 'center' }}>
-            이번 주 무료 횟수({FREE_WEEKLY_LIMIT}회)를 모두 사용했어요.{"\n"}
-            <Text style={{ color: colors.coralPink, fontWeight: 'bold' }}>프리미엄</Text>
-            으로 구독하시면{" "}
-            <Text style={{ color: colors.coralPink, fontWeight: 'bold' }}>월 {PREMIUM_MONTHLY_LIMIT}회 · 광고 없이</Text>
-            이용하실 수 있습니다.
-          </Text>
-        ),
-        icon: '💎',
-        buttons: [
-          { text: '확인', style: 'cancel' },
-          {
-            text: '프리미엄 구독 안내',
-            onPress: () => router.push('/settings/subscription'),
-          },
-        ],
-      });
+      setShowPremiumModal(true);
       return;
     }
     if (!selectedChild) {
@@ -366,19 +332,453 @@ export default function UploadScreen() {
     await performAnalysis(docs, selectedChild);
   };
 
+  const analyzingLabel =
+    docs.length === 1 ? (docs[0].name ?? '선택한 파일') : `선택한 파일 ${docs.length}개`;
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={{ flex: 1 }} />
+
+      {analyzing ? (
+        <AnalyzingBody label={analyzingLabel} />
+      ) : (
+        <>
+          <View style={styles.header}>
+            <Pressable onPress={() => router.back()} style={styles.backButton} hitSlop={6}>
+              <Feather name="chevron-left" size={24} color={C.slate900} />
+            </Pressable>
+            <Text style={styles.headerTitle}>AI 알림장 스마트 스캔</Text>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.gaugeCard}>
+              <View style={styles.gaugeTopRow}>
+                <View style={styles.gaugeTopLeft}>
+                  <View style={styles.gaugeDot} />
+                  <Text style={styles.gaugeLabel}>무료 스캔 잔여 횟수</Text>
+                </View>
+                <Text style={styles.gaugeValue}>
+                  {remainingAnalyses ?? '-'} <Text style={styles.gaugeMax}>/ {maxCredits}회</Text>
+                </Text>
+              </View>
+              <View style={styles.gaugeTrack}>
+                {Array.from({ length: maxCredits }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.gaugeSegment,
+                      remainingAnalyses !== null && i < remainingAnalyses && styles.gaugeSegmentFilled,
+                    ]}
+                  />
+                ))}
+              </View>
+              <View style={styles.gaugeFootRow}>
+                <Text style={styles.gaugeFootText}>1회 스캔 시 사진/문서 1건이 분석됩니다</Text>
+                {remainingAnalyses === 0 && <Text style={styles.gaugeExhaustedText}>모두 사용됨</Text>}
+              </View>
+            </View>
+
+            {docs.length > 0 ? (
+              <View style={styles.docsSection}>
+                <Text style={styles.docsCountLabel}>
+                  선택된 파일 {docs.length} / {MAX_DOCS}
+                </Text>
+                {docs.map((doc) => (
+                  <DocCard key={doc.id} doc={doc} onRemove={() => removeDoc(doc.id)} />
+                ))}
+                <View style={styles.hintBox}>
+                  <Ionicons name="sparkles" size={16} color={C.violet600} />
+                  <Text style={styles.hintText}>
+                    아래 <Text style={styles.hintBold}>[AI로 내용 분석하기]</Text> 버튼을 누르면 일정이
+                    추출됩니다.
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <RoadmapCard />
+            )}
+          </ScrollView>
+
+          <View style={[styles.dock, { paddingBottom: 12 + insets.bottom }]}>
+            <View style={styles.dockRow}>
+              <Pressable
+                onPress={handleTakePhoto}
+                disabled={docs.length >= MAX_DOCS}
+                style={[styles.dockButton, docs.length >= MAX_DOCS && styles.dockButtonDisabled]}
+              >
+                <Feather name="camera" size={20} color={C.violet600} />
+                <Text style={styles.dockButtonText}>카메라 촬영</Text>
+              </Pressable>
+              <Pressable
+                onPress={handlePickGallery}
+                disabled={docs.length >= MAX_DOCS}
+                style={[
+                  styles.dockButton,
+                  styles.dockButtonAccent,
+                  docs.length >= MAX_DOCS && styles.dockButtonDisabled,
+                ]}
+              >
+                <Feather name="image" size={20} color={C.violet700} />
+                <Text style={styles.dockButtonTextAccent}>앨범 사진</Text>
+              </Pressable>
+              <Pressable
+                onPress={handlePickFile}
+                disabled={docs.length >= MAX_DOCS}
+                style={[styles.dockButton, docs.length >= MAX_DOCS && styles.dockButtonDisabled]}
+              >
+                <Feather name="file-text" size={20} color={C.slate600} />
+                <Text style={styles.dockButtonText}>PDF / 문서</Text>
+              </Pressable>
+            </View>
+
+            {docs.length > 0 && (
+              <Pressable
+                onPress={handleAnalyze}
+                disabled={remainingAnalyses === null}
+                style={[styles.analyzeButtonWrap, remainingAnalyses === null && styles.analyzeButtonWrapDisabled]}
+              >
+                <LinearGradient
+                  colors={[C.violet600, C.indigo600]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.analyzeButton}
+                >
+                  <Ionicons name="sparkles" size={16} color="#FCD34D" />
+                  <Text style={styles.analyzeButtonText}>AI로 내용 분석하기 (1회 차감)</Text>
+                </LinearGradient>
+              </Pressable>
+            )}
+          </View>
+        </>
+      )}
+
+      <PremiumUpsellModal
+        visible={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        onSubscribe={() => {
+          setShowPremiumModal(false);
+          showToast('프리미엄은 곧 출시될 예정이에요! 조금만 기다려주세요 😊');
+        }}
+      />
     </SafeAreaView>
   );
 }
 
-function createStyles(colors: ThemeColors) {
-  return StyleSheet.create({
-    safeArea: {
-      flex: 1,
-      backgroundColor: colors.skyBackground,
-    },
-  });
+function RoadmapCard() {
+  return (
+    <View style={styles.roadmapCard}>
+      <View style={styles.roadmapRow}>
+        <View style={styles.roadmapStepCircle}>
+          <Text style={styles.roadmapStepNumber}>01</Text>
+        </View>
+        <View style={styles.roadmapTextBlock}>
+          <View style={styles.roadmapTitleRow}>
+            <Text style={styles.roadmapTitle}>통신문 사진 또는 파일 올리기</Text>
+            <View style={styles.roadmapTag}>
+              <Text style={styles.roadmapTagText}>촬영·PDF·HWP</Text>
+            </View>
+          </View>
+          <Text style={styles.roadmapDesc}>아래 버튼을 눌러 사진이나 문서를 선택하세요</Text>
+        </View>
+      </View>
+
+      <View style={styles.roadmapRow}>
+        <View style={[styles.roadmapStepCircle, styles.roadmapStepCircleAccent]}>
+          <Ionicons name="sparkles" size={14} color="#FCD34D" />
+        </View>
+        <View style={styles.roadmapTextBlock}>
+          <View style={styles.roadmapTitleRow}>
+            <Text style={[styles.roadmapTitle, styles.roadmapTitleAccent]}>AI가 날짜와 준비물 자동 추출</Text>
+            <View style={[styles.roadmapTag, styles.roadmapTagAccent]}>
+              <Text style={[styles.roadmapTagText, styles.roadmapTagTextAccent]}>스마트 OCR</Text>
+            </View>
+          </View>
+          <Text style={styles.roadmapDesc}>행사 일시, 챙길 물품, 선생님 메모를 알아서 분류</Text>
+        </View>
+      </View>
+
+      <View style={styles.roadmapRow}>
+        <View style={[styles.roadmapStepCircle, styles.roadmapStepCircleDone]}>
+          <Text style={styles.roadmapStepNumber}>03</Text>
+        </View>
+        <View style={styles.roadmapTextBlock}>
+          <View style={styles.roadmapTitleRow}>
+            <Text style={styles.roadmapTitle}>내 캘린더에 바로 저장</Text>
+            <View style={[styles.roadmapTag, styles.roadmapTagDone]}>
+              <Text style={[styles.roadmapTagText, styles.roadmapTagTextDone]}>완료</Text>
+            </View>
+          </View>
+          <Text style={styles.roadmapDesc}>당일 준비물 체크리스트 & D-day 알림 자동 연동</Text>
+        </View>
+      </View>
+    </View>
+  );
 }
+
+function DocCard({ doc, onRemove }: { doc: UploadedDoc; onRemove: () => void }) {
+  return (
+    <View style={styles.docCard}>
+      <View style={styles.docCardTopRow}>
+        <View style={styles.docCardTag}>
+          <Feather name={doc.kind === 'image' ? 'image' : 'file'} size={13} color={C.violet700} />
+          <Text style={styles.docCardTagText}>선택된 {docTagLabel(doc)}</Text>
+        </View>
+        <Pressable onPress={onRemove} style={styles.docCardRemove} hitSlop={8}>
+          <Feather name="x" size={15} color={C.slate400} />
+        </Pressable>
+      </View>
+      <View style={styles.docCardBodyRow}>
+        {doc.kind === 'image' ? (
+          <Image source={{ uri: doc.uri }} style={styles.docCardThumb} />
+        ) : (
+          <LinearGradient colors={fileIconColors(doc)} style={styles.docCardThumb}>
+            <Feather name="file-text" size={22} color="#FFFFFF" />
+          </LinearGradient>
+        )}
+        <View style={styles.docCardInfo}>
+          <Text style={styles.docCardName} numberOfLines={1}>
+            {doc.name ?? (doc.kind === 'image' ? '사진' : '문서')}
+          </Text>
+          <Text style={styles.docCardMeta}>{[doc.sizeLabel, doc.pickedAt].filter(Boolean).join(' · ')}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function SpinnerRing({ size }: { size: number }) {
+  const spin = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(spin, { toValue: 1, duration: 1000, easing: Easing.linear, useNativeDriver: true })
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [spin]);
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  return (
+    <Animated.View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        borderWidth: 4,
+        borderColor: C.slate100,
+        borderTopColor: C.violet600,
+        transform: [{ rotate }],
+      }}
+    />
+  );
+}
+
+function SpinningIcon({ name, size, color }: { name: React.ComponentProps<typeof Feather>['name']; size: number; color: string }) {
+  const spin = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(spin, { toValue: 1, duration: 1200, easing: Easing.linear, useNativeDriver: true })
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [spin]);
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  return (
+    <Animated.View style={{ transform: [{ rotate }] }}>
+      <Feather name={name} size={size} color={color} />
+    </Animated.View>
+  );
+}
+
+function AnalyzingBody({ label }: { label: string }) {
+  return (
+    <View style={styles.analyzingContainer}>
+      <View style={styles.analyzingSpinnerWrap}>
+        <SpinnerRing size={80} />
+        <Text style={styles.analyzingRobot}>🤖</Text>
+      </View>
+      <View style={styles.analyzingTextBlock}>
+        <Text style={styles.analyzingTitle}>{label}에서 내용을 추출하고 있어요</Text>
+        <Text style={styles.analyzingSubtitle}>
+          행사 날짜, 준비물, 선생님 전달사항을{'\n'}AI가 꼼꼼하게 정리하는 중입니다...
+        </Text>
+      </View>
+      <View style={styles.analyzingPill}>
+        <SpinningIcon name="refresh-cw" size={14} color={C.violet600} />
+        <Text style={styles.analyzingPillText}>텍스트 추출 및 캘린더 매핑 중</Text>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: C.appBg },
+  header: {
+    backgroundColor: C.white,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: C.slate100,
+  },
+  backButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 15, fontWeight: '800', color: C.slate900 },
+  scrollContent: { padding: 16, gap: 14 },
+  gaugeCard: {
+    backgroundColor: C.white,
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5EAF0',
+    gap: 10,
+  },
+  gaugeTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  gaugeTopLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  gaugeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.violet600 },
+  gaugeLabel: { fontSize: 12, fontWeight: '900', color: C.slate800 },
+  gaugeValue: { fontSize: 12, fontWeight: '900', color: C.violet700 },
+  gaugeMax: { color: C.slate400, fontWeight: '400' },
+  gaugeTrack: { flexDirection: 'row', gap: 4, height: 8 },
+  gaugeSegment: { flex: 1, height: '100%', borderRadius: 999, backgroundColor: C.slate100 },
+  gaugeSegmentFilled: { backgroundColor: C.violet600 },
+  gaugeFootRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  gaugeFootText: { fontSize: 10, color: C.slate400, fontWeight: '500' },
+  gaugeExhaustedText: { fontSize: 10, color: C.rose600, fontWeight: '700' },
+  roadmapCard: {
+    backgroundColor: C.white,
+    borderRadius: 32,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: C.slate100,
+    gap: 14,
+  },
+  roadmapRow: { flexDirection: 'row', gap: 14 },
+  roadmapStepCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: C.slate100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roadmapStepCircleAccent: { backgroundColor: C.violet600 },
+  roadmapStepCircleDone: { backgroundColor: C.emerald50, borderWidth: 1, borderColor: C.emerald100 },
+  roadmapStepNumber: { fontSize: 12, fontWeight: '900', color: C.slate700 },
+  roadmapTextBlock: { flex: 1, gap: 2 },
+  roadmapTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  roadmapTitle: { fontSize: 12, fontWeight: '900', color: C.slate800 },
+  roadmapTitleAccent: { color: C.violet950 },
+  roadmapDesc: { fontSize: 11, color: C.slate400, fontWeight: '400' },
+  roadmapTag: { backgroundColor: C.slate100, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  roadmapTagAccent: { backgroundColor: C.violet100 },
+  roadmapTagDone: { backgroundColor: C.emerald100 },
+  roadmapTagText: { fontSize: 9, fontWeight: '900', color: C.slate500 },
+  roadmapTagTextAccent: { color: C.violet700 },
+  roadmapTagTextDone: { color: C.emerald800 },
+  docsSection: { gap: 10 },
+  docsCountLabel: { fontSize: 11, fontWeight: '700', color: C.slate400 },
+  docCard: {
+    backgroundColor: C.white,
+    borderRadius: 24,
+    padding: 14,
+    borderWidth: 2,
+    borderColor: C.violet200,
+    gap: 10,
+  },
+  docCardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: C.slate100,
+    paddingBottom: 10,
+  },
+  docCardTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: C.violet50,
+    borderWidth: 1,
+    borderColor: C.violet100,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  docCardTagText: { fontSize: 11, fontWeight: '800', color: C.violet700 },
+  docCardRemove: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: C.slate100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  docCardBodyRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  docCardThumb: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  docCardInfo: { flex: 1, gap: 2 },
+  docCardName: { fontSize: 12, fontWeight: '900', color: C.slate900 },
+  docCardMeta: { fontSize: 11, color: C.slate400 },
+  hintBox: {
+    backgroundColor: C.slate50,
+    borderWidth: 1,
+    borderColor: '#E5EAF0',
+    borderRadius: 14,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  hintText: { flex: 1, fontSize: 11, color: C.slate600, lineHeight: 16 },
+  hintBold: { fontWeight: '800', color: C.slate800 },
+  dock: {
+    backgroundColor: 'rgba(255,255,255,0.97)',
+    borderTopWidth: 1,
+    borderTopColor: C.slate100,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 10,
+  },
+  dockRow: { flexDirection: 'row', gap: 8 },
+  dockButton: {
+    flex: 1,
+    backgroundColor: C.slate50,
+    borderRadius: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#E5EAF0',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dockButtonAccent: { backgroundColor: C.violet50, borderColor: C.violet200 },
+  dockButtonDisabled: { opacity: 0.4 },
+  dockButtonText: { fontSize: 12, fontWeight: '800', color: C.slate800 },
+  dockButtonTextAccent: { fontSize: 12, fontWeight: '800', color: C.violet900 },
+  analyzeButtonWrap: { borderRadius: 16, overflow: 'hidden' },
+  analyzeButtonWrapDisabled: { opacity: 0.5 },
+  analyzeButton: {
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  analyzeButtonText: { color: C.white, fontSize: 14, fontWeight: '900' },
+  analyzingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 20 },
+  analyzingSpinnerWrap: { alignItems: 'center', justifyContent: 'center' },
+  analyzingRobot: { position: 'absolute', fontSize: 26 },
+  analyzingTextBlock: { alignItems: 'center', gap: 6 },
+  analyzingTitle: { fontSize: 15, fontWeight: '800', color: C.slate900, textAlign: 'center' },
+  analyzingSubtitle: { fontSize: 12, color: C.slate500, textAlign: 'center', lineHeight: 18 },
+  analyzingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: C.slate50,
+    borderWidth: 1,
+    borderColor: '#E5EAF0',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  analyzingPillText: { fontSize: 11, fontWeight: '700', color: C.slate600 },
+});
