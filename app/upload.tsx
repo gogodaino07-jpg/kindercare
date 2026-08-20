@@ -1,6 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { Stack, useRouter, useNavigation, useLocalSearchParams } from 'expo-router';
+import { Stack, useRouter, useNavigation } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,8 +33,6 @@ const MAX_DOCS = 5;
 export default function UploadScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const { mode } = useLocalSearchParams<{ mode?: string }>();
-  const isMealMode = mode === 'meal';
   const { selectedChild, events, googleAccount, addMealPlans } = useAppData();
   const { isSubscribed } = useSubscription();
   const { showAlert } = useAlert();
@@ -265,17 +263,9 @@ export default function UploadScreen() {
     setRemainingAnalyses(count);
     setAnalyzing(false);
 
-    // 급식 메뉴는 감지되면 스캔 모드와 무관하게 바로 저장한다(검수 없이 자동 등록).
+    // 급식 메뉴가 감지되면 검수 없이 바로 저장한다.
     if (mealPlans.length > 0) {
       addMealPlans(mealPlans);
-    }
-
-    // 급식 메뉴 전용 스캔은 일정과 무관하게 급식 메뉴만 가져오면 끝 — 검수 화면으로 보내지 않는다.
-    if (isMealMode) {
-      AnalysisResultStore.clearPendingSession();
-      showToast(mealPlans.length > 0 ? '급식 메뉴를 등록했어요 🍱' : '사진에서 급식 메뉴를 찾지 못했어요. 다른 사진으로 시도해보세요.');
-      router.back();
-      return;
     }
 
     // Check for duplicate/similar events already in calendar
@@ -378,7 +368,7 @@ export default function UploadScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: isMealMode ? '급식 메뉴 스캔' : '가정통신문 업로드' }} />
+      <Stack.Screen options={{ title: '가정통신문 업로드' }} />
       <View style={{ flex: 1 }} />
     </SafeAreaView>
   );
