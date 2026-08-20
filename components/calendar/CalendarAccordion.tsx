@@ -15,7 +15,7 @@ import { toISODate } from '../../utils/date';
 import { calendarTheme as t } from './calendarTheme';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-const ROW_HEIGHT = 64;
+const ROW_HEIGHT = 54;
 const DRAG_RANGE = 90; // px of drag needed to fully toggle
 const DRAG_THRESHOLD = 18; // px
 
@@ -299,7 +299,7 @@ function WeekRow({
   );
 }
 
-const CELL_SIZE = 38;
+const CELL_SIZE = 32;
 
 const styles = StyleSheet.create({
   card: {
@@ -307,9 +307,9 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     marginHorizontal: 16,
     marginBottom: 14,
-    paddingTop: 14,
+    paddingTop: 12,
     paddingHorizontal: 12,
-    paddingBottom: 8,
+    paddingBottom: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 4,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   monthNav: {
     flexDirection: 'row',
@@ -384,12 +384,12 @@ const styles = StyleSheet.create({
     width: `${100 / 7}%`,
     height: ROW_HEIGHT,
     alignItems: 'center',
-    paddingTop: 4,
+    paddingTop: 3,
   },
   dayCell: {
     width: CELL_SIZE,
     height: CELL_SIZE,
-    borderRadius: 14,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: t.cardWhite,
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   dayNumber: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: t.textPrimary,
   },
