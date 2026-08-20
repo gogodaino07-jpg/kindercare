@@ -1,4 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -21,19 +21,25 @@ import SmartBanner from '../components/calendar/SmartBanner';
 import { useAppData } from '../context/AppDataContext';
 import { getDisplayItems } from '../hooks/useLocalChecklist';
 import { Event, EventItem } from '../types/models';
-import { toISODate } from '../utils/date';
+import { parseISODate, toISODate } from '../utils/date';
 
 export default function CalendarScreen() {
   const router = useRouter();
+  const { date: dateParam } = useLocalSearchParams<{ date?: string }>();
   const { events, selectedChild, updateEvent } = useAppData();
 
   const todayISO = useMemo(() => toISODate(new Date()), []);
+  // 홈 화면에서 특정 날짜의 일정을 탭해서 들어온 경우, 그 날짜에 포커스한 채로 시작한다.
+  const initialDate = useMemo(
+    () => (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : todayISO),
+    [dateParam, todayISO]
+  );
 
   const [monthCursor, setMonthCursor] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
+    const base = parseISODate(initialDate);
+    return new Date(base.getFullYear(), base.getMonth(), 1);
   });
-  const [selectedDate, setSelectedDate] = useState<string>(todayISO);
+  const [selectedDate, setSelectedDate] = useState<string>(initialDate);
 
   const [addEventVisible, setAddEventVisible] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
