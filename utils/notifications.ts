@@ -47,6 +47,17 @@ function summaryLine(event: Event): string {
   return '일정을 확인해주세요';
 }
 
+/** 같은 날짜에 일정이 여러 건이면 하나로 묶어서 알려준다 — 1건이면 그 일정 내용 그대로, 여러 건이면 건수+목록으로. */
+function buildNotificationContent(label: string, dateEvents: Event[]): { title: string; body: string } {
+  if (dateEvents.length === 1) {
+    return { title: `[${label}] ${dateEvents[0].title}`, body: summaryLine(dateEvents[0]) };
+  }
+  return {
+    title: `[${label}] 일정 ${dateEvents.length}건`,
+    body: dateEvents.map((e) => `• ${e.title}`).join('\n'),
+  };
+}
+
 export async function scheduleEventNotifications(
   events: Event[],
   settings: NotificationSettings
@@ -61,34 +72,38 @@ export async function scheduleEventNotifications(
 
   const upcoming = events.filter((e) => !isPast(e.date) && hasNotifiableContent(e));
 
+  const byDate = new Map<string, Event[]>();
   for (const event of upcoming) {
-    const eventDate = parseISODate(event.date);
+    const arr = byDate.get(event.date) ?? [];
+    arr.push(event);
+    byDate.set(event.date, arr);
+  }
 
-    const dayBefore = new Date(eventDate);
-    dayBefore.setDate(dayBefore.getDate() - 1);
-    const dayBeforeTrigger = withTime(dayBefore, settings.dayBeforeTime);
-    if (event.notifyDayBefore !== false && dayBeforeTrigger.getTime() > Date.now()) {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `🔵 내일  ${event.title}`,
-          body: summaryLine(event),
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: dayBeforeTrigger,
-          channelId: ANDROID_CHANNEL_ID,
-        },
-      });
+  for (const [dateISO, dateEvents] of byDate) {
+    const eventDate = parseISODate(dateISO);
+
+    const dayBeforeEvents = dateEvents.filter((e) => e.notifyDayBefore !== false);
+    if (dayBeforeEvents.length > 0) {
+      const dayBefore = new Date(eventDate);
+      dayBefore.setDate(dayBefore.getDate() - 1);
+      const dayBeforeTrigger = withTime(dayBefore, settings.dayBeforeTime);
+      if (dayBeforeTrigger.getTime() > Date.now()) {
+        await Notifications.scheduleNotificationAsync({
+          content: buildNotificationContent('내일', dayBeforeEvents),
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: dayBeforeTrigger,
+            channelId: ANDROID_CHANNEL_ID,
+          },
+        });
+      }
     }
 
     if (settings.sameDayEnabled) {
       const sameDayTrigger = withTime(eventDate, settings.sameDayTime);
       if (sameDayTrigger.getTime() > Date.now()) {
         await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `🔴 오늘  ${event.title}`,
-            body: summaryLine(event),
-          },
+          content: buildNotificationContent('오늘', dateEvents),
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
             date: sameDayTrigger,
