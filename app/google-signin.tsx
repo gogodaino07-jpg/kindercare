@@ -382,21 +382,19 @@ export default function GoogleSignInScreen() {
       </Pressable>
 
       <View style={styles.content}>
-        <View style={styles.logoBadge}>
-          <Animated.Image
-            source={require('../assets/logo_pure_chick_transparent.png')}
-            style={[
-              styles.logoImage,
-              {
-                transform: [
-                  { translateY: floatAnim },
-                  { scale: pulseAnim }
-                ]
-              }
-            ]}
-            resizeMode="contain"
-          />
-        </View>
+        <Animated.Image
+          source={require('../assets/logo_pure_chick_transparent.png')}
+          style={[
+            styles.logoImage,
+            {
+              transform: [
+                { translateY: floatAnim },
+                { scale: pulseAnim }
+              ]
+            }
+          ]}
+          resizeMode="contain"
+        />
         <Text style={styles.title}>Kindercare 시작하기</Text>
         <Text style={styles.subtitle}>가족과 함께하는 일상의 시작,{'\n'}소셜 계정으로 1초 만에 가입하세요</Text>
 
@@ -466,23 +464,10 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'center',
       paddingHorizontal: 32,
     },
-    logoBadge: {
+    logoImage: {
       width: 168,
       height: 168,
-      borderRadius: 40,
-      borderWidth: 1.5,
-      borderColor: 'rgba(255,255,255,0.85)',
-      backgroundColor: 'rgba(255,255,255,0.5)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 18,
-      ...SHADOW,
-      shadowOpacity: 0.08,
-      elevation: 3,
-    },
-    logoImage: {
-      width: 128,
-      height: 128,
+      marginBottom: 10,
     },
     title: {
       fontSize: 22,

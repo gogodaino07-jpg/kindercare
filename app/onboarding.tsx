@@ -87,17 +87,19 @@ function FloatingBadge(props: { emoji?: string; bg?: string; border?: string; im
   const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, -14] });
   const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['-3deg', '3deg'] });
 
-  // 그림자(elevation)가 있는 뷰를 그대로 애니메이션시키면 안드로이드에서
-  // 트랜스폼 도중 그림자 레이어가 잠깐 불투명하게 튀는 현상이 있어,
-  // 그림자를 담당하는 정적 뷰와 움직이는 뷰를 분리한다.
+  // 그림자(elevation)가 있는 뷰를 그대로 애니메이션시키거나 반투명 배경과
+  // 한 뷰에 같이 두면 안드로이드에서 그림자가 각지게 튀는 현상이 있어,
+  // 그림자 전용 정적 뷰 / 반투명 배경 뷰 / 애니메이션 뷰를 모두 분리한다.
   return (
     <Animated.View style={{ transform: [{ translateY: translateY }, { rotate: rotate }] }}>
-      <View style={[styles.badge, bg ? { backgroundColor: bg } : null, border ? { borderColor: border } : null]}>
-        {image ? (
-          <Image source={image} style={{ width: 140, height: 140 }} resizeMode="contain" />
-        ) : (
-          <Text style={{ fontSize: 54 }}>{emoji}</Text>
-        )}
+      <View style={styles.badgeShadow}>
+        <View style={[styles.badge, bg ? { backgroundColor: bg } : null, border ? { borderColor: border } : null]}>
+          {image ? (
+            <Image source={image} style={{ width: 140, height: 140 }} resizeMode="contain" />
+          ) : (
+            <Text style={{ fontSize: 54 }}>{emoji}</Text>
+          )}
+        </View>
       </View>
     </Animated.View>
   );
@@ -227,6 +229,12 @@ const styles = StyleSheet.create({
   },
   skipText: { fontSize: 13, fontWeight: '700', color: COLORS.gray },
   slide: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 },
+  badgeShadow: {
+    borderRadius: 32,
+    ...SHADOW,
+    shadowOpacity: 0.08,
+    elevation: 3,
+  },
   badge: {
     width: 128,
     height: 128,
@@ -236,9 +244,6 @@ const styles = StyleSheet.create({
     backgroundColor: GLASS_BG,
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOW,
-    shadowOpacity: 0.08,
-    elevation: 3,
   },
   title: { marginTop: 26, marginBottom: 8, fontSize: 21, fontWeight: '800', color: COLORS.ink, textAlign: 'center', lineHeight: 28 },
   subtitle: { marginBottom: 20, fontSize: 13.5, color: COLORS.gray, textAlign: 'center', lineHeight: 20, fontWeight: '600' },

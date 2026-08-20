@@ -63,13 +63,15 @@ export default function FamilyGroupStartScreen() {
           </Pressable>
         </View>
 
-        <Pressable style={styles.secondaryCard} onPress={() => setShowJoinModal(true)}>
-          <Text style={styles.secondaryCardIcon}>🔑</Text>
-          <View style={styles.cardTextArea}>
-            <Text style={styles.secondaryCardTitle}>초대 코드로 참여</Text>
-            <Text style={styles.secondaryCardSubtitle}>가족에게 받은 코드를 입력해요</Text>
-          </View>
-        </Pressable>
+        <View style={styles.secondaryCardShadow}>
+          <Pressable style={styles.secondaryCard} onPress={() => setShowJoinModal(true)}>
+            <Text style={styles.secondaryCardIcon}>🔑</Text>
+            <View style={styles.cardTextArea}>
+              <Text style={styles.secondaryCardTitle}>초대 코드로 참여</Text>
+              <Text style={styles.secondaryCardSubtitle}>가족에게 받은 코드를 입력해요</Text>
+            </View>
+          </Pressable>
+        </View>
 
         <TouchableOpacity style={styles.reloginButton} onPress={handleRelogin}>
           <Text style={styles.reloginText}>
@@ -128,17 +130,20 @@ function createStyles(colors: ThemeColors) {
     primaryCardIcon: { fontSize: 28, marginRight: 14 },
     primaryCardTitle: { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
     primaryCardSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+    secondaryCardShadow: {
+      borderRadius: 18,
+      ...SHADOW,
+      shadowOpacity: 0.06,
+      elevation: 2,
+    },
     secondaryCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: 'rgba(255,255,255,0.5)',
+      backgroundColor: 'rgba(255,255,255,0.6)',
       borderWidth: 1.5,
       borderColor: 'rgba(255,255,255,0.85)',
       borderRadius: 18,
       padding: 20,
-      ...SHADOW,
-      shadowOpacity: 0.06,
-      elevation: 2,
     },
     secondaryCardIcon: { fontSize: 28, marginRight: 14 },
     secondaryCardTitle: { fontSize: 17, fontWeight: '800', color: '#1E293B' },

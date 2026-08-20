@@ -77,7 +77,6 @@ export default function HomeScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const progressYRef = useRef(0);
   const progressHeightRef = useRef(0);
-  const [profileBarHeight, setProfileBarHeight] = useState(0);
   const [stickyVisible, setStickyVisible] = useState(false);
 
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
@@ -153,9 +152,15 @@ export default function HomeScreen() {
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View onLayout={(e) => setProfileBarHeight(e.nativeEvent.layout.height)}>
-          <HomeProfileBar selectedChild={selectedChild} onPressChild={() => setSwitcherOpen(true)} />
-        </View>
+        <HomeProfileBar selectedChild={selectedChild} onPressChild={() => setSwitcherOpen(true)} />
+        {stickyVisible && (
+          <StickyPrepBar
+            total={todayProgress.total}
+            checked={todayProgress.checked}
+            percent={todayProgress.percent}
+            onPress={scrollToProgress}
+          />
+        )}
         {upcoming.isEmpty ? (
           <HomeEmptyContent
             selectedChild={selectedChild}
@@ -213,14 +218,6 @@ export default function HomeScreen() {
                 onToggleAll={checklist.setAllChecked}
               />
             </ScrollView>
-            <StickyPrepBar
-              visible={stickyVisible}
-              top={profileBarHeight}
-              total={todayProgress.total}
-              checked={todayProgress.checked}
-              percent={todayProgress.percent}
-              onPress={scrollToProgress}
-            />
           </>
         )}
       </SafeAreaView>

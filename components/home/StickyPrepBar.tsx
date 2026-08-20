@@ -6,8 +6,6 @@ import { useThemeColors } from '../../context/ThemeContext';
 import Text from '../common/AppText';
 
 interface StickyPrepBarProps {
-  visible: boolean;
-  top: number;
   total: number;
   checked: number;
   percent: number;
@@ -16,9 +14,11 @@ interface StickyPrepBarProps {
 
 /**
  * 홈 화면의 "오늘 등원 준비물 챙기기" 배너가 스크롤로 화면(절반 이상) 밖으로
- * 나가면, 대신 화면 상단에 뜨는 얇은 진행률 띠.
+ * 나가면, 프로필 바 바로 아래에 대신 나타나는 얇은 진행률 띠.
+ * 절대위치로 띄우지 않고 실제 레이아웃 흐름에 넣어, 아래 스크롤 영역이
+ * 살짝 밀리며 나타나게 해서 프로필 영역과 겹칠 일이 없게 한다.
  */
-export default function StickyPrepBar({ visible, top, total, checked, percent, onPress }: StickyPrepBarProps) {
+export default function StickyPrepBar({ total, checked, percent, onPress }: StickyPrepBarProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -26,12 +26,12 @@ export default function StickyPrepBar({ visible, top, total, checked, percent, o
 
   useEffect(() => {
     Animated.timing(anim, {
-      toValue: visible ? 1 : 0,
+      toValue: 1,
       duration: 220,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-  }, [visible, anim]);
+  }, [anim]);
 
   if (total === 0) return null;
 
@@ -39,10 +39,7 @@ export default function StickyPrepBar({ visible, top, total, checked, percent, o
   const clampedPercent = Math.max(0, Math.min(percent, 100));
 
   return (
-    <Animated.View
-      pointerEvents={visible ? 'auto' : 'none'}
-      style={[styles.wrap, { top, opacity: anim, transform: [{ translateY }] }]}
-    >
+    <Animated.View style={[styles.wrap, { opacity: anim, transform: [{ translateY }] }]}>
       <Pressable onPress={onPress} style={styles.pill}>
         <View style={styles.row}>
           <View style={styles.iconBadge}>
@@ -64,12 +61,9 @@ export default function StickyPrepBar({ visible, top, total, checked, percent, o
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     wrap: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      zIndex: 50,
       paddingHorizontal: 20,
       paddingTop: 8,
+      paddingBottom: 4,
     },
     pill: {
       backgroundColor: colors.cardWhite,
