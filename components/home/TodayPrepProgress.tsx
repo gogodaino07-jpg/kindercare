@@ -1,10 +1,12 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
-import React, { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import Text from '../common/AppText';
+
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 interface TodayPrepProgressProps {
   total: number;
@@ -17,18 +19,30 @@ export default function TodayPrepProgress({ total, checked, percent }: TodayPrep
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  const clampedPercent = Math.max(0, Math.min(percent, 100));
+  const fillAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fillAnim, {
+      toValue: clampedPercent,
+      duration: 700,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [clampedPercent, fillAnim]);
+
   if (total === 0) return null;
 
-  const clampedPercent = Math.max(0, Math.min(percent, 100));
+  const animatedWidth = fillAnim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] });
 
   return (
     <View style={styles.container}>
       {/* 카드 배경 자체가 진행률만큼 녹색으로 차오르는 큰 프로그레스바 역할을 한다. */}
-      <LinearGradient
+      <AnimatedLinearGradient
         colors={[colors.statusGreen, colors.green500]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        style={[styles.fill, { width: `${clampedPercent}%` }]}
+        style={[styles.fill, { width: animatedWidth }]}
       />
 
       <View style={styles.content}>
@@ -124,7 +138,8 @@ function createStyles(colors: ThemeColors) {
       borderColor: 'rgba(0,0,0,0.12)',
     },
     gaugeSegmentFilled: {
-      backgroundColor: '#FDE68A',
+      backgroundColor: '#FFFFFF',
+      borderColor: 'rgba(255,255,255,0.9)',
     },
     doneRow: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.5)' },
     doneText: { fontSize: 12, fontWeight: '800', color: colors.gray900, textAlign: 'center' },
