@@ -16,8 +16,8 @@ import { calendarTheme as t } from './calendarTheme';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const ROW_HEIGHT = 64;
-const DRAG_RANGE = 120; // px of drag needed to fully toggle
-const DRAG_THRESHOLD = 25; // px
+const DRAG_RANGE = 90; // px of drag needed to fully toggle
+const DRAG_THRESHOLD = 18; // px
 
 interface CalendarAccordionProps {
   monthCursor: Date;
@@ -83,31 +83,56 @@ export default function CalendarAccordion({
   }));
 
   const dragStart = useSharedValue(0);
+
+  const applyDragUpdate = (translationY: number) => {
+    'worklet';
+    const delta = -translationY / DRAG_RANGE; // 위로 밀면(음수) 축소, 아래로 당기면 확대
+    expandedProgress.value = Math.min(1, Math.max(0, dragStart.value + delta));
+  };
+  const applyDragEnd = (translationY: number) => {
+    'worklet';
+    let target: 0 | 1;
+    if (Math.abs(translationY) > DRAG_THRESHOLD) {
+      target = translationY < 0 ? 0 : 1;
+    } else {
+      target = dragStart.value > 0.5 ? 1 : 0;
+    }
+    runOnJS(setExpanded)(target);
+  };
+
+  // 힌트바(하단) 드래그 — 터치 영역이 시각적으로 작아 hitSlop으로 실제 인식
+  // 범위를 넉넉하게 넓혀서 잡기 쉽게 한다.
   const dragGesture = Gesture.Pan()
+    .hitSlop({ top: 16, bottom: 16, left: 24, right: 24 })
     .onStart(() => {
       dragStart.value = expandedProgress.value;
     })
-    .onUpdate((e) => {
-      const delta = -e.translationY / DRAG_RANGE; // 위로 밀면(음수) 축소, 아래로 당기면 확대
-      expandedProgress.value = Math.min(1, Math.max(0, dragStart.value + delta));
-    })
-    .onEnd((e) => {
-      let target: 0 | 1;
-      if (Math.abs(e.translationY) > DRAG_THRESHOLD) {
-        target = e.translationY < 0 ? 0 : 1;
-      } else {
-        target = dragStart.value > 0.5 ? 1 : 0;
-      }
-      runOnJS(setExpanded)(target);
-    });
+    .onUpdate((e) => applyDragUpdate(e.translationY))
+    .onEnd((e) => applyDragEnd(e.translationY));
 
-  const tapGesture = Gesture.Tap().onEnd(() => {
-    runOnJS(setExpanded)(isExpanded ? 0 : 1);
-  });
+  const tapGesture = Gesture.Tap()
+    .hitSlop({ top: 16, bottom: 16, left: 24, right: 24 })
+    .onEnd(() => {
+      runOnJS(setExpanded)(isExpanded ? 0 : 1);
+    });
 
   const hintGesture = Gesture.Race(dragGesture, tapGesture);
 
   const toggleBadge = () => setExpanded(isExpanded ? 0 : 1);
+
+  // 요일 행/날짜 그리드 영역(예: 12일~19일 줄쯤)에서 위/아래로 스크롤(드래그)해도
+  // 힌트바와 똑같이 축소/확대되도록 한다. failOffsetX로 가로 이동이 먼저 크면
+  // 이 제스처는 실패시켜 월 스와이프(Fling)에 넘겨주고, activeOffsetY로 세로
+  // 이동이 살짝만 있어도 활성화되지만 아주 작은 움직임(탭)은 그대로
+  // 날짜 셀의 onPress로 전달되게 한다.
+  const gridDragGesture = Gesture.Pan()
+    .activeOffsetY([-10, 10])
+    .failOffsetX([-15, 15])
+    .onStart(() => {
+      dragStart.value = expandedProgress.value;
+    })
+    .onUpdate((e) => applyDragUpdate(e.translationY))
+    .onEnd((e) => applyDragEnd(e.translationY));
 
   // 요일 행/날짜 그리드 영역에서 좌우로 스와이프하면 이전/다음 달로 이동한다.
   const swipeLeftGesture = Gesture.Fling()
@@ -120,7 +145,7 @@ export default function CalendarAccordion({
     .onStart(() => {
       runOnJS(onPrevMonth)();
     });
-  const monthSwipeGesture = Gesture.Race(swipeLeftGesture, swipeRightGesture);
+  const monthSwipeGesture = Gesture.Race(swipeLeftGesture, swipeRightGesture, gridDragGesture);
 
   return (
     <View style={styles.card}>
