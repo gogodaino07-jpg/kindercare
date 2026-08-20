@@ -2,6 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { ImagePickerAsset } from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View, Image } from 'react-native';
 import PermissionModal from '../components/onboarding/PermissionModal';
@@ -9,14 +10,22 @@ import PhotoCropModal from '../components/child-profile/PhotoCropModal';
 import PhotoSourceSheet from '../components/child-profile/PhotoSourceSheet';
 import Text from '../components/common/AppText';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
-import { SHADOW, ThemeColors } from '../constants/theme';
+import { SHADOW } from '../constants/theme';
+import { STAMP_BOARD_THEMES } from '../constants/stampBoardThemes';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
-import { useThemeColors } from '../context/ThemeContext';
 import { ChildAge } from '../types/models';
 import { ageFromBirthdate, toISODate } from '../utils/date';
 import { stripInvalidCharacters } from '../utils/validation';
+
+const BG_GRADIENT = STAMP_BOARD_THEMES.blue.bgGradient;
+const CTA_GRADIENT = STAMP_BOARD_THEMES.blue.stampButtonGradient;
+const INK = '#1E293B';
+const GRAY = '#64748B';
+const ACCENT_BLUE = '#0EA5E9';
+const ERROR_RED = '#E4574C';
+const BORDER = '#E2E8F0';
 
 function formatBirthdate(date: Date): string {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
@@ -27,8 +36,6 @@ export default function OnboardingChildSetupScreen() {
   const { addChild, completeOnboarding } = useAppData();
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
-  const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const classNameInputRef = useRef<TextInput>(null);
@@ -123,7 +130,8 @@ export default function OnboardingChildSetupScreen() {
   };
 
   return (
-    <OnboardingBackground>
+    <OnboardingBackground style={{ backgroundColor: 'transparent' }}>
+      <LinearGradient colors={BG_GRADIENT} style={StyleSheet.absoluteFill} />
       <KeyboardAvoidingView
         style={styles.keyboardAvoider}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -160,6 +168,7 @@ export default function OnboardingChildSetupScreen() {
           </Pressable>
         </View>
 
+        <View style={styles.cardShadow}>
         <View style={styles.card}>
           <Text style={styles.label}>이름</Text>
           <TextInput
@@ -171,7 +180,7 @@ export default function OnboardingChildSetupScreen() {
             }}
             maxLength={10}
             placeholder="아이 이름을 입력해주세요"
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={GRAY}
           />
           {error && !name.trim() ? (
             <Text style={styles.errorText}>아이 이름을 입력해주세요</Text>
@@ -185,7 +194,7 @@ export default function OnboardingChildSetupScreen() {
               maximumDate={maxDate}
               minimumDate={minDate}
               themeVariant="light"
-              accentColor={colors.coralPink}
+              accentColor={ACCENT_BLUE}
               onChange={(_, selected) => selected && setBirthdate(selected)}
             />
           ) : (
@@ -206,7 +215,7 @@ export default function OnboardingChildSetupScreen() {
                   minimumDate={minDate}
                   display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
                   themeVariant="light"
-                  accentColor={colors.coralPink}
+                  accentColor={ACCENT_BLUE}
                   onChange={(event, selected) => {
                     setShowPicker(Platform.OS === 'ios');
                     if (selected) setBirthdate(selected);
@@ -230,24 +239,30 @@ export default function OnboardingChildSetupScreen() {
             }}
             onFocus={scrollToClassNameInput}
             placeholder="예: 병아리반, 7세반 (반 구분이 없으면 '없음' 입력)"
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={GRAY}
           />
           {error && !className.trim() ? (
             <Text style={styles.errorText}>반 이름을 입력해주세요</Text>
           ) : null}
+        </View>
         </View>
 
         <View style={styles.spacer} />
         <View style={styles.spacer} />
       </ScrollView>
 
-      <Pressable
-        style={[styles.completeButton, !canCreate && styles.completeButtonDisabled]}
-        onPress={handleCreate}
-        disabled={!canCreate}
-      >
-        <Text style={styles.completeButtonText}>프로필 생성 완료</Text>
-      </Pressable>
+      <View style={[styles.completeButtonShadow, !canCreate && styles.completeButtonDisabled]}>
+        <Pressable onPress={handleCreate} disabled={!canCreate}>
+          <LinearGradient
+            colors={CTA_GRADIENT}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.completeButton}
+          >
+            <Text style={styles.completeButtonText}>프로필 생성 완료</Text>
+          </LinearGradient>
+        </Pressable>
+      </View>
       </KeyboardAvoidingView>
 
       <PermissionModal visible={showPermissionModal} onDone={handlePermissionDone} />
@@ -276,8 +291,7 @@ export default function OnboardingChildSetupScreen() {
   );
 }
 
-function createStyles(colors: ThemeColors) {
-  return StyleSheet.create({
+const styles = StyleSheet.create({
     keyboardAvoider: { flex: 1 },
     scroll: { flex: 1 },
     content: {
@@ -299,7 +313,7 @@ function createStyles(colors: ThemeColors) {
     backText: {
       fontSize: 15,
       fontWeight: '600',
-      color: colors.textSecondary,
+      color: GRAY,
     },
     spacer: {
       flex: 1,
@@ -310,15 +324,16 @@ function createStyles(colors: ThemeColors) {
     title: {
       fontSize: 22,
       fontWeight: '800',
-      color: colors.textPrimary,
+      color: INK,
       marginBottom: 8,
       textAlign: 'center',
     },
     subtitle: {
       fontSize: 13,
-      color: colors.textSecondary,
+      color: GRAY,
       lineHeight: 20,
       textAlign: 'center',
+      fontWeight: '600',
     },
     photoSection: {
       alignItems: 'center',
@@ -341,7 +356,7 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 2,
-      borderColor: colors.border,
+      borderColor: BORDER,
       borderStyle: 'dashed',
     },
     photoPlaceholderIcon: {
@@ -354,7 +369,7 @@ function createStyles(colors: ThemeColors) {
       width: 36,
       height: 36,
       borderRadius: 18,
-      backgroundColor: colors.textPrimary,
+      backgroundColor: INK,
       alignItems: 'center',
       justifyContent: 'center',
       ...SHADOW,
@@ -362,16 +377,26 @@ function createStyles(colors: ThemeColors) {
     cameraBadgeIcon: {
       fontSize: 16,
     },
+    // 안드로이드 elevation은 배경 없는(투명) 뷰에서 둥근 모서리를 무시하고
+    // 각진 그림자를 그려 흰 상자처럼 비치는 버그가 있어, 안드로이드에서는
+    // 그림자를 끄고 iOS 전용 그림자만 유지한다.
+    cardShadow: {
+      borderRadius: 20,
+      ...SHADOW,
+      shadowOpacity: 0.08,
+      elevation: 0,
+    },
     card: {
-      backgroundColor: colors.creamBeigeCard,
+      backgroundColor: 'rgba(255,255,255,0.72)',
+      borderWidth: 2,
+      borderColor: '#BAE6FD',
       borderRadius: 20,
       padding: 24,
-      ...SHADOW,
     },
     label: {
       fontSize: 13,
       fontWeight: '700',
-      color: colors.textPrimary,
+      color: INK,
       marginBottom: 8,
     },
     input: {
@@ -380,12 +405,12 @@ function createStyles(colors: ThemeColors) {
       paddingHorizontal: 14,
       paddingVertical: 12,
       fontSize: 15,
-      color: colors.textPrimary,
+      color: INK,
       borderWidth: 1.5,
       borderColor: 'transparent',
     },
     inputInvalid: {
-      borderColor: colors.tomorrowRed,
+      borderColor: ERROR_RED,
     },
     dateButton: {
       backgroundColor: '#FFFFFF',
@@ -395,22 +420,26 @@ function createStyles(colors: ThemeColors) {
     },
     dateButtonText: {
       fontSize: 15,
-      color: colors.textPrimary,
+      color: INK,
       fontWeight: '600',
     },
     errorText: {
-      color: colors.tomorrowRed,
+      color: ERROR_RED,
       fontSize: 12,
       marginTop: 10,
     },
-    completeButton: {
+    completeButtonShadow: {
       marginHorizontal: 24,
       marginBottom: 24,
-      backgroundColor: colors.coralPink,
+      borderRadius: 16,
+      ...SHADOW,
+      shadowOpacity: 0.16,
+      elevation: 0,
+    },
+    completeButton: {
       borderRadius: 16,
       paddingVertical: 16,
       alignItems: 'center',
-      ...SHADOW,
     },
     completeButtonDisabled: {
       opacity: 0.4,
@@ -420,5 +449,4 @@ function createStyles(colors: ThemeColors) {
       fontSize: 16,
       fontWeight: '700',
     },
-  });
-}
+});
