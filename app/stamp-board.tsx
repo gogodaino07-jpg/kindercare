@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, Pattern, Rect } from 'react-native-svg';
+import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
 import { RAINBOW_PROGRESS_GRADIENT, STAMP_BOARD_THEMES, WISH_PRESETS } from '../constants/stampBoardThemes';
 import { useAlert } from '../context/AlertContext';
@@ -74,6 +75,9 @@ export default function StampBoardScreen() {
   const stampAnim = useRef(new Animated.Value(1)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
   const prevCompletedRef = useRef(isCompleted);
+  // 애니메이션이 끝나야 addStamp()가 불리는데, hasStampedToday 상태는 그 전까지 그대로라
+  // 애니메이션 도중 연타하면 두 번 다 통과해서 도장이 2개 찍힌다. ref로 즉시 막는다.
+  const isStampingRef = useRef(false);
 
   useEffect(() => {
     if (isCompleted && !prevCompletedRef.current && soundEnabled) {
@@ -88,7 +92,8 @@ export default function StampBoardScreen() {
   };
 
   const handleStamp = () => {
-    if (hasStampedToday || isCompleted) return;
+    if (hasStampedToday || isCompleted || isStampingRef.current) return;
+    isStampingRef.current = true;
 
     if (soundEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 
@@ -105,6 +110,7 @@ export default function StampBoardScreen() {
     ]).start(() => {
       addStamp();
       setStampingIndex(null);
+      isStampingRef.current = false;
     });
   };
 
@@ -149,7 +155,7 @@ export default function StampBoardScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <LinearGradient colors={theme.bgGradient} style={StyleSheet.absoluteFill} />
 
-      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.iconButton} hitSlop={6}>
             <MaterialCommunityIcons name="chevron-left" size={26} color="#1E293B" />
@@ -191,10 +197,7 @@ export default function StampBoardScreen() {
           </Pressable>
         </View>
 
-        <ScrollView
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: 140 + insets.bottom }]}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.wishCard}>
             <Text style={styles.wishCloudDecor}>🌈</Text>
             <View style={styles.wishTopRow}>
@@ -300,9 +303,13 @@ export default function StampBoardScreen() {
           </View>
         </ScrollView>
 
-        <View style={[styles.footer, { paddingBottom: 14 + insets.bottom }]}>
+        <View style={styles.footer}>
           <Animated.View style={{ transform: [{ scale: buttonScale }], width: '100%', alignItems: 'center' }}>
-            <Pressable onPress={handleStamp} disabled={hasStampedToday || isCompleted} style={styles.stampButtonWrap}>
+            <Pressable
+              onPress={handleStamp}
+              disabled={hasStampedToday || isCompleted || stampingIndex !== null}
+              style={styles.stampButtonWrap}
+            >
               <LinearGradient
                 colors={hasStampedToday ? ['#E2E8F0', '#E2E8F0'] : theme.stampButtonGradient}
                 start={{ x: 0, y: 0 }}
@@ -336,6 +343,8 @@ export default function StampBoardScreen() {
             </Pressable>
           </View>
         </View>
+
+        <CoupangBanner style={{ paddingBottom: insets.bottom }} />
       </SafeAreaView>
 
       {/* 목표 달성 축하 오버레이 */}
@@ -534,7 +543,7 @@ const styles = StyleSheet.create({
   classBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
   classBadgeText: { fontSize: 12, fontWeight: '800' },
   headerSubtitle: { fontSize: 13, fontWeight: '700', color: '#0369A1', marginTop: 2 },
-  scrollContent: { paddingHorizontal: 14, paddingTop: 4, gap: 10 },
+  scrollContent: { paddingHorizontal: 14, paddingTop: 4, paddingBottom: 90, gap: 8 },
   wishCard: {
     backgroundColor: 'rgba(255,255,255,0.92)',
     borderRadius: 20,
@@ -677,16 +686,17 @@ const styles = StyleSheet.create({
   stampSlotCloud: { position: 'absolute', top: 3, right: 3, fontSize: 8 },
   footer: {
     paddingHorizontal: 14,
-    paddingTop: 10,
+    paddingTop: 8,
+    paddingBottom: 8,
     backgroundColor: 'rgba(255,255,255,0.92)',
     borderTopWidth: 1,
     borderTopColor: 'rgba(226,232,240,0.6)',
-    gap: 6,
+    gap: 5,
   },
   stampButtonWrap: { width: '100%', borderRadius: 18, overflow: 'hidden' },
   stampButton: {
     width: '100%',
-    paddingVertical: 15,
+    paddingVertical: 13,
     borderRadius: 18,
     flexDirection: 'row',
     alignItems: 'center',
