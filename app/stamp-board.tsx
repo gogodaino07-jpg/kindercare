@@ -67,6 +67,7 @@ export default function StampBoardScreen() {
     setStampIcon,
     setSoundEnabled,
     refresh,
+    cancelTodayStamp,
   } = useStampBoard(selectedChild?.id);
 
   const theme = STAMP_BOARD_THEMES[themeId];
@@ -126,6 +127,13 @@ export default function StampBoardScreen() {
       setStampingIndex(null);
       isStampingRef.current = false;
     });
+  };
+
+  // 오늘 찍은 도장(가장 마지막 칸)만 탭해서 취소할 수 있다 — 이전 날짜 도장은 지난 성취라 건드리지 않는다.
+  const handleCancelTodayStamp = () => {
+    if (!hasStampedToday || isStampingRef.current) return;
+    if (soundEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    cancelTodayStamp();
   };
 
   const saveWish = () => {
@@ -291,6 +299,7 @@ export default function StampBoardScreen() {
               {Array.from({ length: targetCount }).map((_, index) => {
                 const isStamped = index < currentStamps;
                 const isJustStamped = index === stampingIndex;
+                const isTodaysStamp = hasStampedToday && index === currentStamps - 1;
 
                 return (
                   <View key={index} style={styles.stampSlotWrap}>
@@ -298,17 +307,22 @@ export default function StampBoardScreen() {
                       <Animated.View
                         style={[styles.stampSlotAnimatedWrap, isJustStamped && { transform: [{ scale: stampAnim }] }]}
                       >
-                        <LinearGradient
-                          colors={['#FEF3C7', '#FCE7F3', '#E0F2FE']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={[styles.stampSlot, styles.stampSlotActive]}
+                        <Pressable
+                          onPress={isTodaysStamp ? handleCancelTodayStamp : undefined}
+                          disabled={!isTodaysStamp}
                         >
-                          <Text style={styles.stampEmoji}>{stampIcon}</Text>
-                          <View style={styles.stampIndexBadge}>
-                            <Text style={styles.stampIndexText}>{index + 1}</Text>
-                          </View>
-                        </LinearGradient>
+                          <LinearGradient
+                            colors={['#FEF3C7', '#FCE7F3', '#E0F2FE']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={[styles.stampSlot, styles.stampSlotActive]}
+                          >
+                            <Text style={styles.stampEmoji}>{stampIcon}</Text>
+                            <View style={styles.stampIndexBadge}>
+                              <Text style={styles.stampIndexText}>{index + 1}</Text>
+                            </View>
+                          </LinearGradient>
+                        </Pressable>
                       </Animated.View>
                     ) : (
                       <View style={[styles.stampSlot, styles.stampSlotInactive]}>
@@ -669,13 +683,19 @@ const styles = StyleSheet.create({
   },
   stickerEmoji: { fontSize: 15 },
   boardCard: {
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 12,
     borderWidth: 1,
     overflow: 'hidden',
   },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginHorizontal: -5 },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignContent: 'center',
+    marginHorizontal: -5,
+  },
   stampSlotWrap: { width: '20%', aspectRatio: 1, padding: 5, alignItems: 'center', justifyContent: 'center' },
   stampSlotAnimatedWrap: { width: '100%', height: '100%' },
   stampSlot: {
