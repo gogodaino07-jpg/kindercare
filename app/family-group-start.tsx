@@ -142,9 +142,9 @@ function createStyles(colors: ThemeColors) {
     secondaryCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: 'rgba(255,255,255,0.6)',
-      borderWidth: 1.5,
-      borderColor: 'rgba(255,255,255,0.85)',
+      backgroundColor: 'rgba(255,255,255,0.72)',
+      borderWidth: 2,
+      borderColor: '#BAE6FD',
       borderRadius: 18,
       padding: 20,
     },
