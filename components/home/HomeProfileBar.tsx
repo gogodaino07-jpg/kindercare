@@ -81,7 +81,7 @@ function createStyles(colors: ThemeColors) {
       paddingHorizontal: 20,
       paddingTop: 8,
       paddingBottom: 4,
-      backgroundColor: colors.skyBackground,
+      backgroundColor: 'transparent',
     },
     profileRow: {
       flexDirection: 'row',

@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
@@ -288,22 +289,47 @@ function AnimatedWeatherEmoji({ emoji, label, style }: { emoji: string; label: s
 }
 
 /** Pulsing placeholder box shown while weather data is loading. */
-function SkeletonBox({ style }: { style: any }) {
+function SkeletonBox({ style, compact }: { style: any; compact?: boolean }) {
   const opacity = useRef(new Animated.Value(0.5)).current;
+  const spin = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const loop = Animated.loop(
+    const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(opacity, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
         Animated.timing(opacity, { toValue: 0.5, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       ])
     );
-    loop.start();
-    return () => loop.stop();
-  }, [opacity]);
+    const spinLoop = Animated.loop(
+      Animated.timing(spin, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true })
+    );
+    pulseLoop.start();
+    spinLoop.start();
+    return () => {
+      pulseLoop.stop();
+      spinLoop.stop();
+    };
+  }, [opacity, spin]);
 
-  return <Animated.View style={[style, { opacity }]} />;
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+
+  return (
+    <Animated.View style={[style, { opacity }]}>
+      <View style={skeletonStyles.center}>
+        <Animated.View style={{ transform: [{ rotate }] }}>
+          <Feather name="refresh-cw" size={compact ? 12 : 15} color="#94A3B8" />
+        </Animated.View>
+        <Text style={compact ? skeletonStyles.textCompact : skeletonStyles.text}>로딩중입니다</Text>
+      </View>
+    </Animated.View>
+  );
 }
+
+const skeletonStyles = StyleSheet.create({
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  text: { fontSize: 11, fontWeight: '700', color: '#94A3B8' },
+  textCompact: { fontSize: 9.5, fontWeight: '700', color: '#94A3B8' },
+});
 
 function MiniWeatherCard({
   label,
@@ -322,7 +348,7 @@ function MiniWeatherCard({
   const styles = useMemo(() => createMiniCardStyles(colors), [colors]);
 
   if (loading) {
-    return <SkeletonBox style={[styles.container, styles.skeleton]} />;
+    return <SkeletonBox style={[styles.container, styles.skeleton]} compact />;
   }
 
   return (
