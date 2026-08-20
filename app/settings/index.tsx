@@ -5,15 +5,16 @@ import {
   ScrollView,
   View,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   StatusBar,
   Platform,
   Linking,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ScreenBackground from '../../components/ScreenBackground';
+import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
@@ -171,7 +172,18 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScreenBackground>
+    <View style={styles.screenBg}>
+    <Stack.Screen
+      options={{
+        headerStyle: { backgroundColor: t.bg },
+        headerShadowVisible: false,
+        headerLeft: () => (
+          <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
+            <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+          </Pressable>
+        ),
+      }}
+    />
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
 
@@ -277,12 +289,19 @@ export default function SettingsScreen() {
         </ScrollView>
       </View>
     </SafeAreaView>
-    </ScreenBackground>
+    </View>
   );
 }
 
 function createStyles(colors: any) {
   return StyleSheet.create({
+    screenBg: {
+      flex: 1,
+      backgroundColor: t.bg,
+    },
+    headerBackButton: {
+      paddingHorizontal: 4,
+    },
     safeArea: {
       flex: 1,
     },
