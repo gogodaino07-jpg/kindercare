@@ -73,8 +73,6 @@ export default function HomeScreen() {
   const [adPopupVisible, setAdPopupVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<ScheduleTab>('today');
   const [refreshing, setRefreshing] = useState(false);
-  const upcomingEmptyRef = useRef(upcoming.isEmpty);
-  upcomingEmptyRef.current = upcoming.isEmpty;
   const scrollRef = useRef<ScrollView>(null);
   const progressYRef = useRef(0);
 
@@ -108,43 +106,24 @@ export default function HomeScreen() {
   // Show ad popup once per app session when app is ready — never while the
   // app-lock screen is still up, since a native Modal always renders above it
   // regardless of z-index and would visually jump the ad in front of the
-  // pattern/biometric prompt on cold start.
-  //
-  // The popup only renders when there are events (see below), but events
-  // load in asynchronously after a cold start, so we briefly retry (up to
-  // ~5.5s) to give that a chance to settle instead of giving up instantly.
-  // This retry window is intentionally bounded to app *launch* only — it
-  // must NOT keep watching upcoming.isEmpty for the rest of the session,
-  // otherwise adding a user's very first event mid-session (or returning to
-  // Home after an AI scan, which remounts this screen) would itself trigger
-  // the popup, which is not the intended behavior. hasAttemptedAdThisSession
-  // is marked regardless of outcome so a remount never retries.
+  // pattern/biometric prompt on cold start. Shown regardless of whether the
+  // user has any events yet — a brand-new signup with zero events should
+  // still see it, not just users who already have schedules.
+  // hasAttemptedAdThisSession is a module-scope flag (not state) so AI scan
+  // → Home remounts mid-session don't retrigger it; it only resets on a
+  // genuine cold start.
   useEffect(() => {
     if (hasAttemptedAdThisSession || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked || isSubscribed) {
       return;
     }
 
-    let cancelled = false;
-    let timeoutId: ReturnType<typeof setTimeout>;
-    const MAX_RETRIES = 4; // 1.5s + 4*1s ≈ 5.5s grace window for cold-start data to arrive
+    const timeoutId = setTimeout(() => {
+      if (hasAttemptedAdThisSession) return;
+      setAdPopupVisible(true);
+      hasAttemptedAdThisSession = true;
+    }, 1500); // 1.5s delay for better UX
 
-    const attemptShow = (retriesLeft: number) => {
-      if (cancelled || hasAttemptedAdThisSession) return;
-      if (!upcomingEmptyRef.current) {
-        setAdPopupVisible(true);
-        hasAttemptedAdThisSession = true;
-      } else if (retriesLeft > 0) {
-        timeoutId = setTimeout(() => attemptShow(retriesLeft - 1), 1000);
-      } else {
-        hasAttemptedAdThisSession = true; // grace window exhausted — don't keep retrying on later remounts
-      }
-    };
-
-    timeoutId = setTimeout(() => attemptShow(MAX_RETRIES), 1500); // 1.5s delay for better UX
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-    };
+    return () => clearTimeout(timeoutId);
   }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, isSubscribed]);
 
   const handleEventPress = useCallback(
@@ -221,7 +200,7 @@ export default function HomeScreen() {
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
       <MealPlanSheet visible={mealSheetOpen} onClose={() => setMealSheetOpen(false)} />
-      {!upcoming.isEmpty && !isLocked && !isSubscribed && <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />}
+      {!isLocked && !isSubscribed && <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />}
     </ScreenBackground>
   );
 }
