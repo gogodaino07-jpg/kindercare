@@ -23,6 +23,11 @@ import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
 import { toISODate } from '../utils/date';
 
+// 앱 프로세스가 살아있는 동안 전면 광고는 한 번만 시도한다. 컴포넌트 스코프
+// ref로 관리하면 AI 스캔 후 홈으로 돌아오면서 화면이 다시 마운트될 때마다
+// 광고가 또 뜨는 문제가 있어, 모듈 스코프(진짜 콜드 스타트에서만 리셋)로 관리.
+let hasAttemptedAdThisSession = false;
+
 function createStyles(colors: ThemeColors, bottomInset: number) {
   return StyleSheet.create({
     safeArea: {
@@ -68,7 +73,6 @@ export default function HomeScreen() {
   const [adPopupVisible, setAdPopupVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<ScheduleTab>('all');
   const [refreshing, setRefreshing] = useState(false);
-  const adShownRef = useRef(false);
   const upcomingEmptyRef = useRef(upcoming.isEmpty);
   upcomingEmptyRef.current = upcoming.isEmpty;
   const scrollRef = useRef<ScrollView>(null);
@@ -102,20 +106,22 @@ export default function HomeScreen() {
     else setActiveTab('all');
   }, []);
 
-  // Show ad popup once when app is ready — never while the app-lock screen is
-  // still up, since a native Modal always renders above it regardless of
-  // z-index and would visually jump the ad in front of the pattern/biometric
-  // prompt on cold start.
+  // Show ad popup once per app session when app is ready — never while the
+  // app-lock screen is still up, since a native Modal always renders above it
+  // regardless of z-index and would visually jump the ad in front of the
+  // pattern/biometric prompt on cold start.
   //
   // The popup only renders when there are events (see below), but events
   // load in asynchronously after a cold start, so we briefly retry (up to
   // ~5.5s) to give that a chance to settle instead of giving up instantly.
   // This retry window is intentionally bounded to app *launch* only — it
   // must NOT keep watching upcoming.isEmpty for the rest of the session,
-  // otherwise adding a user's very first event mid-session would itself
-  // trigger the popup right after, which is not the intended behavior.
+  // otherwise adding a user's very first event mid-session (or returning to
+  // Home after an AI scan, which remounts this screen) would itself trigger
+  // the popup, which is not the intended behavior. hasAttemptedAdThisSession
+  // is marked regardless of outcome so a remount never retries.
   useEffect(() => {
-    if (adShownRef.current || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked || isSubscribed) {
+    if (hasAttemptedAdThisSession || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked || isSubscribed) {
       return;
     }
 
@@ -124,12 +130,14 @@ export default function HomeScreen() {
     const MAX_RETRIES = 4; // 1.5s + 4*1s ≈ 5.5s grace window for cold-start data to arrive
 
     const attemptShow = (retriesLeft: number) => {
-      if (cancelled || adShownRef.current) return;
+      if (cancelled || hasAttemptedAdThisSession) return;
       if (!upcomingEmptyRef.current) {
         setAdPopupVisible(true);
-        adShownRef.current = true;
+        hasAttemptedAdThisSession = true;
       } else if (retriesLeft > 0) {
         timeoutId = setTimeout(() => attemptShow(retriesLeft - 1), 1000);
+      } else {
+        hasAttemptedAdThisSession = true; // grace window exhausted — don't keep retrying on later remounts
       }
     };
 
