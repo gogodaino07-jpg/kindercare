@@ -1,7 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import Text from '../common/AppText';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
@@ -100,7 +100,10 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleRequestClose}>
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <Pressable style={StyleSheet.absoluteFill} onPress={handleRequestClose} />
         <View style={styles.card}>
           <View style={styles.headerRow}>
@@ -173,7 +176,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
             <Text style={styles.saveButtonText}>등록하기</Text>
           </Pressable>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
