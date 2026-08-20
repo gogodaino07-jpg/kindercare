@@ -35,7 +35,6 @@ interface GeminiExtractedItem {
 interface GeminiExtractedEvent {
   date?: string;
   title?: string;
-  note?: string;
   memo?: string;
   items?: GeminiExtractedItem[];
   category?: string;
@@ -68,7 +67,6 @@ const RESPONSE_SCHEMA = {
         properties: {
           date: { type: 'string' },
           title: { type: 'string' },
-          note: { type: 'string' },
           memo: { type: 'string' },
           items: {
             type: 'array',
@@ -139,9 +137,24 @@ function extractMealPlans(
     }));
 }
 
+function formatReferenceEvents(events: Omit<Event, 'id'>[]): string {
+  if (events.length === 0) return '(참고할 기존 일정 없음)';
+  return events
+    .map((e) => {
+      const itemNames = (e.items ?? []).map((i) => i.name).filter(Boolean);
+      const itemsPart = itemNames.length > 0 ? itemNames.join(', ') : '없음';
+      return `- ${e.date} ${e.title}${e.category ? ` [${e.category}]` : ''} — 준비물: ${itemsPart}`;
+    })
+    .join('\n');
+}
+
 export const GeminiAnalysisService = {
   /** 키를 앱에 하드코딩하지 않고 Firestore에서 실행 시점에 읽어와 Gemini를 직접 호출. */
-  async analyze(docs: UploadedDoc[], child: Child): Promise<GeminiAnalysisResult> {
+  async analyze(
+    docs: UploadedDoc[],
+    child: Child,
+    existingEvents: Omit<Event, 'id'>[] = []
+  ): Promise<GeminiAnalysisResult> {
     const apiKey = await getGeminiApiKey();
     const todayISO = toISODate(new Date());
     const parts = await Promise.all(docs.map(async (doc) => {
@@ -158,7 +171,7 @@ export const GeminiAnalysisService = {
       contents: [
         {
           role: 'user',
-          parts: [{ text: this.buildPrompt(todayISO, child) }, ...parts],
+          parts: [{ text: this.buildPrompt(todayISO, child, existingEvents) }, ...parts],
         },
       ],
       generation_config: {
@@ -222,7 +235,7 @@ export const GeminiAnalysisService = {
         return {
           date: e.date,
           title: e.title.trim(),
-          note: items ? items.map((i) => i.name).join('\n') : e.note?.trim() || undefined,
+          note: items ? items.map((i) => i.name).join('\n') : undefined,
           memo: e.memo?.trim() || undefined,
           items,
           category: e.category?.trim() || undefined,
@@ -271,7 +284,8 @@ export const GeminiAnalysisService = {
     return doc.kind === 'image' ? 'image/jpeg' : 'application/pdf';
   },
 
-  buildPrompt(todayISO: string, child: Child): string {
+  buildPrompt(todayISO: string, child: Child, existingEvents: Omit<Event, 'id'>[] = []): string {
+    const referenceEventsBlock = formatReferenceEvents(existingEvents);
     return `당신은 유치원/어린이집 가정통신문 전문 분석가입니다.
 제공된 이미지에서 학부모가 캘린더에 등록하고 관리해야 할 모든 일정과 정보를 추출하세요.
 
@@ -300,6 +314,10 @@ ${
 [현재 기준 날짜]
 - 오늘: ${todayISO}
 
+[기존 등록된 일정 (연기·재개 판별용 참고 자료)]
+아래는 이 아이의 캘린더에 이미 등록되어 있는 최근/예정 일정 목록입니다. 지금 분석할 통신문과는 별개의 자료이니, 통신문에 실제로 없는 내용을 함부로 지어내는 데 쓰지 말고 아래 4번 규칙의 용도로만 참고하세요.
+${referenceEventsBlock}
+
 [추출 규칙]
 1. 날짜 처리:
    - "YYYY-MM-DD" 형식으로 작성하세요.
@@ -315,11 +333,16 @@ ${
    - items: 반드시 챙겨야 할 '물건'을 하나씩 개별 객체로 나눈 배열로 담으세요. 각 객체는 {name, needsReview?, reviewReason?} 형태이며, name에는 쇼핑 검색이 용이하도록 "금액"이나 "포장 조건" 등은 제외하고 핵심 물건 명칭만 적으세요 (예: [{"name": "물통"}, {"name": "도시락"}, {"name": "운동화"}]). 챙길 물건이 없으면 빈 배열([])로 두세요.
    - category: 이 일정의 성격을 아래 중 하나로 분류하세요 — "준비물"(물건을 챙겨야 함), "특별활동"(요리/체육 등 평소와 다른 활동), "행사"(현장학습/생일파티/발표회 등), "공지"(단순 안내, 제출/챙길 것 없음), "휴원/방학"(휴원일·재량휴업일·방학 안내).
    - location: 통신문에 장소가 명시되어 있을 때만 적으세요 (예: "조리실습실", "서울대공원"). 없으면 생략하세요.
-   - time: 통신문에 시간이 명시되어 있을 때만 자연스러운 한국어로 적으세요 (예: "오전 10:30", "하루 종일"). 없으면 생략하세요.
-   - noticeText: 학부모가 카드 상단에서 바로 읽을 수 있는 1~2문장 요약 안내문을 작성하세요 (예: "수박 화채 만들기 활동을 진행합니다. 옷이 더러워질 수 있어요.").
+   - time: 통신문에 "오전 10시", "하루 종일", "등원 직후"처럼 짧은 시각·시간대 표현이 명시되어 있을 때만 10자 내외로 적으세요 (예: "오전 10:30", "하루 종일"). "원내 활동시간내 진행 예정입니다"처럼 설명하는 문장은 절대 time에 넣지 마세요 — 그런 내용은 noticeText나 memo로 보내고, 짧은 시각 표현이 따로 없으면 time은 반드시 생략하세요.
+   - noticeText: 학부모가 카드 상단에서 바로 읽을 수 있도록 핵심만 1~2문장으로 짧게 요약하세요 (예: "수박 화채 만들기 활동을 진행합니다. 옷이 더러워질 수 있어요."). 통신문 문장을 그대로 옮기지 말고 반드시 요약하세요.
    - memo: 금액, 복장, 혹은 "3,000원 이내", "개별 포장" 같은 구체적인 조건을 요약하세요. noticeText와 중복되지 않게, memo는 세부 조건 위주로 적으세요.
    - 구매 판별 중요: '독서통장', '원복', '교재' 등 유치원에서 지급되어 가져가기만 하면 되는 항목이나 '제출'이 들어가는 항목은 구매가 불필요하므로 가급적 items가 아닌 memo에 포함시키거나, items에 넣더라도 항목명에 명확히 표기하세요.
    - icon: 성격에 맞는 이모지 1개
+
+4. 기존 일정의 연기·재개 처리 (위 [기존 등록된 일정] 참고):
+   - 통신문이 "재활동", "우천으로 연기", "다시 진행", "순연" 등 이미 등록된 일정과 같은 활동을 날짜만 바꿔 다시 안내하는 내용이라면, 제목·활동 내용으로 [기존 등록된 일정] 목록에서 같은 활동을 찾아보세요.
+   - 같은 활동을 찾았다면, 새로 만드는 이벤트의 items는 통신문에 실제로 적힌 준비물만으로 제한하지 말고, 참고한 기존 일정의 준비물 목록을 기반으로 삼아 빠짐없이 채우세요. 통신문에 일부만 다시 언급되어 있어도(예: "수영복만 다시 챙겨주세요") 활동 성격상 원래 함께 챙기던 물건(예: 수건, 방수 가방, 속옷, 갈아입을 옷)이 있었다면 함께 포함하세요.
+   - 참고한 기존 일정과 명백히 다른 활동이거나, 통신문에서 이번엔 준비물이 필요 없다고 명시했다면 억지로 채우지 마세요.
 
 5. 요일별 활동/특강 표 처리:
    - "특강 및 행사", "특별활동", "특강", "대소집단 활동"처럼 요일별로 과목이나 활동명이 나열된 표(예: 월=영어, 화=체육, 수=태권도/오감)가 있다면, 하트(♥)나 빈칸처럼 특별한 내용이 없는 날은 건너뛰고, 실제 과목/활동명이 적힌 날짜만 각각 하나의 이벤트로 추출하세요.

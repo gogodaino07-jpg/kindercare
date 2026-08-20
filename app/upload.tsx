@@ -68,7 +68,7 @@ function fileIconColors(doc: UploadedDoc): [string, string] {
 export default function UploadScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const { selectedChild, googleAccount, addMealPlans } = useAppData();
+  const { selectedChild, googleAccount, addMealPlans, events } = useAppData();
   const { isSubscribed } = useSubscription();
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
@@ -273,11 +273,23 @@ export default function UploadScreen() {
 
     await AnalysisResultStore.savePendingSession(targetDocs, targetChild);
 
+    // 통신문이 "물놀이 재활동", "현장학습 연기" 처럼 이미 등록된 일정을 미루거나
+    // 다시 진행한다는 안내일 때, 새 통신문에 준비물이 다 적혀있지 않아도 AI가
+    // 원래 일정의 준비물을 참고할 수 있도록 최근 일정을 함께 넘겨준다.
+    const REFERENCE_WINDOW_DAYS_BEFORE = 14;
+    const REFERENCE_WINDOW_DAYS_AFTER = 45;
+    const windowStart = toISODate(new Date(Date.now() - REFERENCE_WINDOW_DAYS_BEFORE * 24 * 60 * 60 * 1000));
+    const windowEnd = toISODate(new Date(Date.now() + REFERENCE_WINDOW_DAYS_AFTER * 24 * 60 * 60 * 1000));
+    const referenceEvents = events
+      .filter((e) => e.childId === targetChild.id && e.date >= windowStart && e.date <= windowEnd)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 30);
+
     setAnalyzing(true);
     let result: Omit<Event, 'id'>[];
     let mealPlans: Omit<MealPlan, 'id'>[];
     try {
-      const analysis = await GeminiAnalysisService.analyze(targetDocs, targetChild);
+      const analysis = await GeminiAnalysisService.analyze(targetDocs, targetChild, referenceEvents);
       result = analysis.events;
       mealPlans = analysis.mealPlans;
     } catch (err) {
