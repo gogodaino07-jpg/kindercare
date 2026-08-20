@@ -1,6 +1,7 @@
 import { Stack, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   runOnJS,
@@ -48,14 +49,50 @@ export default function CalendarScreen() {
     expandedProgress.value = withTiming(target, { duration: 300, easing: Easing.inOut(Easing.ease) });
   }, [expandedProgress]);
 
+  // "맨 위 도달"만으로 바로 확대되지 않도록, 맨 위에 도착한 뒤 한 번 더
+  // 의도적으로 당기는 제스처(약 18px 이상)가 있을 때만 확대한다.
+  const PULL_TO_EXPAND_THRESHOLD = 18;
+  const scrollY = useSharedValue(0);
+
   const scrollHandler = useAnimatedScrollHandler((event) => {
     const y = event.contentOffset.y;
+    scrollY.value = y;
     if (y > 20 && expandedProgress.value > 0.5) {
       runOnJS(setExpanded)(0);
-    } else if (y <= 2 && expandedProgress.value < 0.5) {
+    } else if (
+      Platform.OS === 'ios' &&
+      y <= -PULL_TO_EXPAND_THRESHOLD &&
+      expandedProgress.value < 0.5
+    ) {
+      // iOS: 맨 위에서 더 당기면 ScrollView가 자체 바운스로 음수 오프셋을 보고해준다.
       runOnJS(setExpanded)(1);
     }
   });
+
+  // Android: 기본 ScrollView는 맨 위에서 바운스(음수 오프셋)를 주지 않으므로,
+  // 같은 터치를 관찰하는 Pan 제스처를 ScrollView와 동시에 실행해 "맨 위에
+  // 도달한 뒤 추가로 당긴 양"을 직접 측정해서 확대를 트리거한다.
+  const nativeScrollGesture = Gesture.Native();
+  const pullReferenceY = useSharedValue<number | null>(null);
+  const pullToExpandGesture = Gesture.Pan()
+    .enabled(Platform.OS === 'android')
+    .simultaneousWithExternalGesture(nativeScrollGesture)
+    .onUpdate((e) => {
+      if (scrollY.value > 2) {
+        pullReferenceY.value = null;
+        return;
+      }
+      if (pullReferenceY.value === null) {
+        pullReferenceY.value = e.translationY;
+      }
+      const pulled = e.translationY - pullReferenceY.value;
+      if (pulled > PULL_TO_EXPAND_THRESHOLD && expandedProgress.value < 0.5) {
+        runOnJS(setExpanded)(1);
+      }
+    })
+    .onEnd(() => {
+      pullReferenceY.value = null;
+    });
 
   const childEvents = useMemo(
     () => events.filter((e) => e.childId === selectedChild?.id),
@@ -168,22 +205,25 @@ export default function CalendarScreen() {
           setExpanded={setExpanded}
         />
 
-        <Animated.ScrollView
-          style={styles.scrollFlex}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          onScroll={scrollHandler}
-          scrollEventThrottle={16}
-        >
-          <DayDetailSection
-            selectedDate={selectedDate}
-            events={selectedDateEvents}
-            todayISO={todayISO}
-            onAddEvent={() => setAddEventVisible(true)}
-            onToggleItem={handleToggleItem}
-            onOpenBuy={handleOpenBuy}
-          />
-        </Animated.ScrollView>
+        <GestureDetector gesture={Gesture.Simultaneous(pullToExpandGesture, nativeScrollGesture)}>
+          <Animated.ScrollView
+            style={styles.scrollFlex}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            onScroll={scrollHandler}
+            scrollEventThrottle={16}
+            overScrollMode="always"
+          >
+            <DayDetailSection
+              selectedDate={selectedDate}
+              events={selectedDateEvents}
+              todayISO={todayISO}
+              onAddEvent={() => setAddEventVisible(true)}
+              onToggleItem={handleToggleItem}
+              onOpenBuy={handleOpenBuy}
+            />
+          </Animated.ScrollView>
+        </GestureDetector>
       </SafeAreaView>
 
       <BuyModal
