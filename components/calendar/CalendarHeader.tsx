@@ -65,7 +65,7 @@ export default function CalendarHeader({
   );
 }
 
-const AVATAR_SIZE = 44;
+const AVATAR_SIZE = 56;
 
 const styles = StyleSheet.create({
   row: {
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarPlaceholderIcon: {
-    fontSize: 20,
+    fontSize: 25,
   },
   textBlock: {
     flex: 1,

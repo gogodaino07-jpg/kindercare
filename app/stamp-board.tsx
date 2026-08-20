@@ -542,10 +542,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(226,232,240,0.8)',
   },
   profileBlock: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0 },
-  avatarWrap: { width: 44, height: 44, position: 'relative' },
-  avatarImage: { width: 44, height: 44, borderRadius: 22 },
+  avatarWrap: { width: 56, height: 56, position: 'relative' },
+  avatarImage: { width: 56, height: 56, borderRadius: 28 },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
-  avatarEmoji: { fontSize: 20 },
+  avatarEmoji: { fontSize: 25 },
   onlineDot: {
     position: 'absolute',
     bottom: -1,
