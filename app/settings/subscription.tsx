@@ -1,9 +1,10 @@
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Purchases, { PurchasesPackage } from 'react-native-purchases';
-import ScreenBackground from '../../components/ScreenBackground';
+import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAlert } from '../../context/AlertContext';
@@ -22,6 +23,7 @@ const BENEFITS = [
 ];
 
 export default function SubscriptionScreen() {
+  const router = useRouter();
   const { isSubscribed, isBillingConfigured, managementURL, refresh } = useSubscription();
   const { showAlert } = useAlert();
   const colors = useThemeColors();
@@ -81,7 +83,18 @@ export default function SubscriptionScreen() {
   };
 
   return (
-    <ScreenBackground>
+    <View style={styles.screenBg}>
+      <Stack.Screen
+        options={{
+          headerStyle: { backgroundColor: t.bg },
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
+              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+            </Pressable>
+          ),
+        }}
+      />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.headerCard}>
@@ -131,12 +144,14 @@ export default function SubscriptionScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
-    </ScreenBackground>
+    </View>
   );
 }
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
+    screenBg: { flex: 1, backgroundColor: t.bg },
+    headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20, paddingBottom: 40 },
     headerCard: {

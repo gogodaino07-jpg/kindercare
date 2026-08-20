@@ -1,8 +1,9 @@
-import { useRouter } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import ScreenBackground from '../../components/ScreenBackground';
+import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
@@ -51,7 +52,18 @@ export default function SupportScreen() {
   };
 
   return (
-    <ScreenBackground>
+    <View style={styles.screenBg}>
+      <Stack.Screen
+        options={{
+          headerStyle: { backgroundColor: t.bg },
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
+              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+            </Pressable>
+          ),
+        }}
+      />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.sectionLabel}>답변받을 이메일</Text>
@@ -114,12 +126,14 @@ export default function SupportScreen() {
           </View>
         </Pressable>
       </Modal>
-    </ScreenBackground>
+    </View>
   );
 }
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
+    screenBg: { flex: 1, backgroundColor: t.bg },
+    headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20, paddingBottom: 120 },
     sectionLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8 },

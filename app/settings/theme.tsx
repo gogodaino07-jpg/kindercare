@@ -1,7 +1,9 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import ScreenBackground from '../../components/ScreenBackground';
+import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import { SHADOW } from '../../constants/theme';
 import { THEME_MODE_LABELS, ThemeMode, useTheme } from '../../context/ThemeContext';
@@ -9,10 +11,22 @@ import { THEME_MODE_LABELS, ThemeMode, useTheme } from '../../context/ThemeConte
 const OPTIONS: ThemeMode[] = ['system', 'light', 'dark'];
 
 export default function ThemeSettingsScreen() {
+  const router = useRouter();
   const { mode, setMode, colors } = useTheme();
 
   return (
-    <ScreenBackground>
+    <View style={styles.screenBg}>
+      <Stack.Screen
+        options={{
+          headerStyle: { backgroundColor: t.bg },
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
+              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+            </Pressable>
+          ),
+        }}
+      />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <View style={styles.content}>
           {OPTIONS.map((option) => {
@@ -38,11 +52,13 @@ export default function ThemeSettingsScreen() {
           })}
         </View>
       </SafeAreaView>
-    </ScreenBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screenBg: { flex: 1, backgroundColor: t.bg },
+  headerBackButton: { paddingHorizontal: 4 },
   safeArea: { flex: 1 },
   content: { padding: 20 },
   row: {

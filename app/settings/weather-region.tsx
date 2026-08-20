@@ -1,8 +1,10 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { Stack, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import ScreenBackground from '../../components/ScreenBackground';
+import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { WEATHER_REGIONS } from '../../constants/weatherRegions';
@@ -12,6 +14,7 @@ import { invalidateWeatherCache } from '../../hooks/useWeeklyWeather';
 import { useWeatherRegion } from '../../hooks/useWeatherRegion';
 
 export default function WeatherRegionSettingsScreen() {
+  const router = useRouter();
   const { region, setRegion } = useWeatherRegion();
   const { showAlert } = useAlert();
   const colors = useThemeColors();
@@ -57,7 +60,18 @@ export default function WeatherRegionSettingsScreen() {
   const isCustomActive = !!region && !region.code;
 
   return (
-    <ScreenBackground>
+    <View style={styles.screenBg}>
+      <Stack.Screen
+        options={{
+          headerStyle: { backgroundColor: t.bg },
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
+              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+            </Pressable>
+          ),
+        }}
+      />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.subtitle}>홈 화면 날씨를 조회할 지역을 골라주세요. 자동을 고르면 기기 위치(GPS)를 사용해요.</Text>
@@ -116,12 +130,14 @@ export default function WeatherRegionSettingsScreen() {
           })}
         </ScrollView>
       </SafeAreaView>
-    </ScreenBackground>
+    </View>
   );
 }
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
+    screenBg: { flex: 1, backgroundColor: t.bg },
+    headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20, paddingBottom: 40 },
     subtitle: {

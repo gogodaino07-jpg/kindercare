@@ -1,7 +1,9 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import ScreenBackground from '../../components/ScreenBackground';
+import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import PatternGrid from '../../components/settings/PatternGrid';
 import { SHADOW } from '../../constants/theme';
@@ -35,6 +37,7 @@ type SetupStage =
   | { kind: 'pattern-confirm'; first: string };
 
 export default function AppLockSettingsScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { showToast } = useToast();
@@ -316,7 +319,18 @@ export default function AppLockSettingsScreen() {
   };
 
   return (
-    <ScreenBackground>
+    <View style={styles.screenBg}>
+      <Stack.Screen
+        options={{
+          headerStyle: { backgroundColor: t.bg },
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
+              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+            </Pressable>
+          ),
+        }}
+      />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         {stage.kind !== 'idle' ? (
           renderSetupUI()
@@ -384,12 +398,14 @@ export default function AppLockSettingsScreen() {
           </ScrollView>
         )}
       </SafeAreaView>
-    </ScreenBackground>
+    </View>
   );
 }
 
 function createStyles(colors: any) {
   return StyleSheet.create({
+    screenBg: { flex: 1, backgroundColor: t.bg },
+    headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20 },
     setupContainer: { flex: 1, padding: 20, justifyContent: 'center' },

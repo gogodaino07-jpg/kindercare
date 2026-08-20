@@ -1,23 +1,37 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import ChalkboardPreview from '../../components/settings/ChalkboardPreview';
-import ScreenBackground from '../../components/ScreenBackground';
 import { CHALKBOARD_THEMES } from '../../constants/chalkboardThemes';
 import { ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
 
 export default function ChalkboardThemeScreen() {
+  const router = useRouter();
   const { chalkboardThemeId, setChalkboardThemeId } = useAppData();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const selectedTheme =
-    CHALKBOARD_THEMES.find((t) => t.id === chalkboardThemeId) ?? CHALKBOARD_THEMES[0];
+    CHALKBOARD_THEMES.find((ct) => ct.id === chalkboardThemeId) ?? CHALKBOARD_THEMES[0];
 
   return (
-    <ScreenBackground>
+    <View style={styles.screenBg}>
+      <Stack.Screen
+        options={{
+          headerStyle: { backgroundColor: t.bg },
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
+              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+            </Pressable>
+          ),
+        }}
+      />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.title}>팝업 테마</Text>
@@ -50,12 +64,14 @@ export default function ChalkboardThemeScreen() {
           <ChalkboardPreview theme={selectedTheme} />
         </ScrollView>
       </SafeAreaView>
-    </ScreenBackground>
+    </View>
   );
 }
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
+    screenBg: { flex: 1, backgroundColor: t.bg },
+    headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20, alignItems: 'center' },
     title: {

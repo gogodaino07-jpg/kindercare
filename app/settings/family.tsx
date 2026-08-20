@@ -1,6 +1,7 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Contacts from 'expo-contacts';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -14,7 +15,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import ScreenBackground from '../../components/ScreenBackground';
+import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAlert } from '../../context/AlertContext';
@@ -32,6 +33,7 @@ function formatPhoneNumber(raw: string): string {
 }
 
 export default function FamilyMembersScreen() {
+  const router = useRouter();
   const { title: titleParam } = useLocalSearchParams<{ title?: string }>();
   const isManagementMode = titleParam === '구성원 관리';
   const isReissueMode = titleParam === '키 공유 / 재발급';
@@ -166,8 +168,19 @@ export default function FamilyMembersScreen() {
   };
 
   return (
-    <ScreenBackground>
-      <Stack.Screen options={{ title: titleParam ?? '가족 계정' }} />
+    <View style={styles.screenBg}>
+      <Stack.Screen
+        options={{
+          title: titleParam ?? '가족 계정',
+          headerStyle: { backgroundColor: t.bg },
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
+              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+            </Pressable>
+          ),
+        }}
+      />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           {isReissueMode && (
@@ -291,13 +304,15 @@ export default function FamilyMembersScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </ScreenBackground>
+    </View>
   );
 }
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: colors.gray50 },
+    screenBg: { flex: 1, backgroundColor: t.bg },
+    headerBackButton: { paddingHorizontal: 4 },
+    safeArea: { flex: 1, backgroundColor: t.bg },
     content: { padding: 20, paddingBottom: 120 },
     sectionLabel: {
       fontSize: 13,

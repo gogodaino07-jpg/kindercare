@@ -1,7 +1,9 @@
-import { Stack } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import { useThemeColors } from '../../context/ThemeContext';
 import { SHADOW } from '../../constants/theme';
@@ -31,12 +33,24 @@ const LICENSES: LicenseItem[] = [
 ];
 
 export default function LicensesScreen() {
+  const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <Stack.Screen options={{ title: '오픈소스 라이선스' }} />
+      <Stack.Screen
+        options={{
+          title: '오픈소스 라이선스',
+          headerStyle: { backgroundColor: t.bg },
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
+              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+            </Pressable>
+          ),
+        }}
+      />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.headerTitle}>오픈소스 소프트웨어 공지</Text>
         <Text style={styles.headerSubtitle}>
@@ -71,7 +85,10 @@ function createStyles(colors: any) {
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: colors.skyBackground,
+      backgroundColor: t.bg,
+    },
+    headerBackButton: {
+      paddingHorizontal: 4,
     },
     scrollContent: {
       padding: 20,
