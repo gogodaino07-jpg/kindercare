@@ -8,7 +8,7 @@ export default function CalendarScreen() {
   return (
     <ScreenBackground>
       <SafeAreaView style={{ flex: 1 }}>
-        <Stack.Screen options={{ title: '' }} />
+        <Stack.Screen options={{ headerShown: false }} />
         <View style={{ flex: 1 }} />
       </SafeAreaView>
     </ScreenBackground>
