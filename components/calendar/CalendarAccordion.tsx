@@ -114,21 +114,10 @@ export default function CalendarAccordion({
 
   const toggleBadge = () => setExpanded(isExpanded ? 0 : 1);
 
-  // 요일 행/날짜 그리드 영역(예: 12일~19일 줄쯤)에서 위/아래로 스크롤(드래그)해도
-  // 힌트바와 똑같이 축소/확대되도록 한다. failOffsetX로 가로 이동이 먼저 크면
-  // 이 제스처는 실패시켜 월 스와이프(Fling)에 넘겨주고, activeOffsetY로 세로
-  // 이동이 살짝만 있어도 활성화되지만 아주 작은 움직임(탭)은 그대로
-  // 날짜 셀의 onPress로 전달되게 한다.
-  const gridDragGesture = Gesture.Pan()
-    .activeOffsetY([-10, 10])
-    .failOffsetX([-15, 15])
-    .onStart(() => {
-      dragStart.value = expandedProgress.value;
-    })
-    .onUpdate((e) => applyDragUpdate(e.translationY))
-    .onEnd((e) => applyDragEnd(e.translationY));
-
   // 요일 행/날짜 그리드 영역에서 좌우로 스와이프하면 이전/다음 달로 이동한다.
+  // (예전엔 이 영역에서 위/아래로 드래그해도 힌트바처럼 확대/축소됐는데, 연속으로
+  // 위아래 스크롤하면 그때마다 걸려서 카드가 깜빡이듯 커졌다 작아지길 반복하는
+  // 문제가 있어 제거함 — 확대/축소는 이제 힌트바 드래그와 토글 배지로만 한다.)
   const swipeLeftGesture = Gesture.Fling()
     .direction(Directions.LEFT)
     .onStart(() => {
@@ -139,7 +128,7 @@ export default function CalendarAccordion({
     .onStart(() => {
       runOnJS(onPrevMonth)();
     });
-  const monthSwipeGesture = Gesture.Race(swipeLeftGesture, swipeRightGesture, gridDragGesture);
+  const monthSwipeGesture = Gesture.Race(swipeLeftGesture, swipeRightGesture);
 
   return (
     <View style={styles.card}>
