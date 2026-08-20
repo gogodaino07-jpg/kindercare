@@ -15,6 +15,7 @@ export const SCAN_COLORS = {
   slate500: '#64748B',
   slate400: '#94A3B8',
   slate200: '#E2E8F0',
+  slate300: '#CBD5E1',
   slate100: '#F1F5F9',
   slate50: '#F8FAFC',
   white: '#FFFFFF',

@@ -500,6 +500,14 @@ function TipBox() {
   );
 }
 
+function RoadmapConnector() {
+  return (
+    <View style={styles.roadmapConnector}>
+      <Feather name="chevron-down" size={16} color={C.slate300} />
+    </View>
+  );
+}
+
 function RoadmapCard() {
   return (
     <View style={styles.roadmapCard}>
@@ -518,6 +526,8 @@ function RoadmapCard() {
         </View>
       </View>
 
+      <RoadmapConnector />
+
       <View style={styles.roadmapRow}>
         <View style={[styles.roadmapStepCircle, styles.roadmapStepCircleAccent]}>
           <Ionicons name="sparkles" size={14} color="#FCD34D" />
@@ -532,6 +542,8 @@ function RoadmapCard() {
           <Text style={styles.roadmapDesc}>행사 일시, 챙길 물품, 선생님 메모를 알아서 분류</Text>
         </View>
       </View>
+
+      <RoadmapConnector />
 
       <View style={styles.roadmapRow}>
         <View style={[styles.roadmapStepCircle, styles.roadmapStepCircleDone]}>
@@ -721,9 +733,10 @@ const styles = StyleSheet.create({
     padding: 18,
     borderWidth: 1,
     borderColor: C.slate100,
-    gap: 14,
+    gap: 6,
   },
   roadmapRow: { flexDirection: 'row', gap: 14 },
+  roadmapConnector: { width: 32, alignItems: 'center' },
   roadmapStepCircle: {
     width: 32,
     height: 32,
