@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View, TouchableOpacity } from 'react-native';
 import Constants from 'expo-constants';
@@ -6,8 +7,12 @@ import JoinCodeModal from '../components/onboarding/JoinCodeModal';
 import Text from '../components/common/AppText';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
 import { SHADOW, ThemeColors } from '../constants/theme';
+import { STAMP_BOARD_THEMES } from '../constants/stampBoardThemes';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
+
+const BG_GRADIENT = STAMP_BOARD_THEMES.blue.bgGradient;
+const PRIMARY_GRADIENT = STAMP_BOARD_THEMES.blue.stampButtonGradient;
 
 export default function FamilyGroupStartScreen() {
   const router = useRouter();
@@ -33,20 +38,30 @@ export default function FamilyGroupStartScreen() {
   };
 
   return (
-    <OnboardingBackground>
+    <OnboardingBackground style={{ backgroundColor: 'transparent' }}>
+      <LinearGradient colors={BG_GRADIENT} style={StyleSheet.absoluteFill} />
       <View style={styles.content}>
         <Text style={styles.title}>가족 그룹 시작하기</Text>
         <Text style={styles.subtitle}>
           처음이라면 새로 만들고, 초대받으셨다면 코드로 참여해주세요
         </Text>
 
-        <Pressable style={styles.primaryCard} onPress={handleCreateNew}>
-          <Text style={styles.primaryCardIcon}>✨</Text>
-          <View style={styles.cardTextArea}>
-            <Text style={styles.primaryCardTitle}>신규 생성</Text>
-            <Text style={styles.primaryCardSubtitle}>새 가족 그룹을 만들어요</Text>
-          </View>
-        </Pressable>
+        <View style={styles.primaryCardShadow}>
+          <Pressable onPress={handleCreateNew}>
+            <LinearGradient
+              colors={PRIMARY_GRADIENT}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.primaryCard}
+            >
+              <Text style={styles.primaryCardIcon}>✨</Text>
+              <View style={styles.cardTextArea}>
+                <Text style={styles.primaryCardTitle}>신규 생성</Text>
+                <Text style={styles.primaryCardSubtitle}>새 가족 그룹을 만들어요</Text>
+              </View>
+            </LinearGradient>
+          </Pressable>
+        </View>
 
         <Pressable style={styles.secondaryCard} onPress={() => setShowJoinModal(true)}>
           <Text style={styles.secondaryCardIcon}>🔑</Text>
@@ -86,24 +101,29 @@ function createStyles(colors: ThemeColors) {
     title: {
       fontSize: 22,
       fontWeight: '800',
-      color: colors.textPrimary,
+      color: '#1E293B',
       marginBottom: 8,
       textAlign: 'center',
     },
     subtitle: {
       fontSize: 13,
-      color: colors.textSecondary,
+      color: '#64748B',
       marginBottom: 32,
       textAlign: 'center',
+      fontWeight: '600',
+    },
+    primaryCardShadow: {
+      borderRadius: 18,
+      marginBottom: 14,
+      ...SHADOW,
+      shadowOpacity: 0.16,
+      elevation: 4,
     },
     primaryCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.coralPink,
       borderRadius: 18,
       padding: 20,
-      marginBottom: 14,
-      ...SHADOW,
     },
     primaryCardIcon: { fontSize: 28, marginRight: 14 },
     primaryCardTitle: { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
@@ -111,14 +131,18 @@ function createStyles(colors: ThemeColors) {
     secondaryCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#F1F1F3',
+      backgroundColor: 'rgba(255,255,255,0.5)',
+      borderWidth: 1.5,
+      borderColor: 'rgba(255,255,255,0.85)',
       borderRadius: 18,
       padding: 20,
       ...SHADOW,
+      shadowOpacity: 0.06,
+      elevation: 2,
     },
-    secondaryCardIcon: { fontSize: 28, marginRight: 14, color: '#9A9A9A' },
-    secondaryCardTitle: { fontSize: 17, fontWeight: '800', color: '#4A4A4A' },
-    secondaryCardSubtitle: { fontSize: 12, color: '#9A9A9A', marginTop: 2 },
+    secondaryCardIcon: { fontSize: 28, marginRight: 14 },
+    secondaryCardTitle: { fontSize: 17, fontWeight: '800', color: '#1E293B' },
+    secondaryCardSubtitle: { fontSize: 12, color: '#64748B', marginTop: 2, fontWeight: '600' },
     cardTextArea: { flex: 1 },
     reloginButton: {
       marginTop: 28,
@@ -127,11 +151,12 @@ function createStyles(colors: ThemeColors) {
     },
     reloginText: {
       fontSize: 14,
-      color: colors.textSecondary,
+      color: '#64748B',
+      fontWeight: '600',
     },
     reloginLink: {
       fontWeight: '800',
-      color: colors.accent,
+      color: '#0EA5E9',
       textDecorationLine: 'underline',
     },
     versionContainer: {
@@ -140,7 +165,7 @@ function createStyles(colors: ThemeColors) {
     },
     versionText: {
       fontSize: 12,
-      color: colors.textSecondary,
+      color: '#64748B',
       fontWeight: '500',
       opacity: 0.5,
     },
