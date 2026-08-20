@@ -12,6 +12,8 @@ export interface Child {
 export interface EventItem {
   id: string;
   name: string;
+  /** 준비물 챙김 완료 여부. 캘린더 화면의 준비물 체크리스트에서 사용. */
+  completed?: boolean;
 }
 
 export interface Event {
