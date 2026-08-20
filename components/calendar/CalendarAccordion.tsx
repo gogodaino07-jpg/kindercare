@@ -145,14 +145,21 @@ export default function CalendarAccordion({
           </Pressable>
         </View>
 
-        <Pressable style={styles.toggleBadge} onPress={toggleBadge}>
-          <Text style={styles.toggleBadgeText}>{isExpanded ? '월간 보기' : '주간 1줄'}</Text>
-          <MaterialCommunityIcons
-            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-            size={16}
-            color={t.textSecondary}
-          />
-        </Pressable>
+        <View style={styles.headerRowRight}>
+          <Pressable style={styles.toggleBadge} onPress={toggleBadge}>
+            <Text style={styles.toggleBadgeText}>{isExpanded ? '월간 보기' : '주간 1줄'}</Text>
+            <MaterialCommunityIcons
+              name={isExpanded ? 'chevron-up' : 'chevron-down'}
+              size={16}
+              color={t.textSecondary}
+            />
+          </Pressable>
+
+          <Pressable style={styles.addEventBadge} onPress={onOpenAddEvent}>
+            <MaterialCommunityIcons name="plus" size={14} color={t.textSecondary} />
+            <Text style={styles.toggleBadgeText}>일정 추가</Text>
+          </Pressable>
+        </View>
       </View>
 
       <GestureDetector gesture={monthSwipeGesture}>
@@ -205,10 +212,6 @@ export default function CalendarAccordion({
           </View>
         </View>
       </GestureDetector>
-
-      <Pressable style={styles.fab} onPress={onOpenAddEvent} hitSlop={4}>
-        <MaterialCommunityIcons name="plus" size={22} color="#FFFFFF" />
-      </Pressable>
     </View>
   );
 }
@@ -329,6 +332,11 @@ const styles = StyleSheet.create({
     color: t.textPrimary,
     marginHorizontal: 5,
   },
+  headerRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   toggleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -342,6 +350,15 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     fontWeight: '700',
     color: t.textSecondary,
+  },
+  addEventBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: t.gray100,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
   },
   weekdayRow: {
     flexDirection: 'row',
@@ -448,21 +465,5 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: 'center',
-  },
-  fab: {
-    position: 'absolute',
-    right: 10,
-    bottom: 10,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: t.amber,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
   },
 });
