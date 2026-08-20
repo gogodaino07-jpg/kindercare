@@ -2,12 +2,66 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import Text from '../common/AppText';
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 const SHIMMER_WIDTH = 90;
+
+// 채워지는 경계선에 물결이 찰랑이는 느낌을 주기 위한 웨이브 밴드 설정.
+const WAVE_WIDTH = 26;
+const WAVE_AMPLITUDE = 7;
+const WAVE_CYCLE = 42;
+
+function buildWavePathD(width: number, totalHeight: number) {
+  const points: string[] = [];
+  for (let y = 0; y <= totalHeight; y += 4) {
+    const x = width - WAVE_AMPLITUDE - WAVE_AMPLITUDE * Math.sin((2 * Math.PI * y) / WAVE_CYCLE);
+    points.push(`${x.toFixed(1)},${y}`);
+  }
+  return `M ${points[0]} L ${points.join(' L ')} L ${width},${totalHeight} L ${width},0 Z`;
+}
+
+// 채워진 영역의 오른쪽 경계에서 위아래로 찰랑이는 물결 하이라이트.
+function WaveEdge({ containerHeight }: { containerHeight: number }) {
+  const waveAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(waveAnim, { toValue: 1, duration: 1600, easing: Easing.linear, useNativeDriver: true })
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [waveAnim]);
+
+  const height = containerHeight > 0 ? containerHeight : 100;
+  const svgHeight = height + WAVE_CYCLE * 2;
+  const pathD = useMemo(() => buildWavePathD(WAVE_WIDTH, svgHeight), [svgHeight]);
+  const translateY = waveAnim.interpolate({ inputRange: [0, 1], outputRange: [-WAVE_CYCLE, 0] });
+
+  return (
+    <View style={staticStyles.waveEdgeWrap}>
+      <Animated.View style={{ transform: [{ translateY }] }}>
+        <Svg width={WAVE_WIDTH} height={svgHeight}>
+          <Path d={pathD} fill="rgba(255,255,255,0.32)" />
+        </Svg>
+      </Animated.View>
+    </View>
+  );
+}
+
+const staticStyles = StyleSheet.create({
+  waveEdgeWrap: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: WAVE_WIDTH,
+    overflow: 'hidden',
+  },
+});
 
 interface TodayPrepProgressProps {
   total: number;
@@ -24,6 +78,7 @@ export default function TodayPrepProgress({ total, checked, percent }: TodayPrep
   const fillAnim = useRef(new Animated.Value(0)).current;
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const [containerWidth, setContainerWidth] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
 
   useEffect(() => {
     Animated.timing(fillAnim, {
@@ -51,7 +106,10 @@ export default function TodayPrepProgress({ total, checked, percent }: TodayPrep
     outputRange: [-SHIMMER_WIDTH, Math.max(containerWidth, SHIMMER_WIDTH)],
   });
 
-  const handleContainerLayout = (e: LayoutChangeEvent) => setContainerWidth(e.nativeEvent.layout.width);
+  const handleContainerLayout = (e: LayoutChangeEvent) => {
+    setContainerWidth(e.nativeEvent.layout.width);
+    setContainerHeight(e.nativeEvent.layout.height);
+  };
 
   return (
     <View style={styles.container} onLayout={handleContainerLayout}>
@@ -70,6 +128,7 @@ export default function TodayPrepProgress({ total, checked, percent }: TodayPrep
             style={StyleSheet.absoluteFill}
           />
         </Animated.View>
+        <WaveEdge containerHeight={containerHeight} />
       </AnimatedLinearGradient>
 
       <View style={styles.content}>

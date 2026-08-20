@@ -170,25 +170,27 @@ function Onboarding(props: { onFinish: () => void }) {
       <View style={styles.indicatorContainer}>
         <Dots total={SLIDES.length} active={index} />
       </View>
-      <TouchableOpacity
-        style={{ marginBottom: Math.max(insets.bottom, 24) + 20 }}
-        onPress={() => {
-          if (index < SLIDES.length - 1) {
-            goTo(index + 1);
-          } else {
-            onFinish();
-          }
-        }}
-      >
-        <LinearGradient
-          colors={CTA_GRADIENT}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.cta, styles.ctaShadow]}
+      <View style={[styles.ctaShadow, { marginBottom: Math.max(insets.bottom, 24) + 20 }]}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => {
+            if (index < SLIDES.length - 1) {
+              goTo(index + 1);
+            } else {
+              onFinish();
+            }
+          }}
         >
-          <Text style={styles.ctaText}>{SLIDES[index].ctaLabel}</Text>
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={CTA_GRADIENT}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.cta}
+          >
+            <Text style={styles.ctaText}>{SLIDES[index].ctaLabel}</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -244,8 +246,8 @@ const styles = StyleSheet.create({
   dotsRow: { flexDirection: 'row', alignItems: 'center' },
   dot: { width: 6, height: 6, borderRadius: 4, backgroundColor: '#CBD5E1', marginHorizontal: 3 },
   dotActive: { width: 20 },
-  cta: { marginHorizontal: 28, marginBottom: 40, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  ctaShadow: { ...SHADOW, shadowOpacity: 0.2, elevation: 5 },
+  cta: { height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  ctaShadow: { marginHorizontal: 28, borderRadius: 16, ...SHADOW, shadowOpacity: 0.2, elevation: 5 },
   ctaText: { color: '#fff', fontSize: 16, fontWeight: '800' },
   back: {
     position: 'absolute',
