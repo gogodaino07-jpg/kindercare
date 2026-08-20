@@ -38,27 +38,30 @@ const COLORS = {
   kakaoInk: '#3C1E1E',
 };
 
+const GLASS_BG = 'rgba(255,255,255,0.5)';
+const GLASS_BORDER = 'rgba(255,255,255,0.85)';
+
 const SLIDES = [
   {
     emoji: '📸',
-    badgeBg: '#FFE4E6',
-    badgeBorder: '#FBCFE8',
+    badgeBg: GLASS_BG,
+    badgeBorder: GLASS_BORDER,
     title: '가정통신문을\n사진으로 찍기만 하세요',
     subtitle: '종이 한 장, 파일 하나도\n놓치지 않고 한 번에 모아드려요',
     ctaLabel: '다음',
   },
   {
     emoji: '🤖',
-    badgeBg: '#DBEAFE',
-    badgeBorder: '#BAE6FD',
+    badgeBg: GLASS_BG,
+    badgeBorder: GLASS_BORDER,
     title: 'AI가 우리 아이 나이에\n맞는 내용만 쏙쏙',
     subtitle: '여러 아이를 등록해도\n각자에게 필요한 내용만 자동으로 나눠드려요',
     ctaLabel: '다음',
   },
   {
     emoji: '🔔',
-    badgeBg: '#FEF3C7',
-    badgeBorder: '#FDE68A',
+    badgeBg: GLASS_BG,
+    badgeBorder: GLASS_BORDER,
     title: '놓치는 일정 없이\n알림까지 챙겨드려요',
     subtitle: '준비물부터 일정까지,\n전날 저녁에 미리 알려드릴게요',
     ctaLabel: '시작하기',
@@ -228,13 +231,14 @@ const styles = StyleSheet.create({
     width: 128,
     height: 128,
     borderRadius: 32,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: GLASS_BORDER,
+    backgroundColor: GLASS_BG,
     alignItems: 'center',
     justifyContent: 'center',
     ...SHADOW,
-    shadowOpacity: 0.12,
-    elevation: 4,
+    shadowOpacity: 0.08,
+    elevation: 3,
   },
   title: { marginTop: 26, marginBottom: 8, fontSize: 21, fontWeight: '800', color: COLORS.ink, textAlign: 'center', lineHeight: 28 },
   subtitle: { marginBottom: 20, fontSize: 13.5, color: COLORS.gray, textAlign: 'center', lineHeight: 20, fontWeight: '600' },
