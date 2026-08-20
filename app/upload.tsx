@@ -395,7 +395,11 @@ export default function UploadScreen() {
                 </View>
               </View>
             ) : (
-              <RoadmapCard />
+              <>
+                <DropzoneCard onPress={handlePickFile} />
+                <RoadmapCard />
+                <TipBox />
+              </>
             )}
           </ScrollView>
 
@@ -461,6 +465,36 @@ export default function UploadScreen() {
         }}
       />
     </SafeAreaView>
+  );
+}
+
+function DropzoneCard({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable style={styles.dropzoneCard} onPress={onPress}>
+      <View style={styles.dropzoneIconBox}>
+        <Feather name="upload-cloud" size={26} color={C.violet600} />
+      </View>
+      <Text style={styles.dropzoneTitle}>통신문 사진이나 문서를 터치하여 업로드</Text>
+      <Text style={styles.dropzoneSubtitle}>
+        가정통신문, 주간계획안, 식단표를 인식하여{'\n'}캘린더 일정과 준비물로 바꿔드려요 ✨
+      </Text>
+      <View style={styles.dropzonePill}>
+        <Feather name="plus" size={12} color={C.violet700} />
+        <Text style={styles.dropzonePillText}>파일/사진 고르기</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function TipBox() {
+  return (
+    <View style={styles.tipBox}>
+      <Ionicons name="bulb" size={18} color={C.amber700} />
+      <Text style={styles.tipText}>
+        <Text style={styles.tipBold}>스마트 스캔 팁: </Text>
+        글자가 잘 보이도록 빛 반사 없이 찍어주시면 더 정확하게 추출됩니다!
+      </Text>
+    </View>
   );
 }
 
@@ -644,6 +678,50 @@ const styles = StyleSheet.create({
   gaugeFootRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   gaugeFootText: { fontSize: 10, color: C.slate400, fontWeight: '500' },
   gaugeExhaustedText: { fontSize: 10, color: C.rose600, fontWeight: '700' },
+  dropzoneCard: {
+    borderWidth: 2,
+    borderColor: C.violet200,
+    borderStyle: 'dashed',
+    borderRadius: 32,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    gap: 8,
+  },
+  dropzoneIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: C.violet50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  dropzoneTitle: { fontSize: 14, fontWeight: '900', color: C.slate900, textAlign: 'center' },
+  dropzoneSubtitle: { fontSize: 11.5, color: C.slate400, textAlign: 'center', lineHeight: 17 },
+  dropzonePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: C.violet50,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginTop: 6,
+  },
+  dropzonePillText: { fontSize: 12, fontWeight: '800', color: C.violet700 },
+  tipBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: C.amber50,
+    borderWidth: 1,
+    borderColor: C.amber200,
+    borderRadius: 16,
+    padding: 12,
+  },
+  tipText: { flex: 1, fontSize: 11.5, color: C.slate700, lineHeight: 17 },
+  tipBold: { fontWeight: '900', color: C.amber700 },
   roadmapCard: {
     backgroundColor: C.white,
     borderRadius: 32,
