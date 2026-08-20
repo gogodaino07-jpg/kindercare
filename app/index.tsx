@@ -19,9 +19,10 @@ import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useThemeColors } from '../context/ThemeContext';
-import { useLocalChecklist } from '../hooks/useLocalChecklist';
+import { getDisplayItems } from '../hooks/useLocalChecklist';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
+import { Event, EventItem } from '../types/models';
 import { toISODate } from '../utils/date';
 
 // 앱 프로세스가 살아있는 동안 전면 광고는 한 번만 시도한다. 컴포넌트 스코프
@@ -52,7 +53,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { hasOnboarded, selectedChild, events, googleAccount, onboardingLoaded, mealPlans } = useAppData();
+  const { hasOnboarded, selectedChild, events, googleAccount, onboardingLoaded, mealPlans, updateEvent } = useAppData();
   const { isLocked } = useAppLock();
   const { isSubscribed } = useSubscription();
   const insets = useSafeAreaInsets();
@@ -67,7 +68,6 @@ export default function HomeScreen() {
     const todayISO = toISODate(new Date());
     return mealPlans.find((m) => m.childId === selectedChild?.id && m.date === todayISO)?.mainMenu;
   }, [mealPlans, selectedChild]);
-  const checklist = useLocalChecklist();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [mealSheetOpen, setMealSheetOpen] = useState(false);
@@ -80,7 +80,28 @@ export default function HomeScreen() {
   const [stickyVisible, setStickyVisible] = useState(false);
 
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
-  const todayProgress = useMemo(() => checklist.getProgress(upcoming.mainEvents), [checklist, upcoming.mainEvents]);
+  const todayProgress = useMemo(() => {
+    const items = upcoming.mainEvents.flatMap((e) => getDisplayItems(e));
+    const checked = items.filter((i) => i.completed).length;
+    return { total: items.length, checked, percent: items.length === 0 ? 0 : Math.round((checked / items.length) * 100) };
+  }, [upcoming.mainEvents]);
+
+  // 준비물 체크 여부를 캘린더 화면과 같은 곳(event.items[].completed)에 저장해서,
+  // 홈에서 체크해도 캘린더에 바로 반영되도록 한다.
+  const setItemCompleted = useCallback((event: Event, item: EventItem, completed: boolean) => {
+    const nextItems = getDisplayItems(event).map((i) => (i.id === item.id ? { ...i, completed } : i));
+    updateEvent(event.id, { items: nextItems, note: nextItems.map((i) => i.name).join('\n') });
+  }, [updateEvent]);
+
+  const handleToggleItem = useCallback(
+    (event: Event, item: EventItem) => setItemCompleted(event, item, !item.completed),
+    [setItemCompleted]
+  );
+
+  const handleToggleAll = useCallback((event: Event, items: EventItem[], value: boolean) => {
+    const nextItems = getDisplayItems(event).map((i) => ({ ...i, completed: value }));
+    updateEvent(event.id, { items: nextItems, note: nextItems.map((i) => i.name).join('\n') });
+  }, [updateEvent]);
 
   // 아래로 당겨서 새로고침 — 날씨를 강제로 다시 조회(이벤트/체크리스트는 실시간 구독이라 재조회 불필요).
   const onRefresh = useCallback(async () => {
@@ -212,9 +233,8 @@ export default function HomeScreen() {
                 activeTab={activeTab}
                 onChangeTab={setActiveTab}
                 onEventPress={handleEventPress}
-                isItemChecked={checklist.isChecked}
-                onToggleItem={checklist.toggle}
-                onToggleAll={checklist.setAllChecked}
+                onToggleItem={handleToggleItem}
+                onToggleAll={handleToggleAll}
               />
             </ScrollView>
           </>

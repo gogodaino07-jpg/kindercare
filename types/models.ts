@@ -32,7 +32,7 @@ export interface Event {
   note?: string;
   /** 메모 — free-form notes, kept separate from 준비물. */
   memo?: string;
-  /** 구조화된 준비물 목록. 체크 여부는 Event에 저장하지 않고 기기 로컬(useLocalChecklist)에서 관리. */
+  /** 구조화된 준비물 목록. 각 항목의 completed로 체크 여부를 함께 저장(홈·캘린더 화면 공유). */
   items?: EventItem[];
   /** 카테고리 뱃지 — 예: '준비물' | '특별활동' | '행사' | '공지' */
   category?: string;

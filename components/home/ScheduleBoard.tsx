@@ -7,7 +7,7 @@ import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { EventDateGroup } from '../../hooks/useUpcomingEvents';
-import { Event } from '../../types/models';
+import { Event, EventItem } from '../../types/models';
 import { formatMD, parseISODate, startOfDay, toISODate } from '../../utils/date';
 import { openCoupangSearch } from '../../utils/coupang';
 import { getSpecialEventTheme } from '../../utils/specialEventTheme';
@@ -24,9 +24,8 @@ interface ScheduleBoardProps {
   activeTab: ScheduleTab;
   onChangeTab: (tab: ScheduleTab) => void;
   onEventPress: (event: Event) => void;
-  isItemChecked: (eventId: string, itemId: string) => boolean;
-  onToggleItem: (eventId: string, itemId: string) => void;
-  onToggleAll: (eventId: string, itemIds: string[], value: boolean) => void;
+  onToggleItem: (event: Event, item: EventItem) => void;
+  onToggleAll: (event: Event, items: EventItem[], value: boolean) => void;
 }
 
 /** Blends a hex color toward white by `amount` (0-1) to make it a paler shade. */
@@ -77,7 +76,6 @@ export default function ScheduleBoard({
   activeTab,
   onChangeTab,
   onEventPress,
-  isItemChecked,
   onToggleItem,
   onToggleAll,
 }: ScheduleBoardProps) {
@@ -185,7 +183,6 @@ export default function ScheduleBoard({
               colors={colors}
               styles={styles}
               onPress={() => onEventPress(event)}
-              isItemChecked={isItemChecked}
               onToggleItem={onToggleItem}
               onToggleAll={onToggleAll}
             />
@@ -217,7 +214,6 @@ function ScheduleCard({
   colors,
   styles,
   onPress,
-  isItemChecked,
   onToggleItem,
   onToggleAll,
 }: {
@@ -226,12 +222,11 @@ function ScheduleCard({
   colors: ThemeColors;
   styles: ReturnType<typeof createStyles>;
   onPress: () => void;
-  isItemChecked: (eventId: string, itemId: string) => boolean;
-  onToggleItem: (eventId: string, itemId: string) => void;
-  onToggleAll: (eventId: string, itemIds: string[], value: boolean) => void;
+  onToggleItem: (event: Event, item: EventItem) => void;
+  onToggleAll: (event: Event, items: EventItem[], value: boolean) => void;
 }) {
   const items = getDisplayItems(event);
-  const checkedCount = items.filter((i) => isItemChecked(event.id, i.id)).length;
+  const checkedCount = items.filter((i) => i.completed).length;
   const allDone = items.length > 0 && checkedCount === items.length;
   const category = getCategoryVisual(event.category, colors);
   const isToday = computeDday(event.date) === 'D-DAY';
@@ -299,7 +294,7 @@ function ScheduleCard({
           </View>
           {items.length > 0 && (
             <Pressable
-              onPress={() => onToggleAll(event.id, items.map((i) => i.id), !allDone)}
+              onPress={() => onToggleAll(event, items, !allDone)}
               style={[styles.allDoneButton, allDone && styles.allDoneButtonActive]}
               hitSlop={8}
             >
@@ -333,11 +328,11 @@ function ScheduleCard({
             <Text style={styles.itemsHint}>클릭하여 체크</Text>
           </View>
           {items.map((item) => {
-            const checked = isItemChecked(event.id, item.id);
+            const checked = !!item.completed;
             return (
               <Pressable
                 key={item.id}
-                onPress={() => onToggleItem(event.id, item.id)}
+                onPress={() => onToggleItem(event, item)}
                 style={[styles.itemRow, checked && styles.itemRowChecked]}
               >
                 <MaterialIcons
