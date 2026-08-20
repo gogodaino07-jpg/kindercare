@@ -1,4 +1,4 @@
-import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Feather, Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
@@ -152,7 +152,7 @@ export default function StampBoardScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.iconButton} hitSlop={6}>
-            <Feather name="arrow-left" size={18} color="#334155" />
+            <MaterialCommunityIcons name="chevron-left" size={26} color="#1E293B" />
           </Pressable>
 
           <View style={styles.profileBlock}>
@@ -513,10 +513,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(226,232,240,0.8)',
   },
   profileBlock: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0 },
-  avatarWrap: { width: 36, height: 36, position: 'relative' },
-  avatarImage: { width: 36, height: 36, borderRadius: 18 },
+  avatarWrap: { width: 44, height: 44, position: 'relative' },
+  avatarImage: { width: 44, height: 44, borderRadius: 22 },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
-  avatarEmoji: { fontSize: 16 },
+  avatarEmoji: { fontSize: 20 },
   onlineDot: {
     position: 'absolute',
     bottom: -1,
@@ -530,10 +530,10 @@ const styles = StyleSheet.create({
   },
   profileTextBlock: { flex: 1, minWidth: 0 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  childName: { fontSize: 16, fontWeight: '900', color: '#1E293B', flexShrink: 1 },
-  classBadge: { borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1.5 },
-  classBadgeText: { fontSize: 10, fontWeight: '800' },
-  headerSubtitle: { fontSize: 10.5, fontWeight: '700', color: '#0369A1', marginTop: 1 },
+  childName: { fontSize: 17, fontWeight: '900', color: '#1E293B', flexShrink: 1 },
+  classBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  classBadgeText: { fontSize: 12, fontWeight: '800' },
+  headerSubtitle: { fontSize: 13, fontWeight: '700', color: '#0369A1', marginTop: 2 },
   scrollContent: { paddingHorizontal: 14, paddingTop: 4, gap: 10 },
   wishCard: {
     backgroundColor: 'rgba(255,255,255,0.92)',
@@ -646,7 +646,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
   },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -5 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginHorizontal: -5 },
   stampSlotWrap: { width: '20%', aspectRatio: 1, padding: 5, alignItems: 'center', justifyContent: 'center' },
   stampSlotAnimatedWrap: { width: '100%', height: '100%' },
   stampSlot: {
