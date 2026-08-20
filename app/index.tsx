@@ -69,6 +69,8 @@ export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<ScheduleTab>('all');
   const [refreshing, setRefreshing] = useState(false);
   const adShownRef = useRef(false);
+  const upcomingEmptyRef = useRef(upcoming.isEmpty);
+  upcomingEmptyRef.current = upcoming.isEmpty;
   const scrollRef = useRef<ScrollView>(null);
   const progressYRef = useRef(0);
 
@@ -105,20 +107,38 @@ export default function HomeScreen() {
   // z-index and would visually jump the ad in front of the pattern/biometric
   // prompt on cold start.
   //
-  // upcoming.isEmpty must also gate this: the popup itself only renders when
-  // there are events (see below), but events load in asynchronously after a
-  // cold start. Without this check, the 1.5s timer could fire and mark
-  // adShownRef true before events finished loading, permanently suppressing
-  // the popup for the rest of the session even once events arrived.
+  // The popup only renders when there are events (see below), but events
+  // load in asynchronously after a cold start, so we briefly retry (up to
+  // ~5.5s) to give that a chance to settle instead of giving up instantly.
+  // This retry window is intentionally bounded to app *launch* only — it
+  // must NOT keep watching upcoming.isEmpty for the rest of the session,
+  // otherwise adding a user's very first event mid-session would itself
+  // trigger the popup right after, which is not the intended behavior.
   useEffect(() => {
-    if (!adShownRef.current && onboardingLoaded && hasOnboarded && googleAccount && !isLocked && !isSubscribed && !upcoming.isEmpty) {
-      const timer = setTimeout(() => {
+    if (adShownRef.current || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked || isSubscribed) {
+      return;
+    }
+
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const MAX_RETRIES = 4; // 1.5s + 4*1s ≈ 5.5s grace window for cold-start data to arrive
+
+    const attemptShow = (retriesLeft: number) => {
+      if (cancelled || adShownRef.current) return;
+      if (!upcomingEmptyRef.current) {
         setAdPopupVisible(true);
         adShownRef.current = true;
-      }, 1500); // 1.5s delay for better UX
-      return () => clearTimeout(timer);
-    }
-  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, isSubscribed, upcoming.isEmpty]);
+      } else if (retriesLeft > 0) {
+        timeoutId = setTimeout(() => attemptShow(retriesLeft - 1), 1000);
+      }
+    };
+
+    timeoutId = setTimeout(() => attemptShow(MAX_RETRIES), 1500); // 1.5s delay for better UX
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, isSubscribed]);
 
   const handleEventPress = useCallback(
     (event: { date: string }) => router.push({ pathname: '/calendar', params: { date: event.date } }),
