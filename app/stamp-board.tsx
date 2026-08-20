@@ -10,6 +10,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -63,6 +64,7 @@ export default function StampBoardScreen() {
     setTheme,
     setStampIcon,
     setSoundEnabled,
+    refresh,
   } = useStampBoard(selectedChild?.id);
 
   const theme = STAMP_BOARD_THEMES[themeId];
@@ -71,6 +73,7 @@ export default function StampBoardScreen() {
   const [showWish, setShowWish] = useState(false);
   const [tempWish, setTempWish] = useState(wish);
   const [stampingIndex, setStampingIndex] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const stampAnim = useRef(new Animated.Value(1)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
@@ -85,6 +88,15 @@ export default function StampBoardScreen() {
     }
     prevCompletedRef.current = isCompleted;
   }, [isCompleted, soundEnabled]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const openWishModal = () => {
     setTempWish(wish);
@@ -197,7 +209,13 @@ export default function StampBoardScreen() {
           </Pressable>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accentIconColor} />
+          }
+        >
           <View style={styles.wishCard}>
             <Text style={styles.wishCloudDecor}>🌈</Text>
             <View style={styles.wishTopRow}>

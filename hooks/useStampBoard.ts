@@ -136,6 +136,14 @@ export function useStampBoard(childId: string | undefined) {
     [childId]
   );
 
+  /** 당겨서 새로고침 — 캐시를 버리고 저장소에서 다시 읽어와 상태를 맞춘다. */
+  const refresh = useCallback(async () => {
+    if (!childId) return;
+    delete cache[childId];
+    const loaded = await loadData(childId);
+    setData(loaded);
+  }, [childId]);
+
   return {
     targetCount: data.targetCount,
     currentStamps: data.currentStamps,
@@ -151,5 +159,6 @@ export function useStampBoard(childId: string | undefined) {
     setTheme,
     setStampIcon,
     setSoundEnabled,
+    refresh,
   };
 }
