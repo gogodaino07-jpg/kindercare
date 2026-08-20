@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   },
   title: {
     flexShrink: 1,
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '800',
     color: t.textPrimary,
   },
@@ -129,18 +129,18 @@ const styles = StyleSheet.create({
     backgroundColor: t.emeraldBg,
     borderRadius: 999,
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
   },
   classBadgeText: {
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '800',
     color: t.emeraldDeep,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: '600',
     color: t.textSecondary,
-    marginTop: 2,
+    marginTop: 3,
   },
   subtitlePercent: {
     color: t.amberDeep,
