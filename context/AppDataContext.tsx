@@ -40,6 +40,9 @@ const FAMILY_MEMBERS_KEY = 'kindercare_family_members';
 const DATA_OWNER_EMAIL_KEY = 'kindercare_data_owner_email';
 const FAMILY_KEY_KEY = 'kindercare_family_key';
 
+/** 무료 사용자가 등록할 수 있는 아이 최대 인원 — 3번째부터는 프리미엄 구독이 필요하다. */
+export const FREE_CHILD_LIMIT = 2;
+
 interface AppDataContextValue {
   // Onboarding / family group
   hasOnboarded: boolean;

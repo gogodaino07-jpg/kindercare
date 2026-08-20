@@ -11,8 +11,10 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { SHADOW, ThemeColors } from '../../constants/theme';
-import { useAppData } from '../../context/AppDataContext';
+import { useAlert } from '../../context/AlertContext';
+import { FREE_CHILD_LIMIT, useAppData } from '../../context/AppDataContext';
 import { useAppLock } from '../../context/AppLockContext';
+import { useSubscription } from '../../context/SubscriptionContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import Text from '../common/AppText';
 
@@ -28,6 +30,8 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
   const insets = useSafeAreaInsets();
   const { children, selectedChild, selectChild } = useAppData();
   const { isLocked } = useAppLock();
+  const { isSubscribed } = useSubscription();
+  const { showAlert } = useAlert();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
 
@@ -46,6 +50,24 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
     translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 }, () => {
       runOnJS(onClose)();
     });
+  };
+
+  const handleAddChild = () => {
+    if (!isSubscribed && children.length >= FREE_CHILD_LIMIT) {
+      handleClose();
+      showAlert({
+        title: '아이 등록 한도 초과',
+        message: `무료 이용 시 아이는 최대 ${FREE_CHILD_LIMIT}명까지 등록할 수 있어요. 프리미엄으로 구독하시면 제한 없이 등록하실 수 있습니다.`,
+        icon: '💎',
+        buttons: [
+          { text: '확인', style: 'cancel' },
+          { text: '프리미엄 구독 안내', onPress: () => router.push('/settings/subscription') },
+        ],
+      });
+      return;
+    }
+    handleClose();
+    router.push('/child-profile');
   };
 
   const context = useSharedValue({ startY: 0 });
@@ -168,13 +190,7 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
                 </View>
               );
             })}
-            <Pressable
-              style={styles.addButton}
-              onPress={() => {
-                handleClose();
-                router.push('/child-profile');
-              }}
-            >
+            <Pressable style={styles.addButton} onPress={handleAddChild}>
               <Text style={styles.addButtonText}>+ 아이 추가</Text>
             </Pressable>
           </Animated.View>
