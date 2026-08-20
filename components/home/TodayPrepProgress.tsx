@@ -83,7 +83,7 @@ function createStyles(colors: ThemeColors) {
       marginTop: 16,
       marginHorizontal: 20,
       borderRadius: 20,
-      backgroundColor: colors.cardWhite,
+      backgroundColor: colors.green50,
       overflow: 'hidden',
       ...SHADOW,
       shadowOpacity: 0.1,
