@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     color: t.textPrimary,
   },
   todayButton: {
-    backgroundColor: t.gray100,
+    backgroundColor: t.skyBg,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -88,6 +88,6 @@ const styles = StyleSheet.create({
   todayButtonText: {
     fontSize: 12,
     fontWeight: '700',
-    color: t.textSecondary,
+    color: t.sky,
   },
 });

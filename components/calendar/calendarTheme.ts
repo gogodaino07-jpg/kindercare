@@ -30,6 +30,9 @@ export const calendarTheme = {
   violetDeep: '#7C3AED',
   violetBg: '#EDE9FE',
 
+  sky: '#0284C7',
+  skyBg: '#E0F2FE',
+
   gray50: '#F9FAFB',
   gray100: '#F3F4F6',
   gray200: '#E5E7EB',
