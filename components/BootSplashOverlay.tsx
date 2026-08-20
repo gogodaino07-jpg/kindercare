@@ -1,8 +1,12 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useEffect, useRef } from 'react';
 import { StyleSheet, View, Animated } from 'react-native';
+import { STAMP_BOARD_THEMES } from '../constants/stampBoardThemes';
 import { ThemeColors } from '../constants/theme';
 import { useThemeColors } from '../context/ThemeContext';
 import Text from './common/AppText';
+
+const BG_GRADIENT = STAMP_BOARD_THEMES.blue.bgGradient;
 
 /**
  * Full-screen overlay shown for 3 seconds on cold boot only.
@@ -58,6 +62,7 @@ export default function BootSplashOverlay() {
 
   return (
     <View style={styles.container}>
+      <LinearGradient colors={BG_GRADIENT} style={StyleSheet.absoluteFill} />
       <Animated.Image
         source={require('../assets/logo_pure_chick_transparent.png')}
         style={[
@@ -80,7 +85,7 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: '#E0F2FE',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -93,7 +98,7 @@ function createStyles(colors: ThemeColors) {
       marginTop: -10,
       fontSize: 14,
       fontWeight: '700',
-      color: '#71717A',
+      color: '#64748B',
     },
   });
 }

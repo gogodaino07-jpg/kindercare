@@ -1,11 +1,15 @@
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Text from '../components/common/AppText';
+import { STAMP_BOARD_THEMES } from '../constants/stampBoardThemes';
 import { ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
+
+const BG_GRADIENT = STAMP_BOARD_THEMES.blue.bgGradient;
 
 export default function SplashPage() {
   const router = useRouter();
@@ -70,6 +74,7 @@ export default function SplashPage() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <LinearGradient colors={BG_GRADIENT} style={StyleSheet.absoluteFill} />
       <Animated.Image
         source={require('../assets/logo_pure_chick_transparent.png')}
         style={[
@@ -92,7 +97,7 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: '#E0F2FE',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -105,7 +110,7 @@ function createStyles(colors: ThemeColors) {
       marginTop: -10,
       fontSize: 14,
       fontWeight: '700',
-      color: '#71717A',
+      color: '#64748B',
     },
   });
 }
