@@ -382,6 +382,8 @@ function createStyles(colors: ThemeColors) {
     },
     bannerGreetingName: {
       color: colors.purpleDeep,
+      fontSize: 20,
+      fontWeight: '900',
     },
     bannerGreetingTextOnBirthday: {
       color: '#FFFFFF',
