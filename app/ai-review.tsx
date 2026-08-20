@@ -1,49 +1,24 @@
 import { useRouter, useNavigation } from 'expo-router';
-import React, { useMemo, useState, useRef, useEffect } from 'react';
-import {
-  Animated,
-  Dimensions,
-  PanResponder,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Text from '../components/common/AppText';
-import { SHADOW, ThemeColors } from '../constants/theme';
+import React, { useMemo, useState, useEffect } from 'react';
+import { View } from 'react-native';
+import ScreenBackground from '../components/ScreenBackground';
 import { useAppData } from '../context/AppDataContext';
 import { useAlert } from '../context/AlertContext';
 import { useNotificationCenter } from '../context/NotificationCenterContext';
-import { useThemeColors } from '../context/ThemeContext';
 import { generateMockAIEvents } from '../data/mockAIResult';
-import { formatMD, parseISODate, startOfDay, toISODate } from '../utils/date';
+import { toISODate } from '../utils/date';
 import { AnalysisResultStore, AnalysisLogService } from '../features/newsletter-analysis';
-import { AIReviewEventItem } from '../features/newsletter-analysis/components/AIReviewEventItem';
-import { AIReviewBottomSheet } from '../features/newsletter-analysis/components/AIReviewBottomSheet';
-import { ZoomableImage } from '../features/newsletter-analysis/components/ZoomableImage';
 import { DraftEvent } from '../features/newsletter-analysis/types';
 
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
-const MIN_SHEET_HEIGHT = SCREEN_HEIGHT * 0.4;
-const MAX_SHEET_HEIGHT = SCREEN_HEIGHT * 0.85;
-
-function isImminent(isoDate: string): boolean {
-  const diffMs = parseISODate(isoDate).getTime() - startOfDay(new Date()).getTime();
-  const diffDays = Math.round(diffMs / (24 * 60 * 60 * 1000));
-  return diffDays <= 2;
-}
-
+// UI는 전면 재설계 예정이라 비워둔 상태. 아래 상태/핸들러(검수 세션 로드,
+// draft 일정 CRUD, 저장·알림·분석 로그 기록 등)는 실제 로직이라 그대로
+// 유지 — 새 UI에서 그대로 다시 연결해서 쓸 것.
 export default function AIReviewScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { children, selectedChild, addEvents } = useAppData();
   const { showAlert } = useAlert();
   const { addNotification } = useNotificationCenter();
-  const insets = useSafeAreaInsets();
-  const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const session = useMemo(() => AnalysisResultStore.getSession(), []);
   const originalEvents = useMemo(() => session?.initialEvents ?? [], [session]);
@@ -88,60 +63,6 @@ export default function AIReviewScreen() {
     return unsubscribe;
   }, [navigation, isSaved, draftEvents]);
 
-  const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  // Date Picker State
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [dateTargetId, setDateTargetId] = useState<string | null>(null);
-
-  // Bottom Sheet Animation
-  const currentSheetY = useRef(SCREEN_HEIGHT - MIN_SHEET_HEIGHT);
-  const startSheetY = useRef(SCREEN_HEIGHT - MIN_SHEET_HEIGHT);
-  const sheetY = useRef(new Animated.Value(currentSheetY.current)).current;
-
-  useEffect(() => {
-    const id = sheetY.addListener((state) => {
-      currentSheetY.current = state.value;
-    });
-    return () => sheetY.removeListener(id);
-  }, [sheetY]);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dy) > 2,
-      onPanResponderGrant: () => {
-        startSheetY.current = currentSheetY.current;
-      },
-      onPanResponderMove: (_, gesture) => {
-        const newY = startSheetY.current + gesture.dy;
-        if (newY >= SCREEN_HEIGHT - MAX_SHEET_HEIGHT && newY <= SCREEN_HEIGHT - 50) {
-          sheetY.setValue(newY);
-        }
-      },
-      onPanResponderRelease: (_, gesture) => {
-        const midPoint = (SCREEN_HEIGHT - MAX_SHEET_HEIGHT + SCREEN_HEIGHT - MIN_SHEET_HEIGHT) / 2;
-        let targetY;
-
-        if (gesture.vy < -0.5) {
-          targetY = SCREEN_HEIGHT - MAX_SHEET_HEIGHT;
-        } else if (gesture.vy > 0.5) {
-          targetY = SCREEN_HEIGHT - MIN_SHEET_HEIGHT;
-        } else {
-          targetY = currentSheetY.current < midPoint ? SCREEN_HEIGHT - MAX_SHEET_HEIGHT : SCREEN_HEIGHT - MIN_SHEET_HEIGHT;
-        }
-
-        Animated.spring(sheetY, {
-          toValue: targetY,
-          useNativeDriver: false,
-          tension: 50,
-          friction: 10,
-        }).start();
-      },
-    })
-  ).current;
-
   const groups = useMemo(() => {
     const map = new Map<string, DraftEvent[]>();
     for (const e of draftEvents) {
@@ -170,7 +91,6 @@ export default function AIReviewScreen() {
 
   const deleteDraft = (localId: string) => {
     setDraftEvents((prev) => prev.filter((e) => e.localId !== localId));
-    if (editingId === localId) setEditingId(null);
   };
 
   const addDraftForDate = (date: string) => {
@@ -187,12 +107,6 @@ export default function AIReviewScreen() {
         icon: '📝',
       },
     ]);
-    setEditingId(localId);
-  };
-
-  const handleDatePress = (localId: string) => {
-    setDateTargetId(localId);
-    setShowDatePicker(true);
   };
 
   const handleSave = async () => {
@@ -219,124 +133,8 @@ export default function AIReviewScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Background: Original Image(s) */}
-      <View style={styles.backgroundContainer}>
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          bounces={false}
-          scrollEnabled={true}
-        >
-          {docs.length > 0 ? (
-            docs.map((doc) => (
-              <ZoomableImage
-                key={doc.id}
-                uri={doc.uri}
-                width={SCREEN_WIDTH}
-                height={SCREEN_HEIGHT - MIN_SHEET_HEIGHT}
-              />
-            ))
-          ) : (
-            <View style={[styles.bgImage, { backgroundColor: colors.gray100, alignItems: 'center', justifyContent: 'center' }]}>
-              <Text style={{ color: colors.textSecondary }}>원본 이미지가 없습니다</Text>
-            </View>
-          )}
-        </ScrollView>
-      </View>
-
-      {/* Bottom Sheet: Analysis Results */}
-      <AIReviewBottomSheet
-        sheetY={sheetY}
-        panHandlers={panResponder.panHandlers}
-        colors={colors}
-        insets={insets}
-        onSave={handleSave}
-        isSaveDisabled={draftEvents.length === 0}
-        summaryText={`전체 ${summaryCounts.total}건 · 오늘 ${summaryCounts.today}건 · 내일 ${summaryCounts.tomorrow}건`}
-      >
-        {groups.map((group) => {
-          const collapsed = group.events.length >= 2 && collapsedDates.has(group.date);
-          return (
-            <View key={group.date} style={styles.dateCard}>
-              <View style={styles.dateCardHeader}>
-                <Pressable
-                  onPress={() => handleDatePress(group.events[0].localId)}
-                  style={[styles.dateBadge, isImminent(group.date) && styles.dateBadgeImminent]}
-                >
-                  <Text style={[styles.dateBadgeText, isImminent(group.date) && styles.dateBadgeTextImminent]}>
-                    🗓️ {formatMD(group.date)}
-                  </Text>
-                </Pressable>
-                {group.events.length >= 2 && (
-                  <Pressable onPress={() => setCollapsedDates(prev => {
-                    const next = new Set(prev);
-                    if (next.has(group.date)) next.delete(group.date); else next.add(group.date);
-                    return next;
-                  })}>
-                    <Text style={styles.chevron}>{collapsed ? '▸' : '▾'}</Text>
-                  </Pressable>
-                )}
-              </View>
-
-              {!collapsed && group.events.map((ev) => (
-                <AIReviewEventItem
-                  key={ev.localId}
-                  event={ev}
-                  isEditing={editingId === ev.localId}
-                  onEditToggle={() => setEditingId(editingId === ev.localId ? null : ev.localId)}
-                  onUpdate={(patch) => updateDraft(ev.localId, patch)}
-                  onDelete={() => deleteDraft(ev.localId)}
-                  colors={colors}
-                />
-              ))}
-              <Pressable style={styles.addButton} onPress={() => addDraftForDate(group.date)}>
-                <Text style={styles.addButtonText}>+ 이 날짜에 일정 추가</Text>
-              </Pressable>
-            </View>
-          );
-        })}
-      </AIReviewBottomSheet>
-
-      {/* Date Picker Modal */}
-      {showDatePicker && dateTargetId && (
-        <DateTimePicker
-          value={parseISODate(draftEvents.find(e => e.localId === dateTargetId)?.date || toISODate(new Date()))}
-          mode="date"
-          display="default"
-          onChange={(event, selectedDate) => {
-            setShowDatePicker(false);
-            if (selectedDate) {
-              updateDraft(dateTargetId, { date: toISODate(selectedDate) });
-            }
-          }}
-        />
-      )}
-    </View>
+    <ScreenBackground>
+      <View style={{ flex: 1 }} />
+    </ScreenBackground>
   );
-}
-
-function createStyles(colors: ThemeColors) {
-  return StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#000' },
-    backgroundContainer: { height: SCREEN_HEIGHT - MIN_SHEET_HEIGHT, width: SCREEN_WIDTH },
-    bgImage: { width: SCREEN_WIDTH, height: SCREEN_HEIGHT - MIN_SHEET_HEIGHT },
-    dateCard: {
-      backgroundColor: colors.cardWhite,
-      borderRadius: 16,
-      padding: 16,
-      marginBottom: 14,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    dateCardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-    dateBadge: { backgroundColor: colors.gray100, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
-    dateBadgeImminent: { backgroundColor: colors.tomorrowRed },
-    dateBadgeText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
-    dateBadgeTextImminent: { color: '#FFFFFF' },
-    chevron: { fontSize: 16, color: colors.textSecondary },
-    addButton: { marginTop: 12, paddingVertical: 12, alignItems: 'center', borderRadius: 12, borderWidth: 1.5, borderColor: colors.accent, borderStyle: 'dashed' },
-    addButtonText: { fontSize: 12, fontWeight: '700', color: colors.accent },
-  });
 }
