@@ -368,7 +368,7 @@ export default function UploadScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: '가정통신문 업로드' }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={{ flex: 1 }} />
     </SafeAreaView>
   );
