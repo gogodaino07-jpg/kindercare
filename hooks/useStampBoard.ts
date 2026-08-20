@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
+import { StampBoardThemeId, STAMP_BOARD_THEMES } from '../constants/stampBoardThemes';
 import { toISODate } from '../utils/date';
 
 interface StampBoardData {
@@ -7,6 +8,9 @@ interface StampBoardData {
   currentStamps: number;
   wish: string;
   lastStampedDateISO: string | null;
+  themeId: StampBoardThemeId;
+  stampIcon: string;
+  soundEnabled: boolean;
 }
 
 const DEFAULT_DATA: StampBoardData = {
@@ -14,6 +18,9 @@ const DEFAULT_DATA: StampBoardData = {
   currentStamps: 0,
   wish: '',
   lastStampedDateISO: null,
+  themeId: 'blue',
+  stampIcon: STAMP_BOARD_THEMES.blue.stickers[0],
+  soundEnabled: true,
 };
 
 function storageKey(childId: string): string {
@@ -93,14 +100,56 @@ export function useStampBoard(childId: string | undefined) {
     });
   }, [childId]);
 
+  const setTheme = useCallback(
+    (themeId: StampBoardThemeId) => {
+      if (!childId) return;
+      setData((prev) => {
+        const next: StampBoardData = { ...prev, themeId, stampIcon: STAMP_BOARD_THEMES[themeId].stickers[0] };
+        persist(childId, next);
+        return next;
+      });
+    },
+    [childId]
+  );
+
+  const setStampIcon = useCallback(
+    (stampIcon: string) => {
+      if (!childId) return;
+      setData((prev) => {
+        const next: StampBoardData = { ...prev, stampIcon };
+        persist(childId, next);
+        return next;
+      });
+    },
+    [childId]
+  );
+
+  const setSoundEnabled = useCallback(
+    (soundEnabled: boolean) => {
+      if (!childId) return;
+      setData((prev) => {
+        const next: StampBoardData = { ...prev, soundEnabled };
+        persist(childId, next);
+        return next;
+      });
+    },
+    [childId]
+  );
+
   return {
     targetCount: data.targetCount,
     currentStamps: data.currentStamps,
     wish: data.wish,
+    themeId: data.themeId,
+    stampIcon: data.stampIcon,
+    soundEnabled: data.soundEnabled,
     hasStampedToday,
     isCompleted,
     addStamp,
     updateSettings,
     resetProgress,
+    setTheme,
+    setStampIcon,
+    setSoundEnabled,
   };
 }
