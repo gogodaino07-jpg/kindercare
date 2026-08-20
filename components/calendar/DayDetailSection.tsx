@@ -13,6 +13,7 @@ interface DayDetailSectionProps {
   events: Event[];
   todayISO: string;
   onAddEvent: () => void;
+  onPressEvent: (event: Event) => void;
   onToggleItem: (event: Event, item: EventItem) => void;
   onOpenBuy: (event: Event, item: EventItem) => void;
 }
@@ -28,6 +29,7 @@ export default function DayDetailSection({
   events,
   todayISO,
   onAddEvent,
+  onPressEvent,
   onToggleItem,
   onOpenBuy,
 }: DayDetailSectionProps) {
@@ -52,6 +54,7 @@ export default function DayDetailSection({
           key={event.id}
           event={event}
           todayISO={todayISO}
+          onPressEvent={onPressEvent}
           onToggleItem={onToggleItem}
           onOpenBuy={onOpenBuy}
         />
@@ -63,11 +66,13 @@ export default function DayDetailSection({
 function EventDetailCard({
   event,
   todayISO,
+  onPressEvent,
   onToggleItem,
   onOpenBuy,
 }: {
   event: Event;
   todayISO: string;
+  onPressEvent: (event: Event) => void;
   onToggleItem: (event: Event, item: EventItem) => void;
   onOpenBuy: (event: Event, item: EventItem) => void;
 }) {
@@ -79,36 +84,41 @@ function EventDetailCard({
 
   return (
     <View style={styles.card}>
-      <View style={styles.cardTopRow}>
-        <View style={styles.cardTopLeft}>
-          {(diff === 0 || diff > 0) && (
-            <View style={styles.ddayBadge}>
-              <Text style={styles.ddayBadgeText}>{diff === 0 ? 'D-DAY' : `D+${diff}`}</Text>
-            </View>
-          )}
-          <Text style={styles.cardDate}>{dotDate}</Text>
+      <Pressable onPress={() => onPressEvent(event)}>
+        <View style={styles.cardTopRow}>
+          <View style={styles.cardTopLeft}>
+            {(diff === 0 || diff > 0) && (
+              <View style={styles.ddayBadge}>
+                <Text style={styles.ddayBadgeText}>{diff === 0 ? 'D-DAY' : `D+${diff}`}</Text>
+              </View>
+            )}
+            <Text style={styles.cardDate}>{dotDate}</Text>
+          </View>
+          <View style={styles.cardTopRight}>
+            {!!event.category && (
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryBadgeText}>{event.category}</Text>
+              </View>
+            )}
+            <MaterialCommunityIcons name="pencil-outline" size={16} color={t.textMuted} />
+          </View>
         </View>
-        {!!event.category && (
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryBadgeText}>{event.category}</Text>
+
+        <View style={styles.titleRow}>
+          <EventIcon icon={event.icon} size={20} />
+          <Text style={styles.title} numberOfLines={2}>{event.title}</Text>
+        </View>
+
+        {!!event.noticeText && (
+          <View style={styles.noticeCard}>
+            <View style={styles.noticeHeader}>
+              <MaterialCommunityIcons name="bell-outline" size={15} color={t.textSecondary} />
+              <Text style={styles.noticeHeaderText}>선생님 알림 노트 (1건)</Text>
+            </View>
+            <Text style={styles.noticeBody}>{event.noticeText}</Text>
           </View>
         )}
-      </View>
-
-      <View style={styles.titleRow}>
-        <EventIcon icon={event.icon} size={20} />
-        <Text style={styles.title} numberOfLines={2}>{event.title}</Text>
-      </View>
-
-      {!!event.noticeText && (
-        <View style={styles.noticeCard}>
-          <View style={styles.noticeHeader}>
-            <MaterialCommunityIcons name="bell-outline" size={15} color={t.textSecondary} />
-            <Text style={styles.noticeHeaderText}>선생님 알림 노트 (1건)</Text>
-          </View>
-          <Text style={styles.noticeBody}>{event.noticeText}</Text>
-        </View>
-      )}
+      </Pressable>
 
       {items.length > 0 && (
         <View style={styles.itemsSection}>
@@ -250,6 +260,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: t.textSecondary,
+  },
+  cardTopRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   categoryBadge: {
     backgroundColor: t.emeraldBg,

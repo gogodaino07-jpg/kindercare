@@ -16,6 +16,7 @@ import CalendarAccordion from '../components/calendar/CalendarAccordion';
 import { calendarTheme as t } from '../components/calendar/calendarTheme';
 import CalendarHeader from '../components/calendar/CalendarHeader';
 import DayDetailSection from '../components/calendar/DayDetailSection';
+import EditEventModal from '../components/calendar/EditEventModal';
 import SmartBanner from '../components/calendar/SmartBanner';
 import { useAppData } from '../context/AppDataContext';
 import { getDisplayItems } from '../hooks/useLocalChecklist';
@@ -35,6 +36,7 @@ export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState<string>(todayISO);
 
   const [addEventVisible, setAddEventVisible] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [buyState, setBuyState] = useState<{ event: Event; item: EventItem } | null>(null);
 
   // 달력 축소/확대 진행도(0=주간 1줄, 1=월간). 힌트바 탭·드래그와 아래
@@ -216,6 +218,7 @@ export default function CalendarScreen() {
               events={selectedDateEvents}
               todayISO={todayISO}
               onAddEvent={() => setAddEventVisible(true)}
+              onPressEvent={setEditingEvent}
               onToggleItem={handleToggleItem}
               onOpenBuy={handleOpenBuy}
             />
@@ -233,6 +236,11 @@ export default function CalendarScreen() {
         visible={addEventVisible}
         initialDateISO={selectedDate}
         onClose={() => setAddEventVisible(false)}
+      />
+      <EditEventModal
+        visible={!!editingEvent}
+        event={editingEvent}
+        onClose={() => setEditingEvent(null)}
       />
     </View>
   );
