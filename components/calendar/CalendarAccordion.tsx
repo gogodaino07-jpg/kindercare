@@ -156,8 +156,8 @@ export default function CalendarAccordion({
           </Pressable>
 
           <Pressable style={styles.addEventBadge} onPress={onOpenAddEvent}>
-            <MaterialCommunityIcons name="plus" size={14} color={t.textSecondary} />
-            <Text style={styles.toggleBadgeText}>일정 추가</Text>
+            <MaterialCommunityIcons name="plus" size={14} color={t.textPrimary} />
+            <Text style={styles.addEventBadgeText}>일정 추가</Text>
           </Pressable>
         </View>
       </View>
@@ -359,6 +359,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 5,
+  },
+  addEventBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '900',
+    color: t.textPrimary,
   },
   weekdayRow: {
     flexDirection: 'row',
