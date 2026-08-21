@@ -1056,31 +1056,35 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
+  // 삭제가 중간에 실패해도 여기서 에러를 삼켜버리면 호출부(requestWithdrawal)가
+  // 이를 성공으로 착각해 "탈퇴 처리 완료"를 띄우고, 지워지지 않은 클라우드 데이터가
+  // 같은 계정으로 재가입할 때 실시간 리스너를 통해 그대로 되살아나는 문제가 있었다.
+  // 그래서 여기서는 catch하지 않고 실패를 그대로 위로 던진다.
   const purgeCloudData = async (email: string) => {
-    try {
-      console.log('📡 Purging all cloud data for:', email);
+    console.log('📡 Purging all cloud data for:', email);
 
-      // Delete children collection
-      const childrenSnap = await getDb().collection('users').doc(email).collection('children').get();
-      const childDeletes = childrenSnap.docs.map(doc => doc.ref.delete());
+    // Delete children collection
+    const childrenSnap = await getDb().collection('users').doc(email).collection('children').get();
+    const childDeletes = childrenSnap.docs.map(doc => doc.ref.delete());
 
-      // Delete events collection
-      const eventsSnap = await getDb().collection('users').doc(email).collection('events').get();
-      const eventDeletes = eventsSnap.docs.map(doc => doc.ref.delete());
+    // Delete events collection
+    const eventsSnap = await getDb().collection('users').doc(email).collection('events').get();
+    const eventDeletes = eventsSnap.docs.map(doc => doc.ref.delete());
 
-      // Reset user doc (keeping basic info but clearing withdrawal state)
-      const userReset = getDb().collection('users').doc(email).set({
-        email,
-        lastLogin: new Date().toISOString(),
-        hasOnboarded: false,
-        withdrawalRequestedAt: firestore.FieldValue.delete(),
-      }, { merge: true });
+    // Delete meal plans collection
+    const mealPlansSnap = await getDb().collection('users').doc(email).collection('mealPlans').get();
+    const mealPlanDeletes = mealPlansSnap.docs.map(doc => doc.ref.delete());
 
-      await Promise.all([...childDeletes, ...eventDeletes, userReset]);
-      console.log('✅ Cloud data purge complete');
-    } catch (error) {
-      console.error('❌ Firestore Purge Data Error:', error);
-    }
+    // Reset user doc (keeping basic info but clearing withdrawal state)
+    const userReset = getDb().collection('users').doc(email).set({
+      email,
+      lastLogin: new Date().toISOString(),
+      hasOnboarded: false,
+      withdrawalRequestedAt: firestore.FieldValue.delete(),
+    }, { merge: true });
+
+    await Promise.all([...childDeletes, ...eventDeletes, ...mealPlanDeletes, userReset]);
+    console.log('✅ Cloud data purge complete');
   };
 
   const checkOnboardingStatus = async (email: string): Promise<boolean> => {
