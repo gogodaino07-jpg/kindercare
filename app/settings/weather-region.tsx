@@ -73,7 +73,7 @@ export default function WeatherRegionSettingsScreen() {
         }}
       />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.fixedHeader}>
           <Text style={styles.subtitle}>홈 화면 날씨를 조회할 지역을 골라주세요. 자동을 고르면 기기 위치(GPS)를 사용해요.</Text>
 
           <Text style={styles.sectionLabel}>구/동까지 검색하기</Text>
@@ -102,7 +102,9 @@ export default function WeatherRegionSettingsScreen() {
           )}
 
           <Text style={styles.sectionLabel}>주요 도시에서 선택하기</Text>
+        </View>
 
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Pressable
             style={[styles.row, region === null && styles.rowActive]}
             onPress={() => applyQuickRegion(null)}
@@ -139,7 +141,8 @@ function createStyles(colors: ThemeColors) {
     screenBg: { flex: 1, backgroundColor: t.bg },
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
-    content: { padding: 20, paddingBottom: 40 },
+    fixedHeader: { paddingHorizontal: 20, paddingTop: 20 },
+    content: { paddingHorizontal: 20, paddingBottom: 40 },
     subtitle: {
       fontSize: 12,
       color: colors.textSecondary,
