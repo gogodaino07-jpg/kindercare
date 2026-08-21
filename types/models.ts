@@ -3,6 +3,13 @@ export type ChildAge = 3 | 4 | 5 | 6 | 7;
 export interface Child {
   id: string;
   name?: string;
+  /**
+   * 성을 뺀, 인사말 등에서 편하게 부를 이름 (선택 입력).
+   * "김서준"처럼 성이 붙는 이름은 첫 글자를 성으로 잘라내는 방식으로는
+   * "서준이"·"서주니"처럼 성 없이 2음절 이상인 이름과 구분할 수 없어 별도로 받는다.
+   * 비어 있으면 기존 방식(name에서 첫 글자를 성으로 추정해 제거)으로 대체된다.
+   */
+  givenName?: string;
   age: ChildAge;
   birthdate?: string; // ISO date string: "YYYY-MM-DD"
   className?: string;

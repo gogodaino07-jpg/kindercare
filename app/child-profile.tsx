@@ -79,6 +79,7 @@ export default function ChildProfileScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(editingChild?.photoUri ?? null);
   const [showSourceSheet, setShowSourceSheet] = useState(false);
   const [name, setName] = useState(editingChild?.name ?? '');
+  const [givenName, setGivenName] = useState(editingChild?.givenName ?? '');
 
   const initialBirthdate = editingChild?.birthdate ? parseISODate(editingChild.birthdate) : null;
   const [birthdate, setBirthdate] = useState<Date | null>(initialBirthdate);
@@ -93,6 +94,7 @@ export default function ChildProfileScreen() {
   // 진입 시점 값 스냅샷 — 저장 없이 뒤로가기 시도할 때 변경 여부를 판단하는 기준.
   const initialSnapshot = useRef({
     name: editingChild?.name ?? '',
+    givenName: editingChild?.givenName ?? '',
     className: editingChild ? editingChild.className ?? '없음' : '',
     age: editingChild?.age ?? null,
     birthdate: editingChild?.birthdate ?? null,
@@ -102,6 +104,7 @@ export default function ChildProfileScreen() {
 
   const hasUnsavedChanges =
     name !== initialSnapshot.name ||
+    givenName !== initialSnapshot.givenName ||
     className !== initialSnapshot.className ||
     age !== initialSnapshot.age ||
     (birthdate ? toISODate(birthdate) : null) !== initialSnapshot.birthdate ||
@@ -178,6 +181,7 @@ export default function ChildProfileScreen() {
     const trimmedClassName = className.trim();
     const input = {
       name: name.trim(),
+      givenName: givenName.trim() || undefined,
       age,
       className: trimmedClassName === '없음' ? undefined : trimmedClassName,
       photoUri: photoUri ?? undefined,
@@ -248,6 +252,19 @@ export default function ChildProfileScreen() {
             placeholder="이름을 입력해주세요"
             placeholderTextColor="#94A3B8"
           />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>부를 이름 (선택)</Text>
+          <ClearableTextInput
+            style={styles.input}
+            value={givenName}
+            onChangeText={(text) => setGivenName(stripInvalidCharacters(text))}
+            maxLength={10}
+            placeholder="예: 김서준 → 서준"
+            placeholderTextColor="#94A3B8"
+          />
+          <Text style={styles.fieldHint}>인사말에서 부를 이름이에요. 성을 뺀 이름을 입력해주세요. 비워두면 이름에서 자동으로 추정해요.</Text>
         </View>
 
         <View style={styles.field}>

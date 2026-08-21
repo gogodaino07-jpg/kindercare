@@ -111,7 +111,11 @@ export default function HomeHeroHeader({
     return weatherDays[todayIdx + 2];
   }, [weatherDays]);
 
-  const greetingName = selectedChild?.name ? stripSurname(selectedChild.name) : undefined;
+  const greetingName = selectedChild?.givenName?.trim()
+    ? selectedChild.givenName.trim()
+    : selectedChild?.name
+      ? stripSurname(selectedChild.name)
+      : undefined;
   const particle = greetingName ? (hasFinalConsonant(greetingName) ? '아' : '야') : '';
   const greetingTemplate = pickDailyGreetingTemplate();
   const isBirthday = isBirthdayToday(selectedChild?.birthdate);
