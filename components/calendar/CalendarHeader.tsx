@@ -6,6 +6,7 @@ import { calendarTheme as t } from './calendarTheme';
 
 interface CalendarHeaderProps {
   childName: string;
+  age?: number;
   className?: string;
   photoUri?: string;
   percent: number;
@@ -20,8 +21,16 @@ function hasFinalConsonant(text: string): boolean {
   return (code - 0xac00) % 28 !== 0;
 }
 
+/** "햇살" -> "햇살반" / "햇살반" -> "햇살반" 그대로. */
+function formatClassName(className?: string): string | undefined {
+  const trimmed = className?.trim();
+  if (!trimmed) return undefined;
+  return trimmed.endsWith('반') ? trimmed : `${trimmed}반`;
+}
+
 export default function CalendarHeader({
   childName,
+  age,
   className,
   photoUri,
   percent,
@@ -29,6 +38,10 @@ export default function CalendarHeader({
   onBack,
 }: CalendarHeaderProps) {
   const particle = useMemo(() => (hasFinalConsonant(childName) ? '이' : ''), [childName]);
+  const classLabel = useMemo(
+    () => [age !== undefined ? `${age}세` : undefined, formatClassName(className)].filter(Boolean).join(' '),
+    [age, className]
+  );
 
   return (
     <View style={styles.row}>
@@ -51,9 +64,9 @@ export default function CalendarHeader({
           <Text style={styles.title} numberOfLines={1}>
             {childName}{particle}의 등원 캘린더
           </Text>
-          {!!className && (
+          {!!classLabel && (
             <View style={styles.classBadge}>
-              <Text style={styles.classBadgeText} numberOfLines={1}>{className}</Text>
+              <Text style={styles.classBadgeText} numberOfLines={1}>{classLabel}</Text>
             </View>
           )}
         </View>

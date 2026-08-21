@@ -193,6 +193,7 @@ export default function CalendarScreen() {
 
         <CalendarHeader
           childName={selectedChild?.name ?? '우리 아이'}
+          age={selectedChild?.age}
           className={selectedChild?.className}
           photoUri={selectedChild?.photoUri}
           percent={percent}
