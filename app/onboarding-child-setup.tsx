@@ -9,6 +9,7 @@ import PermissionModal from '../components/onboarding/PermissionModal';
 import PhotoCropModal from '../components/child-profile/PhotoCropModal';
 import PhotoSourceSheet from '../components/child-profile/PhotoSourceSheet';
 import Text from '../components/common/AppText';
+import ClearableTextInput from '../components/common/ClearableTextInput';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
 import { SHADOW } from '../constants/theme';
 import { STAMP_BOARD_THEMES } from '../constants/stampBoardThemes';
@@ -171,7 +172,7 @@ export default function OnboardingChildSetupScreen() {
         <View style={styles.cardShadow}>
         <View style={styles.card}>
           <Text style={styles.label}>이름</Text>
-          <TextInput
+          <ClearableTextInput
             style={[styles.input, error && !name.trim() && styles.inputInvalid]}
             value={name}
             onChangeText={(t) => {
@@ -229,7 +230,7 @@ export default function OnboardingChildSetupScreen() {
           ) : null}
 
           <Text style={styles.label}>반 이름</Text>
-          <TextInput
+          <ClearableTextInput
             ref={classNameInputRef}
             style={[styles.input, error && !className.trim() && styles.inputInvalid]}
             value={className}

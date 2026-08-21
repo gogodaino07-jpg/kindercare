@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SHADOW } from '../../constants/theme';
 import { STAMP_BOARD_THEMES } from '../../constants/stampBoardThemes';
+import ClearableTextInput from '../common/ClearableTextInput';
 
 interface JoinCodeModalProps {
   visible: boolean;
@@ -79,7 +80,7 @@ export default function JoinCodeModal({ visible, onClose, onJoin }: JoinCodeModa
               <Text style={styles.title}>초대 코드로 참여</Text>
               <Text style={styles.subtitle}>가족에게 받은 코드를 입력해주세요</Text>
 
-              <TextInput
+              <ClearableTextInput
                 ref={inputRef}
                 style={[styles.input, error && styles.inputError]}
                 value={code}

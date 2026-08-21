@@ -11,12 +11,12 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
+import TextInput from '../../components/common/ClearableTextInput';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';

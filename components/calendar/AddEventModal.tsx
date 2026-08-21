@@ -1,8 +1,9 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Text from '../common/AppText';
+import TextInput from '../common/ClearableTextInput';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
 import { useToast } from '../../context/ToastContext';

@@ -22,6 +22,7 @@ import PhotoCropModal from '../components/child-profile/PhotoCropModal';
 import PhotoSourceSheet from '../components/child-profile/PhotoSourceSheet';
 import ScreenBackground from '../components/ScreenBackground';
 import Text from '../components/common/AppText';
+import ClearableTextInput from '../components/common/ClearableTextInput';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
@@ -239,7 +240,7 @@ export default function ChildProfileScreen() {
 
         <View style={styles.field}>
           <Text style={styles.label}>이름 *</Text>
-          <TextInput
+          <ClearableTextInput
             style={[styles.input, attemptedSave && !nameValid && styles.inputInvalid]}
             value={name}
             onChangeText={(text) => setName(stripInvalidCharacters(text))}
@@ -290,7 +291,7 @@ export default function ChildProfileScreen() {
 
         <View style={styles.field}>
           <Text style={styles.label}>반 이름 *</Text>
-          <TextInput
+          <ClearableTextInput
             ref={classNameInputRef}
             style={[styles.input, attemptedSave && !classNameValid && styles.inputInvalid]}
             value={className}

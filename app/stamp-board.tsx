@@ -13,10 +13,10 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import TextInput from '../components/common/ClearableTextInput';
 import Svg, { Circle, Defs, Pattern, Rect } from 'react-native-svg';
 import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
