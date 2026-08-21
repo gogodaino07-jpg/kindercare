@@ -1,4 +1,5 @@
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
@@ -26,6 +27,10 @@ function addDaysISO(iso: string, days: number): string {
   d.setDate(d.getDate() + days);
   return toISODate(d);
 }
+
+const AMBER_SOFT = '#FEF3C7';
+const AMBER_SOFT_BORDER = '#FDE68A';
+const AMBER_DEEP = '#B45309';
 
 const SPARKLE_COUNT = 8;
 
@@ -88,6 +93,7 @@ const sparkleStyles = StyleSheet.create({
 });
 
 export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) {
+  const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { mealPlans, selectedChild } = useAppData();
@@ -137,6 +143,16 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
     ]).start(() => onClose());
   };
 
+  const handleAiScan = () => {
+    Animated.parallel([
+      Animated.timing(scaleAnim, { toValue: 0.8, duration: 150, useNativeDriver: true }),
+      Animated.timing(opacityAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+    ]).start(() => {
+      onClose();
+      router.push('/meal-scan');
+    });
+  };
+
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
       <View style={styles.overlay}>
@@ -150,8 +166,16 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
               <View style={styles.headerIconCircle}>
                 <Text style={styles.headerIconEmoji}>🍴</Text>
               </View>
-              <View>
-                <Text style={styles.title}>오늘의 급식 메뉴</Text>
+              <View style={styles.headerTextCol}>
+                <View style={styles.titleRow}>
+                  <Text style={styles.title}>오늘의 급식 메뉴</Text>
+                  {!!todayMenu && (
+                    <Pressable style={styles.aiPillButton} onPress={handleAiScan} hitSlop={4}>
+                      <Ionicons name="sparkles" size={12} color={AMBER_DEEP} />
+                      <Text style={styles.aiPillButtonText}>AI 분석</Text>
+                    </Pressable>
+                  )}
+                </View>
                 <Text style={styles.dateSubtitle}>{todayDateLabel}</Text>
               </View>
             </View>
@@ -170,6 +194,10 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
           ) : (
             <View>
               <Text style={styles.emptyText}>오늘은 등록된 식단이 없어요</Text>
+              <Pressable style={styles.aiScanButton} onPress={handleAiScan}>
+                <Ionicons name="sparkles" size={16} color={AMBER_DEEP} />
+                <Text style={styles.aiScanButtonText}>급식표 AI 분석</Text>
+              </Pressable>
             </View>
           )}
 
@@ -261,10 +289,28 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'center',
     },
     headerIconEmoji: { fontSize: 18 },
+    headerTextCol: { flexShrink: 1 },
+    titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
     title: {
       fontSize: 16,
       fontWeight: '900',
       color: colors.gray900,
+    },
+    aiPillButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      backgroundColor: AMBER_SOFT,
+      borderWidth: 1,
+      borderColor: AMBER_SOFT_BORDER,
+      borderRadius: 999,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    aiPillButtonText: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: AMBER_DEEP,
     },
     dateSubtitle: {
       fontSize: 12,
@@ -306,6 +352,23 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '600',
       paddingVertical: 16,
       textAlign: 'center',
+    },
+    aiScanButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      width: '100%',
+      backgroundColor: AMBER_SOFT,
+      borderWidth: 1,
+      borderColor: AMBER_SOFT_BORDER,
+      borderRadius: 14,
+      paddingVertical: 12,
+    },
+    aiScanButtonText: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: AMBER_DEEP,
     },
     expandButton: {
       alignSelf: 'center',
