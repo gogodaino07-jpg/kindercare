@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, RefreshControl, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -54,6 +54,17 @@ export default function CalendarScreen() {
     setIsExpandedState(target === 1);
     expandedProgress.value = withTiming(target, { duration: 300, easing: Easing.inOut(Easing.ease) });
   }, [expandedProgress]);
+
+  // 일정/급식 데이터는 Firestore 실시간 리스너로 항상 최신 상태라 새로고침이
+  // 별도로 다시 받아올 데이터는 없지만, 홈 화면과 동일하게 당겨서 새로고침
+  // 동작은 제공해 "최신 상태 맞음"을 눈으로 확인시켜준다. 접힌 상태에서는
+  // 같은 위쪽 당김 제스처가 미니 캘린더 펼치기와 겹치므로, 펼쳐진 상태에서만 켠다.
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    setRefreshing(false);
+  }, []);
 
   // "맨 위 도달"만으로 바로 확대되지 않도록, 맨 위에 도착한 뒤 한 번 더
   // 의도적으로 당기는 제스처(약 18px 이상)가 있을 때만 확대한다.
@@ -218,6 +229,11 @@ export default function CalendarScreen() {
             onScroll={scrollHandler}
             scrollEventThrottle={16}
             overScrollMode="always"
+            refreshControl={
+              isExpanded ? (
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.textSecondary} />
+              ) : undefined
+            }
           >
             <DayDetailSection
               selectedDate={selectedDate}
