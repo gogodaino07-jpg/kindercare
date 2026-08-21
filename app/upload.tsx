@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, Image, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
@@ -212,6 +212,9 @@ export default function UploadScreen() {
         quality: 0.8,
         allowsMultipleSelection: true,
         selectionLimit: MAX_DOCS - docs.length,
+        // Android 13+ 기본 선택기는 구글 포토 UI로만 뜨는데, legacy를 켜면
+        // 다른 갤러리 앱·파일 앱 등에서도 사진을 고를 수 있게 열린다.
+        ...(Platform.OS === 'android' ? { legacy: true } : null),
       });
       if (!result.canceled) {
         const metas = await Promise.all(result.assets.map((a) => buildDocMeta(a.uri)));
@@ -373,6 +376,7 @@ export default function UploadScreen() {
           </View>
 
           <ScrollView
+            style={styles.scrollFlex}
             contentContainerStyle={[styles.scrollContent, docs.length === 0 && styles.scrollContentFill]}
             showsVerticalScrollIndicator={false}
             scrollEnabled={docs.length > 0}
@@ -710,6 +714,7 @@ const styles = StyleSheet.create({
   },
   backButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 17, fontWeight: '800', color: C.slate900 },
+  scrollFlex: { flex: 1 },
   scrollContent: { padding: 16, gap: 14 },
   scrollContentFill: { flexGrow: 1 },
   emptyStateFill: { flex: 1, justifyContent: 'space-between', gap: 14 },

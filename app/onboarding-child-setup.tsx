@@ -98,7 +98,12 @@ export default function OnboardingChildSetupScreen() {
     }
     setPickerActive(true);
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 1, mediaTypes: ['images'] });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: false,
+        quality: 1,
+        mediaTypes: ['images'],
+        ...(Platform.OS === 'android' ? { legacy: true } : null),
+      });
       if (!result.canceled && result.assets[0]) setPendingAsset(result.assets[0]);
     } finally {
       setPickerActive(false);
