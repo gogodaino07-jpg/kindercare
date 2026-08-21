@@ -70,8 +70,13 @@ export default function CalendarScreen() {
   }, []);
 
   // "맨 위 도달"만으로 바로 확대되지 않도록, 맨 위에 도착한 뒤 한 번 더
-  // 의도적으로 당기는 제스처(약 18px 이상)가 있을 때만 확대한다.
-  const PULL_TO_EXPAND_THRESHOLD = 18;
+  // 의도적으로 당기는 제스처(약 10px 이상)가 있을 때만 확대한다.
+  // (예전엔 이 값이 18이었는데, 아래 pullToExpandGesture의 activeOffsetY와 합쳐져
+  // 실제로는 33px 가까이 당겨야 반응했다. 막 축소된 직후처럼 스크롤이 이미 맨 위 근처일
+  // 때는 그만큼 당길 필요 자체가 없어서 짧게 살짝 당기는 자연스러운 손짓으로는 전혀
+  // 반응하지 않는 문제가 있었음 — 목록 끝까지 갔다가 되돌아오는 긴 스와이프만 우연히
+  // 그 거리를 넘겨서 되는 것처럼 보였을 뿐. 두 값을 합쳐 10px 안팎이 되도록 낮췄다.)
+  const PULL_TO_EXPAND_THRESHOLD = 10;
   const scrollY = useSharedValue(0);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
 
@@ -110,7 +115,7 @@ export default function CalendarScreen() {
   const pullReferenceY = useSharedValue<number | null>(null);
   const pullToExpandGesture = Gesture.Pan()
     .enabled(Platform.OS === 'android' && !isExpanded)
-    .activeOffsetY(15)
+    .activeOffsetY(4)
     .failOffsetY(-10)
     .simultaneousWithExternalGesture(nativeScrollGesture)
     .onUpdate((e) => {
