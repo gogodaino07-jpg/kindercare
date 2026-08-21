@@ -48,7 +48,7 @@ export default function FamilyRoleSelectScreen() {
         <View style={styles.topSection}>
           <Text style={styles.title}>어떤 분으로 참여하시나요?</Text>
           <Text style={styles.subtitle}>
-            역할에 따라 일정을 볼 수만 있는지,{'\n'}추가·수정도 할 수 있는지가 정해져요.
+            함께 아이의 일정을 챙겨봐요 🌱
           </Text>
         </View>
 

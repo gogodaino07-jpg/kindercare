@@ -113,8 +113,8 @@ export default function SettingsScreen() {
         {
           text: '로그아웃',
           style: 'destructive',
-          onPress: () => {
-            signOutGoogle();
+          onPress: async () => {
+            await signOutGoogle();
             router.dismissAll();
             router.replace({ pathname: '/google-signin', params: { flow: 'relogin' } });
           },

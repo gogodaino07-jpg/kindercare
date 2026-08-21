@@ -214,7 +214,13 @@ export default function FamilyMembersScreen() {
                   </View>
                   <View style={styles.memberInfo}>
                     <Text style={styles.memberName}>{member.name}</Text>
-                    {member.isOwner ? <Text style={styles.ownerBadge}>소유자</Text> : null}
+                    {member.isOwner ? (
+                      <Text style={styles.ownerBadge}>소유자</Text>
+                    ) : member.role ? (
+                      <Text style={styles.roleBadge}>
+                        {member.role} · {member.canEdit ? '편집 가능' : '읽기 전용'}
+                      </Text>
+                    ) : null}
                   </View>
 
                   {member.phone ? (
@@ -387,6 +393,12 @@ function createStyles(colors: ThemeColors) {
     ownerBadge: {
       fontSize: 11,
       color: colors.accent,
+      fontWeight: '700',
+      marginTop: 2,
+    },
+    roleBadge: {
+      fontSize: 11,
+      color: colors.textSecondary,
       fontWeight: '700',
       marginTop: 2,
     },

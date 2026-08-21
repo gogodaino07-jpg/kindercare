@@ -123,6 +123,8 @@ interface AppDataContextValue {
   // Cloud sync
   checkCloudDataExists: (email: string) => Promise<boolean>;
   checkOnboardingStatus: (email: string) => Promise<boolean>;
+  checkFamilyOwnerEmail: (email: string) => Promise<string | null>;
+  restoreFamilyMembership: (ownerEmail: string) => Promise<void>;
   restoreDataFromCloud: (email: string) => Promise<void>;
 
   // Google sign-in (mocked — real OAuth is deferred to a future contract)
@@ -534,8 +536,17 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   // Owner-only: a joined member's write would be rejected by Firestore rules
   // anyway (1단계는 소유자만 쓰기 가능), and we don't want to even attempt
   // pushing a joined member's local leftovers into the family's shared data.
+  //
+  // syncChecked doubles as the gate for the children/events/mealPlans/members
+  // real-time listeners below — a joined member never runs the owner-only push
+  // logic, so without this early flip they'd never get past `!syncChecked` and
+  // would see nothing sync in from the family owner's data.
   useEffect(() => {
-    if (!isFamilyOwner || !effectiveFamilyOwnerEmail || !onboardingLoaded || syncChecked) return;
+    if (!effectiveFamilyOwnerEmail || !onboardingLoaded || syncChecked) return;
+    if (!isFamilyOwner) {
+      setSyncChecked(true);
+      return;
+    }
 
     const syncUp = async () => {
       const email = effectiveFamilyOwnerEmail;
@@ -822,6 +833,14 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
           .collection('members')
           .doc(account.email)
           .set(membership);
+        // members 서브컬렉션은 소유자 쪽에만 있어서, 구성원 본인 계정만 봐서는
+        // "내가 누구 가족에 속해있는지" 알 방법이 없다 — 로그아웃 후 재로그인하면
+        // 이 정보가 복원되지 않아 자기 자신을 소유자로 오인하는 버그로 이어지므로,
+        // 본인의 최상위 문서에도 소유자 이메일을 함께 남겨둔다.
+        await getDb()
+          .collection('users')
+          .doc(account.email)
+          .set(sanitizeData({ familyOwnerEmail: invite.ownerEmail }), { merge: true });
       }
 
       setFamilyOwnerEmail(invite.ownerEmail);
@@ -1136,8 +1155,12 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     try {
       await GoogleSignin.signOut();
       await getFirebaseAuth().signOut();
-      setGoogleAccount(null);
-      AsyncStorage.removeItem(GOOGLE_ACCOUNT_KEY).catch(() => {});
+      // 이 기기의 로컬 캐시(아이/일정/식단/가족 구성원)를 지우지 않으면, 다른
+      // 계정으로 곧바로 로그인했을 때 children 리스너의 "로컬 전용 아이 보존"
+      // 병합 로직 때문에 이전 계정의 아이가 새 계정 데이터에 유령처럼 섞여 보인다.
+      // preserveOnboarded: hasOnboarded까지 지우면 재로그인 시 restoreDataFromCloud가
+      // 비동기로 다시 true를 세팅하는 것과 경합해 온보딩 화면으로 잘못 튕길 수 있다.
+      await resetAllData({ preserveOnboarded: true });
     } catch (error) {
       console.error('Google Sign-Out Error:', error);
     }
@@ -1221,8 +1244,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     try {
       await kakaoLogout();
       await getFirebaseAuth().signOut();
-      setGoogleAccount(null);
-      AsyncStorage.removeItem(GOOGLE_ACCOUNT_KEY).catch(() => {});
+      // signOutGoogle과 동일한 이유로 로컬 캐시를 함께 지운다.
+      await resetAllData({ preserveOnboarded: true });
     } catch (error) {
       console.error('Kakao Sign-Out Error:', error);
     }
@@ -1236,9 +1259,15 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   // user just successfully signed in as a different provider account, so we
   // only want to clear the previous owner's cached data — not the session we
   // just established (that would incorrectly bounce them back to splash).
-  const resetAllData = async (options?: { preserveAccount?: boolean }) => {
+  //
+  // `preserveOnboarded` is for the plain sign-out path (signOutGoogle/signOutKakao):
+  // clearing hasOnboarded there races with google-signin's relogin flow, which
+  // sets it back to true asynchronously inside restoreDataFromCloud right before
+  // navigating home — if that update hasn't committed yet, index.tsx reads the
+  // stale false and bounces the user to onboarding instead of home.
+  const resetAllData = async (options?: { preserveAccount?: boolean; preserveOnboarded?: boolean }) => {
     const keysToRemove = [
-      HAS_ONBOARDED_KEY,
+      ...(options?.preserveOnboarded ? [] : [HAS_ONBOARDED_KEY]),
       FONT_SIZE_KEY,
       FONT_CHOICE_KEY,
       CHALKBOARD_THEME_KEY,
@@ -1257,7 +1286,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     if (googleAccount?.email) {
       await AIUsageLimitService.resetUsage(googleAccount.email);
     }
-    setHasOnboarded(false);
+    if (!options?.preserveOnboarded) setHasOnboarded(false);
     setFamilyKey(generateFamilyKey());
     setFamilyMembers([]);
     setChildProfiles([]);
@@ -1346,6 +1375,28 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
+  // 재로그인 시 이 계정이 초대 코드로 합류해둔 가족이 있는지 확인한다. 구성원의
+  // 로컬 캐시는 로그아웃 때 지워지므로, 이 계정이 예전에 독립적으로 온보딩했던
+  // 이력(자기 자신의 children 등)이 클라우드에 남아있으면 relogin 로직이 그걸
+  // 먼저 복원해버릴 수 있다 — 그 전에 반드시 이 체크를 먼저 해야 한다.
+  const checkFamilyOwnerEmail = async (email: string): Promise<string | null> => {
+    try {
+      const doc = await getDb().collection('users').doc(email).get();
+      if (doc.exists) {
+        return (doc.data()?.familyOwnerEmail as string | undefined) || null;
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ Firestore Check Family Owner Error:', error);
+      return null;
+    }
+  };
+
+  const restoreFamilyMembership = async (ownerEmail: string) => {
+    setFamilyOwnerEmail(ownerEmail);
+    await AsyncStorage.setItem(FAMILY_OWNER_EMAIL_KEY, ownerEmail);
+  };
+
   const checkWithdrawalStatus = async (email: string): Promise<string | null> => {
     try {
       const doc = await getDb().collection('users').doc(email).get();
@@ -1429,6 +1480,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
     checkCloudDataExists,
     checkOnboardingStatus,
+    checkFamilyOwnerEmail,
+    restoreFamilyMembership,
     restoreDataFromCloud,
 
     googleAccount,

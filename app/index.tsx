@@ -1,4 +1,5 @@
 import { Redirect, useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -49,19 +50,28 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       right: 0,
       zIndex: 100,
     },
-    readOnlyBanner: {
+    familyBannerWrap: {
       marginHorizontal: 20,
       marginBottom: 8,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 12,
-      backgroundColor: colors.gray100,
-      alignItems: 'center',
     },
-    readOnlyBannerText: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: colors.textSecondary,
+    familyBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 9,
+      paddingHorizontal: 14,
+      borderRadius: 14,
+      ...SHADOW,
+      shadowOpacity: 0.1,
+      elevation: 0,
+    },
+    familyBannerEmoji: {
+      fontSize: 14,
+    },
+    familyBannerText: {
+      fontSize: 12.5,
+      fontWeight: '800',
     },
   });
 }
@@ -190,10 +200,18 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <HomeProfileBar selectedChild={selectedChild} onPressChild={() => setSwitcherOpen(true)} />
         {!isFamilyOwner && (
-          <View style={styles.readOnlyBanner}>
-            <Text style={styles.readOnlyBannerText}>
-              {canEditFamilyData ? '🙌 가족 구성원으로 참여 중' : '👀 가족 구성원으로 보는 중 (읽기 전용)'}
-            </Text>
+          <View style={styles.familyBannerWrap}>
+            <LinearGradient
+              colors={canEditFamilyData ? ['#34D399', '#10B981'] : ['#CBD5E1', '#94A3B8']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.familyBanner}
+            >
+              <Text style={styles.familyBannerEmoji}>{canEditFamilyData ? '🙌' : '👀'}</Text>
+              <Text style={[styles.familyBannerText, { color: '#FFFFFF' }]}>
+                {canEditFamilyData ? '가족 구성원으로 참여 중' : '가족 구성원으로 보는 중 (읽기 전용)'}
+              </Text>
+            </LinearGradient>
           </View>
         )}
         {stickyVisible && (

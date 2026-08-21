@@ -34,6 +34,8 @@ export default function GoogleSignInScreen() {
     joinFamilyByCode,
     checkCloudDataExists,
     checkOnboardingStatus,
+    checkFamilyOwnerEmail,
+    restoreFamilyMembership,
     restoreDataFromCloud,
     checkWithdrawalStatus,
     cancelWithdrawal,
@@ -124,13 +126,26 @@ export default function GoogleSignInScreen() {
 
       // 1. Re-login Flow
       if (flow === 'relogin') {
+        // 초대 코드로 합류해둔 가족이 있는지 먼저 확인 — 이 계정이 합류하기 전에
+        // 독자적으로 온보딩을 마친 이력이 있으면 아래 hasCloudData 분기가 그 예전
+        // 데이터부터 복원해버려서, 로그아웃 후 재로그인할 때마다 가족 공유 데이터
+        // 대신 자기 자신의 옛 데이터가 보이는 문제로 이어진다.
+        const memberOwnerEmail = await checkFamilyOwnerEmail(account.email);
+        if (memberOwnerEmail) {
+          await restoreFamilyMembership(memberOwnerEmail);
+          completeOnboarding();
+          showToast('👋 다시 오신 걸 환영해요!');
+          setTimeout(() => { router.dismissAll(); router.replace('/'); }, 100);
+          return;
+        }
+
         if (hasCloudData) {
           if (hasOnboardedCloud) {
             try {
               setLoading(true);
               await restoreDataFromCloud(account.email);
               showToast('👋 다시 오신 걸 환영해요!');
-              setTimeout(() => router.replace('/'), 100);
+              setTimeout(() => { router.dismissAll(); router.replace('/'); }, 100);
               return;
             } catch (err) {
               console.error('Auto Restore Error:', err);
@@ -159,7 +174,7 @@ export default function GoogleSignInScreen() {
 
           if (restored) {
             showToast('👋 데이터를 성공적으로 복구했어요!');
-            setTimeout(() => router.replace('/'), 100);
+            setTimeout(() => { router.dismissAll(); router.replace('/'); }, 100);
             return;
           }
         }
@@ -282,13 +297,26 @@ export default function GoogleSignInScreen() {
 
       // 1. Re-login Flow
       if (flow === 'relogin') {
+        // 초대 코드로 합류해둔 가족이 있는지 먼저 확인 — 이 계정이 합류하기 전에
+        // 독자적으로 온보딩을 마친 이력이 있으면 아래 hasCloudData 분기가 그 예전
+        // 데이터부터 복원해버려서, 로그아웃 후 재로그인할 때마다 가족 공유 데이터
+        // 대신 자기 자신의 옛 데이터가 보이는 문제로 이어진다.
+        const memberOwnerEmail = await checkFamilyOwnerEmail(account.email);
+        if (memberOwnerEmail) {
+          await restoreFamilyMembership(memberOwnerEmail);
+          completeOnboarding();
+          showToast('👋 다시 오신 걸 환영해요!');
+          setTimeout(() => { router.dismissAll(); router.replace('/'); }, 100);
+          return;
+        }
+
         if (hasCloudData) {
           if (hasOnboardedCloud) {
             try {
               setLoading(true);
               await restoreDataFromCloud(account.email);
               showToast('👋 다시 오신 걸 환영해요!');
-              setTimeout(() => router.replace('/'), 100);
+              setTimeout(() => { router.dismissAll(); router.replace('/'); }, 100);
               return;
             } catch (err) {
               console.error('Auto Restore Error:', err);
@@ -317,7 +345,7 @@ export default function GoogleSignInScreen() {
 
           if (restored) {
             showToast('👋 데이터를 성공적으로 복구했어요!');
-            setTimeout(() => router.replace('/'), 100);
+            setTimeout(() => { router.dismissAll(); router.replace('/'); }, 100);
             return;
           }
         }
