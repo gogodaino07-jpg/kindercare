@@ -68,7 +68,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { hasOnboarded, selectedChild, events, googleAccount, onboardingLoaded, mealPlans, updateEvent, isFamilyOwner } = useAppData();
+  const { hasOnboarded, selectedChild, events, googleAccount, onboardingLoaded, mealPlans, updateEvent, isFamilyOwner, canEditFamilyData } = useAppData();
   const { isLocked } = useAppLock();
   const { isSubscribed } = useSubscription();
   const insets = useSafeAreaInsets();
@@ -191,7 +191,9 @@ export default function HomeScreen() {
         <HomeProfileBar selectedChild={selectedChild} onPressChild={() => setSwitcherOpen(true)} />
         {!isFamilyOwner && (
           <View style={styles.readOnlyBanner}>
-            <Text style={styles.readOnlyBannerText}>👀 가족 구성원으로 보는 중 (읽기 전용)</Text>
+            <Text style={styles.readOnlyBannerText}>
+              {canEditFamilyData ? '🙌 가족 구성원으로 참여 중' : '👀 가족 구성원으로 보는 중 (읽기 전용)'}
+            </Text>
           </View>
         )}
         {stickyVisible && (

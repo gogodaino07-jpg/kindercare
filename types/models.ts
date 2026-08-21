@@ -71,6 +71,10 @@ export interface FamilyMember {
   phone?: string;
   /** 초대 코드로 실제 합류한 구성원만 채워짐 — users/{ownerEmail}/members 문서와 매칭용. */
   email?: string;
+  /** '엄마' | '아빠' | '할머니' | '할아버지' | '외삼촌' | '기타' — 초대로 합류한 구성원만. */
+  role?: string;
+  /** role에서 파생된 편집 권한 — 초대로 합류한 구성원만(소유자는 항상 편집 가능이라 별도로 안 씀). */
+  canEdit?: boolean;
 }
 
 /** Firestore `familyInvites/{code}` 문서 — 초대 코드가 어느 계정 소유인지 조회하는 용도. */
@@ -86,6 +90,8 @@ export interface FamilyMembership {
   email: string;
   joinCode: string;
   joinedAt: string;
+  role?: string;
+  canEdit?: boolean;
 }
 
 export interface TimeOfDay {

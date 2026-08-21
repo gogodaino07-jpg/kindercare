@@ -143,6 +143,7 @@ function ThemedNavigation() {
               <Stack.Screen name="onboarding" options={{ headerShown: false }} />
               <Stack.Screen name="family-group-start" options={{ headerShown: false }} />
               <Stack.Screen name="family-create" options={{ headerShown: false, title: '새로운 가족 그룹 생성' }} />
+              <Stack.Screen name="family-role-select" options={{ headerShown: false, title: '역할 선택' }} />
               <Stack.Screen name="google-signin" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding-child-setup" options={{ headerShown: false }} />
               <Stack.Screen name="calendar" options={{ title: '캘린더' }} />

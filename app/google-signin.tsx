@@ -199,9 +199,8 @@ export default function GoogleSignInScreen() {
           router.replace('/family-group-start');
           return;
         }
-        // 공유된 가족 데이터를 그대로 쓰므로 아이 등록 화면은 건너뛴다.
-        completeOnboarding();
-        router.replace('/');
+        // 공유된 가족 데이터를 그대로 쓰므로 아이 등록 화면은 건너뛰고, 역할(엄마/아빠/할머니 등)만 고른다.
+        router.push({ pathname: '/family-role-select' });
         return;
       }
 
@@ -358,9 +357,8 @@ export default function GoogleSignInScreen() {
           router.replace('/family-group-start');
           return;
         }
-        // 공유된 가족 데이터를 그대로 쓰므로 아이 등록 화면은 건너뛴다.
-        completeOnboarding();
-        router.replace('/');
+        // 공유된 가족 데이터를 그대로 쓰므로 아이 등록 화면은 건너뛰고, 역할(엄마/아빠/할머니 등)만 고른다.
+        router.push({ pathname: '/family-role-select' });
         return;
       }
 

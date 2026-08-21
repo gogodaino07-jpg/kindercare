@@ -44,6 +44,9 @@ const FAMILY_OWNER_EMAIL_KEY = 'kindercare_family_owner_email';
 /** 무료 사용자가 등록할 수 있는 아이 최대 인원 — 3번째부터는 프리미엄 구독이 필요하다. */
 export const FREE_CHILD_LIMIT = 2;
 
+/** 초대로 합류한 구성원 중, 이 역할만 바로 편집 권한을 가진다. 나머지는 읽기 전용. */
+const EDIT_ROLES = new Set(['엄마', '아빠']);
+
 interface AppDataContextValue {
   // Onboarding / family group
   hasOnboarded: boolean;
@@ -61,8 +64,10 @@ interface AppDataContextValue {
   familyOwnerEmail: string | null;
   /** familyOwnerEmail === googleAccount.email — 내가 이 가족 데이터의 소유자인지. */
   isFamilyOwner: boolean;
-  /** 현재는 isFamilyOwner와 동일(읽기 전용 1단계) — 다음 단계에서 역할 기반으로 확장 예정. */
+  /** 소유자이거나, 초대로 합류했는데 역할이 엄마/아빠(EDIT_ROLES)인 경우 true. */
   canEditFamilyData: boolean;
+  /** 초대로 합류한 구성원이 자신의 역할(엄마/아빠/할머니 등)을 등록 — canEdit도 함께 계산돼 저장됨. */
+  setMemberRole: (role: string) => Promise<void>;
   /** 가족 초대 코드를 Firestore에 등록 — regenerateFamilyKey()가 반환한 키를 그대로 넘긴다. */
   createFamilyInvite: (key: string) => Promise<void>;
   /** 새 초대 코드를 만들어 Firestore에 등록하고 예전 코드는 삭제. 설정 화면의 "키 재발급"용. */
@@ -171,8 +176,10 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   // 안 끝났는데 자기 자신으로 잘못 확정돼버리는" 경쟁 상태를 원천적으로 피할 수 있다.
   const effectiveFamilyOwnerEmail = familyOwnerEmail ?? googleAccount?.email ?? null;
   const isFamilyOwner = !!googleAccount?.email && effectiveFamilyOwnerEmail === googleAccount.email;
-  // 1단계는 항상 소유자만 편집 가능(안전한 기본값) — 다음 단계에서 역할에 따라 확장.
-  const canEditFamilyData = isFamilyOwner;
+  // 소유자는 항상 편집 가능. 초대로 합류한 구성원은 자기 역할(엄마/아빠 등)이
+  // EDIT_ROLES에 속해야만 편집 가능 — familyMembers 리스너가 채워주는 canEdit 필드를 본다.
+  const myMembership = familyMembers.find((m) => m.email && m.email === googleAccount?.email);
+  const canEditFamilyData = isFamilyOwner || !!myMembership?.canEdit;
 
   // Restore the "already onboarded" / font-size choice / registered events
   // made in a previous session so relaunching (or force-quitting) the app
@@ -512,6 +519,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
             name: m.name,
             isOwner: m.email === ownerEmail,
             email: m.email,
+            role: m.role,
+            canEdit: m.canEdit,
           }));
           return [...nonSynced, ...syncedMembers];
         });
@@ -821,6 +830,22 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     } catch (error) {
       console.error('❌ Firestore Join Family Error:', error);
       return false;
+    }
+  };
+
+  // 초대로 합류한 구성원이 자신의 역할을 등록 — joinFamilyByCode가 만들어둔 본인
+  // members 문서에 role/canEdit 필드만 병합해서 채운다(그 문서의 나머지 필드는 유지).
+  const setMemberRole = async (role: string) => {
+    if (!googleAccount?.email || !effectiveFamilyOwnerEmail) return;
+    try {
+      await getDb()
+        .collection('users')
+        .doc(effectiveFamilyOwnerEmail)
+        .collection('members')
+        .doc(googleAccount.email)
+        .set({ role, canEdit: EDIT_ROLES.has(role) }, { merge: true });
+    } catch (error) {
+      console.error('❌ Firestore Set Member Role Error:', error);
     }
   };
 
@@ -1356,6 +1381,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     familyOwnerEmail: effectiveFamilyOwnerEmail,
     isFamilyOwner,
     canEditFamilyData,
+    setMemberRole,
     createFamilyInvite,
     regenerateFamilyInvite,
     joinFamilyByCode,
