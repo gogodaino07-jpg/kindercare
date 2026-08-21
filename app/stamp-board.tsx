@@ -409,6 +409,7 @@ export default function StampBoardScreen() {
             </View>
           )}
 
+          <View style={styles.boardFillWrap}>
           <View style={[styles.boardCard, { borderColor: theme.boardBorder }]}>
             <DotPattern />
             <View style={styles.grid}>
@@ -450,6 +451,7 @@ export default function StampBoardScreen() {
                 );
               })}
             </View>
+          </View>
           </View>
         </ScrollView>
 
@@ -825,8 +827,11 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   stickerGridEmoji: { fontSize: 20 },
-  boardCard: {
+  boardFillWrap: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  boardCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 12,
