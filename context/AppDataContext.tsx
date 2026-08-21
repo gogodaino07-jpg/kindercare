@@ -827,6 +827,16 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
         const userInfo = await GoogleSignin.signIn();
 
+        // 계정 선택 팝업에서 하드웨어 뒤로가기로 나가면 이 SDK는 reject가 아니라
+        // { type: 'cancelled', data: null }로 정상 resolve된다. 이걸 걸러내지
+        // 않으면 아래 else 분기의 "계정 정보를 가져올 수 없습니다" 에러로
+        // 오인되어, 사용자가 그냥 취소했을 뿐인데도 로그인 오류 토스트가 떴다.
+        if (userInfo.type === 'cancelled') {
+          const error = new Error('사용자가 로그인을 취소했습니다.');
+          (error as any).code = '12501';
+          throw error;
+        }
+
         if (userInfo.data?.user) {
           // Firebase Auth link
           if (userInfo.data.idToken) {
