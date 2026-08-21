@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { marginTop: 26, marginBottom: 14, fontSize: 23, fontWeight: '800', color: COLORS.ink, textAlign: 'center', lineHeight: 30 },
+  title: { marginTop: 26, marginBottom: 22, fontSize: 23, fontWeight: '800', color: COLORS.ink, textAlign: 'center', lineHeight: 30 },
   subtitle: { marginBottom: 20, fontSize: 15, color: COLORS.gray, textAlign: 'center', lineHeight: 22, fontWeight: '600' },
   indicatorContainer: { alignItems: 'center', marginBottom: 24 },
   dotsRow: { flexDirection: 'row', alignItems: 'center' },
