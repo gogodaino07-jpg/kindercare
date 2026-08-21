@@ -761,8 +761,9 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
   // 초대 코드로 가족에 합류 — 코드를 조회해 소유자를 찾고, 내 권한 기록(members 문서)을
   // 남긴 뒤 familyOwnerEmail을 그 소유자로 세팅한다. 실패(코드 없음 등)하면 false.
-  const joinFamilyByCode = async (code: string): Promise<boolean> => {
+  const joinFamilyByCode = async (rawCode: string): Promise<boolean> => {
     if (!googleAccount?.email) return false;
+    const code = rawCode.trim();
     try {
       const inviteDoc = await getDb().collection('familyInvites').doc(code).get();
       if (!inviteDoc.exists) return false;

@@ -15,12 +15,11 @@ export const seedNotificationSettings: NotificationSettings = {
   sameDayTime: { period: 'AM', hour: 8, minute: 0 },
 };
 
+/** 숫자 6자리 — 조부모 등도 전화로 쉽게 불러주고 받아 적을 수 있도록 영문 없이 숫자만 사용. */
 export function generateFamilyKey(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let key = '';
-  for (let i = 0; i < 8; i++) {
-    key += chars[Math.floor(Math.random() * chars.length)];
-    if (i === 3) key += '-';
+  for (let i = 0; i < 6; i++) {
+    key += Math.floor(Math.random() * 10).toString();
   }
   return key;
 }
