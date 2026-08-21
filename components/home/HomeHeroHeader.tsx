@@ -43,6 +43,53 @@ function isBirthdayToday(birthdate?: string): boolean {
   return monthDay === todayMonthDay;
 }
 
+/**
+ * 이름+조사(아/야) 앞뒤에 붙는 문구. 배너 옆 여백이 휑해 보이지 않도록
+ * 일부러 길게 써서 점심 메뉴 버튼 바로 옆까지 내용이 채워지게 함.
+ */
+const GREETING_TEMPLATES: { before: string; after: string }[] = [
+  { before: '', after: ', 오늘 하루도 신나고 즐거운 일들이 가득하길 바랄게!' },
+  { before: '좋은 아침이야, ', after: '! 오늘도 씩씩하게 하루를 시작해보자!' },
+  { before: '', after: ', 잘 잤어? 오늘도 웃음 가득한 하루 보내자!' },
+  { before: '', after: ', 오늘도 신나는 일들로 가득한 하루가 되길 바라!' },
+  { before: '오늘도 반가워, ', after: '! 하루 종일 즐겁고 행복한 시간 보내자!' },
+  { before: '', after: ', 오늘도 힘차게 하루를 시작해볼까? 파이팅!' },
+  { before: '', after: ', 오늘은 또 어떤 신나는 일이 기다리고 있을까? 기대돼!' },
+  { before: '일어났구나, ', after: '! 오늘도 신나고 활기찬 하루 보내보자!' },
+  { before: '', after: ', 오늘도 활짝 웃으며 즐거운 하루 시작해보자!' },
+  { before: '', after: ', 오늘 하루도 무럭무럭 건강하게 자라렴!' },
+  { before: '좋은 하루야, ', after: '! 오늘도 신나고 알찬 하루 보내보자!' },
+  { before: '', after: ', 오늘도 씩씩하게 하루를 힘껏 채워보자!' },
+  { before: '', after: ', 오늘 하루도 두근두근 기대되는 일이 가득하길!' },
+  { before: '', after: ', 신나는 모험이 오늘도 너를 기다리고 있어!' },
+  { before: '', after: ', 오늘도 언제나처럼 네가 최고야, 힘내자!' },
+  { before: '', after: ', 오늘 하루도 알차고 즐겁게 보내볼까?' },
+  { before: '', after: ', 씩씩하고 건강하게 오늘 하루도 잘 지내자!' },
+  { before: '', after: ', 오늘도 무럭무럭 자라나는 소중한 하루야!' },
+  { before: '', after: ', 좋은 하루 시작해볼까? 오늘도 응원할게!' },
+  { before: '', after: ', 오늘도 웃음꽃 활짝 피우는 하루가 되길!' },
+  { before: '상쾌한 아침이야, ', after: '! 오늘 하루도 튼튼하게 지내보자!' },
+  { before: '', after: ', 오늘 하루도 튼튼하고 건강하게 지내자!' },
+  { before: '', after: ', 오늘도 별처럼 반짝반짝 빛나는 하루 보내!' },
+  { before: '', after: ', 오늘 하루도 함께라서 좋아, 즐겁게 지내자!' },
+  { before: '안녕, ', after: '! 오늘 하루도 신나게 보내보자, 파이팅!' },
+  { before: '', after: ', 오늘도 방긋 웃어줄래? 그럼 나도 행복해!' },
+  { before: '', after: ', 오늘 하루도 신나는 일만 가득하길 바랄게!' },
+  { before: '', after: ', 오늘도 사랑스럽고 행복한 하루 보내자!' },
+  { before: '', after: ', 씩씩하게 오늘 하루도 힘차게 파이팅!' },
+  { before: '', after: ', 오늘도 행복 가득한 하루가 되길 바랄게!' },
+];
+
+/** 오늘 날짜를 시드로 30개 중 하나를 고정 선택 — 같은 날엔 항상 같은 문구, 자정 지나면 자동으로 바뀜. */
+function pickDailyGreetingTemplate(): { before: string; after: string } {
+  const todayKey = toISODate(new Date());
+  let hash = 0;
+  for (let i = 0; i < todayKey.length; i++) {
+    hash = (hash * 31 + todayKey.charCodeAt(i)) >>> 0;
+  }
+  return GREETING_TEMPLATES[hash % GREETING_TEMPLATES.length];
+}
+
 
 /** Shared greeting banner + weather hero, used for both the empty and has-data home states so the top of the screen never differs. */
 export default function HomeHeroHeader({
@@ -73,6 +120,8 @@ export default function HomeHeroHeader({
     : selectedChild?.name
       ? stripSurname(selectedChild.name)
       : undefined;
+  const particle = greetingName ? (hasFinalConsonant(greetingName) ? '아' : '야') : '';
+  const greetingTemplate = pickDailyGreetingTemplate();
   const isBirthday = isBirthdayToday(selectedChild?.birthdate);
 
   return (
@@ -103,7 +152,16 @@ export default function HomeHeroHeader({
               🍽️ 오늘은 <Text style={styles.bannerGreetingName}>{todayMainMenu}</Text>
               {hasFinalConsonant(todayMainMenu) ? '을' : '를'} 먹어요~
             </Text>
-          ) : null}
+          ) : (
+            <Text
+              style={styles.bannerGreetingText}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              {greetingTemplate.before}<Text style={styles.bannerGreetingName}>{greetingName ?? '우리 아이'}{particle}</Text>{greetingTemplate.after}
+            </Text>
+          )}
         </View>
         <Pressable style={styles.mealBannerButton} onPress={onPressMeal}>
           <Text style={styles.mealBannerButtonIcon}>🍴</Text>
