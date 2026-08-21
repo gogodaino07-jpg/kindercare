@@ -106,31 +106,25 @@ export default function WeatherRegionSettingsScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Pressable
-            style={[styles.row, region === null && styles.rowActive]}
-            onPress={() => applyQuickRegion(null)}
-          >
-            <View style={[styles.radio, region === null && styles.radioActive]}>
-              {region === null ? <View style={styles.radioDot} /> : null}
-            </View>
-            <Text style={styles.rowLabel}>자동 (기기 위치 사용)</Text>
-          </Pressable>
+          <View style={styles.chipWrap}>
+            <Pressable style={styles.chipAuto} onPress={() => applyQuickRegion(null)}>
+              <MaterialCommunityIcons name="crosshairs-gps" size={14} color="#FFFFFF" style={styles.chipIcon} />
+              <Text style={styles.chipTextAuto}>자동 (기기 위치 사용)</Text>
+            </Pressable>
 
-          {WEATHER_REGIONS.map((r) => {
-            const isSelected = region?.code === r.code;
-            return (
-              <Pressable
-                key={r.code}
-                style={[styles.row, isSelected && styles.rowActive]}
-                onPress={() => applyQuickRegion(r.code)}
-              >
-                <View style={[styles.radio, isSelected && styles.radioActive]}>
-                  {isSelected ? <View style={styles.radioDot} /> : null}
-                </View>
-                <Text style={styles.rowLabel}>{r.label}</Text>
-              </Pressable>
-            );
-          })}
+            {WEATHER_REGIONS.map((r) => {
+              const isSelected = region?.code === r.code;
+              return (
+                <Pressable
+                  key={r.code}
+                  style={[styles.chip, isSelected && styles.chipActive]}
+                  onPress={() => applyQuickRegion(r.code)}
+                >
+                  <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>{r.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -221,6 +215,51 @@ function createStyles(colors: ThemeColors) {
       fontSize: 15,
       fontWeight: '600',
       color: colors.textPrimary,
+    },
+    chipWrap: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 9,
+      paddingHorizontal: 16,
+      borderRadius: 999,
+      backgroundColor: colors.cardWhite,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    chipActive: {
+      backgroundColor: colors.accent,
+      borderColor: colors.accent,
+    },
+    chipAuto: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 9,
+      paddingHorizontal: 16,
+      borderRadius: 999,
+      backgroundColor: colors.accent,
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    chipIcon: {
+      marginRight: 4,
+    },
+    chipText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    chipTextActive: {
+      color: '#FFFFFF',
+    },
+    chipTextAuto: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#FFFFFF',
     },
   });
 }
