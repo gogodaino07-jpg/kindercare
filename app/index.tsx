@@ -7,6 +7,7 @@ import AdPopupModal from '../components/home/AdPopupModal';
 import BirthdayCenterConfetti from '../components/home/BirthdayCenterConfetti';
 import BlackboardModal from '../components/home/BlackboardModal';
 import ChildSwitcherSheet from '../components/home/ChildSwitcherSheet';
+import FamilyShareCard from '../components/home/FamilyShareCard';
 import HomeEmptyContent from '../components/home/HomeEmptyContent';
 import HomeHeroHeader from '../components/home/HomeHeroHeader';
 import HomeProfileBar from '../components/home/HomeProfileBar';
@@ -42,11 +43,10 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       flex: 1,
     },
     scrollContainer: {
-      paddingBottom: 150 + bottomInset,
+      paddingBottom: 230 + bottomInset,
     },
-    adBanner: {
+    bottomFixedStack: {
       position: 'absolute',
-      bottom: bottomInset,
       left: 0,
       right: 0,
       zIndex: 100,
@@ -291,7 +291,10 @@ export default function HomeScreen() {
 
       <BirthdayCenterConfetti triggerKey={birthdayBurstKey} />
 
-      {!isSubscribed && <CoupangBanner style={styles.adBanner} />}
+      <View style={[styles.bottomFixedStack, { bottom: insets.bottom }]}>
+        {!upcoming.isEmpty && <FamilyShareCard mainEvents={upcoming.mainEvents} />}
+        {!isSubscribed && <CoupangBanner />}
+      </View>
 
       <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
