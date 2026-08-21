@@ -489,6 +489,12 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       .onSnapshot((snap) => {
         if (!snap) return;
         const cloudMembers = snap.docs.map(doc => doc.data() as FamilyMembership);
+        // Same guard as the children/events/mealPlans listeners above: a transient
+        // empty snapshot served from local cache (e.g. right after switching
+        // accounts, before the real server data arrives) must not wipe out
+        // members that are about to sync back in. Only trust an empty result
+        // once the server has confirmed it.
+        if (cloudMembers.length === 0 && snap.metadata.fromCache) return;
         setFamilyMembers(prev => {
           // Keep local-only entries that aren't superseded by a synced one yet.
           // The pre-sync "나" placeholder (seeded on sign-in, no email) has no
