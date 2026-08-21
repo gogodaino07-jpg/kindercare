@@ -38,7 +38,7 @@ export default function TodayPrepProgress({ total, checked, percent }: TodayPrep
   // 채워진 초록 영역 위로 왼쪽->오른쪽으로 은은한 빛(오로라)이 계속 훑고 지나가는 연출.
   useEffect(() => {
     const loop = Animated.loop(
-      Animated.timing(shimmerAnim, { toValue: 1, duration: 1800, easing: Easing.linear, useNativeDriver: true })
+      Animated.timing(shimmerAnim, { toValue: 1, duration: 3200, easing: Easing.linear, useNativeDriver: true })
     );
     loop.start();
     return () => loop.stop();
