@@ -10,6 +10,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import Text from '../common/AppText';
+import { useAppData } from '../../context/AppDataContext';
 import { Event } from '../../types/models';
 import { toISODate } from '../../utils/date';
 import { calendarTheme as t } from './calendarTheme';
@@ -46,6 +47,7 @@ export default function CalendarAccordion({
   setExpanded,
   onOpenAddEvent,
 }: CalendarAccordionProps) {
+  const { canEditFamilyData } = useAppData();
   const cells = useMemo(() => {
     const year = monthCursor.getFullYear();
     const month = monthCursor.getMonth();
@@ -155,10 +157,12 @@ export default function CalendarAccordion({
             />
           </Pressable>
 
-          <Pressable style={styles.addEventBadge} onPress={onOpenAddEvent}>
-            <MaterialCommunityIcons name="plus" size={14} color={t.textPrimary} />
-            <Text style={styles.addEventBadgeText}>일정 추가</Text>
-          </Pressable>
+          {canEditFamilyData && (
+            <Pressable style={styles.addEventBadge} onPress={onOpenAddEvent}>
+              <MaterialCommunityIcons name="plus" size={14} color={t.textPrimary} />
+              <Text style={styles.addEventBadgeText}>일정 추가</Text>
+            </Pressable>
+          )}
         </View>
       </View>
 

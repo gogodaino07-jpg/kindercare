@@ -69,6 +69,23 @@ export interface FamilyMember {
   name: string;
   isOwner: boolean;
   phone?: string;
+  /** 초대 코드로 실제 합류한 구성원만 채워짐 — users/{ownerEmail}/members 문서와 매칭용. */
+  email?: string;
+}
+
+/** Firestore `familyInvites/{code}` 문서 — 초대 코드가 어느 계정 소유인지 조회하는 용도. */
+export interface FamilyInvite {
+  ownerEmail: string;
+  ownerName: string;
+  createdAt: string;
+}
+
+/** Firestore `users/{ownerEmail}/members/{memberEmail}` 문서 — 실제 읽기 권한 부여 기록. */
+export interface FamilyMembership {
+  name: string;
+  email: string;
+  joinCode: string;
+  joinedAt: string;
 }
 
 export interface TimeOfDay {

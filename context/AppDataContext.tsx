@@ -18,7 +18,7 @@ import {
   seedNotificationSettings,
 } from '../data/seed';
 import { isSimilarEvent } from '../data/mockAIResult';
-import { Child, Event, FamilyMember, GoogleAccount, MealPlan, NotificationSettings } from '../types/models';
+import { Child, Event, FamilyInvite, FamilyMember, FamilyMembership, GoogleAccount, MealPlan, NotificationSettings } from '../types/models';
 import { toISODate } from '../utils/date';
 import { withExternalAction } from '../utils/externalAction';
 import { getDb, getFirebaseAuth } from '../utils/firebase';
@@ -39,6 +39,7 @@ const GOOGLE_ACCOUNT_KEY = 'kindercare_google_account';
 const FAMILY_MEMBERS_KEY = 'kindercare_family_members';
 const DATA_OWNER_EMAIL_KEY = 'kindercare_data_owner_email';
 const FAMILY_KEY_KEY = 'kindercare_family_key';
+const FAMILY_OWNER_EMAIL_KEY = 'kindercare_family_owner_email';
 
 /** 무료 사용자가 등록할 수 있는 아이 최대 인원 — 3번째부터는 프리미엄 구독이 필요하다. */
 export const FREE_CHILD_LIMIT = 2;
@@ -54,6 +55,18 @@ interface AppDataContextValue {
   removeMember: (memberId: string) => void;
   leaveFamily: (memberId: string) => void;
   updateMemberPhone: (memberId: string, phone: string | null) => void;
+
+  // Family sharing (invite code)
+  /** 이 기기가 실제로 보고 있는 가족 데이터의 소유자 이메일 — 소유자 본인은 googleAccount.email과 같고, 초대로 합류한 사람은 조회된 소유자 이메일. */
+  familyOwnerEmail: string | null;
+  /** familyOwnerEmail === googleAccount.email — 내가 이 가족 데이터의 소유자인지. */
+  isFamilyOwner: boolean;
+  /** 현재는 isFamilyOwner와 동일(읽기 전용 1단계) — 다음 단계에서 역할 기반으로 확장 예정. */
+  canEditFamilyData: boolean;
+  /** 가족 초대 코드를 Firestore에 등록 — regenerateFamilyKey()가 반환한 키를 그대로 넘긴다. */
+  createFamilyInvite: (key: string) => Promise<void>;
+  /** 초대 코드로 가족에 합류 — 성공 시 familyOwnerEmail이 세팅됨. */
+  joinFamilyByCode: (code: string) => Promise<boolean>;
 
   // Children
   children: Child[];
@@ -147,7 +160,17 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const [chalkboardThemeId, setChalkboardThemeId] = useState(DEFAULT_CHALKBOARD_THEME_ID);
   const [googleAccount, setGoogleAccount] = useState<GoogleAccount | null>(null);
   const [dataOwnerEmail, setDataOwnerEmail] = useState<string | null>(null);
+  const [familyOwnerEmail, setFamilyOwnerEmail] = useState<string | null>(null);
   const [syncChecked, setSyncChecked] = useState(false);
+
+  // familyOwnerEmail은 joinFamilyByCode가 실제로 세팅한 값만 담는다(퍼시스트도 그때만).
+  // 소유자 본인의 경우엔 굳이 자기 이메일을 별도로 써넣지 않고, 여기서 자기 로그인
+  // 이메일로 폴백한다 — 이렇게 하면 로그인 직후 렌더 타이밍에 따라 "합류 처리가 아직
+  // 안 끝났는데 자기 자신으로 잘못 확정돼버리는" 경쟁 상태를 원천적으로 피할 수 있다.
+  const effectiveFamilyOwnerEmail = familyOwnerEmail ?? googleAccount?.email ?? null;
+  const isFamilyOwner = !!googleAccount?.email && effectiveFamilyOwnerEmail === googleAccount.email;
+  // 1단계는 항상 소유자만 편집 가능(안전한 기본값) — 다음 단계에서 역할에 따라 확장.
+  const canEditFamilyData = isFamilyOwner;
 
   // Restore the "already onboarded" / font-size choice / registered events
   // made in a previous session so relaunching (or force-quitting) the app
@@ -173,6 +196,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       AsyncStorage.getItem(FAMILY_KEY_KEY),
       AsyncStorage.getItem(FONT_CHOICE_KEY),
       AsyncStorage.getItem(CHALKBOARD_THEME_KEY),
+      AsyncStorage.getItem(FAMILY_OWNER_EMAIL_KEY),
     ])
       .then(
         ([
@@ -189,6 +213,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
           storedFamilyKey,
           storedFontChoice,
           storedChalkboardTheme,
+          storedFamilyOwnerEmail,
         ]) => {
           if (storedOnboarded === 'true') setHasOnboarded(true);
           if (storedFontSize && FONT_SIZE_OPTIONS.some((o) => o.id === storedFontSize)) {
@@ -202,6 +227,9 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
           }
           if (storedFamilyKey) {
             setFamilyKey(storedFamilyKey);
+          }
+          if (storedFamilyOwnerEmail) {
+            setFamilyOwnerEmail(storedFamilyOwnerEmail);
           }
           if (storedEvents) {
             try {
@@ -317,6 +345,14 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     AsyncStorage.setItem(FAMILY_KEY_KEY, familyKey).catch(() => {});
   }, [familyKey, onboardingLoaded]);
 
+  // Persist family owner email (only meaningful once actually set — e.g. by
+  // joinFamilyByCode; the owner's own case falls back to googleAccount.email
+  // at read-time via effectiveFamilyOwnerEmail below, so nothing to persist there)
+  useEffect(() => {
+    if (!onboardingLoaded || !familyOwnerEmail) return;
+    AsyncStorage.setItem(FAMILY_OWNER_EMAIL_KEY, familyOwnerEmail).catch(() => {});
+  }, [familyOwnerEmail, onboardingLoaded]);
+
   // Persist font choice after initial load
   useEffect(() => {
     if (!onboardingLoaded) return;
@@ -351,10 +387,12 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
   // [Real-time Synchronization]
   // Listen for changes in the cloud and update local state immediately.
+  // Firestore 경로는 로그인 이메일이 아니라 "실제로 보고 있는 가족 데이터의 소유자"
+  // 기준이다 — 초대 코드로 합류한 구성원은 이게 소유자의 이메일로 다르게 세팅된다.
   useEffect(() => {
-    if (!googleAccount?.email || !onboardingLoaded || !syncChecked) return;
+    if (!effectiveFamilyOwnerEmail || !googleAccount?.email || !onboardingLoaded || !syncChecked) return;
 
-    const email = googleAccount.email;
+    const email = effectiveFamilyOwnerEmail;
     console.log('🔄 Firestore Listener Started for:', email);
 
     // Listen to Children
@@ -431,15 +469,51 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       unsubEvents();
       unsubMealPlans();
     };
-  }, [googleAccount?.email, onboardingLoaded, syncChecked]);
+  }, [effectiveFamilyOwnerEmail, googleAccount?.email, onboardingLoaded, syncChecked]);
+
+  // [Family Members Synchronization]
+  // Listens to users/{ownerEmail}/members so the owner sees new joiners in
+  // real time, and a joined member sees the same shared roster. The owner's
+  // own "나" entry stays locally seeded (see signInWithGoogle/Kakao below);
+  // this only adds/updates entries for people who actually joined via code.
+  useEffect(() => {
+    if (!effectiveFamilyOwnerEmail || !googleAccount?.email || !onboardingLoaded || !syncChecked) return;
+
+    const ownerEmail = effectiveFamilyOwnerEmail;
+    const unsubMembers = getDb()
+      .collection('users')
+      .doc(ownerEmail)
+      .collection('members')
+      .onSnapshot((snap) => {
+        if (!snap) return;
+        const cloudMembers = snap.docs.map(doc => doc.data() as FamilyMembership);
+        setFamilyMembers(prev => {
+          // Keep the locally-seeded owner entry ("나") and any other non-synced
+          // local-only entries; replace/merge in the real joined members by email.
+          const nonSynced = prev.filter(m => !m.email || !cloudMembers.some(c => c.email === m.email));
+          const syncedMembers: FamilyMember[] = cloudMembers.map(m => ({
+            id: `member-${m.email}`,
+            name: m.name,
+            isOwner: m.email === ownerEmail,
+            email: m.email,
+          }));
+          return [...nonSynced, ...syncedMembers];
+        });
+      }, (err) => console.error('❌ Firestore Members Listener Error:', err));
+
+    return () => unsubMembers();
+  }, [effectiveFamilyOwnerEmail, googleAccount?.email, onboardingLoaded, syncChecked]);
 
   // [Initial Sync-Up]
   // If we have local data but the cloud is empty, push local data to cloud.
+  // Owner-only: a joined member's write would be rejected by Firestore rules
+  // anyway (1단계는 소유자만 쓰기 가능), and we don't want to even attempt
+  // pushing a joined member's local leftovers into the family's shared data.
   useEffect(() => {
-    if (!googleAccount?.email || !onboardingLoaded || syncChecked) return;
+    if (!isFamilyOwner || !effectiveFamilyOwnerEmail || !onboardingLoaded || syncChecked) return;
 
     const syncUp = async () => {
-      const email = googleAccount.email;
+      const email = effectiveFamilyOwnerEmail;
       try {
         console.log('📤 Initial Sync-Up Checking for:', email);
 
@@ -481,7 +555,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
     syncUp();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [googleAccount?.email, onboardingLoaded]);
+  }, [isFamilyOwner, effectiveFamilyOwnerEmail, onboardingLoaded]);
 
   const selectedChild = useMemo(
     () => childProfiles.find((c) => c.id === selectedChildId),
@@ -648,12 +722,109 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     return newKey;
   };
 
-  const removeMember = (memberId: string) => {
-    setFamilyMembers((prev) => prev.filter((m) => m.id !== memberId));
+  // 초대 코드를 Firestore에 등록해서, 아직 로그인 전인 다른 사람도 "이 코드가 누구
+  // 가족인지" 조회할 수 있게 한다. key는 regenerateFamilyKey()가 반환한 값을 그대로
+  // 받는다 — 방금 세팅한 familyKey state를 여기서 다시 읽으면(리렌더 전이라) 이전
+  // 값을 읽어버릴 수 있어서, 클로저 state 대신 인자로 명시적으로 받는다.
+  const createFamilyInvite = async (key: string) => {
+    if (!googleAccount?.email) return;
+    try {
+      const invite: FamilyInvite = {
+        ownerEmail: googleAccount.email,
+        ownerName: googleAccount.name,
+        createdAt: new Date().toISOString(),
+      };
+      const ownerMembership: FamilyMembership = {
+        name: googleAccount.name,
+        email: googleAccount.email,
+        joinCode: key,
+        joinedAt: invite.createdAt,
+      };
+      await Promise.all([
+        getDb().collection('familyInvites').doc(key).set(invite),
+        // 소유자 자신도 members에 남겨둬야, 초대로 합류한 구성원 쪽 목록에도
+        // 소유자 이름이 함께 보인다(그 컬렉션 하나가 양쪽 모두의 구성원 목록 출처).
+        getDb().collection('users').doc(googleAccount.email).collection('members').doc(googleAccount.email).set(ownerMembership),
+      ]);
+    } catch (error) {
+      console.error('❌ Firestore Create Family Invite Error:', error);
+    }
   };
 
+  // 초대 코드로 가족에 합류 — 코드를 조회해 소유자를 찾고, 내 권한 기록(members 문서)을
+  // 남긴 뒤 familyOwnerEmail을 그 소유자로 세팅한다. 실패(코드 없음 등)하면 false.
+  const joinFamilyByCode = async (code: string): Promise<boolean> => {
+    if (!googleAccount?.email) return false;
+    try {
+      const inviteDoc = await getDb().collection('familyInvites').doc(code).get();
+      if (!inviteDoc.exists) return false;
+      const invite = inviteDoc.data() as FamilyInvite | undefined;
+      if (!invite?.ownerEmail) return false;
+
+      // 본인이 발급한 코드로 스스로 입력한 경우(테스트 등) — 그냥 자기 자신 확정.
+      if (invite.ownerEmail !== googleAccount.email) {
+        const membership: FamilyMembership = {
+          name: googleAccount.name,
+          email: googleAccount.email,
+          joinCode: code,
+          joinedAt: new Date().toISOString(),
+        };
+        await getDb()
+          .collection('users')
+          .doc(invite.ownerEmail)
+          .collection('members')
+          .doc(googleAccount.email)
+          .set(membership);
+      }
+
+      setFamilyOwnerEmail(invite.ownerEmail);
+      await AsyncStorage.setItem(FAMILY_OWNER_EMAIL_KEY, invite.ownerEmail);
+      // signInWithGoogle/Kakao가 로그인 직후 "빈 목록이면 나를 소유자로" 임시 시딩을
+      // 해뒀을 수 있는데(합류 여부를 아직 모르는 시점이라), 합류가 확정된 지금은 그
+      // 임시값을 지운다 — 잠시 후 members 리스너가 진짜 목록으로 채워준다.
+      setFamilyMembers([]);
+      return true;
+    } catch (error) {
+      console.error('❌ Firestore Join Family Error:', error);
+      return false;
+    }
+  };
+
+  // 소유자가 구성원을 내보낸다 — 로컬 표시뿐 아니라 실제 권한 기록(members 문서)도
+  // 지워야 그 사람의 읽기 권한이 실제로 사라진다(안 지우면 보안 규칙상 계속 읽힘).
+  const removeMember = (memberId: string) => {
+    const member = familyMembers.find((m) => m.id === memberId);
+    setFamilyMembers((prev) => prev.filter((m) => m.id !== memberId));
+    if (isFamilyOwner && effectiveFamilyOwnerEmail && member?.email) {
+      getDb()
+        .collection('users')
+        .doc(effectiveFamilyOwnerEmail)
+        .collection('members')
+        .doc(member.email)
+        .delete()
+        .catch((err) => console.error('❌ Firestore Remove Member Error:', err));
+    }
+  };
+
+  // 내(구성원)가 가족에서 나간다 — 내 권한 기록을 지우고, 공유받았던 데이터를
+  // 로컬에서 비운 뒤 familyOwnerEmail을 해제해 다시 내 계정(빈 데이터)으로 돌아간다.
   const leaveFamily = (memberId: string) => {
     setFamilyMembers((prev) => prev.filter((m) => m.id !== memberId));
+    if (!isFamilyOwner && effectiveFamilyOwnerEmail && googleAccount?.email) {
+      getDb()
+        .collection('users')
+        .doc(effectiveFamilyOwnerEmail)
+        .collection('members')
+        .doc(googleAccount.email)
+        .delete()
+        .catch((err) => console.error('❌ Firestore Leave Family Error:', err));
+    }
+    setFamilyOwnerEmail(null);
+    AsyncStorage.removeItem(FAMILY_OWNER_EMAIL_KEY).catch(() => {});
+    setChildProfiles([]);
+    setEvents([]);
+    setMealPlans([]);
+    setSelectedChildId(undefined);
   };
 
   const updateMemberPhone = (memberId: string, phone: string | null) => {
@@ -666,16 +837,16 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     const newChild: Child = { ...input, id: `child-${Date.now()}` };
     setChildProfiles((prev) => [...prev, newChild]);
     setSelectedChildId(newChild.id);
-    if (googleAccount?.email) {
-      pushChildToCloud(googleAccount.email, newChild);
+    if (effectiveFamilyOwnerEmail) {
+      pushChildToCloud(effectiveFamilyOwnerEmail, newChild);
     }
   };
 
   const updateChild = (id: string, input: Omit<Child, 'id'>) => {
     const updatedChild = { ...input, id };
     setChildProfiles((prev) => prev.map((c) => (c.id === id ? updatedChild : c)));
-    if (googleAccount?.email) {
-      pushChildToCloud(googleAccount.email, updatedChild);
+    if (effectiveFamilyOwnerEmail) {
+      pushChildToCloud(effectiveFamilyOwnerEmail, updatedChild);
     }
   };
 
@@ -686,8 +857,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       const remaining = childProfiles.filter((c) => c.id !== id);
       return remaining[0]?.id;
     });
-    if (googleAccount?.email) {
-      deleteChildFromCloud(googleAccount.email, id);
+    if (effectiveFamilyOwnerEmail) {
+      deleteChildFromCloud(effectiveFamilyOwnerEmail, id);
     }
   };
 
@@ -695,8 +866,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setEvents((prev) => {
       const updated = prev.map((e) => (e.id === eventId ? { ...e, note } : e));
       const target = updated.find(e => e.id === eventId);
-      if (googleAccount?.email && target) {
-        pushEventToCloud(googleAccount.email, target);
+      if (effectiveFamilyOwnerEmail && target) {
+        pushEventToCloud(effectiveFamilyOwnerEmail, target);
       }
       return updated;
     });
@@ -706,8 +877,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setEvents((prev) => {
       const updated = prev.map((e) => (e.id === eventId ? { ...e, ...input } : e));
       const target = updated.find(e => e.id === eventId);
-      if (googleAccount?.email && target) {
-        pushEventToCloud(googleAccount.email, target);
+      if (effectiveFamilyOwnerEmail && target) {
+        pushEventToCloud(effectiveFamilyOwnerEmail, target);
       }
       return updated;
     });
@@ -715,16 +886,16 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
   const deleteEvent = (eventId: string) => {
     setEvents((prev) => prev.filter((e) => e.id !== eventId));
-    if (googleAccount?.email) {
-      deleteEventFromCloud(googleAccount.email, eventId);
+    if (effectiveFamilyOwnerEmail) {
+      deleteEventFromCloud(effectiveFamilyOwnerEmail, eventId);
     }
   };
 
   const deleteEvents = (eventIds: string[]) => {
     const idSet = new Set(eventIds);
     setEvents((prev) => prev.filter((e) => !idSet.has(e.id)));
-    if (googleAccount?.email) {
-      eventIds.forEach(id => deleteEventFromCloud(googleAccount.email!, id));
+    if (effectiveFamilyOwnerEmail) {
+      eventIds.forEach(id => deleteEventFromCloud(effectiveFamilyOwnerEmail!, id));
     }
   };
 
@@ -732,8 +903,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     try {
       const newEvent = { ...input, id: nextEventId() };
       setEvents((prev) => [...prev, newEvent]);
-      if (googleAccount?.email) {
-        pushEventToCloud(googleAccount.email, newEvent);
+      if (effectiveFamilyOwnerEmail) {
+        pushEventToCloud(effectiveFamilyOwnerEmail, newEvent);
       }
     } catch (error) {
       console.error('❌ addEvent error:', error);
@@ -758,8 +929,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
           const idsToRemove = existingSimilarOnes.map(ex => ex.id);
           filteredPrev = prev.filter((e) => !idsToRemove.includes(e.id));
 
-          if (googleAccount?.email) {
-            idsToRemove.forEach((id) => deleteEventFromCloud(googleAccount.email!, id));
+          if (effectiveFamilyOwnerEmail) {
+            idsToRemove.forEach((id) => deleteEventFromCloud(effectiveFamilyOwnerEmail!, id));
           }
 
           // Merge old data into new events
@@ -787,8 +958,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       const finalizedNewEvents = newEventsToPush.map((input) => ({ ...input, id: nextEventId() }));
       const result = [...filteredPrev, ...finalizedNewEvents];
 
-      if (googleAccount?.email) {
-        finalizedNewEvents.forEach((e) => pushEventToCloud(googleAccount.email!, e));
+      if (effectiveFamilyOwnerEmail) {
+        finalizedNewEvents.forEach((e) => pushEventToCloud(effectiveFamilyOwnerEmail!, e));
       }
 
       return result;
@@ -801,8 +972,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       const replacedKeys = new Set(inputs.map((m) => `${m.childId}|${m.date}`));
       const kept = prev.filter((m) => !replacedKeys.has(`${m.childId}|${m.date}`));
       const finalized = inputs.map((input) => ({ ...input, id: nextMealPlanId() }));
-      if (googleAccount?.email) {
-        finalized.forEach((m) => pushMealPlanToCloud(googleAccount.email!, m));
+      if (effectiveFamilyOwnerEmail) {
+        finalized.forEach((m) => pushMealPlanToCloud(effectiveFamilyOwnerEmail!, m));
       }
       return [...kept, ...finalized];
     });
@@ -1016,6 +1187,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       FAMILY_MEMBERS_KEY,
       DATA_OWNER_EMAIL_KEY,
       FAMILY_KEY_KEY,
+      FAMILY_OWNER_EMAIL_KEY,
     ];
     if (!options?.preserveAccount) keysToRemove.push(GOOGLE_ACCOUNT_KEY);
     await AsyncStorage.multiRemove(keysToRemove).catch(() => {});
@@ -1037,6 +1209,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       setGoogleAccount(null);
     }
     setDataOwnerEmail(null);
+    setFamilyOwnerEmail(null);
   };
 
   const requestWithdrawal = async () => {
@@ -1145,6 +1318,12 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     removeMember,
     leaveFamily,
     updateMemberPhone,
+
+    familyOwnerEmail: effectiveFamilyOwnerEmail,
+    isFamilyOwner,
+    canEditFamilyData,
+    createFamilyInvite,
+    joinFamilyByCode,
 
     children: childProfiles,
     selectedChild,

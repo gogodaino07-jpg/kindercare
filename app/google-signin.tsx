@@ -30,6 +30,8 @@ export default function GoogleSignInScreen() {
     dataOwnerEmail,
     resetAllData,
     regenerateFamilyKey,
+    createFamilyInvite,
+    joinFamilyByCode,
     checkCloudDataExists,
     checkOnboardingStatus,
     restoreDataFromCloud,
@@ -183,14 +185,23 @@ export default function GoogleSignInScreen() {
 
       // 2. New Group Creation Flow
       if (flow === 'create') {
-        regenerateFamilyKey();
+        const newKey = regenerateFamilyKey();
+        await createFamilyInvite(newKey);
         router.push('/family-create');
         return;
       }
 
       // 3. Join with Code Flow
       if (flow === 'join') {
-        router.push('/onboarding-child-setup');
+        const joined = !!code && (await joinFamilyByCode(code));
+        if (!joined) {
+          showToast('❌ 유효하지 않은 초대 코드예요. 다시 시도해 주세요.');
+          router.replace('/family-group-start');
+          return;
+        }
+        // 공유된 가족 데이터를 그대로 쓰므로 아이 등록 화면은 건너뛴다.
+        completeOnboarding();
+        router.replace('/');
         return;
       }
 
@@ -333,14 +344,23 @@ export default function GoogleSignInScreen() {
 
       // 2. New Group Creation Flow
       if (flow === 'create') {
-        regenerateFamilyKey();
+        const newKey = regenerateFamilyKey();
+        await createFamilyInvite(newKey);
         router.push('/family-create');
         return;
       }
 
       // 3. Join with Code Flow
       if (flow === 'join') {
-        router.push('/onboarding-child-setup');
+        const joined = !!code && (await joinFamilyByCode(code));
+        if (!joined) {
+          showToast('❌ 유효하지 않은 초대 코드예요. 다시 시도해 주세요.');
+          router.replace('/family-group-start');
+          return;
+        }
+        // 공유된 가족 데이터를 그대로 쓰므로 아이 등록 화면은 건너뛴다.
+        completeOnboarding();
+        router.replace('/');
         return;
       }
 

@@ -14,6 +14,7 @@ import StickyPrepBar from '../components/home/StickyPrepBar';
 import TodayPrepProgress from '../components/home/TodayPrepProgress';
 import ScreenBackground from '../components/ScreenBackground';
 import CoupangBanner from '../components/common/CoupangBanner';
+import Text from '../components/common/AppText';
 import { SHADOW, type ThemeColors } from '../constants/theme';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
@@ -48,12 +49,26 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       right: 0,
       zIndex: 100,
     },
+    readOnlyBanner: {
+      marginHorizontal: 20,
+      marginBottom: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+      backgroundColor: colors.gray100,
+      alignItems: 'center',
+    },
+    readOnlyBannerText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
   });
 }
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { hasOnboarded, selectedChild, events, googleAccount, onboardingLoaded, mealPlans, updateEvent } = useAppData();
+  const { hasOnboarded, selectedChild, events, googleAccount, onboardingLoaded, mealPlans, updateEvent, isFamilyOwner } = useAppData();
   const { isLocked } = useAppLock();
   const { isSubscribed } = useSubscription();
   const insets = useSafeAreaInsets();
@@ -174,6 +189,11 @@ export default function HomeScreen() {
     <ScreenBackground showDots={false}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <HomeProfileBar selectedChild={selectedChild} onPressChild={() => setSwitcherOpen(true)} />
+        {!isFamilyOwner && (
+          <View style={styles.readOnlyBanner}>
+            <Text style={styles.readOnlyBannerText}>👀 가족 구성원으로 보는 중 (읽기 전용)</Text>
+          </View>
+        )}
         {stickyVisible && (
           <StickyPrepBar
             total={todayProgress.total}

@@ -38,7 +38,7 @@ export default function FamilyMembersScreen() {
   const isManagementMode = titleParam === '구성원 관리';
   const isReissueMode = titleParam === '키 공유 / 재발급';
 
-  const { familyKey, familyMembers, removeMember, leaveFamily, regenerateFamilyKey, updateMemberPhone } =
+  const { familyKey, familyMembers, removeMember, leaveFamily, regenerateFamilyKey, updateMemberPhone, googleAccount } =
     useAppData();
   const { showAlert } = useAlert();
   const { isLocked } = useAppLock();
@@ -54,7 +54,12 @@ export default function FamilyMembersScreen() {
   const [phoneModalMemberId, setPhoneModalMemberId] = useState<string | null>(null);
   const [phoneInput, setPhoneInput] = useState('');
 
-  const self = familyMembers.find((m) => m.isOwner) ?? familyMembers[0];
+  // 실제 합류 동기화가 들어오면서 구성원이 2명 이상일 수 있어, 소유자 여부가 아니라
+  // 로그인 이메일로 "나"를 정확히 찾는다(이메일이 없는 옛 로컬 전용 항목은 소유자로 폴백).
+  const self =
+    familyMembers.find((m) => m.email && m.email === googleAccount?.email) ??
+    familyMembers.find((m) => m.isOwner) ??
+    familyMembers[0];
   const phoneModalMember = familyMembers.find((m) => m.id === phoneModalMemberId);
 
   useEffect(() => {
