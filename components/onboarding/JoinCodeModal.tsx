@@ -29,16 +29,21 @@ export default function JoinCodeModal({ visible, onClose, onJoin }: JoinCodeModa
   const [code, setCode] = useState('');
   const [error, setError] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  const focusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (visible) {
-      // Use a small delay to ensure the modal animation and focus system are ready.
-      const timer = setTimeout(() => {
-        inputRef.current?.focus();
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-  }, [visible]);
+    return () => {
+      if (focusTimer.current) clearTimeout(focusTimer.current);
+    };
+  }, []);
+
+  // 모달의 페이드인 애니메이션이 끝나기 전에 키보드가 같이 올라오면 두 애니메이션이
+  // 겹쳐서 버벅여 보이므로, 네이티브 표시가 완전히 끝난 뒤(onShow)에만 포커스를 준다.
+  const handleShow = () => {
+    focusTimer.current = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 80);
+  };
 
   const handleClose = () => {
     setCode('');
@@ -59,56 +64,62 @@ export default function JoinCodeModal({ visible, onClose, onJoin }: JoinCodeModa
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.select({ ios: 0, android: -100 })}
-      >
+    <Modal visible={visible} transparent animationType="fade" onShow={handleShow} onRequestClose={handleClose}>
+      <View style={styles.root}>
         <Pressable style={styles.backdrop} onPress={handleClose} />
-        <View style={styles.cardShadow}>
-          <View style={styles.card}>
-            <Text style={styles.icon}>🔑</Text>
-            <Text style={styles.title}>초대 코드로 참여</Text>
-            <Text style={styles.subtitle}>가족에게 받은 코드를 입력해주세요</Text>
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.select({ ios: 0, android: -100 })}
+          pointerEvents="box-none"
+        >
+          <View style={styles.cardShadow}>
+            <View style={styles.card}>
+              <Text style={styles.icon}>🔑</Text>
+              <Text style={styles.title}>초대 코드로 참여</Text>
+              <Text style={styles.subtitle}>가족에게 받은 코드를 입력해주세요</Text>
 
-            <TextInput
-              ref={inputRef}
-              style={[styles.input, error && styles.inputError]}
-              value={code}
-              onChangeText={(t) => {
-                setCode(t);
-                setError(false);
-              }}
-              placeholder="초대 코드를 입력해주세요"
-              placeholderTextColor={GRAY}
-              autoCapitalize="characters"
-            />
-            {error ? <Text style={styles.errorText}>올바른 초대 코드를 입력해 주세요</Text> : null}
+              <TextInput
+                ref={inputRef}
+                style={[styles.input, error && styles.inputError]}
+                value={code}
+                onChangeText={(t) => {
+                  setCode(t);
+                  setError(false);
+                }}
+                placeholder="초대 코드를 입력해주세요"
+                placeholderTextColor={GRAY}
+                autoCapitalize="characters"
+              />
+              {error ? <Text style={styles.errorText}>올바른 초대 코드를 입력해 주세요</Text> : null}
 
-            <View style={[styles.joinButtonShadow, !code.trim() && styles.joinButtonDisabled]}>
-              <Pressable onPress={handleJoin} disabled={!code.trim()}>
-                <LinearGradient
-                  colors={CTA_GRADIENT}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.joinButton}
-                >
-                  <Text style={styles.joinButtonText}>참여하기</Text>
-                </LinearGradient>
+              <View style={[styles.joinButtonShadow, !code.trim() && styles.joinButtonDisabled]}>
+                <Pressable onPress={handleJoin} disabled={!code.trim()}>
+                  <LinearGradient
+                    colors={CTA_GRADIENT}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.joinButton}
+                  >
+                    <Text style={styles.joinButtonText}>참여하기</Text>
+                  </LinearGradient>
+                </Pressable>
+              </View>
+              <Pressable style={styles.cancelButton} onPress={handleClose}>
+                <Text style={styles.cancelButtonText}>취소</Text>
               </Pressable>
             </View>
-            <Pressable style={styles.cancelButton} onPress={handleClose}>
-              <Text style={styles.cancelButtonText}>취소</Text>
-            </Pressable>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
     alignItems: 'center',
