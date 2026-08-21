@@ -3,7 +3,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../components/common/AppText';
@@ -14,10 +14,11 @@ import { useSubscription } from '../context/SubscriptionContext';
 import { useToast } from '../context/ToastContext';
 import {
   AIUsageLimitService,
+  FREE_MEAL_WEEKLY_LIMIT,
   GeminiAnalysisError,
   GeminiAnalysisService,
-  PREMIUM_MONTHLY_LIMIT,
-  PREMIUM_WEEKLY_LIMIT,
+  PREMIUM_MEAL_MONTHLY_LIMIT,
+  PREMIUM_MEAL_WEEKLY_LIMIT,
 } from '../features/newsletter-analysis';
 import { PremiumUpsellModal } from '../features/newsletter-analysis/components/PremiumUpsellModal';
 import { SCAN_COLORS as C } from '../features/newsletter-analysis/uiColors';
@@ -42,6 +43,12 @@ export default function MealScanScreen() {
   const [analyzing, setAnalyzing] = useState(false);
   const [starting, setStarting] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [remainingCount, setRemainingCount] = useState<number | null>(null);
+  const maxMealCredits = isSubscribed ? PREMIUM_MEAL_WEEKLY_LIMIT : FREE_MEAL_WEEKLY_LIMIT;
+
+  useEffect(() => {
+    AIUsageLimitService.getRemainingCount(googleAccount?.email, isSubscribed, 'meal').then(setRemainingCount);
+  }, [googleAccount?.email, isSubscribed]);
 
   const handleTakePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -112,12 +119,12 @@ export default function MealScanScreen() {
       return;
     }
 
-    const remaining = await AIUsageLimitService.getRemainingCount(googleAccount?.email, isSubscribed);
+    const remaining = await AIUsageLimitService.getRemainingCount(googleAccount?.email, isSubscribed, 'meal');
     if (remaining <= 0) {
       if (isSubscribed) {
         showAlert({
           title: '이번 한도를 모두 사용했어요',
-          message: `프리미엄은 1주일 최대 ${PREMIUM_WEEKLY_LIMIT}회, 1달 최대 ${PREMIUM_MONTHLY_LIMIT}회까지 스캔할 수 있어요. 다음 기간에 다시 시도해주세요.`,
+          message: `프리미엄은 급식표 스캔을 1주일 최대 ${PREMIUM_MEAL_WEEKLY_LIMIT}회, 1달 최대 ${PREMIUM_MEAL_MONTHLY_LIMIT}회까지 할 수 있어요. 다음 기간에 다시 시도해주세요.`,
           icon: '⏳',
         });
         return;
@@ -143,7 +150,7 @@ export default function MealScanScreen() {
           showAlert({ title: '식단표를 찾지 못했어요', message: '더 선명한 사진으로 다시 시도해주세요.' });
           return;
         }
-        await AIUsageLimitService.consume(googleAccount?.email, isSubscribed);
+        await AIUsageLimitService.consume(googleAccount?.email, isSubscribed, 'meal');
         addMealPlans(analysis.mealPlans);
         showToast(`식단표 ${analysis.mealPlans.length}일치를 저장했어요 🍱`);
         router.back();
@@ -178,6 +185,12 @@ export default function MealScanScreen() {
             <Text style={styles.headerTitle}>급식표 스캔</Text>
             <View style={styles.headerButton} />
           </View>
+
+          {remainingCount !== null && (
+            <Text style={styles.remainingCaption}>
+              이번 주 급식표 스캔 {remainingCount} / {maxMealCredits}회 남음
+            </Text>
+          )}
 
           <View style={styles.viewfinderWrap}>
             <View style={styles.viewfinder}>
@@ -275,6 +288,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: { fontSize: 17, fontWeight: '800', color: C.slate900 },
+  remainingCaption: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: C.slate400,
+    textAlign: 'center',
+    paddingTop: 10,
+  },
   viewfinderWrap: {
     flex: 1,
     alignItems: 'center',

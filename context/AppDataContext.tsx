@@ -1285,6 +1285,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     await AsyncStorage.multiRemove(keysToRemove).catch(() => {});
     if (googleAccount?.email) {
       await AIUsageLimitService.resetUsage(googleAccount.email);
+      await AIUsageLimitService.resetUsage(googleAccount.email, 'meal');
     }
     if (!options?.preserveOnboarded) setHasOnboarded(false);
     setFamilyKey(generateFamilyKey());
