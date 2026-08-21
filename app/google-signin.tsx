@@ -193,7 +193,7 @@ export default function GoogleSignInScreen() {
 
       // 3. Join with Code Flow
       if (flow === 'join') {
-        const joined = !!code && (await joinFamilyByCode(code));
+        const joined = !!code && (await joinFamilyByCode(code, account));
         if (!joined) {
           showToast('❌ 유효하지 않은 초대 코드예요. 다시 시도해 주세요.');
           router.replace('/family-group-start');
@@ -351,7 +351,7 @@ export default function GoogleSignInScreen() {
 
       // 3. Join with Code Flow
       if (flow === 'join') {
-        const joined = !!code && (await joinFamilyByCode(code));
+        const joined = !!code && (await joinFamilyByCode(code, account));
         if (!joined) {
           showToast('❌ 유효하지 않은 초대 코드예요. 다시 시도해 주세요.');
           router.replace('/family-group-start');

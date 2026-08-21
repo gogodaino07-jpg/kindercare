@@ -73,7 +73,7 @@ interface AppDataContextValue {
   /** 새 초대 코드를 만들어 Firestore에 등록하고 예전 코드는 삭제. 설정 화면의 "키 재발급"용. */
   regenerateFamilyInvite: () => Promise<string>;
   /** 초대 코드로 가족에 합류 — 성공 시 familyOwnerEmail이 세팅됨. */
-  joinFamilyByCode: (code: string) => Promise<boolean>;
+  joinFamilyByCode: (code: string, account: GoogleAccount) => Promise<boolean>;
 
   // Children
   children: Child[];
@@ -795,8 +795,12 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
   // 초대 코드로 가족에 합류 — 코드를 조회해 소유자를 찾고, 내 권한 기록(members 문서)을
   // 남긴 뒤 familyOwnerEmail을 그 소유자로 세팅한다. 실패(코드 없음 등)하면 false.
-  const joinFamilyByCode = async (rawCode: string): Promise<boolean> => {
-    if (!googleAccount?.email) return false;
+  //
+  // account는 로그인 직후 signInWithGoogle/Kakao가 반환한 값을 호출부가 그대로 넘긴다 —
+  // Context의 googleAccount state를 여기서 다시 읽으면, 로그인 setState가 아직 리렌더에
+  // 반영되기 전(경쟁 상태)이라 이전 계정 이메일로 members 문서를 써버리는 버그가 있었다.
+  // (실기기 재현: 계정 A로 실패 후 계정 B로 재시도했는데 여전히 A의 이메일로 쓰기 시도됨.)
+  const joinFamilyByCode = async (rawCode: string, account: GoogleAccount): Promise<boolean> => {
     const code = rawCode.trim();
     try {
       const inviteDoc = await getDb().collection('familyInvites').doc(code).get();
@@ -805,10 +809,10 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       if (!invite?.ownerEmail) return false;
 
       // 본인이 발급한 코드로 스스로 입력한 경우(테스트 등) — 그냥 자기 자신 확정.
-      if (invite.ownerEmail !== googleAccount.email) {
+      if (invite.ownerEmail !== account.email) {
         const membership: FamilyMembership = {
-          name: googleAccount.name,
-          email: googleAccount.email,
+          name: account.name,
+          email: account.email,
           joinCode: code,
           joinedAt: new Date().toISOString(),
         };
@@ -816,7 +820,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
           .collection('users')
           .doc(invite.ownerEmail)
           .collection('members')
-          .doc(googleAccount.email)
+          .doc(account.email)
           .set(membership);
       }
 
