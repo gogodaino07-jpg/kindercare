@@ -43,7 +43,7 @@ export const STAMP_BOARD_THEMES: Record<StampBoardThemeId, StampBoardTheme> = {
     boardBorder: '#E0F2FE',
     stampButtonGradient: ['#0EA5E9', '#6366F1', '#2563EB'],
     accentIconColor: '#0EA5E9',
-    stickers: ['🌈', '🚀', '🦕', '⭐', '🎈', '⚽'],
+    stickers: ['🌈', '🚀', '🦕', '⭐', '🎈', '⚽', '🐳', '🛸', '🌊', '⚓', '🪁', '🎯', '🚗', '🏀', '🦖'],
   },
   pink: {
     id: 'pink',
@@ -60,7 +60,7 @@ export const STAMP_BOARD_THEMES: Record<StampBoardThemeId, StampBoardTheme> = {
     boardBorder: '#FCE7F3',
     stampButtonGradient: ['#EC4899', '#D946EF', '#9333EA'],
     accentIconColor: '#EC4899',
-    stickers: ['🌈', '🦄', '🪄', '👑', '🍓', '🌸'],
+    stickers: ['🌈', '🦄', '🪄', '👑', '🍓', '🌸', '🎀', '🧁', '🍭', '💖', '🦋', '🌷', '🍩', '✨', '🐰'],
   },
   classic: {
     id: 'classic',
@@ -77,7 +77,7 @@ export const STAMP_BOARD_THEMES: Record<StampBoardThemeId, StampBoardTheme> = {
     boardBorder: '#FAF5FF',
     stampButtonGradient: ['#F59E0B', '#EC4899', '#9333EA'],
     accentIconColor: '#A855F7',
-    stickers: ['🌈', '⭐', '🎈', '🎁', '🐣', '🍭'],
+    stickers: ['🌈', '⭐', '🎈', '🎁', '🐣', '🍭', '🌟', '🍀', '🎉', '🧸', '🍬', '🐥', '🌻', '🍉', '😊'],
   },
 };
 

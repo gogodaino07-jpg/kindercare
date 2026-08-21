@@ -5,6 +5,7 @@ import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Easing,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -20,7 +21,12 @@ import TextInput from '../components/common/ClearableTextInput';
 import Svg, { Circle, Defs, Pattern, Rect } from 'react-native-svg';
 import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
-import { RAINBOW_PROGRESS_GRADIENT, STAMP_BOARD_THEMES, WISH_PRESETS } from '../constants/stampBoardThemes';
+import {
+  RAINBOW_PROGRESS_GRADIENT,
+  STAMP_BOARD_THEMES,
+  StampBoardThemeId,
+  WISH_PRESETS,
+} from '../constants/stampBoardThemes';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useSubscription } from '../context/SubscriptionContext';
@@ -30,6 +36,73 @@ function formatClassName(className?: string): string | undefined {
   const trimmed = className?.trim();
   if (!trimmed) return undefined;
   return trimmed.endsWith('반') ? trimmed : `${trimmed}반`;
+}
+
+const CELEBRATION_BAND_SIZES = [130, 108, 86, 64, 42];
+
+/** 목표 달성 축하 카드 상단에 크게 노출되는, 도장판 테마에 맞춘 애니메이션. */
+function ThemeCelebrationHero({ themeId }: { themeId: StampBoardThemeId }) {
+  const bandAnims = useRef(RAINBOW_PROGRESS_GRADIENT.map(() => new Animated.Value(0))).current;
+  const heroScale = useRef(new Animated.Value(0)).current;
+  const floatAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (themeId === 'classic') {
+      bandAnims.forEach((v) => v.setValue(0));
+      Animated.stagger(
+        110,
+        bandAnims.map((v) => Animated.spring(v, { toValue: 1, friction: 6, tension: 50, useNativeDriver: true }))
+      ).start();
+    } else {
+      heroScale.setValue(0);
+      Animated.spring(heroScale, { toValue: 1, friction: 5, tension: 60, useNativeDriver: true }).start();
+    }
+
+    floatAnim.setValue(0);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, { toValue: 1, duration: 1000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(floatAnim, { toValue: 0, duration: 1000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [themeId, bandAnims, heroScale, floatAnim]);
+
+  const floatY = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -6] });
+
+  if (themeId === 'classic') {
+    return (
+      <Animated.View style={[styles.heroWrap, { transform: [{ translateY: floatY }] }]}>
+        <View style={styles.rainbowClip}>
+          {RAINBOW_PROGRESS_GRADIENT.map((color, i) => {
+            const v = bandAnims[i];
+            const size = CELEBRATION_BAND_SIZES[i];
+            const translateY = v.interpolate({ inputRange: [0, 1], outputRange: [16, 0] });
+            return (
+              <Animated.View
+                key={i}
+                style={[
+                  styles.rainbowBand,
+                  { width: size, height: size, borderRadius: size / 2, backgroundColor: color, opacity: v, transform: [{ translateY }] },
+                ]}
+              />
+            );
+          })}
+        </View>
+        <Text style={styles.heroCloud}>☁️</Text>
+      </Animated.View>
+    );
+  }
+
+  const emoji = themeId === 'blue' ? '🚀' : '🦄';
+  return (
+    <Animated.View style={[styles.heroWrap, { transform: [{ translateY: floatY }, { scale: heroScale }] }]}>
+      <Text style={styles.heroEmoji}>{emoji}</Text>
+      <Text style={[styles.heroSparkle, styles.heroSparkleLeft]}>✨</Text>
+      <Text style={[styles.heroSparkle, styles.heroSparkleRight]}>✨</Text>
+    </Animated.View>
+  );
 }
 
 function DotPattern() {
@@ -77,6 +150,7 @@ export default function StampBoardScreen() {
   const [tempWish, setTempWish] = useState(wish);
   const [stampingIndex, setStampingIndex] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [stickerPanelOpen, setStickerPanelOpen] = useState(false);
 
   const stampAnim = useRef(new Animated.Value(1)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
@@ -171,6 +245,17 @@ export default function StampBoardScreen() {
   const classLabel = selectedChild
     ? [`${selectedChild.age}세`, formatClassName(selectedChild.className)].filter(Boolean).join(' ')
     : undefined;
+
+  // 미리보기 5칸에는 항상 현재 고른 스탬프가 보이도록, 뒤쪽 그리드에서만 있는
+  // 스티커를 골랐다면 미리보기 맨 앞에 끼워 넣는다.
+  const previewStickers = theme.stickers.slice(0, 5).includes(stampIcon)
+    ? theme.stickers.slice(0, 5)
+    : [stampIcon, ...theme.stickers.slice(0, 4)];
+
+  const handleSelectSticker = (stk: string) => {
+    setStampIcon(stk);
+    setStickerPanelOpen(false);
+  };
 
   return (
     <View style={styles.root}>
@@ -282,17 +367,47 @@ export default function StampBoardScreen() {
           <View style={styles.stickerRow}>
             <Text style={styles.stickerLabel}>스탬프 종류:</Text>
             <View style={styles.stickerOptions}>
-              {theme.stickers.map((stk) => (
+              {previewStickers.map((stk) => (
                 <Pressable
                   key={stk}
-                  onPress={() => setStampIcon(stk)}
+                  onPress={() => handleSelectSticker(stk)}
                   style={[styles.stickerButton, stk === stampIcon && styles.stickerButtonActive]}
                 >
                   <Text style={styles.stickerEmoji}>{stk}</Text>
                 </Pressable>
               ))}
             </View>
+            <Pressable
+              onPress={() => setStickerPanelOpen((v) => !v)}
+              style={[styles.stickerMoreButton, { backgroundColor: theme.progressIconBg }]}
+              hitSlop={6}
+            >
+              <Text style={[styles.stickerMoreButtonText, { color: theme.progressIconColor }]}>
+                {stickerPanelOpen ? '접기' : '더보기'}
+              </Text>
+              <Feather
+                name={stickerPanelOpen ? 'chevron-up' : 'chevron-down'}
+                size={12}
+                color={theme.progressIconColor}
+              />
+            </Pressable>
           </View>
+
+          {stickerPanelOpen && (
+            <View style={[styles.stickerGridPanel, { borderColor: theme.boardBorder }]}>
+              {theme.stickers.map((stk) => (
+                <Pressable
+                  key={stk}
+                  onPress={() => handleSelectSticker(stk)}
+                  style={styles.stickerGridSlot}
+                >
+                  <View style={[styles.stickerGridButton, stk === stampIcon && styles.stickerButtonActive]}>
+                    <Text style={styles.stickerGridEmoji}>{stk}</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          )}
 
           <View style={[styles.boardCard, { borderColor: theme.boardBorder }]}>
             <DotPattern />
@@ -386,7 +501,7 @@ export default function StampBoardScreen() {
       <Modal visible={isCompleted} animationType="fade" transparent>
         <View style={styles.celebrationOverlay}>
           <View style={styles.celebrationCard}>
-            <Text style={styles.celebrationTrophy}>🏆</Text>
+            {isCompleted && <ThemeCelebrationHero themeId={themeId} />}
             <View style={styles.celebrationBadge}>
               <Text style={styles.celebrationBadgeText}>축하합니다! 소원 성취!</Text>
             </View>
@@ -683,6 +798,33 @@ const styles = StyleSheet.create({
     borderColor: '#FCD34D',
   },
   stickerEmoji: { fontSize: 15 },
+  stickerMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 5,
+  },
+  stickerMoreButtonText: { fontSize: 10.5, fontWeight: '800' },
+  stickerGridPanel: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    borderRadius: 14,
+    padding: 6,
+    borderWidth: 1,
+  },
+  stickerGridSlot: { width: '20%', aspectRatio: 1, padding: 4, alignItems: 'center', justifyContent: 'center' },
+  stickerGridButton: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0.55,
+  },
+  stickerGridEmoji: { fontSize: 20 },
   boardCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -766,7 +908,14 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
   },
-  celebrationTrophy: { fontSize: 56, marginBottom: 6 },
+  heroWrap: { alignItems: 'center', justifyContent: 'center', marginBottom: 6, minHeight: 80 },
+  rainbowClip: { width: 130, height: 65, overflow: 'hidden', alignItems: 'center', justifyContent: 'flex-end' },
+  rainbowBand: { position: 'absolute', bottom: 0 },
+  heroCloud: { fontSize: 20, marginTop: -6 },
+  heroEmoji: { fontSize: 64 },
+  heroSparkle: { position: 'absolute', fontSize: 20 },
+  heroSparkleLeft: { top: 0, left: -6 },
+  heroSparkleRight: { bottom: 4, right: -10 },
   celebrationBadge: { backgroundColor: '#FEF3C7', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 10 },
   celebrationBadgeText: { fontSize: 12, fontWeight: '900', color: '#92400E' },
   celebrationTitle: { fontSize: 19, fontWeight: '900', color: '#0F172A', textAlign: 'center', marginBottom: 14 },
