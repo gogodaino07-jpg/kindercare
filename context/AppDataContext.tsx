@@ -488,9 +488,17 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
         if (!snap) return;
         const cloudMembers = snap.docs.map(doc => doc.data() as FamilyMembership);
         setFamilyMembers(prev => {
-          // Keep the locally-seeded owner entry ("나") and any other non-synced
-          // local-only entries; replace/merge in the real joined members by email.
-          const nonSynced = prev.filter(m => !m.email || !cloudMembers.some(c => c.email === m.email));
+          // Keep local-only entries that aren't superseded by a synced one yet.
+          // The pre-sync "나" placeholder (seeded on sign-in, no email) has no
+          // email to match by — but once the owner's own membership doc has
+          // synced in, it duplicates that placeholder, so drop it specifically
+          // when a synced owner entry now exists.
+          const hasSyncedOwner = cloudMembers.some(c => c.email === ownerEmail);
+          const nonSynced = prev.filter(m => {
+            if (m.email) return !cloudMembers.some(c => c.email === m.email);
+            if (m.isOwner && hasSyncedOwner) return false;
+            return true;
+          });
           const syncedMembers: FamilyMember[] = cloudMembers.map(m => ({
             id: `member-${m.email}`,
             name: m.name,
