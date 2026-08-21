@@ -379,9 +379,6 @@ export default function UploadScreen() {
             style={styles.scrollFlex}
             contentContainerStyle={[styles.scrollContent, docs.length === 0 && styles.scrollContentFill]}
             showsVerticalScrollIndicator={false}
-            scrollEnabled={docs.length > 0}
-            bounces={docs.length > 0}
-            overScrollMode={docs.length > 0 ? 'auto' : 'never'}
           >
             <View style={styles.gaugeCard}>
               <View style={styles.gaugeTopRow}>
