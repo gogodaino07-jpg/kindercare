@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Directions, Gesture, GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import Animated, {
   interpolate,
   runOnJS,
@@ -32,6 +32,10 @@ interface CalendarAccordionProps {
   isExpanded: boolean;
   setExpanded: (target: 0 | 1) => void;
   onOpenAddEvent: () => void;
+  /** 달력 그리드 영역에서 시작한 세로 스와이프를 아래 일정 목록 스크롤로 이어주는 제스처. */
+  gridScrollGesture: PanGesture;
+  /** 힌트바 드래그가 확대/축소 범위(0~1)를 벗어나는 만큼(px)을 그대로 넘겨 일정 목록을 스크롤시킨다. */
+  onForwardScroll: (deltaY: number) => void;
 }
 
 export default function CalendarAccordion({
@@ -46,6 +50,8 @@ export default function CalendarAccordion({
   isExpanded,
   setExpanded,
   onOpenAddEvent,
+  gridScrollGesture,
+  onForwardScroll,
 }: CalendarAccordionProps) {
   const { canEditFamilyData } = useAppData();
   const cells = useMemo(() => {
@@ -88,10 +94,17 @@ export default function CalendarAccordion({
 
   const dragStart = useSharedValue(0);
 
-  const applyDragUpdate = (translationY: number) => {
+  const applyDragUpdate = (translationY: number, changeY: number) => {
     'worklet';
     const delta = -translationY / DRAG_RANGE; // 위로 밀면(음수) 축소, 아래로 당기면 확대
-    expandedProgress.value = Math.min(1, Math.max(0, dragStart.value + delta));
+    const next = dragStart.value + delta;
+    const clamped = Math.min(1, Math.max(0, next));
+    if (next !== clamped) {
+      // 이미 완전히 펼쳐지거나(1) 접힌(0) 상태에서 같은 방향으로 계속 끄는 만큼은
+      // 확대/축소에 쓰지 않고 그대로 일정 목록 스크롤로 넘긴다.
+      onForwardScroll(changeY);
+    }
+    expandedProgress.value = clamped;
   };
   const applyDragEnd = (translationY: number) => {
     'worklet';
@@ -115,15 +128,16 @@ export default function CalendarAccordion({
     .onStart(() => {
       dragStart.value = expandedProgress.value;
     })
-    .onUpdate((e) => applyDragUpdate(e.translationY))
+    .onChange((e) => applyDragUpdate(e.translationY, e.changeY))
     .onEnd((e) => applyDragEnd(e.translationY));
 
   const toggleBadge = () => setExpanded(isExpanded ? 0 : 1);
 
   // 요일 행/날짜 그리드 영역에서 좌우로 스와이프하면 이전/다음 달로 이동한다.
-  // (예전엔 이 영역에서 위/아래로 드래그해도 힌트바처럼 확대/축소됐는데, 연속으로
-  // 위아래 스크롤하면 그때마다 걸려서 카드가 깜빡이듯 커졌다 작아지길 반복하는
-  // 문제가 있어 제거함 — 확대/축소는 이제 힌트바 드래그와 토글 배지로만 한다.)
+  // (예전엔 이 영역에서 위/아래로 드래그하면 힌트바처럼 직접 확대/축소했는데, 연속으로
+  // 위아래 스크롤하면 그때마다 걸려서 카드가 깜빡이듯 커졌다 작아지길 반복하는 문제가
+  // 있어 제거함 — 확대/축소는 힌트바 드래그와 토글 배지로만 하고, 그리드에서의 위아래
+  // 스와이프는 gridScrollGesture로 받아 확대/축소 없이 일정 목록만 스크롤시킨다.)
   const swipeLeftGesture = Gesture.Fling()
     .direction(Directions.LEFT)
     .onStart(() => {
@@ -170,7 +184,7 @@ export default function CalendarAccordion({
         </View>
       </View>
 
-      <GestureDetector gesture={monthSwipeGesture}>
+      <GestureDetector gesture={Gesture.Simultaneous(monthSwipeGesture, gridScrollGesture)}>
         <View>
           <View style={styles.weekdayRow}>
             {WEEKDAYS.map((day, idx) => (

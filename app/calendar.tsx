@@ -5,6 +5,8 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   runOnJS,
+  scrollTo,
+  useAnimatedRef,
   useAnimatedScrollHandler,
   useSharedValue,
   withTiming,
@@ -71,6 +73,17 @@ export default function CalendarScreen() {
   // 의도적으로 당기는 제스처(약 18px 이상)가 있을 때만 확대한다.
   const PULL_TO_EXPAND_THRESHOLD = 18;
   const scrollY = useSharedValue(0);
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+
+  // 달력 그리드·힌트바처럼 ScrollView 바깥 영역에서 시작한 세로 드래그를 그대로
+  // 아래 일정 목록 스크롤로 이어준다. 0 밑으로는 절대 내려가지 않게 막아서(음수 방지),
+  // 이 경로로는 "맨 위에서 더 당기면 확대" 트리거가 걸리지 않게 한다 — 목록을 아무리
+  // 밑으로(끝까지) 스크롤해도 그 자체로 달력이 갑자기 펼쳐지는 일은 없다.
+  const forwardScrollDelta = (deltaY: number) => {
+    'worklet';
+    const next = Math.max(0, scrollY.value - deltaY);
+    scrollTo(scrollRef, 0, next, false);
+  };
 
   const scrollHandler = useAnimatedScrollHandler((event) => {
     const y = event.contentOffset.y;
@@ -115,6 +128,15 @@ export default function CalendarScreen() {
     })
     .onEnd(() => {
       pullReferenceY.value = null;
+    });
+
+  // 달력 그리드(월간 뷰) 영역에서 위/아래로 스와이프하면 아래 일정 목록이 그대로
+  // 스크롤된다 — 화면 전체가 하나로 이어진 스크롤 영역처럼 느껴지게 한다.
+  const gridForwardScrollGesture = Gesture.Pan()
+    .activeOffsetY([-10, 10])
+    .failOffsetX([-15, 15])
+    .onChange((e) => {
+      forwardScrollDelta(e.changeY);
     });
 
   const childEvents = useMemo(
@@ -213,10 +235,13 @@ export default function CalendarScreen() {
           isExpanded={isExpanded}
           setExpanded={setExpanded}
           onOpenAddEvent={() => setAddEventVisible(true)}
+          gridScrollGesture={gridForwardScrollGesture}
+          onForwardScroll={forwardScrollDelta}
         />
 
         <GestureDetector gesture={Gesture.Simultaneous(pullToExpandGesture, nativeScrollGesture)}>
           <Animated.ScrollView
+            ref={scrollRef}
             style={styles.scrollFlex}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
