@@ -233,6 +233,15 @@ export default function SettingsScreen() {
                 <View style={styles.radioGroup}>
                   <TouchableOpacity
                     style={styles.radioItem}
+                    onPress={() => setMode('system')}
+                  >
+                    <View style={[styles.radioCircle, mode === 'system' && styles.radioCircleSelected]}>
+                      {mode === 'system' && <MaterialIcons name="check" size={14} color="#FFFFFF" />}
+                    </View>
+                    <Text style={[styles.radioText, mode === 'system' && styles.radioTextSelected]}>시스템</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.radioItem}
                     onPress={() => setMode('light')}
                   >
                     <View style={[styles.radioCircle, mode === 'light' && styles.radioCircleSelected]}>
@@ -400,7 +409,7 @@ function createStyles(colors: any) {
     radioGroup: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 16,
+      gap: 10,
     },
     radioItem: {
       flexDirection: 'row',
