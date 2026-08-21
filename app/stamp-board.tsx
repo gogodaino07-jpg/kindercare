@@ -220,6 +220,7 @@ export default function StampBoardScreen() {
         </View>
 
         <ScrollView
+          style={styles.scrollFlex}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -576,7 +577,8 @@ const styles = StyleSheet.create({
   classBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
   classBadgeText: { fontSize: 12, fontWeight: '800' },
   headerSubtitle: { fontSize: 13, fontWeight: '700', color: '#0369A1', marginTop: 2 },
-  scrollContent: { paddingHorizontal: 14, paddingTop: 4, paddingBottom: 90, gap: 8 },
+  scrollFlex: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 14, paddingTop: 4, paddingBottom: 90, gap: 8 },
   wishCard: {
     backgroundColor: 'rgba(255,255,255,0.92)',
     borderRadius: 20,
@@ -682,6 +684,7 @@ const styles = StyleSheet.create({
   },
   stickerEmoji: { fontSize: 15 },
   boardCard: {
+    flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 12,
