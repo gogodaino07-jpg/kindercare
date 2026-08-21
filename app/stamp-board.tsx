@@ -18,7 +18,6 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import TextInput from '../components/common/ClearableTextInput';
-import Svg, { Circle, Defs, Pattern, Rect } from 'react-native-svg';
 import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
 import {
@@ -102,19 +101,6 @@ function ThemeCelebrationHero({ themeId }: { themeId: StampBoardThemeId }) {
       <Text style={[styles.heroSparkle, styles.heroSparkleLeft]}>✨</Text>
       <Text style={[styles.heroSparkle, styles.heroSparkleRight]}>✨</Text>
     </Animated.View>
-  );
-}
-
-function DotPattern() {
-  return (
-    <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width="100%" height="100%">
-      <Defs>
-        <Pattern id="stampDotGrid" width={16} height={16} patternUnits="userSpaceOnUse">
-          <Circle cx={8} cy={8} r={1.2} fill="#38BDF8" opacity={0.18} />
-        </Pattern>
-      </Defs>
-      <Rect x={0} y={0} width="100%" height="100%" fill="url(#stampDotGrid)" />
-    </Svg>
   );
 }
 
@@ -440,7 +426,6 @@ export default function StampBoardScreen() {
 
           <View style={styles.boardFillWrap}>
           <View style={styles.boardCard}>
-            <DotPattern />
             <View style={styles.grid}>
               {Array.from({ length: targetCount }).map((_, index) => {
                 const isStamped = index < currentStamps;
@@ -751,7 +736,7 @@ const styles = StyleSheet.create({
   classBadgeText: { fontSize: 12, fontWeight: '800' },
   headerSubtitle: { fontSize: 13, fontWeight: '700', color: '#0369A1', marginTop: 2 },
   scrollFlex: { flex: 1 },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 14, paddingTop: 4, paddingBottom: 90, gap: 8 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 14, paddingTop: 4, gap: 8 },
   wishCard: {
     backgroundColor: 'rgba(255,255,255,0.92)',
     borderRadius: 20,
@@ -887,6 +872,8 @@ const styles = StyleSheet.create({
   boardFillWrap: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   boardCard: {
     backgroundColor: '#FFFFFF',
