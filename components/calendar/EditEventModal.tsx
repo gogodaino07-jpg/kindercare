@@ -94,7 +94,7 @@ export default function EditEventModal({ visible, event, onClose }: EditEventMod
   const weekdayLabel = WEEKDAY_KO[date.getDay()];
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <KeyboardAvoidingView
         style={styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
