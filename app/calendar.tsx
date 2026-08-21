@@ -90,10 +90,15 @@ export default function CalendarScreen() {
   // Android: 기본 ScrollView는 맨 위에서 바운스(음수 오프셋)를 주지 않으므로,
   // 같은 터치를 관찰하는 Pan 제스처를 ScrollView와 동시에 실행해 "맨 위에
   // 도달한 뒤 추가로 당긴 양"을 직접 측정해서 확대를 트리거한다.
+  // 이미 펼쳐진 상태에서는 이 제스처가 할 일이 없을 뿐 아니라, 계속 살아있으면
+  // 당겨서 새로고침(RefreshControl)이나 위로 스크롤하는 제스처와 인식 우선순위를
+  // 다투면서 새로고침이 안 먹히거나 스크롤이 버벅이는 원인이 되어, 접힌 상태에서만 켠다.
   const nativeScrollGesture = Gesture.Native();
   const pullReferenceY = useSharedValue<number | null>(null);
   const pullToExpandGesture = Gesture.Pan()
-    .enabled(Platform.OS === 'android')
+    .enabled(Platform.OS === 'android' && !isExpanded)
+    .activeOffsetY(15)
+    .failOffsetY(-10)
     .simultaneousWithExternalGesture(nativeScrollGesture)
     .onUpdate((e) => {
       if (scrollY.value > 2) {

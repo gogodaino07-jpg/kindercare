@@ -105,9 +105,11 @@ export default function CalendarAccordion({
   };
 
   // 힌트바(하단) 드래그 — 터치 영역이 시각적으로 작아 hitSlop으로 실제 인식
-  // 범위를 넉넉하게 넓혀서 잡기 쉽게 한다.
+  // 범위를 넉넉하게 넓혀서 잡기 쉽게 한다. activeOffsetY를 둬서 살짝 스친 정도로는
+  // 반응하지 않고 12px 이상 의도적으로 끌 때만 확대/축소가 걸리게 해 버벅임을 줄인다.
   const dragGesture = Gesture.Pan()
     .hitSlop({ top: 16, bottom: 16, left: 24, right: 24 })
+    .activeOffsetY([-12, 12])
     .onStart(() => {
       dragStart.value = expandedProgress.value;
     })
