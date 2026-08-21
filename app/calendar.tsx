@@ -1,10 +1,11 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
-import { Platform, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   runOnJS,
+  runOnUI,
   scrollTo,
   useAnimatedRef,
   useAnimatedScrollHandler,
@@ -69,14 +70,25 @@ export default function CalendarScreen() {
     setRefreshing(false);
   }, []);
 
-  // "맨 위 도달"만으로 바로 확대되지 않도록, 맨 위에 도착한 뒤 한 번 더
-  // 의도적으로 당기는 제스처(약 10px 이상)가 있을 때만 확대한다.
-  // (예전엔 이 값이 18이었는데, 아래 pullToExpandGesture의 activeOffsetY와 합쳐져
-  // 실제로는 33px 가까이 당겨야 반응했다. 막 축소된 직후처럼 스크롤이 이미 맨 위 근처일
-  // 때는 그만큼 당길 필요 자체가 없어서 짧게 살짝 당기는 자연스러운 손짓으로는 전혀
-  // 반응하지 않는 문제가 있었음 — 목록 끝까지 갔다가 되돌아오는 긴 스와이프만 우연히
-  // 그 거리를 넘겨서 되는 것처럼 보였을 뿐. 두 값을 합쳐 10px 안팎이 되도록 낮췄다.)
-  const PULL_TO_EXPAND_THRESHOLD = 10;
+  // 접힌 상태에서만 목록 맨 위에 붙는 빈 스페이서 높이. 안드로이드 기본 ScrollView는
+  // 맨 위에서 바운스(음수 오프셋)를 주지 않아, 예전엔 ScrollView와 동시에 실행되는
+  // 별도 Pan 제스처로 "더 당긴 양"을 흉내 냈었다. 그런데 네이티브 스크롤이 터치를
+  // 이미 점유한 상태라 그 Pan 제스처가 터치를 온전히 받지 못해 자주 씹혔다(펼쳐지지
+  // 않음). 대신 스페이서로 진짜 스크롤 가능한 여유 공간을 만들어두면, 아래로 당길 때
+  // 실제 스크롤 오프셋이 움직이므로 onScroll만으로 안정적으로 감지할 수 있다.
+  const EXPAND_PULL_ZONE = 70;
+  const EXPAND_PULL_THRESHOLD = 10;
+  // 펼쳐진 상태에서 일정이 1개뿐이라 스크롤이 필요 없을 만큼 내용이 짧으면, 실제로
+  // 스크롤할 여지가 없어 위로 스와이프해도 아무 반응이 없었다(축소가 안 됨). 목록
+  // 영역 실제 높이(viewportHeight)보다 이만큼 더 큰 minHeight를 항상 보장해서,
+  // 내용 길이와 무관하게 위로 스와이프하면 언제나 진짜 스크롤이 발생하도록 한다.
+  // 이 여분은 일정이 없는 날의 "일정 없음" 카드처럼 내부에서 flex:1로 화면을 꽉
+  // 채우는 콘텐츠와는 별도의 고정 높이 스페이서로만 추가해, 그 카드가 늘어난
+  // 전체 높이(viewport+버퍼) 기준으로 다시 가운데 정렬되어 화면 밖으로 밀려나지
+  // 않고 항상 viewportHeight 안에서만 정렬되도록 한다.
+  const COLLAPSE_SWIPE_BUFFER = 80;
+  const [viewportHeight, setViewportHeight] = useState(0);
+
   const scrollY = useSharedValue(0);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
 
@@ -90,50 +102,37 @@ export default function CalendarScreen() {
     scrollTo(scrollRef, 0, next, false);
   };
 
-  const scrollHandler = useAnimatedScrollHandler((event) => {
-    const y = event.contentOffset.y;
-    scrollY.value = y;
-    if (y > 20 && expandedProgress.value > 0.5) {
-      runOnJS(setExpanded)(0);
-    } else if (
-      Platform.OS === 'ios' &&
-      y <= -PULL_TO_EXPAND_THRESHOLD &&
-      expandedProgress.value < 0.5
-    ) {
-      // iOS: 맨 위에서 더 당기면 ScrollView가 자체 바운스로 음수 오프셋을 보고해준다.
-      runOnJS(setExpanded)(1);
-    }
-  });
-
-  // Android: 기본 ScrollView는 맨 위에서 바운스(음수 오프셋)를 주지 않으므로,
-  // 같은 터치를 관찰하는 Pan 제스처를 ScrollView와 동시에 실행해 "맨 위에
-  // 도달한 뒤 추가로 당긴 양"을 직접 측정해서 확대를 트리거한다.
-  // 이미 펼쳐진 상태에서는 이 제스처가 할 일이 없을 뿐 아니라, 계속 살아있으면
-  // 당겨서 새로고침(RefreshControl)이나 위로 스크롤하는 제스처와 인식 우선순위를
-  // 다투면서 새로고침이 안 먹히거나 스크롤이 버벅이는 원인이 되어, 접힌 상태에서만 켠다.
-  const nativeScrollGesture = Gesture.Native();
-  const pullReferenceY = useSharedValue<number | null>(null);
-  const pullToExpandGesture = Gesture.Pan()
-    .enabled(Platform.OS === 'android' && !isExpanded)
-    .activeOffsetY(4)
-    .failOffsetY(-10)
-    .simultaneousWithExternalGesture(nativeScrollGesture)
-    .onUpdate((e) => {
-      if (scrollY.value > 2) {
-        pullReferenceY.value = null;
-        return;
-      }
-      if (pullReferenceY.value === null) {
-        pullReferenceY.value = e.translationY;
-      }
-      const pulled = e.translationY - pullReferenceY.value;
-      if (pulled > PULL_TO_EXPAND_THRESHOLD && expandedProgress.value < 0.5) {
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      const y = event.contentOffset.y;
+      scrollY.value = y;
+      if (expandedProgress.value > 0.5) {
+        if (y > 20) {
+          runOnJS(setExpanded)(0);
+        }
+      } else if (y <= EXPAND_PULL_ZONE - EXPAND_PULL_THRESHOLD) {
         runOnJS(setExpanded)(1);
       }
-    })
-    .onEnd(() => {
-      pullReferenceY.value = null;
-    });
+    },
+    onEndDrag: (event) => {
+      // 확대 문턱까지는 못 미쳤지만 스페이서가 살짝 드러난 채로 손을 뗀 경우,
+      // 다시 감춰지도록 스냅백한다.
+      const y = event.contentOffset.y;
+      if (expandedProgress.value < 0.5 && y > EXPAND_PULL_ZONE - EXPAND_PULL_THRESHOLD && y < EXPAND_PULL_ZONE) {
+        scrollTo(scrollRef, 0, EXPAND_PULL_ZONE, true);
+      }
+    },
+  });
+
+  // isExpanded가 바뀌어 스페이서가 새로 생기거나 사라질 때, 화면에 보이는 내용이
+  // 그대로 유지되도록 스크롤 오프셋을 스페이서 높이만큼 보정해준다.
+  useLayoutEffect(() => {
+    runOnUI((expand: boolean) => {
+      'worklet';
+      const next = expand ? Math.max(0, scrollY.value - EXPAND_PULL_ZONE) : scrollY.value + EXPAND_PULL_ZONE;
+      scrollTo(scrollRef, 0, next, false);
+    })(isExpanded);
+  }, [isExpanded, scrollRef, scrollY]);
 
   // 달력 그리드(월간 뷰) 영역에서 위/아래로 스와이프하면 아래 일정 목록이 그대로
   // 스크롤된다 — 화면 전체가 하나로 이어진 스크롤 영역처럼 느껴지게 한다.
@@ -194,6 +193,35 @@ export default function CalendarScreen() {
     setSelectedDate(todayISO);
   }, [todayISO]);
 
+  // 일정 목록 영역에서 좌우로 스와이프하면 선택된 날짜가 하루씩 이동한다.
+  // 이동한 날짜가 현재 보여주는 달을 벗어나면 달력도 함께 그 달로 넘어간다.
+  const changeSelectedDate = useCallback((deltaDays: number) => {
+    const base = parseISODate(selectedDate);
+    const next = new Date(base.getFullYear(), base.getMonth(), base.getDate() + deltaDays);
+    setSelectedDate(toISODate(next));
+    if (next.getFullYear() !== monthCursor.getFullYear() || next.getMonth() !== monthCursor.getMonth()) {
+      setMonthCursor(new Date(next.getFullYear(), next.getMonth(), 1));
+    }
+  }, [selectedDate, monthCursor]);
+
+  const swipeNextDayGesture = Gesture.Fling()
+    .direction(Directions.LEFT)
+    .onStart(() => {
+      runOnJS(changeSelectedDate)(1);
+    });
+  const swipePrevDayGesture = Gesture.Fling()
+    .direction(Directions.RIGHT)
+    .onStart(() => {
+      runOnJS(changeSelectedDate)(-1);
+    });
+  // ScrollView를 GestureDetector로 감쌀 때 네이티브 스크롤 제스처(Gesture.Native)를
+  // 함께 묶어주지 않으면 세로 스크롤 자체가 먹통이 되므로 항상 같이 묶는다.
+  const nativeScrollGesture = Gesture.Native();
+  const daySwipeGesture = Gesture.Simultaneous(
+    Gesture.Race(swipeNextDayGesture, swipePrevDayGesture),
+    nativeScrollGesture
+  );
+
   const setItemCompleted = useCallback((event: Event, item: EventItem, completed: boolean) => {
     const nextItems = getDisplayItems(event).map((i) => (i.id === item.id ? { ...i, completed } : i));
     updateEvent(event.id, { items: nextItems, note: nextItems.map((i) => i.name).join('\n') });
@@ -244,11 +272,15 @@ export default function CalendarScreen() {
           onForwardScroll={forwardScrollDelta}
         />
 
-        <GestureDetector gesture={Gesture.Simultaneous(pullToExpandGesture, nativeScrollGesture)}>
+        <GestureDetector gesture={daySwipeGesture}>
           <Animated.ScrollView
             ref={scrollRef}
             style={styles.scrollFlex}
-            contentContainerStyle={styles.scrollContent}
+            onLayout={(e) => setViewportHeight(e.nativeEvent.layout.height)}
+            contentContainerStyle={[
+              styles.scrollContent,
+              viewportHeight ? { minHeight: viewportHeight + COLLAPSE_SWIPE_BUFFER } : null,
+            ]}
             showsVerticalScrollIndicator={false}
             onScroll={scrollHandler}
             scrollEventThrottle={16}
@@ -259,15 +291,19 @@ export default function CalendarScreen() {
               ) : undefined
             }
           >
-            <DayDetailSection
-              selectedDate={selectedDate}
-              events={selectedDateEvents}
-              todayISO={todayISO}
-              onAddEvent={() => setAddEventVisible(true)}
-              onPressEvent={setEditingEvent}
-              onToggleItem={handleToggleItem}
-              onOpenBuy={handleOpenBuy}
-            />
+            <View style={viewportHeight ? { minHeight: viewportHeight } : styles.scrollInnerFallback}>
+              {!isExpanded && <View style={{ height: EXPAND_PULL_ZONE }} />}
+              <DayDetailSection
+                selectedDate={selectedDate}
+                events={selectedDateEvents}
+                todayISO={todayISO}
+                onAddEvent={() => setAddEventVisible(true)}
+                onPressEvent={setEditingEvent}
+                onToggleItem={handleToggleItem}
+                onOpenBuy={handleOpenBuy}
+              />
+            </View>
+            <View style={{ height: COLLAPSE_SWIPE_BUFFER }} />
           </Animated.ScrollView>
         </GestureDetector>
       </SafeAreaView>
@@ -312,6 +348,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 40,
+  },
+  scrollInnerFallback: {
+    flex: 1,
   },
   todayFloatingWrap: {
     position: 'absolute',
