@@ -140,7 +140,6 @@ export default function StampBoardScreen() {
     setStampIcon,
     setSoundEnabled,
     refresh,
-    cancelTodayStamp,
   } = useStampBoard(selectedChild?.id);
 
   const theme = STAMP_BOARD_THEMES[themeId];
@@ -153,6 +152,11 @@ export default function StampBoardScreen() {
   const [stickerPanelOpen, setStickerPanelOpen] = useState(false);
 
   const stampAnim = useRef(new Animated.Value(1)).current;
+  const stampRotateAnim = useRef(new Animated.Value(0)).current;
+  const stampRingScale = useRef(new Animated.Value(0.5)).current;
+  const stampRingOpacity = useRef(new Animated.Value(0)).current;
+  const stampBangScale = useRef(new Animated.Value(0.5)).current;
+  const stampBangOpacity = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
   const prevCompletedRef = useRef(isCompleted);
   // 애니메이션이 끝나야 addStamp()가 불리는데, hasStampedToday 상태는 그 전까지 그대로라
@@ -193,21 +197,44 @@ export default function StampBoardScreen() {
 
     setStampingIndex(currentStamps);
 
+    // 도장이 위에서 기울어진 채 크게 내려와 콱 찍히고 살짝 튕기는 "쾅!!" 슬램 애니메이션.
+    stampAnim.setValue(2);
+    stampRotateAnim.setValue(1);
     Animated.sequence([
-      Animated.timing(stampAnim, { toValue: 1.5, duration: 200, useNativeDriver: true }),
-      Animated.timing(stampAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.parallel([
+        Animated.timing(stampAnim, { toValue: 0.85, duration: 130, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+        Animated.timing(stampRotateAnim, { toValue: 0, duration: 130, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+      ]),
+      Animated.spring(stampAnim, { toValue: 1, friction: 3.5, tension: 220, useNativeDriver: true }),
     ]).start(() => {
       addStamp();
       setStampingIndex(null);
       isStampingRef.current = false;
     });
-  };
 
-  // 오늘 찍은 도장(가장 마지막 칸)만 탭해서 취소할 수 있다 — 이전 날짜 도장은 지난 성취라 건드리지 않는다.
-  const handleCancelTodayStamp = () => {
-    if (!hasStampedToday || isStampingRef.current) return;
-    if (soundEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    cancelTodayStamp();
+    // 찍히는 순간 퍼져나가며 사라지는 충격 링.
+    stampRingScale.setValue(0.5);
+    stampRingOpacity.setValue(0.65);
+    Animated.sequence([
+      Animated.delay(120),
+      Animated.parallel([
+        Animated.timing(stampRingScale, { toValue: 1.8, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(stampRingOpacity, { toValue: 0, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]),
+    ]).start();
+
+    // 찍히는 순간 튀어나왔다 사라지는 "쾅!!" 텍스트.
+    stampBangScale.setValue(0.5);
+    stampBangOpacity.setValue(0);
+    Animated.sequence([
+      Animated.delay(110),
+      Animated.parallel([
+        Animated.spring(stampBangScale, { toValue: 1, friction: 4, tension: 200, useNativeDriver: true }),
+        Animated.timing(stampBangOpacity, { toValue: 1, duration: 90, useNativeDriver: true }),
+      ]),
+      Animated.delay(180),
+      Animated.timing(stampBangOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
+    ]).start();
   };
 
   const saveWish = () => {
@@ -416,30 +443,57 @@ export default function StampBoardScreen() {
               {Array.from({ length: targetCount }).map((_, index) => {
                 const isStamped = index < currentStamps;
                 const isJustStamped = index === stampingIndex;
-                const isTodaysStamp = hasStampedToday && index === currentStamps - 1;
 
                 return (
                   <View key={index} style={styles.stampSlotWrap}>
                     {isStamped || isJustStamped ? (
                       <Animated.View
-                        style={[styles.stampSlotAnimatedWrap, isJustStamped && { transform: [{ scale: stampAnim }] }]}
+                        style={[
+                          styles.stampSlotAnimatedWrap,
+                          isJustStamped && {
+                            transform: [
+                              { scale: stampAnim },
+                              {
+                                rotate: stampRotateAnim.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: ['0deg', '-14deg'],
+                                }),
+                              },
+                            ],
+                          },
+                        ]}
                       >
-                        <Pressable
-                          onPress={isTodaysStamp ? handleCancelTodayStamp : undefined}
-                          disabled={!isTodaysStamp}
+                        {isJustStamped && (
+                          <Animated.View
+                            pointerEvents="none"
+                            style={[
+                              styles.stampImpactRing,
+                              { opacity: stampRingOpacity, transform: [{ scale: stampRingScale }] },
+                            ]}
+                          />
+                        )}
+                        <LinearGradient
+                          colors={['#FEF3C7', '#FCE7F3', '#E0F2FE']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={[styles.stampSlot, styles.stampSlotActive]}
                         >
-                          <LinearGradient
-                            colors={['#FEF3C7', '#FCE7F3', '#E0F2FE']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={[styles.stampSlot, styles.stampSlotActive]}
+                          <Text style={styles.stampEmoji}>{stampIcon}</Text>
+                          <View style={styles.stampIndexBadge}>
+                            <Text style={styles.stampIndexText}>{index + 1}</Text>
+                          </View>
+                        </LinearGradient>
+                        {isJustStamped && (
+                          <Animated.Text
+                            pointerEvents="none"
+                            style={[
+                              styles.stampBangText,
+                              { opacity: stampBangOpacity, transform: [{ scale: stampBangScale }] },
+                            ]}
                           >
-                            <Text style={styles.stampEmoji}>{stampIcon}</Text>
-                            <View style={styles.stampIndexBadge}>
-                              <Text style={styles.stampIndexText}>{index + 1}</Text>
-                            </View>
-                          </LinearGradient>
-                        </Pressable>
+                            쾅!!
+                          </Animated.Text>
+                        )}
                       </Animated.View>
                     ) : (
                       <View style={[styles.stampSlot, styles.stampSlotInactive]}>
@@ -846,7 +900,28 @@ const styles = StyleSheet.create({
     marginHorizontal: -5,
   },
   stampSlotWrap: { width: '20%', aspectRatio: 1, padding: 5, alignItems: 'center', justifyContent: 'center' },
-  stampSlotAnimatedWrap: { width: '100%', height: '100%' },
+  stampSlotAnimatedWrap: { width: '100%', height: '100%', position: 'relative' },
+  stampImpactRing: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 999,
+    borderWidth: 3,
+    borderColor: '#FCD34D',
+  },
+  stampBangText: {
+    position: 'absolute',
+    top: -16,
+    alignSelf: 'center',
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#F97316',
+    textShadowColor: 'rgba(0,0,0,0.15)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
   stampSlot: {
     width: '100%',
     height: '100%',

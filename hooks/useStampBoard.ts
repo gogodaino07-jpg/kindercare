@@ -79,20 +79,6 @@ export function useStampBoard(childId: string | undefined) {
     });
   }, [childId, hasStampedToday, isCompleted, todayISO]);
 
-  /** 오늘 찍은 도장만 취소할 수 있다 — 이전 날짜의 도장은 이미 지난 성취라 실수로 지워지면 안 된다. */
-  const cancelTodayStamp = useCallback(() => {
-    if (!childId || !hasStampedToday) return;
-    setData((prev) => {
-      const next: StampBoardData = {
-        ...prev,
-        currentStamps: Math.max(0, prev.currentStamps - 1),
-        lastStampedDateISO: null,
-      };
-      persist(childId, next);
-      return next;
-    });
-  }, [childId, hasStampedToday]);
-
   const updateSettings = useCallback(
     (targetCount: number, wish: string) => {
       if (!childId) return;
@@ -168,7 +154,6 @@ export function useStampBoard(childId: string | undefined) {
     hasStampedToday,
     isCompleted,
     addStamp,
-    cancelTodayStamp,
     updateSettings,
     resetProgress,
     setTheme,
