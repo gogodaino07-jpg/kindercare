@@ -104,11 +104,13 @@ export default function CalendarAccordion({
     runOnJS(setExpanded)(target);
   };
 
-  // 힌트바(하단) 드래그 — 터치 영역이 시각적으로 작아 hitSlop으로 실제 인식
-  // 범위를 넉넉하게 넓혀서 잡기 쉽게 한다. activeOffsetY를 둬서 살짝 스친 정도로는
-  // 반응하지 않고 12px 이상 의도적으로 끌 때만 확대/축소가 걸리게 해 버벅임을 줄인다.
+  // 힌트바(하단) 드래그 — 터치 영역이 시각적으로 작아 hitSlop으로 위/좌/우는
+  // 넉넉하게 넓혀서 잡기 쉽게 한다. bottom은 넓히지 않는데, 힌트바 바로 아래가
+  // 일정 목록 스크롤 영역 시작 지점이라 여기까지 넓히면 "목록을 스크롤하려고
+  // 아래로 내렸을 뿐인데 달력이 확대/축소되는" 오작동으로 이어졌었다.
+  // activeOffsetY도 둬서 살짝 스친 정도로는 반응하지 않게 한다.
   const dragGesture = Gesture.Pan()
-    .hitSlop({ top: 16, bottom: 16, left: 24, right: 24 })
+    .hitSlop({ top: 16, bottom: 0, left: 24, right: 24 })
     .activeOffsetY([-12, 12])
     .onStart(() => {
       dragStart.value = expandedProgress.value;
