@@ -16,6 +16,7 @@ interface HomeEmptyContentProps {
   weatherLoading: boolean;
   locationLabel?: string;
   onPressDate: (date: string) => void;
+  refreshKey?: number;
 }
 
 export default function HomeEmptyContent({
@@ -25,6 +26,7 @@ export default function HomeEmptyContent({
   weatherLoading,
   locationLabel,
   onPressDate,
+  refreshKey,
 }: HomeEmptyContentProps) {
   const router = useRouter();
   const colors = useThemeColors();
@@ -39,6 +41,7 @@ export default function HomeEmptyContent({
           weatherLoading={weatherLoading}
           locationLabel={locationLabel}
           onPressDate={onPressDate}
+          refreshKey={refreshKey}
         />
 
         <SectionHeader emoji="🎒" title="가방에 쏙쏙!" />

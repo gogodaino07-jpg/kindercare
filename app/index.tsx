@@ -105,6 +105,7 @@ export default function HomeScreen() {
   const progressHeightRef = useRef(0);
   const [stickyVisible, setStickyVisible] = useState(false);
   const [birthdayBurstKey, setBirthdayBurstKey] = useState(0);
+  const [greetingRefreshKey, setGreetingRefreshKey] = useState(0);
   const isChildBirthdayToday = isBirthdayToday(selectedChild?.birthdate);
 
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
@@ -139,6 +140,7 @@ export default function HomeScreen() {
     } finally {
       setRefreshing(false);
       if (isChildBirthdayToday) setBirthdayBurstKey((k) => k + 1);
+      setGreetingRefreshKey((k) => k + 1);
     }
   }, [weather, isChildBirthdayToday]);
 
@@ -238,6 +240,7 @@ export default function HomeScreen() {
             weatherLoading={weather.loading}
             locationLabel={weather.locationLabel}
             onPressDate={onDatePress}
+            refreshKey={greetingRefreshKey}
           />
         ) : (
           <>
@@ -259,6 +262,7 @@ export default function HomeScreen() {
                 locationLabel={weather.locationLabel}
                 onPressDate={onDatePress}
                 todayMainMenu={todayMainMenu}
+                refreshKey={greetingRefreshKey}
               />
               <View
                 onLayout={(e) => {
