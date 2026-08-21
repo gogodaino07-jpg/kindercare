@@ -2,8 +2,22 @@ import { MaterialIcons } from '@expo/vector-icons';
 import React, { forwardRef } from 'react';
 import { Pressable, StyleProp, StyleSheet, TextInput, TextInputProps, TextStyle, View } from 'react-native';
 
-/** Style keys that describe the widget's own box in its parent's layout (not its visual look) — these move to the wrapping container so `width`/margins keep working exactly as before. */
+/**
+ * Style keys that describe the widget's own box in its parent's layout (not its
+ * visual look) — these move to the wrapping container so `flex`/`width`/margins
+ * keep working exactly as before. Flex keys must NOT also stay on the inner
+ * TextInput: giving a single-line input both `flex:1` (from a row layout like a
+ * search box next to a button) and `width:'100%'` at once made RN/Yoga on
+ * Android compute a bad height for the native EditText — the box, border and
+ * clear button still rendered fine, but the typed text itself was invisible.
+ * Sizing purely through the container avoids that conflict; a multiline field
+ * that needs to fill its own flexed height still can via its own `minHeight`.
+ */
 const LAYOUT_ONLY_KEYS = [
+  'flex',
+  'flexGrow',
+  'flexShrink',
+  'flexBasis',
   'width',
   'minWidth',
   'maxWidth',
@@ -17,9 +31,6 @@ const LAYOUT_ONLY_KEYS = [
   'alignSelf',
 ] as const;
 
-/** Flex keys move to the container (so the widget sizes correctly among its siblings) but are also kept on the inner input, so a flexed multiline box still stretches to fill that container's height. */
-const FLEX_KEYS = ['flex', 'flexGrow', 'flexShrink', 'flexBasis'] as const;
-
 function splitStyle(style: StyleProp<TextStyle>) {
   const flat = (StyleSheet.flatten(style) ?? {}) as Record<string, unknown>;
   const containerStyle: Record<string, unknown> = {};
@@ -27,9 +38,6 @@ function splitStyle(style: StyleProp<TextStyle>) {
   for (const key of Object.keys(flat)) {
     if ((LAYOUT_ONLY_KEYS as readonly string[]).includes(key)) {
       containerStyle[key] = flat[key];
-    } else if ((FLEX_KEYS as readonly string[]).includes(key)) {
-      containerStyle[key] = flat[key];
-      inputStyle[key] = flat[key];
     } else {
       inputStyle[key] = flat[key];
     }
