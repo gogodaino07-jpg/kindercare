@@ -2,7 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, Share, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { getDisplayItems } from '../../hooks/useLocalChecklist';
@@ -119,6 +119,17 @@ export default function ScheduleBoard({
     { key: 'dayAfterTomorrow', label: `모레 (${dayAfterTomorrowCount})` },
   ];
 
+  const handleShare = () => {
+    const lines = mainEvents.flatMap((event) => {
+      const items = getDisplayItems(event);
+      return items.length > 0 ? [`• ${event.title}: ${items.map((i) => i.name).join(', ')}`] : [];
+    });
+    const message = lines.length > 0
+      ? `오늘 챙길 준비물이에요!\n${lines.join('\n')}`
+      : '오늘은 따로 챙길 준비물이 없어요!';
+    Share.share({ message }).catch(() => {});
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
@@ -178,6 +189,21 @@ export default function ScheduleBoard({
           ))}
         </View>
       )}
+
+      <View style={styles.shareCard}>
+        <View style={styles.shareCardLeft}>
+          <View style={styles.shareIconBox}>
+            <MaterialIcons name="share" size={16} color={colors.purple500} />
+          </View>
+          <View style={styles.shareTextBlock}>
+            <Text style={styles.shareTitle}>가족과 함께 보기</Text>
+            <Text style={styles.shareSubtitle}>오늘 챙길 준비물을 가족에게 전달해보세요.</Text>
+          </View>
+        </View>
+        <Pressable style={styles.shareButton} onPress={handleShare}>
+          <Text style={styles.shareButtonText}>공유</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -488,5 +514,34 @@ function createStyles(colors: ThemeColors) {
     },
     emptyEmoji: { fontSize: 28, marginBottom: 8 },
     emptyTitle: { fontSize: 13, fontWeight: '700', color: colors.gray600 },
+    shareCard: {
+      marginTop: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.purpleBg,
+      borderRadius: 18,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+    },
+    shareCardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 },
+    shareIconBox: {
+      width: 34,
+      height: 34,
+      borderRadius: 12,
+      backgroundColor: colors.cardWhite,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    shareTextBlock: { flex: 1 },
+    shareTitle: { fontSize: 13, fontWeight: '800', color: colors.gray900 },
+    shareSubtitle: { fontSize: 11, fontWeight: '500', color: colors.gray500, marginTop: 2 },
+    shareButton: {
+      backgroundColor: colors.purple500,
+      borderRadius: 999,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+    },
+    shareButtonText: { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
   });
 }
