@@ -258,6 +258,7 @@ export default function HomeScreen() {
                 locationLabel={weather.locationLabel}
                 onPressDate={onDatePress}
                 todayMainMenu={todayMainMenu}
+                birthdayBurstKey={birthdayBurstKey}
               />
               <View
                 onLayout={(e) => {
