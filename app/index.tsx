@@ -171,7 +171,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <ScreenBackground>
+    <ScreenBackground showDots={false}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <HomeProfileBar selectedChild={selectedChild} onPressChild={() => setSwitcherOpen(true)} />
         {stickyVisible && (
