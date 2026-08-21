@@ -492,6 +492,9 @@ export default function UploadScreen() {
                 </LinearGradient>
               </Pressable>
             )}
+            {docs.length > 0 && !isSubscribed && (
+              <Text style={styles.analyzeAdCaption}>짧은 광고 시청 후 분석이 시작돼요</Text>
+            )}
           </View>
 
           {!isSubscribed && <CoupangBanner style={{ paddingBottom: insets.bottom }} />}
@@ -884,6 +887,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   analyzeButtonText: { color: C.white, fontSize: 16, fontWeight: '900' },
+  analyzeAdCaption: { marginTop: 8, fontSize: 12, color: C.slate500, textAlign: 'center' },
   analyzingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 20 },
   analyzingSpinnerWrap: { alignItems: 'center', justifyContent: 'center' },
   analyzingRobot: { position: 'absolute', fontSize: 30 },
