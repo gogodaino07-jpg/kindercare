@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Platform, RefreshControl, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -9,7 +9,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AddEventModal from '../components/calendar/AddEventModal';
 import BuyModal from '../components/calendar/BuyModal';
 import CalendarAccordion from '../components/calendar/CalendarAccordion';
@@ -17,7 +17,7 @@ import { calendarTheme as t } from '../components/calendar/calendarTheme';
 import CalendarHeader from '../components/calendar/CalendarHeader';
 import DayDetailSection from '../components/calendar/DayDetailSection';
 import EditEventModal from '../components/calendar/EditEventModal';
-import SmartBanner from '../components/calendar/SmartBanner';
+import Text from '../components/common/AppText';
 import { useAppData } from '../context/AppDataContext';
 import { getDisplayItems } from '../hooks/useLocalChecklist';
 import { Event, EventItem } from '../types/models';
@@ -25,6 +25,7 @@ import { parseISODate, toISODate } from '../utils/date';
 
 export default function CalendarScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { date: dateParam } = useLocalSearchParams<{ date?: string }>();
   const { events, selectedChild, updateEvent } = useAppData();
 
@@ -128,16 +129,10 @@ export default function CalendarScreen() {
 
   const selectedDateEvents = eventsByDate.get(selectedDate) ?? [];
 
-  const { percent, incompleteCount, totalCount, hasNotice } = useMemo(() => {
+  const percent = useMemo(() => {
     const items = selectedDateEvents.flatMap((e) => getDisplayItems(e));
     const completed = items.filter((i) => i.completed).length;
-    const pct = selectedDateEvents.length === 0 ? 0 : items.length === 0 ? 100 : Math.round((completed / items.length) * 100);
-    return {
-      percent: pct,
-      incompleteCount: items.length - completed,
-      totalCount: items.length,
-      hasNotice: selectedDateEvents.some((e) => !!e.noticeText),
-    };
+    return selectedDateEvents.length === 0 ? 0 : items.length === 0 ? 100 : Math.round((completed / items.length) * 100);
   }, [selectedDateEvents]);
 
   const selectedDateLabel = selectedDate === todayISO ? '오늘' : selectedDate.replace(/-/g, '.');
@@ -201,13 +196,6 @@ export default function CalendarScreen() {
           onBack={() => router.back()}
         />
 
-        <SmartBanner
-          incompleteCount={incompleteCount}
-          totalCount={totalCount}
-          hasNotice={hasNotice}
-          onPressToday={onPressToday}
-        />
-
         <CalendarAccordion
           monthCursor={monthCursor}
           selectedDate={selectedDate}
@@ -249,6 +237,12 @@ export default function CalendarScreen() {
         </GestureDetector>
       </SafeAreaView>
 
+      <View pointerEvents="box-none" style={[styles.todayFloatingWrap, { bottom: 20 + insets.bottom }]}>
+        <Pressable style={styles.todayFloatingButton} onPress={onPressToday}>
+          <Text style={styles.todayFloatingButtonText}>오늘</Text>
+        </Pressable>
+      </View>
+
       <BuyModal
         visible={!!buyState}
         itemName={buyState?.item.name ?? null}
@@ -282,5 +276,27 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 40,
+  },
+  todayFloatingWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  todayFloatingButton: {
+    backgroundColor: t.skyBg,
+    borderRadius: 999,
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  todayFloatingButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: t.sky,
   },
 });
