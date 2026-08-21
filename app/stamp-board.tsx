@@ -439,7 +439,7 @@ export default function StampBoardScreen() {
           )}
 
           <View style={styles.boardFillWrap}>
-          <View style={[styles.boardCard, { borderColor: theme.boardBorder }]}>
+          <View style={styles.boardCard}>
             <DotPattern />
             <View style={styles.grid}>
               {Array.from({ length: targetCount }).map((_, index) => {
@@ -892,7 +892,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 12,
-    borderWidth: 1,
     overflow: 'hidden',
   },
   grid: {
