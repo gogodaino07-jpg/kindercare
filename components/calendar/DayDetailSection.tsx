@@ -36,13 +36,11 @@ export default function DayDetailSection({
   if (events.length === 0) {
     return (
       <View style={styles.emptyFillContainer}>
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyDate}>{selectedDate}</Text>
-          <Text style={styles.emptyText}>등록된 유치원/어린이집 일정이 없습니다.</Text>
-          <Pressable style={styles.addButton} onPress={onAddEvent}>
-            <Text style={styles.addButtonText}>+ 새 일정 추가</Text>
-          </Pressable>
-        </View>
+        <Text style={styles.emptyDate}>{selectedDate}</Text>
+        <Text style={styles.emptyText}>등록된 유치원/어린이집 일정이 없습니다.</Text>
+        <Pressable style={styles.addButton} onPress={onAddEvent}>
+          <Text style={styles.addButtonText}>+ 새 일정 추가</Text>
+        </Pressable>
       </View>
     );
   }
@@ -197,10 +195,7 @@ const styles = StyleSheet.create({
   },
   emptyFillContainer: {
     flex: 1,
-    paddingHorizontal: 16,
-    backgroundColor: t.cardWhite,
-  },
-  emptyCard: {
+    marginHorizontal: 16,
     backgroundColor: t.cardWhite,
     borderRadius: 20,
     borderWidth: 1,
@@ -208,6 +203,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     paddingHorizontal: 20,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyDate: {
     fontSize: 13,
