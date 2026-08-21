@@ -38,7 +38,7 @@ export default function FamilyMembersScreen() {
   const isManagementMode = titleParam === '구성원 관리';
   const isReissueMode = titleParam === '키 공유 / 재발급';
 
-  const { familyKey, familyMembers, removeMember, leaveFamily, regenerateFamilyKey, updateMemberPhone, googleAccount } =
+  const { familyKey, familyMembers, removeMember, leaveFamily, regenerateFamilyInvite, updateMemberPhone, googleAccount } =
     useAppData();
   const { showAlert } = useAlert();
   const { isLocked } = useAppLock();
@@ -70,8 +70,8 @@ export default function FamilyMembersScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLocked]);
 
-  const handleReissue = () => {
-    const newKey = regenerateFamilyKey();
+  const handleReissue = async () => {
+    const newKey = await regenerateFamilyInvite();
     setDisplayedKey(newKey);
     setCopied(false);
     showAlert({ title: '새 키가 발급됐어요', message: '기존 키는 더 이상 사용할 수 없어요.' });

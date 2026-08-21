@@ -65,6 +65,8 @@ interface AppDataContextValue {
   canEditFamilyData: boolean;
   /** 가족 초대 코드를 Firestore에 등록 — regenerateFamilyKey()가 반환한 키를 그대로 넘긴다. */
   createFamilyInvite: (key: string) => Promise<void>;
+  /** 새 초대 코드를 만들어 Firestore에 등록하고 예전 코드는 삭제. 설정 화면의 "키 재발급"용. */
+  regenerateFamilyInvite: () => Promise<string>;
   /** 초대 코드로 가족에 합류 — 성공 시 familyOwnerEmail이 세팅됨. */
   joinFamilyByCode: (code: string) => Promise<boolean>;
 
@@ -759,6 +761,23 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
+  // 설정 화면의 "키 재발급" — 새 코드를 만들어 Firestore에 등록하고, 예전 코드는
+  // 지워서 실제로 못 쓰게 만든다. (예전엔 regenerateFamilyKey()만 불러서 로컬
+  // 상태만 바뀌고 Firestore엔 새 코드가 등록도 안 됐었음 — 재발급해도 새 코드로
+  // 아무도 못 들어오고, "더 이상 못 쓴다"던 예전 코드는 계속 살아있던 버그였다.)
+  const regenerateFamilyInvite = async (): Promise<string> => {
+    const oldKey = familyKey;
+    const newKey = generateFamilyKey();
+    setFamilyKey(newKey);
+    await createFamilyInvite(newKey);
+    if (oldKey) {
+      getDb().collection('familyInvites').doc(oldKey).delete().catch((err: unknown) =>
+        console.error('❌ Firestore Delete Old Family Invite Error:', err)
+      );
+    }
+    return newKey;
+  };
+
   // 초대 코드로 가족에 합류 — 코드를 조회해 소유자를 찾고, 내 권한 기록(members 문서)을
   // 남긴 뒤 familyOwnerEmail을 그 소유자로 세팅한다. 실패(코드 없음 등)하면 false.
   const joinFamilyByCode = async (rawCode: string): Promise<boolean> => {
@@ -1332,6 +1351,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     isFamilyOwner,
     canEditFamilyData,
     createFamilyInvite,
+    regenerateFamilyInvite,
     joinFamilyByCode,
 
     children: childProfiles,
