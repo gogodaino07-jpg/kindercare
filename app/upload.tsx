@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
@@ -79,6 +79,10 @@ export default function UploadScreen() {
   const [docs, setDocs] = useState<UploadedDoc[]>([]);
   const [remainingAnalyses, setRemainingAnalyses] = useState<number | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  // 버튼을 누른 시점부터 광고 요청/시청이 끝날 때까지는 analyzing이 아직 true가
+  // 아니라(그건 실제 AI 분석이 시작될 때만 켜짐) 버튼에 아무 반응이 없어 보여서
+  // 여러 번 누르게 되는 문제가 있었음 — 그 구간을 채우기 위한 별도 상태.
+  const [starting, setStarting] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   const maxCredits = isSubscribed ? PREMIUM_WEEKLY_LIMIT : FREE_WEEKLY_LIMIT;
@@ -334,15 +338,20 @@ export default function UploadScreen() {
       return;
     }
 
-    if (!isSubscribed) {
-      const earnedReward = await requestAndShow();
-      if (!earnedReward) {
-        showAlert({ title: '광고 시청이 필요해요', message: '광고를 끝까지 시청해야 분석을 진행할 수 있어요. 다시 시도해주세요.' });
-        return;
+    setStarting(true);
+    try {
+      if (!isSubscribed) {
+        const earnedReward = await requestAndShow();
+        if (!earnedReward) {
+          showAlert({ title: '광고 시청이 필요해요', message: '광고를 끝까지 시청해야 분석을 진행할 수 있어요. 다시 시도해주세요.' });
+          return;
+        }
       }
-    }
 
-    await performAnalysis(docs, selectedChild);
+      await performAnalysis(docs, selectedChild);
+    } finally {
+      setStarting(false);
+    }
   };
 
   const analyzingLabel =
@@ -457,8 +466,11 @@ export default function UploadScreen() {
             {docs.length > 0 && (
               <Pressable
                 onPress={handleAnalyze}
-                disabled={remainingAnalyses === null}
-                style={[styles.analyzeButtonWrap, remainingAnalyses === null && styles.analyzeButtonWrapDisabled]}
+                disabled={remainingAnalyses === null || starting}
+                style={[
+                  styles.analyzeButtonWrap,
+                  (remainingAnalyses === null || starting) && styles.analyzeButtonWrapDisabled,
+                ]}
               >
                 <LinearGradient
                   colors={[C.violet600, C.indigo600]}
@@ -466,8 +478,17 @@ export default function UploadScreen() {
                   end={{ x: 1, y: 0 }}
                   style={styles.analyzeButton}
                 >
-                  <Ionicons name="sparkles" size={18} color="#FCD34D" />
-                  <Text style={styles.analyzeButtonText}>AI로 내용 분석하기 (1회 차감)</Text>
+                  {starting ? (
+                    <>
+                      <ActivityIndicator color="#FFFFFF" />
+                      <Text style={styles.analyzeButtonText}>잠시만요...</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="sparkles" size={18} color="#FCD34D" />
+                      <Text style={styles.analyzeButtonText}>AI로 내용 분석하기 (1회 차감)</Text>
+                    </>
+                  )}
                 </LinearGradient>
               </Pressable>
             )}
