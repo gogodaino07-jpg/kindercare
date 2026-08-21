@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -19,98 +19,7 @@ interface HomeHeroHeaderProps {
   onPressDate: (date: string) => void;
   /** 오늘 등록된 급식의 메인 메뉴. 있으면 인사말 대신 "오늘은 OO를 먹어요~" 문구를 보여줌. */
   todayMainMenu?: string;
-  /** 생일인 아이 새로고침 시 값이 바뀔 때마다 생일 배너에 큰 폭죽 애니메이션을 재생. */
-  birthdayBurstKey?: number;
 }
-
-const BANNER_CONFETTI_EMOJIS = ['🎉', '🎊', '✨', '🎈', '🥳', '🌟', '💛', '🎁', '💫'];
-const BANNER_CONFETTI_COUNT = 30;
-
-/** 생일 배너 새로고침 신호가 바뀔 때마다 배너 위로 크고 화려한 폭죽이 한 번 터졌다가 사라진다. */
-function BirthdayBannerConfetti({ triggerKey }: { triggerKey: number }) {
-  const [active, setActive] = useState(false);
-  const progress = useRef(new Animated.Value(0)).current;
-  const isFirstRender = useRef(true);
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    setActive(true);
-    progress.setValue(0);
-    const animation = Animated.timing(progress, {
-      toValue: 1,
-      duration: 1700,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    });
-    animation.start(({ finished }) => {
-      if (finished) setActive(false);
-    });
-    return () => animation.stop();
-  }, [triggerKey, progress]);
-
-  if (!active) return null;
-
-  return (
-    <View pointerEvents="none" style={confettiStyles.layer}>
-      {Array.from({ length: BANNER_CONFETTI_COUNT }).map((_, i) => {
-        const originLeftPct = 3 + i * (94 / (BANNER_CONFETTI_COUNT - 1));
-        const burstAngleDeg = (i % 2 === 0 ? -1 : 1) * (18 + ((i * 13) % 55));
-        const dx = Math.sin((burstAngleDeg * Math.PI) / 180) * (26 + (i % 5) * 14);
-        const fallDistance = 150 + (i % 6) * 26;
-        const size = 16 + (i % 5) * 4;
-        const spinDeg = `${(i % 2 === 0 ? 1 : -1) * (220 + i * 17)}deg`;
-        const delay = (i % 7) * 0.03;
-
-        const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [0, dx] });
-        const translateY = progress.interpolate({
-          inputRange: [0, 0.25, 1],
-          outputRange: [0, -20 - (i % 5) * 5, fallDistance],
-        });
-        const opacity = progress.interpolate({
-          inputRange: [delay, delay + 0.12, 0.72, 1],
-          outputRange: [0, 1, 1, 0],
-        });
-        const scale = progress.interpolate({ inputRange: [0, 0.18, 1], outputRange: [0.2, 1.15, 0.85] });
-        const rotate = progress.interpolate({ inputRange: [0, 1], outputRange: ['0deg', spinDeg] });
-
-        return (
-          <Animated.Text
-            key={i}
-            style={[
-              confettiStyles.piece,
-              {
-                left: `${originLeftPct}%`,
-                fontSize: size,
-                opacity,
-                transform: [{ translateX }, { translateY }, { scale }, { rotate }],
-              },
-            ]}
-          >
-            {BANNER_CONFETTI_EMOJIS[i % BANNER_CONFETTI_EMOJIS.length]}
-          </Animated.Text>
-        );
-      })}
-    </View>
-  );
-}
-
-const confettiStyles = StyleSheet.create({
-  layer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 0,
-    zIndex: 10,
-  },
-  piece: {
-    position: 'absolute',
-    top: 0,
-  },
-});
 
 /** Korean 아/야 particle: true when the syllable ends with a batchim (final consonant). */
 function hasFinalConsonant(text: string): boolean {
@@ -187,7 +96,6 @@ export default function HomeHeroHeader({
   locationLabel,
   onPressDate,
   todayMainMenu,
-  birthdayBurstKey,
 }: HomeHeroHeaderProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -255,10 +163,6 @@ export default function HomeHeroHeader({
           <Text style={styles.mealBannerButtonIcon}>🍴</Text>
           <Text style={styles.mealBannerButtonText}>점심 메뉴</Text>
         </Pressable>
-
-        {isBirthday && birthdayBurstKey !== undefined && (
-          <BirthdayBannerConfetti triggerKey={birthdayBurstKey} />
-        )}
       </LinearGradient>
 
       {!!locationLabel && (

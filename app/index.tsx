@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdPopupModal from '../components/home/AdPopupModal';
+import BirthdayCenterConfetti from '../components/home/BirthdayCenterConfetti';
 import BlackboardModal from '../components/home/BlackboardModal';
 import ChildSwitcherSheet from '../components/home/ChildSwitcherSheet';
 import HomeEmptyContent from '../components/home/HomeEmptyContent';
@@ -258,7 +259,6 @@ export default function HomeScreen() {
                 locationLabel={weather.locationLabel}
                 onPressDate={onDatePress}
                 todayMainMenu={todayMainMenu}
-                birthdayBurstKey={birthdayBurstKey}
               />
               <View
                 onLayout={(e) => {
@@ -288,6 +288,8 @@ export default function HomeScreen() {
           </>
         )}
       </SafeAreaView>
+
+      <BirthdayCenterConfetti triggerKey={birthdayBurstKey} />
 
       {!isSubscribed && <CoupangBanner style={styles.adBanner} />}
 
