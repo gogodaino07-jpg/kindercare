@@ -25,6 +25,13 @@ import { useThemeColors } from '../../context/ThemeContext';
 import { FamilyMember } from '../../types/models';
 import { markExternalActionBriefly, setExternalActionActive } from '../../utils/externalAction';
 
+const BLUE_SOFT = '#DBEAFE';
+const BLUE_SOFT_BORDER = '#BFDBFE';
+const BLUE_DEEP = '#1D4ED8';
+const AMBER_SOFT = '#FEF3C7';
+const AMBER_SOFT_BORDER = '#FDE68A';
+const AMBER_DEEP = '#B45309';
+
 function formatPhoneNumber(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 11);
   if (digits.length < 4) return digits;
@@ -209,18 +216,15 @@ export default function FamilyMembersScreen() {
               <Text style={styles.sectionLabel}>구성원</Text>
               {familyMembers.map((member) => (
                 <View key={member.id} style={styles.memberCard}>
-                  <View style={styles.memberAvatar}>
-                    <Text style={styles.memberAvatarText}>{member.name[0]}</Text>
-                  </View>
                   <View style={styles.memberInfo}>
-                    <Text style={styles.memberName}>{member.name}</Text>
-                    {member.isOwner ? (
-                      <Text style={styles.ownerBadge}>소유자</Text>
-                    ) : member.role ? (
-                      <Text style={styles.roleBadge}>
-                        {member.role} · {member.canEdit ? '편집 가능' : '읽기 전용'}
-                      </Text>
-                    ) : null}
+                    <View style={styles.memberNameRow}>
+                      {member.isOwner ? (
+                        <Text style={styles.rolePillOwner}>소유자</Text>
+                      ) : member.role ? (
+                        <Text style={styles.rolePillMember}>{member.role}</Text>
+                      ) : null}
+                      <Text style={styles.memberName}>{member.name}</Text>
+                    </View>
                   </View>
 
                   {member.phone ? (
@@ -368,39 +372,40 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 10,
       ...SHADOW,
     },
-    memberAvatar: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.gray100,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    memberAvatarText: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: colors.textPrimary,
-    },
     memberInfo: { flex: 1 },
+    memberNameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
     memberName: {
       fontSize: 15,
       fontWeight: '600',
       color: colors.textPrimary,
     },
-    ownerBadge: {
+    rolePillOwner: {
       fontSize: 11,
-      color: colors.accent,
       fontWeight: '700',
-      marginTop: 2,
+      color: BLUE_DEEP,
+      backgroundColor: BLUE_SOFT,
+      borderWidth: 1,
+      borderColor: BLUE_SOFT_BORDER,
+      borderRadius: 999,
+      paddingVertical: 3,
+      paddingHorizontal: 8,
+      overflow: 'hidden',
     },
-    roleBadge: {
+    rolePillMember: {
       fontSize: 11,
-      color: colors.textSecondary,
       fontWeight: '700',
-      marginTop: 2,
+      color: AMBER_DEEP,
+      backgroundColor: AMBER_SOFT,
+      borderWidth: 1,
+      borderColor: AMBER_SOFT_BORDER,
+      borderRadius: 999,
+      paddingVertical: 3,
+      paddingHorizontal: 8,
+      overflow: 'hidden',
     },
     phoneAddButton: {
       paddingVertical: 6,
