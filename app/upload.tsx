@@ -379,6 +379,9 @@ export default function UploadScreen() {
             style={styles.scrollFlex}
             contentContainerStyle={[styles.scrollContent, docs.length === 0 && styles.scrollContentFill]}
             showsVerticalScrollIndicator={false}
+            scrollEnabled={docs.length > 0}
+            bounces={docs.length > 0}
+            overScrollMode={docs.length > 0 ? 'auto' : 'never'}
           >
             <View style={styles.gaugeCard}>
               <View style={styles.gaugeTopRow}>
@@ -518,7 +521,7 @@ function DropzoneCard({ onPress }: { onPress: () => void }) {
   return (
     <Pressable style={styles.dropzoneCard} onPress={onPress}>
       <View style={styles.dropzoneIconBox}>
-        <Feather name="upload-cloud" size={28} color={C.violet600} />
+        <Feather name="upload-cloud" size={24} color={C.violet600} />
       </View>
       <Text style={styles.dropzoneTitle}>통신문 사진이나 문서를 터치하여 업로드</Text>
       <Text style={styles.dropzoneSubtitle}>
@@ -712,16 +715,16 @@ const styles = StyleSheet.create({
   backButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 17, fontWeight: '800', color: C.slate900 },
   scrollFlex: { flex: 1 },
-  scrollContent: { padding: 16, gap: 14 },
+  scrollContent: { padding: 14, gap: 10 },
   scrollContentFill: { flexGrow: 1 },
-  emptyStateFill: { flex: 1, justifyContent: 'space-between', gap: 14 },
+  emptyStateFill: { flex: 1, justifyContent: 'space-between', gap: 10 },
   gaugeCard: {
     backgroundColor: C.white,
     borderRadius: 20,
-    padding: 16,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#E5EAF0',
-    gap: 10,
+    gap: 8,
   },
   gaugeTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   gaugeTopLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -740,22 +743,22 @@ const styles = StyleSheet.create({
     borderColor: C.violet200,
     borderStyle: 'dashed',
     borderRadius: 32,
-    paddingVertical: 30,
+    paddingVertical: 20,
     paddingHorizontal: 20,
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   dropzoneIconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
     backgroundColor: C.violet50,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   dropzoneTitle: { fontSize: 16, fontWeight: '900', color: C.slate900, textAlign: 'center' },
-  dropzoneSubtitle: { fontSize: 13.5, color: C.slate400, textAlign: 'center', lineHeight: 20 },
+  dropzoneSubtitle: { fontSize: 13.5, color: C.slate400, textAlign: 'center', lineHeight: 19 },
   tipBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -764,17 +767,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.amber200,
     borderRadius: 16,
-    padding: 14,
+    padding: 11,
   },
-  tipText: { flex: 1, fontSize: 13.5, color: C.slate700, lineHeight: 20 },
+  tipText: { flex: 1, fontSize: 13.5, color: C.slate700, lineHeight: 19 },
   tipBold: { fontWeight: '900', color: C.amber700 },
   roadmapCard: {
     backgroundColor: C.white,
     borderRadius: 32,
-    padding: 18,
+    padding: 14,
     borderWidth: 1,
     borderColor: C.slate100,
-    gap: 6,
+    gap: 4,
   },
   roadmapRow: { flexDirection: 'row', gap: 14 },
   roadmapConnector: { width: 32, alignItems: 'center' },
