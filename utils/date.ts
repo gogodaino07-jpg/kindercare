@@ -54,3 +54,11 @@ export function ageFromBirthdate(birthdate: Date): 3 | 4 | 5 | 6 | 7 {
   return Math.min(7, Math.max(3, age)) as 3 | 4 | 5 | 6 | 7;
 }
 
+/** birthdate(YYYY-MM-DD)의 월-일이 오늘과 같으면 생일. */
+export function isBirthdayToday(birthdate?: string): boolean {
+  if (!birthdate) return false;
+  const monthDay = birthdate.slice(5); // "MM-DD"
+  const todayMonthDay = toISODate(new Date()).slice(5);
+  return monthDay === todayMonthDay;
+}
+

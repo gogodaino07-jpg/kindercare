@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Image, Pressable, StyleSheet, View } from 'react-native';
 import { ThemeColors } from '../../constants/theme';
 import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -15,6 +15,8 @@ import NotificationCenterModal from './NotificationCenterModal';
 interface HomeProfileBarProps {
   selectedChild: Child | undefined;
   onPressChild: () => void;
+  /** 생일인 아이 새로고침 시 값이 바뀔 때마다 프로필 영역에 폭죽 애니메이션을 재생. */
+  birthdayBurstKey?: number;
 }
 
 /** "햇살" -> "햇살반" / "햇살반" -> "햇살반" 그대로. */
@@ -27,8 +29,85 @@ function formatClassName(className?: string): string | undefined {
 const AVATAR_SMALL_SIZE = 56;
 const ICON_BUTTON_SIZE = 32;
 
+const CONFETTI_EMOJIS = ['🎉', '🎊', '✨', '🎈', '⭐'];
+const CONFETTI_COUNT = 14;
+
+/** 생일 새로고침 신호(triggerKey)가 바뀔 때마다 아바타 주변으로 폭죽이 한 번 터졌다가 사라진다. */
+function BirthdayBurst({ triggerKey }: { triggerKey: number }) {
+  const [active, setActive] = useState(false);
+  const progress = useRef(new Animated.Value(0)).current;
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    setActive(true);
+    progress.setValue(0);
+    const animation = Animated.timing(progress, {
+      toValue: 1,
+      duration: 1300,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    });
+    animation.start(({ finished }) => {
+      if (finished) setActive(false);
+    });
+    return () => animation.stop();
+  }, [triggerKey, progress]);
+
+  if (!active) return null;
+
+  return (
+    <View pointerEvents="none" style={confettiStyles.confettiLayer}>
+      {Array.from({ length: CONFETTI_COUNT }).map((_, i) => {
+        const angle = (Math.PI * 2 * i) / CONFETTI_COUNT + (i % 2 === 0 ? 0.15 : -0.15);
+        const distance = 42 + (i % 4) * 13;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance - 18;
+        const spinDeg = `${(i % 2 === 0 ? 1 : -1) * (180 + i * 22)}deg`;
+
+        const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [0, dx] });
+        const translateY = progress.interpolate({ inputRange: [0, 0.35, 1], outputRange: [0, dy, dy + 62] });
+        const opacity = progress.interpolate({ inputRange: [0, 0.12, 0.7, 1], outputRange: [0, 1, 1, 0] });
+        const scale = progress.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0.3, 1, 0.75] });
+        const rotate = progress.interpolate({ inputRange: [0, 1], outputRange: ['0deg', spinDeg] });
+
+        return (
+          <Animated.Text
+            key={i}
+            style={[
+              confettiStyles.confettiPiece,
+              { opacity, transform: [{ translateX }, { translateY }, { scale }, { rotate }] },
+            ]}
+          >
+            {CONFETTI_EMOJIS[i % CONFETTI_EMOJIS.length]}
+          </Animated.Text>
+        );
+      })}
+    </View>
+  );
+}
+
+const confettiStyles = StyleSheet.create({
+  confettiLayer: {
+    position: 'absolute',
+    top: AVATAR_SMALL_SIZE / 2,
+    left: AVATAR_SMALL_SIZE / 2,
+    width: 0,
+    height: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confettiPiece: {
+    position: 'absolute',
+    fontSize: 15,
+  },
+});
+
 /** 홈 화면 최상단 아이 프로필 행 — 스크롤해도 화면 상단에 고정되는 헤더로 app/index.tsx에서 ScrollView 바깥에 렌더링된다. */
-export default function HomeProfileBar({ selectedChild, onPressChild }: HomeProfileBarProps) {
+export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBurstKey }: HomeProfileBarProps) {
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -47,6 +126,7 @@ export default function HomeProfileBar({ selectedChild, onPressChild }: HomeProf
             </View>
           )}
           <View style={styles.onlineDot} />
+          {birthdayBurstKey !== undefined && <BirthdayBurst triggerKey={birthdayBurstKey} />}
         </View>
         <View style={styles.profileTextBlock}>
           <View style={styles.nameRow}>

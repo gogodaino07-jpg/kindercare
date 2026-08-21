@@ -25,7 +25,7 @@ import { getDisplayItems } from '../hooks/useLocalChecklist';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
 import { Event, EventItem } from '../types/models';
-import { toISODate } from '../utils/date';
+import { isBirthdayToday, toISODate } from '../utils/date';
 
 // 앱 프로세스가 살아있는 동안 전면 광고는 한 번만 시도한다. 컴포넌트 스코프
 // ref로 관리하면 AI 스캔 후 홈으로 돌아오면서 화면이 다시 마운트될 때마다
@@ -103,6 +103,8 @@ export default function HomeScreen() {
   const progressYRef = useRef(0);
   const progressHeightRef = useRef(0);
   const [stickyVisible, setStickyVisible] = useState(false);
+  const [birthdayBurstKey, setBirthdayBurstKey] = useState(0);
+  const isChildBirthdayToday = isBirthdayToday(selectedChild?.birthdate);
 
   const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
   const todayProgress = useMemo(() => {
@@ -135,8 +137,9 @@ export default function HomeScreen() {
       await weather.retry();
     } finally {
       setRefreshing(false);
+      if (isChildBirthdayToday) setBirthdayBurstKey((k) => k + 1);
     }
-  }, [weather]);
+  }, [weather, isChildBirthdayToday]);
 
   // "오늘 등원 준비물 챙기기" 배너를 누르면 그 배너가 화면 상단(고정 프로필 헤더 바로 아래)으로 오도록 스크롤.
   const scrollToProgress = useCallback(() => {
@@ -198,7 +201,11 @@ export default function HomeScreen() {
   return (
     <ScreenBackground showDots={false}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <HomeProfileBar selectedChild={selectedChild} onPressChild={() => setSwitcherOpen(true)} />
+        <HomeProfileBar
+          selectedChild={selectedChild}
+          onPressChild={() => setSwitcherOpen(true)}
+          birthdayBurstKey={birthdayBurstKey}
+        />
         {!isFamilyOwner && (
           <View style={styles.familyBannerWrap}>
             <LinearGradient
