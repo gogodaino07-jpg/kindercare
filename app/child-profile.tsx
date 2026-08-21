@@ -376,14 +376,15 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       flex: 1,
     },
     content: {
-      padding: 24,
+      paddingHorizontal: 24,
+      paddingTop: 8,
       alignItems: 'center',
       paddingBottom: 100 + bottomInset,
     },
     photoContainer: {
       width: PHOTO_SIZE,
       height: PHOTO_SIZE,
-      marginBottom: 32,
+      marginBottom: 18,
     },
     photo: {
       width: PHOTO_SIZE,
@@ -415,9 +416,9 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       ...SHADOW,
     },
     cameraBadgeIcon: { fontSize: 16 },
-    field: { width: '100%', marginBottom: 20 },
-    label: { fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 8 },
-    fieldHint: { fontSize: 12, color: colors.textSecondary, marginTop: 6 },
+    field: { width: '100%', marginBottom: 14 },
+    label: { fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
+    fieldHint: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
     input: {
       backgroundColor: colors.cardWhite,
       borderRadius: 16,
