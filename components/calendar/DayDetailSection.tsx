@@ -192,10 +192,12 @@ function EventDetailCard({
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     paddingHorizontal: 16,
     gap: 12,
   },
   emptyCard: {
+    flex: 1,
     backgroundColor: t.cardWhite,
     borderRadius: 20,
     borderWidth: 1,
@@ -203,6 +205,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     paddingHorizontal: 20,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyDate: {
     fontSize: 13,
