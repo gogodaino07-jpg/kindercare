@@ -238,9 +238,10 @@ export default function OnboardingChildSetupScreen() {
               setError(false);
             }}
             onFocus={scrollToClassNameInput}
-            placeholder="예: 병아리반, 7세반 (반 구분이 없으면 '없음' 입력)"
+            placeholder="예: 병아리반, 7세반"
             placeholderTextColor={GRAY}
           />
+          <Text style={styles.hintText}>반 구분이 없으면 '없음'이라고 입력해주세요</Text>
           {error && !className.trim() ? (
             <Text style={styles.errorText}>반 이름을 입력해주세요</Text>
           ) : null}
@@ -407,7 +408,7 @@ const styles = StyleSheet.create({
       fontSize: 15,
       color: INK,
       borderWidth: 1.5,
-      borderColor: 'transparent',
+      borderColor: BORDER,
     },
     inputInvalid: {
       borderColor: ERROR_RED,
@@ -417,6 +418,8 @@ const styles = StyleSheet.create({
       borderRadius: 12,
       paddingHorizontal: 14,
       paddingVertical: 12,
+      borderWidth: 1.5,
+      borderColor: BORDER,
     },
     dateButtonText: {
       fontSize: 15,
@@ -427,6 +430,11 @@ const styles = StyleSheet.create({
       color: ERROR_RED,
       fontSize: 12,
       marginTop: 10,
+    },
+    hintText: {
+      color: GRAY,
+      fontSize: 12,
+      marginTop: 6,
     },
     completeButtonShadow: {
       marginHorizontal: 24,

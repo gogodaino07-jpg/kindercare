@@ -296,9 +296,10 @@ export default function ChildProfileScreen() {
             value={className}
             onChangeText={(text) => setClassName(stripInvalidCharacters(text))}
             onFocus={scrollToClassNameInput}
-            placeholder="예: 병아리반, 7세반 (반 구분이 없으면 '없음' 입력)"
+            placeholder="예: 병아리반, 7세반"
             placeholderTextColor="#94A3B8"
           />
+          <Text style={styles.fieldHint}>반 구분이 없으면 '없음'이라고 입력해주세요</Text>
         </View>
 
         {showErrors && <Text style={styles.summaryErrorText}>이름, 나이, 반 이름을 모두 입력해주세요</Text>}
@@ -393,6 +394,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     cameraBadgeIcon: { fontSize: 16 },
     field: { width: '100%', marginBottom: 20 },
     label: { fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 8 },
+    fieldHint: { fontSize: 12, color: colors.textSecondary, marginTop: 6 },
     input: {
       backgroundColor: colors.cardWhite,
       borderRadius: 16,
