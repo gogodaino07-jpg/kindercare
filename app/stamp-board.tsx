@@ -198,14 +198,14 @@ export default function StampBoardScreen() {
     setStampingIndex(currentStamps);
 
     // 도장이 위에서 기울어진 채 크게 내려와 콱 찍히고 살짝 튕기는 "쾅!!" 슬램 애니메이션.
-    stampAnim.setValue(2);
+    stampAnim.setValue(2.6);
     stampRotateAnim.setValue(1);
     Animated.sequence([
       Animated.parallel([
-        Animated.timing(stampAnim, { toValue: 0.85, duration: 130, easing: Easing.in(Easing.quad), useNativeDriver: true }),
-        Animated.timing(stampRotateAnim, { toValue: 0, duration: 130, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+        Animated.timing(stampAnim, { toValue: 0.8, duration: 150, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+        Animated.timing(stampRotateAnim, { toValue: 0, duration: 150, easing: Easing.in(Easing.quad), useNativeDriver: true }),
       ]),
-      Animated.spring(stampAnim, { toValue: 1, friction: 3.5, tension: 220, useNativeDriver: true }),
+      Animated.spring(stampAnim, { toValue: 1, friction: 3, tension: 220, useNativeDriver: true }),
     ]).start(() => {
       addStamp();
       setStampingIndex(null);
@@ -214,22 +214,22 @@ export default function StampBoardScreen() {
 
     // 찍히는 순간 퍼져나가며 사라지는 충격 링.
     stampRingScale.setValue(0.5);
-    stampRingOpacity.setValue(0.65);
+    stampRingOpacity.setValue(0.7);
     Animated.sequence([
-      Animated.delay(120),
+      Animated.delay(130),
       Animated.parallel([
-        Animated.timing(stampRingScale, { toValue: 1.8, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        Animated.timing(stampRingOpacity, { toValue: 0, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(stampRingScale, { toValue: 2.6, duration: 380, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(stampRingOpacity, { toValue: 0, duration: 380, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       ]),
     ]).start();
 
     // 찍히는 순간 튀어나왔다 사라지는 "쾅!!" 텍스트.
-    stampBangScale.setValue(0.5);
+    stampBangScale.setValue(0.4);
     stampBangOpacity.setValue(0);
     Animated.sequence([
-      Animated.delay(110),
+      Animated.delay(130),
       Animated.parallel([
-        Animated.spring(stampBangScale, { toValue: 1, friction: 4, tension: 200, useNativeDriver: true }),
+        Animated.spring(stampBangScale, { toValue: 1.3, friction: 3.5, tension: 200, useNativeDriver: true }),
         Animated.timing(stampBangOpacity, { toValue: 1, duration: 90, useNativeDriver: true }),
       ]),
       Animated.delay(180),
@@ -393,31 +393,33 @@ export default function StampBoardScreen() {
 
           <View style={styles.stickerRow}>
             <Text style={styles.stickerLabel}>스탬프 종류:</Text>
-            <View style={styles.stickerOptions}>
-              {previewStickers.map((stk) => (
-                <Pressable
-                  key={stk}
-                  onPress={() => handleSelectSticker(stk)}
-                  style={[styles.stickerButton, stk === stampIcon && styles.stickerButtonActive]}
-                >
-                  <Text style={styles.stickerEmoji}>{stk}</Text>
-                </Pressable>
-              ))}
+            <View style={styles.stickerRightGroup}>
+              <View style={styles.stickerOptions}>
+                {previewStickers.map((stk) => (
+                  <Pressable
+                    key={stk}
+                    onPress={() => handleSelectSticker(stk)}
+                    style={[styles.stickerButton, stk === stampIcon && styles.stickerButtonActive]}
+                  >
+                    <Text style={styles.stickerEmoji}>{stk}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Pressable
+                onPress={() => setStickerPanelOpen((v) => !v)}
+                style={[styles.stickerMoreButton, { backgroundColor: theme.progressIconBg }]}
+                hitSlop={6}
+              >
+                <Text style={[styles.stickerMoreButtonText, { color: theme.progressIconColor }]}>
+                  {stickerPanelOpen ? '접기' : '더보기'}
+                </Text>
+                <Feather
+                  name={stickerPanelOpen ? 'chevron-up' : 'chevron-down'}
+                  size={12}
+                  color={theme.progressIconColor}
+                />
+              </Pressable>
             </View>
-            <Pressable
-              onPress={() => setStickerPanelOpen((v) => !v)}
-              style={[styles.stickerMoreButton, { backgroundColor: theme.progressIconBg }]}
-              hitSlop={6}
-            >
-              <Text style={[styles.stickerMoreButtonText, { color: theme.progressIconColor }]}>
-                {stickerPanelOpen ? '접기' : '더보기'}
-              </Text>
-              <Feather
-                name={stickerPanelOpen ? 'chevron-up' : 'chevron-down'}
-                size={12}
-                color={theme.progressIconColor}
-              />
-            </Pressable>
           </View>
 
           {stickerPanelOpen && (
@@ -838,11 +840,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.8)',
   },
   stickerLabel: { fontSize: 11.5, fontWeight: '800', color: '#475569' },
-  stickerOptions: { flexDirection: 'row', gap: 4 },
+  stickerRightGroup: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  stickerOptions: { flexDirection: 'row', gap: 5 },
   stickerButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 9,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     opacity: 0.55,
@@ -853,7 +856,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#FCD34D',
   },
-  stickerEmoji: { fontSize: 15 },
+  stickerEmoji: { fontSize: 21 },
   stickerMoreButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -880,7 +883,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     opacity: 0.55,
   },
-  stickerGridEmoji: { fontSize: 20 },
+  stickerGridEmoji: { fontSize: 24 },
   boardFillWrap: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -908,19 +911,19 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderRadius: 999,
-    borderWidth: 3,
+    borderWidth: 4,
     borderColor: '#FCD34D',
   },
   stampBangText: {
     position: 'absolute',
-    top: -16,
+    top: -22,
     alignSelf: 'center',
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: '900',
     color: '#F97316',
     textShadowColor: 'rgba(0,0,0,0.15)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
   },
   stampSlot: {
     width: '100%',
