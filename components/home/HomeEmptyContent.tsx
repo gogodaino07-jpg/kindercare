@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -32,6 +32,14 @@ export default function HomeEmptyContent({
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  // 컨텐츠가 화면에 다 들어갈 때는 스크롤을 아예 막아서(살짝 흔들리는 것 포함)
+  // 완전히 고정되게 하고, 화면보다 길어지는 기기(작은 화면 등)에서만 실제로
+  // 스크롤되게 한다. bounces/overScrollMode만으로는 내용이 화면보다 아주
+  // 조금 더 길 때 생기는 진짜(미세한) 스크롤까지는 못 막아서 별도로 둘 다 잰다.
+  const [containerHeight, setContainerHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const canScroll = contentHeight > containerHeight + 1;
+
   return (
       <ScrollView
         style={styles.flexFill}
@@ -39,6 +47,9 @@ export default function HomeEmptyContent({
         showsVerticalScrollIndicator={false}
         bounces={false}
         overScrollMode="never"
+        scrollEnabled={canScroll}
+        onLayout={(e) => setContainerHeight(e.nativeEvent.layout.height)}
+        onContentSizeChange={(_w, h) => setContentHeight(h)}
       >
         <HomeHeroHeader
           selectedChild={selectedChild}
