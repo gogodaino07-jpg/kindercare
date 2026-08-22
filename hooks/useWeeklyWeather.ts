@@ -35,10 +35,18 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 /** Background auto-refresh cadence — manual refresh is now pull-to-refresh only. */
 const AUTO_REFRESH_MS = 60 * 60 * 1000;
 
-/** 설정에서 날씨 지역을 바꿨을 때 다음 조회가 캐시된 이전 지역 값을 쓰지 않도록 무효화. */
+// 지역이 바뀐 순간 이미 화면에 떠 있는 useWeeklyWeather 인스턴스들에게 바로
+// 알려주기 위한 구독자 목록. 캐시만 지우면(cachedResult=null) 다음 조회부터는
+// 새 지역을 쓰지만, 이미 마운트된 홈 화면은 스스로 다시 불러오지 않아서 당겨서
+// 새로고침하거나 자동 갱신 주기(1시간)가 돌 때까지 예전 지역 값이 그대로 보였다.
+const invalidationListeners = new Set<() => void>();
+
+/** 설정에서 날씨 지역을 바꿨을 때 다음 조회가 캐시된 이전 지역 값을 쓰지 않도록 무효화하고,
+ *  지금 화면에 떠 있는 모든 useWeeklyWeather에 즉시 재조회를 트리거한다. */
 export function invalidateWeatherCache(): void {
   cachedResult = null;
   cachedAt = 0;
+  invalidationListeners.forEach((notify) => notify());
 }
 
 /** GPS 좌표를 "시 구" 정도의 짧은 표기로 역지오코딩. 실패하면 '내 위치'. */
@@ -189,6 +197,16 @@ export function useWeeklyWeather() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 설정 화면에서 지역을 바꿔 invalidateWeatherCache()가 불리면, 당겨서
+  // 새로고침을 하지 않아도 바로 새 지역 기준으로 다시 조회한다.
+  useEffect(() => {
+    const notify = () => load(true);
+    invalidationListeners.add(notify);
+    return () => {
+      invalidationListeners.delete(notify);
+    };
+  }, [load]);
 
   // Background auto-refresh while Home stays mounted, independent of any
   // manual pull-to-refresh the user triggers.
