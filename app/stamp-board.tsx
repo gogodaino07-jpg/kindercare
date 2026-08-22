@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import StampCelebrationEffect from '../components/stampBoard/StampCelebrationEffect';
 import TextInput from '../components/common/ClearableTextInput';
 import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
@@ -139,13 +140,12 @@ export default function StampBoardScreen() {
 
   const stampAnim = useRef(new Animated.Value(1)).current;
   const stampRotateAnim = useRef(new Animated.Value(0)).current;
-  const stampRingScale = useRef(new Animated.Value(0.5)).current;
-  const stampRingOpacity = useRef(new Animated.Value(0)).current;
-  const stampBangScale = useRef(new Animated.Value(0.5)).current;
-  const stampBangOpacity = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
   // 도장이 찍히는 순간 화면 전체가 짧게 흔들리는 효과.
   const screenShakeAnim = useRef(new Animated.Value(0)).current;
+  // 화면 중앙 축하 연출 — 아이콘 종류(무지개/별빛, 풍선, 그 외)에 맞춰 다른 파티클이 재생된다.
+  const [celebrationTriggerKey, setCelebrationTriggerKey] = useState(0);
+  const [celebrationIcon, setCelebrationIcon] = useState('');
   const prevCompletedRef = useRef(isCompleted);
   // 슬램 애니메이션이 끝나야 실제로 칸이 채워지는데, 그 전까지 연타하면 같은 칸이나
   // 다른 칸에 애니메이션이 겹쳐 찍힐 수 있다. ref로 애니메이션 도중엔 새 찍기를 막는다.
@@ -188,6 +188,10 @@ export default function StampBoardScreen() {
 
     setStampingIndex(index);
 
+    // 화면 중앙 축하 연출 트리거 — 아이콘 종류에 맞는 파티클이 재생된다.
+    setCelebrationIcon(stampIcon);
+    setCelebrationTriggerKey((k) => k + 1);
+
     // 도장이 종이에 콱 부딪히는 순간(약 150ms 뒤)에 맞춰 화면이 크게 통통 흔들린다.
     screenShakeAnim.setValue(0);
     Animated.sequence([
@@ -215,30 +219,6 @@ export default function StampBoardScreen() {
       setStampingIndex(null);
       isStampingRef.current = false;
     });
-
-    // 찍히는 순간 퍼져나가며 사라지는 충격 링.
-    stampRingScale.setValue(0.5);
-    stampRingOpacity.setValue(0.7);
-    Animated.sequence([
-      Animated.delay(130),
-      Animated.parallel([
-        Animated.timing(stampRingScale, { toValue: 2.6, duration: 380, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        Animated.timing(stampRingOpacity, { toValue: 0, duration: 380, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      ]),
-    ]).start();
-
-    // 찍히는 순간 튀어나왔다 사라지는 "쾅!!" 텍스트.
-    stampBangScale.setValue(0.4);
-    stampBangOpacity.setValue(0);
-    Animated.sequence([
-      Animated.delay(130),
-      Animated.parallel([
-        Animated.spring(stampBangScale, { toValue: 1.3, friction: 3.5, tension: 200, useNativeDriver: true }),
-        Animated.timing(stampBangOpacity, { toValue: 1, duration: 90, useNativeDriver: true }),
-      ]),
-      Animated.delay(180),
-      Animated.timing(stampBangOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
-    ]).start();
   };
 
   // 하단 "도장 쾅!" 버튼 — 맨 앞의 빈 칸에 자동으로 찍는다.
@@ -589,45 +569,10 @@ export default function StampBoardScreen() {
         {!isSubscribed && <CoupangBanner style={{ paddingBottom: insets.bottom }} />}
       </SafeAreaView>
 
-      {/* 도장 찍는 순간 화면 정중앙에 크게 터지는 연출 — 실제로 찍히는 스탬프 아이콘이
-          슬롯과 똑같이 내려와 콱 찍히고, 충격 링과 "쾅!!" 문구가 함께 터진다. 화면
-          전체는 screenShakeStyle로 동시에 짧게 흔들린다. */}
-      {stampingIndex !== null && (
-        <View pointerEvents="none" style={styles.centerBangLayer}>
-          <Animated.View
-            style={[
-              styles.centerBangRing,
-              { opacity: stampRingOpacity, transform: [{ scale: stampRingScale }] },
-            ]}
-          />
-          <Animated.Text
-            style={[
-              styles.centerStampIcon,
-              {
-                transform: [
-                  { scale: stampAnim },
-                  {
-                    rotate: stampRotateAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0deg', '-14deg'],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            {stampIcon}
-          </Animated.Text>
-          <Animated.Text
-            style={[
-              styles.centerBangText,
-              { opacity: stampBangOpacity, transform: [{ scale: stampBangScale }] },
-            ]}
-          >
-            쾅!!
-          </Animated.Text>
-        </View>
-      )}
+      {/* 도장 찍는 순간 화면 중앙에 아이콘 종류에 맞는 연출이 재생된다(무지개/별빛류는
+          빛줄기, 풍선류는 두둥실, 그 외는 팡팡 터짐). 화면 전체는 screenShakeStyle로
+          동시에 짧게 흔들린다. */}
+      <StampCelebrationEffect triggerKey={celebrationTriggerKey} icon={celebrationIcon} />
 
       {/* 목표 달성 축하 오버레이 */}
       <Modal visible={isCompleted} animationType="fade" transparent>
@@ -977,39 +922,6 @@ const styles = StyleSheet.create({
   },
   stampSlotWrap: { width: '20%', aspectRatio: 1, padding: 5, alignItems: 'center', justifyContent: 'center' },
   stampSlotAnimatedWrap: { width: '100%', height: '100%', position: 'relative' },
-  centerBangLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 20,
-  },
-  centerBangRing: {
-    position: 'absolute',
-    width: 160,
-    height: 160,
-    borderRadius: 999,
-    borderWidth: 8,
-    borderColor: '#FCD34D',
-  },
-  centerStampIcon: {
-    fontSize: 110,
-    textShadowColor: 'rgba(0,0,0,0.25)',
-    textShadowOffset: { width: 0, height: 3 },
-    textShadowRadius: 8,
-  },
-  centerBangText: {
-    marginTop: 4,
-    fontSize: 40,
-    fontWeight: '900',
-    color: '#F97316',
-    textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
-  },
   stampSlot: {
     width: '100%',
     height: '100%',
