@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -156,6 +156,7 @@ export default function HomeHeroHeader({
 }: HomeHeroHeaderProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [weatherExpanded, setWeatherExpanded] = useState(true);
 
   const today = weatherDays?.find((d) => d.isToday);
   const tomorrow = weatherDays?.find((d) => d.isTomorrow);
@@ -241,74 +242,109 @@ export default function HomeHeroHeader({
         </Pressable>
       </LinearGradient>
 
-      {!!locationLabel && (
+      {weatherExpanded && (
         <View style={styles.weatherMetaRow}>
-          <Text style={styles.weatherMetaText} numberOfLines={1}>
-            📍{locationLabel} · {WEATHER_SOURCE_LABEL} 제공
-          </Text>
+          {locationLabel ? (
+            <Text style={styles.weatherMetaText} numberOfLines={1}>
+              📍{locationLabel} · {WEATHER_SOURCE_LABEL} 제공
+            </Text>
+          ) : (
+            <View />
+          )}
+          <Pressable onPress={() => setWeatherExpanded(false)} style={styles.weatherToggleButton} hitSlop={8}>
+            <Text style={styles.weatherToggleText}>접기</Text>
+            <Feather name="chevron-up" size={12} color={colors.gray400} />
+          </Pressable>
         </View>
       )}
 
-      <View style={styles.weatherHeroRow}>
-        <View style={styles.todayCardWrapper}>
-          {weatherLoading && !today ? (
-            <SkeletonBox style={[styles.todayCard, styles.skeleton]} />
-          ) : (
-            <Pressable style={styles.todayCardPressable} onPress={() => today && onPressDate(today.date)}>
-              <LinearGradient
-                colors={getWeatherGradient(today?.label ?? '')}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.todayCard}
-              >
-                <Text style={styles.todayDateText}>오늘 {today ? formatMD(today.date) : ''}</Text>
-                <View style={styles.todayTipCenter}>
-                  <View style={styles.todayTipBox}>
-                    <AnimatedWeatherEmoji
-                      emoji={today?.emoji ?? '🌤️'}
-                      label={today?.label ?? ''}
-                      style={styles.todayEmoji}
-                    />
-                    <Text style={styles.todayTipText} numberOfLines={2}>
-                      {describeGuideTip(today?.label ?? '')}
-                    </Text>
+      {weatherExpanded ? (
+        <View style={styles.weatherHeroRow}>
+          <View style={styles.todayCardWrapper}>
+            {weatherLoading && !today ? (
+              <SkeletonBox style={[styles.todayCard, styles.skeleton]} />
+            ) : (
+              <Pressable style={styles.todayCardPressable} onPress={() => today && onPressDate(today.date)}>
+                <LinearGradient
+                  colors={getWeatherGradient(today?.label ?? '')}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.todayCard}
+                >
+                  <Text style={styles.todayDateText}>오늘 {today ? formatMD(today.date) : ''}</Text>
+                  <View style={styles.todayTipCenter}>
+                    <View style={styles.todayTipBox}>
+                      <AnimatedWeatherEmoji
+                        emoji={today?.emoji ?? '🌤️'}
+                        label={today?.label ?? ''}
+                        style={styles.todayEmoji}
+                      />
+                      <Text style={styles.todayTipText} numberOfLines={2}>
+                        {describeGuideTip(today?.label ?? '')}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-                <View style={styles.todayTempRow}>
-                  <View style={styles.todayTempItem}>
-                    <Text style={styles.todayTempLabel}>최고</Text>
-                    <Text style={styles.todayTempText}>{today?.tempMax ?? '--'}°</Text>
+                  <View style={styles.todayTempRow}>
+                    <View style={styles.todayTempItem}>
+                      <Text style={styles.todayTempLabel}>최고</Text>
+                      <Text style={styles.todayTempText}>{today?.tempMax ?? '--'}°</Text>
+                    </View>
+                    <View style={styles.todayTempItem}>
+                      <Text style={styles.todayTempLabel}>최저</Text>
+                      <Text style={styles.todayTempMinText}>{today?.tempMin ?? '--'}°</Text>
+                    </View>
                   </View>
-                  <View style={styles.todayTempItem}>
-                    <Text style={styles.todayTempLabel}>최저</Text>
-                    <Text style={styles.todayTempMinText}>{today?.tempMin ?? '--'}°</Text>
-                  </View>
-                </View>
-                {tempCompareTip && (
-                  <Text style={styles.todayCompareText} numberOfLines={1}>{tempCompareTip}</Text>
-                )}
-              </LinearGradient>
-            </Pressable>
-          )}
-        </View>
+                  {tempCompareTip && (
+                    <Text style={styles.todayCompareText} numberOfLines={1}>{tempCompareTip}</Text>
+                  )}
+                </LinearGradient>
+              </Pressable>
+            )}
+          </View>
 
-        <View style={styles.miniCardColumn}>
-          <MiniWeatherCard
-            label="내일"
-            day={tomorrow}
-            loading={weatherLoading && !tomorrow}
-            variant="peach"
-            onPress={() => tomorrow && onPressDate(tomorrow.date)}
-          />
-          <MiniWeatherCard
-            label="모레"
-            day={dayAfter}
-            loading={weatherLoading && !dayAfter}
-            variant="plain"
-            onPress={() => dayAfter && onPressDate(dayAfter.date)}
-          />
+          <View style={styles.miniCardColumn}>
+            <MiniWeatherCard
+              label="내일"
+              day={tomorrow}
+              loading={weatherLoading && !tomorrow}
+              variant="peach"
+              onPress={() => tomorrow && onPressDate(tomorrow.date)}
+            />
+            <MiniWeatherCard
+              label="모레"
+              day={dayAfter}
+              loading={weatherLoading && !dayAfter}
+              variant="plain"
+              onPress={() => dayAfter && onPressDate(dayAfter.date)}
+            />
+          </View>
         </View>
-      </View>
+      ) : (
+        <Pressable onPress={() => setWeatherExpanded(true)}>
+          <LinearGradient
+            colors={weatherLoading && !today ? ['#E2E8F0', '#E2E8F0'] : getWeatherGradient(today?.label ?? '')}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.weatherCollapsedBanner}
+          >
+            {weatherLoading && !today ? (
+              <Text style={styles.weatherCollapsedText}>날씨 불러오는 중...</Text>
+            ) : (
+              <>
+                <AnimatedWeatherEmoji
+                  emoji={today?.emoji ?? '🌤️'}
+                  label={today?.label ?? ''}
+                  style={styles.weatherCollapsedEmoji}
+                />
+                <Text style={styles.weatherCollapsedText} numberOfLines={1}>
+                  오늘 {today?.label ?? '날씨'} · 최고 {today?.tempMax ?? '--'}° / 최저 {today?.tempMin ?? '--'}°
+                </Text>
+              </>
+            )}
+            <Feather name="chevron-down" size={16} color="#FFFFFF" />
+          </LinearGradient>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -515,6 +551,9 @@ function createStyles(colors: ThemeColors) {
       color: '#5C4A1E',
     },
     weatherMetaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       paddingHorizontal: 24,
       marginBottom: 6,
     },
@@ -522,6 +561,39 @@ function createStyles(colors: ThemeColors) {
       fontSize: 10.5,
       fontWeight: '600',
       color: colors.gray400,
+      flexShrink: 1,
+    },
+    weatherToggleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+    },
+    weatherToggleText: {
+      fontSize: 10.5,
+      fontWeight: '700',
+      color: colors.gray400,
+    },
+    weatherCollapsedBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      marginHorizontal: 20,
+      marginBottom: 16,
+      borderRadius: 18,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      ...SHADOW,
+      shadowOpacity: 0.1,
+      elevation: 2,
+    },
+    weatherCollapsedEmoji: {
+      fontSize: 18,
+    },
+    weatherCollapsedText: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: '#FFFFFF',
     },
     weatherHeroRow: {
       flexDirection: 'row',
