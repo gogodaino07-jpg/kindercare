@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getStoredWeatherRegionCoords } from './useWeatherRegion';
 import { formatMD, toISODate } from '../utils/date';
 import { withExternalAction } from '../utils/externalAction';
@@ -32,8 +32,13 @@ const SEOUL_COORDS = { latitude: 37.5665, longitude: 126.978 };
 let cachedResult: WeatherResult | null = null;
 let cachedAt = 0;
 const CACHE_TTL_MS = 60 * 60 * 1000;
+// 지역을 빠르게 연달아 바꿀 때 이전(느리게 도착한) 응답이 최신 응답을 덮어쓰지
+// 않도록, 응답을 반영하기 전에 "그 요청이 여전히 최신 요청인지" 확인한다.
+let latestRequestId = 0;
 /** Background auto-refresh cadence — manual refresh is now pull-to-refresh only. */
 const AUTO_REFRESH_MS = 60 * 60 * 1000;
+/** 지역 칩을 연달아 빠르게 바꿀 때, 마지막 선택 후 이만큼 조용해야 실제로 재조회한다. */
+const REGION_CHANGE_DEBOUNCE_MS = 400;
 
 // 지역이 바뀐 순간 이미 화면에 떠 있는 useWeeklyWeather 인스턴스들에게 바로
 // 알려주기 위한 구독자 목록. 캐시만 지우면(cachedResult=null) 다음 조회부터는
@@ -179,17 +184,20 @@ export function useWeeklyWeather() {
     }
     setLoading(true);
     setError(null);
+    const requestId = ++latestRequestId;
     try {
       const result = await withExternalAction(fetchWeeklyWeather);
+      if (requestId !== latestRequestId) return; // 그 사이 더 최신 요청이 나감 — 이 결과는 버린다.
       cachedResult = result;
       cachedAt = Date.now();
       setRawDays(result.days);
       setUsingFallbackLocation(result.usingFallbackLocation);
       setLocationLabel(result.locationLabel);
     } catch (e) {
+      if (requestId !== latestRequestId) return;
       setError(e instanceof Error ? e.message : '날씨 정보를 가져오지 못했어요');
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestId) setLoading(false);
     }
   }, []);
 
@@ -199,12 +207,19 @@ export function useWeeklyWeather() {
   }, []);
 
   // 설정 화면에서 지역을 바꿔 invalidateWeatherCache()가 불리면, 당겨서
-  // 새로고침을 하지 않아도 바로 새 지역 기준으로 다시 조회한다.
+  // 새로고침을 하지 않아도 바로 새 지역 기준으로 다시 조회한다. 지역 칩을
+  // 빠르게 연달아 누르는 경우까지 매번 즉시 호출하면 API가 낭비되니, 마지막
+  // 선택 후 잠깐(REGION_CHANGE_DEBOUNCE_MS) 조용할 때만 한 번 호출한다.
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    const notify = () => load(true);
+    const notify = () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = setTimeout(() => load(true), REGION_CHANGE_DEBOUNCE_MS);
+    };
     invalidationListeners.add(notify);
     return () => {
       invalidationListeners.delete(notify);
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
   }, [load]);
 
