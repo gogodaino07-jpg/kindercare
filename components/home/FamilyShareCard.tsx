@@ -7,9 +7,18 @@ import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { Event } from '../../types/models';
 import Text from '../common/AppText';
 
+function hasFinalConsonant(text: string): boolean {
+  const trimmed = text.trim();
+  const code = trimmed.charCodeAt(trimmed.length - 1);
+  if (code < 0xac00 || code > 0xd7a3) return true;
+  return (code - 0xac00) % 28 !== 0;
+}
+
 interface FamilyShareCardProps {
-  /** 공유 문구를 만드는 데 쓰는 오늘 일정 목록. */
-  mainEvents: Event[];
+  /** 공유 문구를 만드는 데 쓰는 일정 목록 — 지금 보고 있는 탭(오늘/내일/모레) 기준. */
+  events: Event[];
+  /** "오늘"/"내일"/"모레" — 지금 보고 있는 탭에 맞춰 문구에 그대로 들어간다. */
+  dayLabel: string;
 }
 
 /**
@@ -17,18 +26,19 @@ interface FamilyShareCardProps {
  * 바로 위에 붙어서, 일정이 없어 스크롤 내용이 짧을 때도 밑에 빈 여백이
  * 생기지 않게 한다.
  */
-export default function FamilyShareCard({ mainEvents }: FamilyShareCardProps) {
+export default function FamilyShareCard({ events, dayLabel }: FamilyShareCardProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const handleShare = () => {
-    const lines = mainEvents.flatMap((event) => {
+    const lines = events.flatMap((event) => {
       const items = getDisplayItems(event);
       return items.length > 0 ? [`• ${event.title}: ${items.map((i) => i.name).join(', ')}`] : [];
     });
+    const particle = hasFinalConsonant(dayLabel) ? '은' : '는';
     const message = lines.length > 0
-      ? `오늘 챙길 준비물이에요!\n${lines.join('\n')}`
-      : '오늘은 따로 챙길 준비물이 없어요!';
+      ? `${dayLabel} 챙길 준비물이에요!\n${lines.join('\n')}`
+      : `${dayLabel}${particle} 따로 챙길 준비물이 없어요!`;
     Share.share({ message }).catch(() => {});
   };
 
@@ -40,7 +50,7 @@ export default function FamilyShareCard({ mainEvents }: FamilyShareCardProps) {
         </View>
         <View style={styles.shareTextBlock}>
           <Text style={styles.shareTitle}>가족과 함께 보기</Text>
-          <Text style={styles.shareSubtitle}>오늘 챙길 준비물을 가족에게 전달해보세요.</Text>
+          <Text style={styles.shareSubtitle}>{dayLabel} 챙길 준비물을 가족에게 전달해보세요.</Text>
         </View>
       </View>
       <Pressable style={styles.shareButton} onPress={handleShare}>

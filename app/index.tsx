@@ -165,6 +165,18 @@ export default function HomeScreen() {
     else setActiveTab('today');
   }, []);
 
+  // 가족 공유 카드는 지금 보고 있는 탭(오늘/내일/모레) 기준으로 내용을 만든다.
+  const dayAfterTomorrowISO = useMemo(
+    () => toISODate(new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)),
+    []
+  );
+  const activeDayEvents = useMemo(() => {
+    if (activeTab === 'today') return upcoming.mainEvents;
+    if (activeTab === 'tomorrow') return upcoming.secondaryEvents;
+    return upcoming.laterGroups.find((g) => g.date === dayAfterTomorrowISO)?.events ?? [];
+  }, [activeTab, upcoming, dayAfterTomorrowISO]);
+  const activeDayLabel = activeTab === 'today' ? '오늘' : activeTab === 'tomorrow' ? '내일' : '모레';
+
   // Show ad popup once per app session when app is ready — never while the
   // app-lock screen is still up, since a native Modal always renders above it
   // regardless of z-index and would visually jump the ad in front of the
@@ -296,7 +308,7 @@ export default function HomeScreen() {
       <BirthdayCenterConfetti triggerKey={birthdayBurstKey} />
 
       <View style={[styles.bottomFixedStack, { bottom: insets.bottom }]}>
-        {!upcoming.isEmpty && <FamilyShareCard mainEvents={upcoming.mainEvents} />}
+        {!upcoming.isEmpty && <FamilyShareCard events={activeDayEvents} dayLabel={activeDayLabel} />}
         {!isSubscribed && <CoupangBanner />}
       </View>
 
