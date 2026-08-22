@@ -1,7 +1,18 @@
+import { Feather } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  interpolate,
+  runOnJS,
+  useAnimatedRef,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdPopupModal from '../components/home/AdPopupModal';
 import BirthdayCenterConfetti from '../components/home/BirthdayCenterConfetti';
@@ -44,6 +55,11 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     scrollContainer: {
       paddingBottom: 230 + bottomInset,
+    },
+    pullIndicator: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
     },
     bottomFixedStack: {
       position: 'absolute',
@@ -100,7 +116,7 @@ export default function HomeScreen() {
   const [adPopupVisible, setAdPopupVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<ScheduleTab>('today');
   const [refreshing, setRefreshing] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const progressYRef = useRef(0);
   const progressHeightRef = useRef(0);
   const [stickyVisible, setStickyVisible] = useState(false);
@@ -150,11 +166,60 @@ export default function HomeScreen() {
   }, []);
 
   // 준비물 배너가 절반 이상 스크롤로 가려지면, 상단에 얇은 진행률 띠를 대신 보여준다.
-  const handleScroll = useCallback((e: { nativeEvent: { contentOffset: { y: number } } }) => {
-    const scrollY = e.nativeEvent.contentOffset.y;
+  const handleScroll = useCallback((y: number) => {
     const bannerHalfway = progressYRef.current + progressHeightRef.current / 2;
-    setStickyVisible(progressHeightRef.current > 0 && scrollY > bannerHalfway);
+    setStickyVisible(progressHeightRef.current > 0 && y > bannerHalfway);
   }, []);
+
+  // 네이티브 RefreshControl은 당김 거리를 조절하는 방법이 없어(짧게만 당겨도
+  // 바로 새로고침돼 불편하다는 피드백), 직접 손가락 이동량을 추적하는 커스텀
+  // 당겨서 새로고침으로 바꿨다. 목록이 맨 위(scrollY<=0)일 때만 반응하고,
+  // PULL_TRIGGER만큼 당겨야(네이티브보다 더 많이) 새로고침이 실행된다.
+  const PULL_TRIGGER = 110;
+  const pullY = useSharedValue(0);
+  const scrollYShared = useSharedValue(0);
+  const refreshingShared = useSharedValue(false);
+  useEffect(() => {
+    refreshingShared.value = refreshing;
+  }, [refreshing, refreshingShared]);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      scrollYShared.value = e.contentOffset.y;
+      runOnJS(handleScroll)(e.contentOffset.y);
+    },
+  });
+
+  const triggerRefresh = useCallback(() => {
+    onRefresh().finally(() => {
+      pullY.value = withTiming(0);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onRefresh]);
+
+  const pullGesture = Gesture.Pan()
+    .activeOffsetY([-1000, 10])
+    .failOffsetX([-20, 20])
+    .onChange((e) => {
+      if (refreshingShared.value || scrollYShared.value > 0.5) return;
+      pullY.value = Math.max(0, Math.min(pullY.value + e.changeY, PULL_TRIGGER * 1.3));
+    })
+    .onEnd(() => {
+      if (refreshingShared.value) return;
+      if (pullY.value >= PULL_TRIGGER) {
+        pullY.value = withTiming(56);
+        runOnJS(triggerRefresh)();
+      } else {
+        pullY.value = withTiming(0);
+      }
+    });
+  const nativeScrollGesture = Gesture.Native();
+  const homeScrollGesture = Gesture.Simultaneous(pullGesture, nativeScrollGesture);
+
+  const pullIndicatorStyle = useAnimatedStyle(() => ({ height: pullY.value }));
+  const pullArrowStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${interpolate(pullY.value, [0, PULL_TRIGGER], [0, 180], 'clamp')}deg` }],
+  }));
 
   // 오늘/내일/모레 날씨 카드를 누르면 스크롤 대신 해당 탭으로 바로 전환.
   const onDatePress = useCallback((date: string) => {
@@ -256,16 +321,26 @@ export default function HomeScreen() {
           />
         ) : (
           <>
-            <ScrollView
-              ref={scrollRef}
-              style={styles.mainContainer}
-              contentContainerStyle={styles.scrollContainer}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="always"
-              onScroll={handleScroll}
-              scrollEventThrottle={16}
-              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-            >
+            <GestureDetector gesture={homeScrollGesture}>
+              <Animated.ScrollView
+                ref={scrollRef}
+                style={styles.mainContainer}
+                contentContainerStyle={styles.scrollContainer}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="always"
+                onScroll={scrollHandler}
+                scrollEventThrottle={16}
+                overScrollMode="never"
+              >
+              <Animated.View style={[styles.pullIndicator, pullIndicatorStyle]}>
+                {refreshing ? (
+                  <ActivityIndicator color={colors.gray400} />
+                ) : (
+                  <Animated.View style={pullArrowStyle}>
+                    <Feather name="arrow-down" size={18} color={colors.gray400} />
+                  </Animated.View>
+                )}
+              </Animated.View>
               <HomeHeroHeader
                 selectedChild={selectedChild}
                 onPressMeal={() => setMealSheetOpen(true)}
@@ -300,7 +375,8 @@ export default function HomeScreen() {
                 onToggleItem={handleToggleItem}
                 onToggleAll={handleToggleAll}
               />
-            </ScrollView>
+              </Animated.ScrollView>
+            </GestureDetector>
           </>
         )}
       </SafeAreaView>
