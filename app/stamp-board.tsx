@@ -450,15 +450,6 @@ export default function StampBoardScreen() {
                           },
                         ]}
                       >
-                        {isJustStamped && (
-                          <Animated.View
-                            pointerEvents="none"
-                            style={[
-                              styles.stampImpactRing,
-                              { opacity: stampRingOpacity, transform: [{ scale: stampRingScale }] },
-                            ]}
-                          />
-                        )}
                         <LinearGradient
                           colors={['#FEF3C7', '#FCE7F3', '#E0F2FE']}
                           start={{ x: 0, y: 0 }}
@@ -470,17 +461,6 @@ export default function StampBoardScreen() {
                             <Text style={styles.stampIndexText}>{index + 1}</Text>
                           </View>
                         </LinearGradient>
-                        {isJustStamped && (
-                          <Animated.Text
-                            pointerEvents="none"
-                            style={[
-                              styles.stampBangText,
-                              { opacity: stampBangOpacity, transform: [{ scale: stampBangScale }] },
-                            ]}
-                          >
-                            쾅!!
-                          </Animated.Text>
-                        )}
                       </Animated.View>
                     ) : (
                       <View style={[styles.stampSlot, styles.stampSlotInactive]}>
@@ -539,6 +519,27 @@ export default function StampBoardScreen() {
 
         {!isSubscribed && <CoupangBanner style={{ paddingBottom: insets.bottom }} />}
       </SafeAreaView>
+
+      {/* 도장 찍는 순간 화면 정중앙에 크게 터지는 "쾅!!" 연출. 슬롯 쪽엔 도장 아이콘이
+          내려와 콱 찍히는 동작만 남기고, 링/텍스트 이펙트는 여기 하나로 모았다. */}
+      {stampingIndex !== null && (
+        <View pointerEvents="none" style={styles.centerBangLayer}>
+          <Animated.View
+            style={[
+              styles.centerBangRing,
+              { opacity: stampRingOpacity, transform: [{ scale: stampRingScale }] },
+            ]}
+          />
+          <Animated.Text
+            style={[
+              styles.centerBangText,
+              { opacity: stampBangOpacity, transform: [{ scale: stampBangScale }] },
+            ]}
+          >
+            쾅!!
+          </Animated.Text>
+        </View>
+      )}
 
       {/* 목표 달성 축하 오버레이 */}
       <Modal visible={isCompleted} animationType="fade" transparent>
@@ -887,26 +888,31 @@ const styles = StyleSheet.create({
   },
   stampSlotWrap: { width: '20%', aspectRatio: 1, padding: 5, alignItems: 'center', justifyContent: 'center' },
   stampSlotAnimatedWrap: { width: '100%', height: '100%', position: 'relative' },
-  stampImpactRing: {
+  centerBangLayer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+  },
+  centerBangRing: {
+    position: 'absolute',
+    width: 160,
+    height: 160,
     borderRadius: 999,
-    borderWidth: 4,
+    borderWidth: 8,
     borderColor: '#FCD34D',
   },
-  stampBangText: {
-    position: 'absolute',
-    top: -22,
-    alignSelf: 'center',
-    fontSize: 24,
+  centerBangText: {
+    fontSize: 84,
     fontWeight: '900',
     color: '#F97316',
-    textShadowColor: 'rgba(0,0,0,0.15)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
   },
   stampSlot: {
     width: '100%',
