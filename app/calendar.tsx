@@ -294,7 +294,13 @@ export default function CalendarScreen() {
             overScrollMode="always"
             refreshControl={
               isExpanded ? (
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.textSecondary} />
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  tintColor={t.textSecondary}
+                  colors={[t.textSecondary]}
+                  progressBackgroundColor={t.cardWhite}
+                />
               ) : undefined
             }
           >
