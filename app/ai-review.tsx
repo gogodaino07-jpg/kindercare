@@ -110,6 +110,16 @@ export default function AIReviewScreen() {
     [draftEvents]
   );
 
+  // 추출된 일정 날짜가 하나도 빠짐없이 전부 오늘보다 과거면, 지난주 이전 알림장을
+  // 잘못 업로드했을 가능성이 높다고 보고 경고 배너를 띄운다. 상대적 표현("이번주
+  // 목요일" 등)은 AI가 오늘 기준으로 계산해버리므로 이 방식으로는 못 잡아내고,
+  // 문서에 실제 날짜가 인쇄돼 있던 경우만 감지된다.
+  const todayISO = useMemo(() => toISODate(new Date()), []);
+  const looksLikePastNewsletter = useMemo(
+    () => draftEvents.length > 0 && draftEvents.every((e) => e.date < todayISO),
+    [draftEvents, todayISO]
+  );
+
   const updateDraft = (localId: string, patch: Partial<DraftEvent>) => {
     setDraftEvents((prev) => prev.map((e) => (e.localId === localId ? { ...e, ...patch } : e)));
   };
@@ -219,6 +229,15 @@ export default function AIReviewScreen() {
           </Pressable>
         </View>
       </View>
+
+      {looksLikePastNewsletter && (
+        <View style={styles.pastNoticeBanner}>
+          <Feather name="alert-triangle" size={14} color={C.amber700} />
+          <Text style={styles.pastNoticeText}>
+            추출된 일정이 모두 지난 날짜예요. 혹시 지난 주 알림장을 올리신 게 아닌지 확인해보세요.
+          </Text>
+        </View>
+      )}
 
       {showOriginal && (
         <View style={styles.originalWrap}>
@@ -421,6 +440,17 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 16, fontWeight: '900', color: C.slate900 },
   extractedBadge: { backgroundColor: C.emerald100, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 },
   extractedBadgeText: { fontSize: 10, fontWeight: '700', color: C.emerald800 },
+  pastNoticeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: C.amber50,
+    borderBottomWidth: 1,
+    borderBottomColor: C.amber200,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  pastNoticeText: { flex: 1, fontSize: 12.5, fontWeight: '700', color: C.amber700, lineHeight: 17 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   togglePill: {
     flexDirection: 'row',

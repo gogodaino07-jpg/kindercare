@@ -85,7 +85,7 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
     })
     .onEnd((event) => {
       if (event.velocityY > 500 || event.translationY > 120) {
-        handleClose();
+        runOnJS(handleClose)();
       } else {
         translateY.value = withTiming(0, { duration: 250 });
       }
