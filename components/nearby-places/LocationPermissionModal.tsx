@@ -29,10 +29,12 @@ export default function LocationPermissionModal({ visible, onAllow, onSkip }: Lo
   };
 
   return (
-    <Modal visible={visible} transparent onRequestClose={onSkip}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onSkip}>
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <Text style={styles.icon}>📍</Text>
+          <View style={styles.iconBadge}>
+            <Text style={styles.icon}>📍</Text>
+          </View>
           <Text style={styles.title}>가까운 나들이 장소를{'\n'}찾아드릴게요</Text>
           <Text style={styles.description}>
             현재 위치를 기반으로{'\n'}아이와 가기 좋은 장소를 추천하려면{'\n'}위치 권한이 필요해요
@@ -55,45 +57,68 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(20, 24, 22, 0.5)',
+      backgroundColor: 'rgba(15, 18, 17, 0.6)',
       alignItems: 'center',
       justifyContent: 'center',
       padding: 28,
     },
     card: {
       width: '100%',
-      maxWidth: 380,
-      backgroundColor: colors.creamBeigeCard,
-      borderRadius: 24,
-      padding: 24,
+      maxWidth: 340,
+      backgroundColor: colors.cardWhite,
+      borderRadius: 30,
+      borderWidth: 1,
+      borderColor: 'rgba(0,0,0,0.045)',
+      paddingHorizontal: 26,
+      paddingTop: 26,
+      paddingBottom: 22,
       alignItems: 'center',
       ...SHADOW,
+      shadowOpacity: 0.18,
+      shadowRadius: 24,
+      shadowOffset: { width: 0, height: 12 },
+      elevation: 10,
+    },
+    iconBadge: {
+      width: 56,
+      height: 56,
+      borderRadius: 18,
+      backgroundColor: colors.gray100,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 14,
     },
     icon: {
-      fontSize: 40,
-      marginBottom: 12,
+      fontSize: 26,
     },
     title: {
       fontSize: 18,
       fontWeight: '800',
       color: colors.textPrimary,
       textAlign: 'center',
-      marginBottom: 10,
+      marginBottom: 8,
       lineHeight: 24,
+      letterSpacing: -0.2,
     },
     description: {
-      fontSize: 13,
+      fontSize: 14,
       color: colors.textSecondary,
       textAlign: 'center',
-      lineHeight: 19,
-      marginBottom: 20,
+      lineHeight: 21,
+      marginBottom: 18,
     },
     allowButton: {
       width: '100%',
-      backgroundColor: colors.coralPink,
-      borderRadius: 14,
+      backgroundColor: colors.accent,
+      borderRadius: 16,
       paddingVertical: 14,
       alignItems: 'center',
+      ...SHADOW,
+      shadowOpacity: 0.22,
+      shadowColor: colors.accent,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 3,
     },
     allowButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
     laterButton: {
