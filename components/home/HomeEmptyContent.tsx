@@ -33,7 +33,13 @@ export default function HomeEmptyContent({
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
-      <ScrollView style={styles.flexFill} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.flexFill}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        overScrollMode="never"
+      >
         <HomeHeroHeader
           selectedChild={selectedChild}
           onPressMeal={onPressMeal}
