@@ -144,6 +144,8 @@ export default function StampBoardScreen() {
   const stampBangScale = useRef(new Animated.Value(0.5)).current;
   const stampBangOpacity = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
+  // 도장이 찍히는 순간 화면 전체가 짧게 흔들리는 효과.
+  const screenShakeAnim = useRef(new Animated.Value(0)).current;
   const prevCompletedRef = useRef(isCompleted);
   // 슬램 애니메이션이 끝나야 실제로 칸이 채워지는데, 그 전까지 연타하면 같은 칸이나
   // 다른 칸에 애니메이션이 겹쳐 찍힐 수 있다. ref로 애니메이션 도중엔 새 찍기를 막는다.
@@ -179,6 +181,17 @@ export default function StampBoardScreen() {
     if (soundEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 
     setStampingIndex(index);
+
+    // 도장이 종이에 콱 부딪히는 순간(약 150ms 뒤)에 맞춰 화면이 짧게 흔들린다.
+    screenShakeAnim.setValue(0);
+    Animated.sequence([
+      Animated.delay(140),
+      Animated.timing(screenShakeAnim, { toValue: 1, duration: 35, useNativeDriver: true }),
+      Animated.timing(screenShakeAnim, { toValue: -1, duration: 35, useNativeDriver: true }),
+      Animated.timing(screenShakeAnim, { toValue: 0.6, duration: 35, useNativeDriver: true }),
+      Animated.timing(screenShakeAnim, { toValue: -0.6, duration: 35, useNativeDriver: true }),
+      Animated.timing(screenShakeAnim, { toValue: 0, duration: 35, useNativeDriver: true }),
+    ]).start();
 
     stampAnim.setValue(2.6);
     stampRotateAnim.setValue(1);
@@ -285,8 +298,19 @@ export default function StampBoardScreen() {
     setStickerPanelOpen(false);
   };
 
+  const screenShakeStyle = {
+    transform: [
+      {
+        translateX: screenShakeAnim.interpolate({
+          inputRange: [-1, 1],
+          outputRange: [-8, 8],
+        }),
+      },
+    ],
+  };
+
   return (
-    <View style={styles.root}>
+    <Animated.View style={[styles.root, screenShakeStyle]}>
       <Stack.Screen options={{ headerShown: false }} />
       <LinearGradient colors={theme.bgGradient} style={StyleSheet.absoluteFill} />
 
@@ -529,7 +553,7 @@ export default function StampBoardScreen() {
           </Animated.View>
 
           <View style={styles.footerBottomRow}>
-            <Text style={styles.footerHint}>칸을 누르면 찍히고, 찍힌 도장을 누르면 지워져요!</Text>
+            <Text style={styles.footerHint}>빈 칸을 누르면 도장이 찍혀요!</Text>
             <Pressable onPress={() => setSoundEnabled(!soundEnabled)} style={styles.soundToggle} hitSlop={6}>
               <Feather
                 name={soundEnabled ? 'volume-2' : 'volume-x'}
@@ -544,8 +568,9 @@ export default function StampBoardScreen() {
         {!isSubscribed && <CoupangBanner style={{ paddingBottom: insets.bottom }} />}
       </SafeAreaView>
 
-      {/* 도장 찍는 순간 화면 정중앙에 크게 터지는 "쾅!!" 연출. 슬롯 쪽엔 도장 아이콘이
-          내려와 콱 찍히는 동작만 남기고, 링/텍스트 이펙트는 여기 하나로 모았다. */}
+      {/* 도장 찍는 순간 화면 정중앙에 크게 터지는 연출 — 실제로 찍히는 스탬프 아이콘이
+          슬롯과 똑같이 내려와 콱 찍히고, 충격 링과 "쾅!!" 문구가 함께 터진다. 화면
+          전체는 screenShakeStyle로 동시에 짧게 흔들린다. */}
       {stampingIndex !== null && (
         <View pointerEvents="none" style={styles.centerBangLayer}>
           <Animated.View
@@ -554,6 +579,24 @@ export default function StampBoardScreen() {
               { opacity: stampRingOpacity, transform: [{ scale: stampRingScale }] },
             ]}
           />
+          <Animated.Text
+            style={[
+              styles.centerStampIcon,
+              {
+                transform: [
+                  { scale: stampAnim },
+                  {
+                    rotate: stampRotateAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '-14deg'],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            {stampIcon}
+          </Animated.Text>
           <Animated.Text
             style={[
               styles.centerBangText,
@@ -710,7 +753,7 @@ export default function StampBoardScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -931,8 +974,15 @@ const styles = StyleSheet.create({
     borderWidth: 8,
     borderColor: '#FCD34D',
   },
+  centerStampIcon: {
+    fontSize: 110,
+    textShadowColor: 'rgba(0,0,0,0.25)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 8,
+  },
   centerBangText: {
-    fontSize: 84,
+    marginTop: 4,
+    fontSize: 40,
     fontWeight: '900',
     color: '#F97316',
     textShadowColor: 'rgba(0,0,0,0.2)',
