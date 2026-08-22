@@ -31,12 +31,12 @@ const SEOUL_COORDS = { latitude: 37.5665, longitude: 126.978 };
 // Module-level cache so repeated Home mounts within the session don't refetch.
 let cachedResult: WeatherResult | null = null;
 let cachedAt = 0;
-const CACHE_TTL_MS = 60 * 60 * 1000;
+const CACHE_TTL_MS = 30 * 60 * 1000;
 // 지역을 빠르게 연달아 바꿀 때 이전(느리게 도착한) 응답이 최신 응답을 덮어쓰지
 // 않도록, 응답을 반영하기 전에 "그 요청이 여전히 최신 요청인지" 확인한다.
 let latestRequestId = 0;
 /** Background auto-refresh cadence — manual refresh is now pull-to-refresh only. */
-const AUTO_REFRESH_MS = 60 * 60 * 1000;
+const AUTO_REFRESH_MS = 30 * 60 * 1000;
 /** 지역 칩을 연달아 빠르게 바꿀 때, 마지막 선택 후 이만큼 조용해야 실제로 재조회한다. */
 const REGION_CHANGE_DEBOUNCE_MS = 400;
 
