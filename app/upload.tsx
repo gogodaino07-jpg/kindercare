@@ -9,6 +9,7 @@ import { ActivityIndicator, Animated, Easing, Image, Platform, Pressable, Scroll
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
+import { isAdTestAccount } from '../constants/adTestAccounts';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
@@ -86,6 +87,7 @@ export default function UploadScreen() {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   const maxCredits = isSubscribed ? PREMIUM_WEEKLY_LIMIT : FREE_WEEKLY_LIMIT;
+  const skipAd = isAdTestAccount(googleAccount?.email);
 
   // Prevent accidental navigation during analysis
   useEffect(() => {
@@ -343,7 +345,7 @@ export default function UploadScreen() {
 
     setStarting(true);
     try {
-      if (!isSubscribed) {
+      if (!isSubscribed && !skipAd) {
         const earnedReward = await requestAndShow();
         if (!earnedReward) {
           showAlert({ title: '광고 시청이 필요해요', message: '광고를 끝까지 시청해야 분석을 진행할 수 있어요. 다시 시도해주세요.' });
@@ -496,7 +498,7 @@ export default function UploadScreen() {
                 </LinearGradient>
               </Pressable>
             )}
-            {docs.length > 0 && !isSubscribed && (
+            {docs.length > 0 && !isSubscribed && !skipAd && (
               <Text style={styles.analyzeAdCaption}>짧은 광고 시청 후 분석이 시작돼요</Text>
             )}
           </View>

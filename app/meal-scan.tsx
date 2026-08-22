@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../components/common/AppText';
+import { isAdTestAccount } from '../constants/adTestAccounts';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
@@ -45,6 +46,7 @@ export default function MealScanScreen() {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [remainingCount, setRemainingCount] = useState<number | null>(null);
   const maxMealCredits = isSubscribed ? PREMIUM_MEAL_WEEKLY_LIMIT : FREE_MEAL_WEEKLY_LIMIT;
+  const skipAd = isAdTestAccount(googleAccount?.email);
 
   useEffect(() => {
     AIUsageLimitService.getRemainingCount(googleAccount?.email, isSubscribed, 'meal').then(setRemainingCount);
@@ -135,7 +137,7 @@ export default function MealScanScreen() {
 
     setStarting(true);
     try {
-      if (!isSubscribed) {
+      if (!isSubscribed && !skipAd) {
         const earnedReward = await requestAndShow();
         if (!earnedReward) {
           showAlert({ title: '광고 시청이 필요해요', message: '광고를 끝까지 시청해야 분석을 진행할 수 있어요. 다시 시도해주세요.' });
