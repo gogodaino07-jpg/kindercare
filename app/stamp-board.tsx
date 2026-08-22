@@ -112,17 +112,15 @@ export default function StampBoardScreen() {
   const insets = useSafeAreaInsets();
   const {
     targetCount,
+    stamps,
     currentStamps,
     wish,
     themeId,
     stampIcon,
-    stampHistory,
     soundEnabled,
-    hasStampedToday,
     isCompleted,
-    addStamp,
+    toggleStamp,
     updateSettings,
-    clearTodayStampFlag,
     resetProgress,
     setTheme,
     setStampIcon,
@@ -147,8 +145,8 @@ export default function StampBoardScreen() {
   const stampBangOpacity = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
   const prevCompletedRef = useRef(isCompleted);
-  // 애니메이션이 끝나야 addStamp()가 불리는데, hasStampedToday 상태는 그 전까지 그대로라
-  // 애니메이션 도중 연타하면 두 번 다 통과해서 도장이 2개 찍힌다. ref로 즉시 막는다.
+  // 슬램 애니메이션이 끝나야 실제로 칸이 채워지는데, 그 전까지 연타하면 같은 칸이나
+  // 다른 칸에 애니메이션이 겹쳐 찍힐 수 있다. ref로 애니메이션 도중엔 새 찍기를 막는다.
   const isStampingRef = useRef(false);
 
   useEffect(() => {
@@ -172,20 +170,16 @@ export default function StampBoardScreen() {
     setShowWish(true);
   };
 
-  const handleStamp = () => {
-    if (hasStampedToday || isCompleted || isStampingRef.current) return;
+  // 빈 칸(index)에 새 도장을 찍을 때 공통으로 쓰는 슬램 애니메이션 — 도장이 위에서
+  // 기울어진 채 크게 내려와 콱 찍히고 살짝 튕긴 뒤, 실제로 그 칸을 채운다.
+  const runStampSlamAnimation = (index: number) => {
+    if (isStampingRef.current) return;
     isStampingRef.current = true;
 
     if (soundEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 
-    Animated.sequence([
-      Animated.timing(buttonScale, { toValue: 0.95, duration: 100, useNativeDriver: true }),
-      Animated.timing(buttonScale, { toValue: 1, duration: 100, useNativeDriver: true }),
-    ]).start();
+    setStampingIndex(index);
 
-    setStampingIndex(currentStamps);
-
-    // 도장이 위에서 기울어진 채 크게 내려와 콱 찍히고 살짝 튕기는 "쾅!!" 슬램 애니메이션.
     stampAnim.setValue(2.6);
     stampRotateAnim.setValue(1);
     Animated.sequence([
@@ -195,7 +189,7 @@ export default function StampBoardScreen() {
       ]),
       Animated.spring(stampAnim, { toValue: 1, friction: 3, tension: 220, useNativeDriver: true }),
     ]).start(() => {
-      addStamp();
+      toggleStamp(index);
       setStampingIndex(null);
       isStampingRef.current = false;
     });
@@ -225,6 +219,28 @@ export default function StampBoardScreen() {
     ]).start();
   };
 
+  // 하단 "도장 쾅!" 버튼 — 맨 앞의 빈 칸에 자동으로 찍는다.
+  const handleStamp = () => {
+    const emptyIndex = stamps.findIndex((s) => s === null);
+    if (emptyIndex === -1 || isStampingRef.current) return;
+
+    Animated.sequence([
+      Animated.timing(buttonScale, { toValue: 0.95, duration: 100, useNativeDriver: true }),
+      Animated.timing(buttonScale, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start();
+
+    runStampSlamAnimation(emptyIndex);
+  };
+
+  // 칸을 직접 탭했을 때 — 비어있으면 그 자리에 바로 찍고, 이미 찍혀있으면 지운다(즉시, 애니메이션 없음).
+  const handleSlotPress = (index: number) => {
+    if (stamps[index]) {
+      toggleStamp(index);
+      return;
+    }
+    runStampSlamAnimation(index);
+  };
+
   const saveWish = () => {
     if (tempWish.trim()) updateSettings(targetCount, tempWish.trim());
     setShowWish(false);
@@ -252,7 +268,7 @@ export default function StampBoardScreen() {
   const progressPercent = Math.round((currentStamps / Math.max(targetCount, 1)) * 100);
   const progressCaption =
     progressPercent >= 100
-      ? '오늘 모든 도장을 모았어요! 🎉'
+      ? '모든 도장을 다 모았어요! 🎉'
       : progressPercent >= 50
         ? '벌써 절반 모았어요! 파이팅! 🌈'
         : '차곡차곡 모으면 무지개가 펴요! 👍';
@@ -347,16 +363,6 @@ export default function StampBoardScreen() {
                   <Feather name="edit-3" size={12} color="#0369A1" />
                   <Text style={styles.wishEditButtonText}>소원 수정</Text>
                 </Pressable>
-                {/* TODO: 도장 애니메이션 확인용 임시 버튼 — 확인 끝나면 제거 */}
-                <Pressable onPress={confirmReset} style={styles.devResetButton} hitSlop={6}>
-                  <Feather name="refresh-ccw" size={11} color="#EF4444" />
-                </Pressable>
-                {/* TODO: 도장 아이콘 기록(stampHistory) 확인용 임시 버튼 — 오늘 이미 찍음
-                    플래그만 지워서 currentStamps는 그대로 두고 연속으로 도장을 찍어볼 수
-                    있게 함. 확인 끝나면 제거. */}
-                <Pressable onPress={clearTodayStampFlag} style={styles.devResetButton} hitSlop={6}>
-                  <Feather name="skip-forward" size={11} color="#0EA5E9" />
-                </Pressable>
               </View>
             </View>
             <Pressable onPress={openWishModal}>
@@ -445,45 +451,51 @@ export default function StampBoardScreen() {
           <View style={styles.boardCard}>
             <View style={styles.grid}>
               {Array.from({ length: targetCount }).map((_, index) => {
-                const isStamped = index < currentStamps;
+                const icon = stamps[index];
+                const isStamped = icon !== null;
                 const isJustStamped = index === stampingIndex;
 
                 return (
                   <View key={index} style={styles.stampSlotWrap}>
                     {isStamped || isJustStamped ? (
-                      <Animated.View
-                        style={[
-                          styles.stampSlotAnimatedWrap,
-                          isJustStamped && {
-                            transform: [
-                              { scale: stampAnim },
-                              {
-                                rotate: stampRotateAnim.interpolate({
-                                  inputRange: [0, 1],
-                                  outputRange: ['0deg', '-14deg'],
-                                }),
-                              },
-                            ],
-                          },
-                        ]}
-                      >
-                        <LinearGradient
-                          colors={['#FEF3C7', '#FCE7F3', '#E0F2FE']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={[styles.stampSlot, styles.stampSlotActive]}
+                      <Pressable onPress={() => handleSlotPress(index)}>
+                        <Animated.View
+                          style={[
+                            styles.stampSlotAnimatedWrap,
+                            isJustStamped && {
+                              transform: [
+                                { scale: stampAnim },
+                                {
+                                  rotate: stampRotateAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: ['0deg', '-14deg'],
+                                  }),
+                                },
+                              ],
+                            },
+                          ]}
                         >
-                          <Text style={styles.stampEmoji}>{stampHistory[index] ?? stampIcon}</Text>
-                          <View style={styles.stampIndexBadge}>
-                            <Text style={styles.stampIndexText}>{index + 1}</Text>
-                          </View>
-                        </LinearGradient>
-                      </Animated.View>
+                          <LinearGradient
+                            colors={['#FEF3C7', '#FCE7F3', '#E0F2FE']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={[styles.stampSlot, styles.stampSlotActive]}
+                          >
+                            <Text style={styles.stampEmoji}>{icon ?? stampIcon}</Text>
+                            <View style={styles.stampIndexBadge}>
+                              <Text style={styles.stampIndexText}>{index + 1}</Text>
+                            </View>
+                          </LinearGradient>
+                        </Animated.View>
+                      </Pressable>
                     ) : (
-                      <View style={[styles.stampSlot, styles.stampSlotInactive]}>
+                      <Pressable
+                        onPress={() => handleSlotPress(index)}
+                        style={[styles.stampSlot, styles.stampSlotInactive]}
+                      >
                         <Text style={styles.stampSlotNumber}>{index + 1}</Text>
                         <Text style={styles.stampSlotCloud}>☁️</Text>
-                      </View>
+                      </Pressable>
                     )}
                   </View>
                 );
@@ -497,24 +509,24 @@ export default function StampBoardScreen() {
           <Animated.View style={{ transform: [{ scale: buttonScale }], width: '100%', alignItems: 'center' }}>
             <Pressable
               onPress={handleStamp}
-              disabled={hasStampedToday || isCompleted || stampingIndex !== null}
+              disabled={isCompleted || stampingIndex !== null}
               style={styles.stampButtonWrap}
             >
               <LinearGradient
-                colors={hasStampedToday ? ['#E2E8F0', '#E2E8F0'] : theme.stampButtonGradient}
+                colors={isCompleted ? ['#E2E8F0', '#E2E8F0'] : theme.stampButtonGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.stampButton}
               >
-                {hasStampedToday ? (
+                {isCompleted ? (
                   <>
                     <MaterialIcons name="check-circle" size={22} color="#94A3B8" />
-                    <Text style={styles.stampButtonTextDisabled}>내일 또 만나요!</Text>
+                    <Text style={styles.stampButtonTextDisabled}>도장판 완성!</Text>
                   </>
                 ) : (
                   <>
                     <Text style={styles.stampButtonEmoji}>{stampIcon}</Text>
-                    <Text style={styles.stampButtonText}>오늘의 도장 쾅!</Text>
+                    <Text style={styles.stampButtonText}>도장 쾅!</Text>
                   </>
                 )}
               </LinearGradient>
@@ -522,7 +534,7 @@ export default function StampBoardScreen() {
           </Animated.View>
 
           <View style={styles.footerBottomRow}>
-            <Text style={styles.footerHint}>도장을 누르면 오늘의 도장이 찍혀요!</Text>
+            <Text style={styles.footerHint}>칸을 누르면 찍히고, 찍힌 도장을 누르면 지워져요!</Text>
             <Pressable onPress={() => setSoundEnabled(!soundEnabled)} style={styles.soundToggle} hitSlop={6}>
               <Feather
                 name={soundEnabled ? 'volume-2' : 'volume-x'}
@@ -774,14 +786,6 @@ const styles = StyleSheet.create({
   },
   wishTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   wishTopRowRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  devResetButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#FEE2E2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   wishBadge: {
     flexDirection: 'row',
     alignItems: 'center',
