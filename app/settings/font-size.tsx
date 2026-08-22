@@ -46,7 +46,9 @@ export default function FontSizeSettingsScreen() {
           </View>
 
           <View style={styles.sliderCard}>
-            <Text style={styles.currentLabel}>{activeOption.label}</Text>
+            <View style={styles.currentLabelPill}>
+              <Text style={styles.currentLabel}>{activeOption.label}</Text>
+            </View>
             <View style={styles.sliderRow}>
               <Text style={styles.endLabelSmall}>가</Text>
               <View style={styles.sliderTrackArea}>
@@ -95,8 +97,10 @@ function createStyles(colors: ThemeColors) {
     },
     previewCard: {
       backgroundColor: colors.cardWhite,
-      borderRadius: 14,
-      padding: 16,
+      borderRadius: 20,
+      padding: 20,
+      minHeight: 110,
+      justifyContent: 'center',
       marginBottom: 20,
       ...SHADOW,
     },
@@ -112,17 +116,23 @@ function createStyles(colors: ThemeColors) {
     },
     sliderCard: {
       backgroundColor: colors.cardWhite,
-      borderRadius: 14,
-      paddingVertical: 16,
-      paddingHorizontal: 12,
+      borderRadius: 20,
+      paddingVertical: 22,
+      paddingHorizontal: 16,
       ...SHADOW,
     },
+    currentLabelPill: {
+      alignSelf: 'center',
+      backgroundColor: colors.gray100,
+      borderRadius: 999,
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+      marginBottom: 14,
+    },
     currentLabel: {
-      textAlign: 'center',
       fontSize: 13,
       fontWeight: '800',
       color: colors.accent,
-      marginBottom: 8,
     },
     sliderRow: {
       flexDirection: 'row',

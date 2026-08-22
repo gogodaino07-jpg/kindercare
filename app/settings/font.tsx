@@ -27,6 +27,16 @@ export default function FontSettingsScreen() {
               <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
             </Pressable>
           ),
+          headerRight: () => (
+            <Pressable
+              onPress={() => router.push('/settings/font-size')}
+              hitSlop={8}
+              style={styles.headerSizeButton}
+              accessibilityLabel="글자 크기 설정"
+            >
+              <MaterialCommunityIcons name="pencil-outline" size={20} color={t.textPrimary} />
+            </Pressable>
+          ),
         }}
       />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -40,10 +50,19 @@ export default function FontSettingsScreen() {
                 onPress={() => setFontChoiceId(option.id)}
               >
                 <View style={[styles.radio, isSelected && styles.radioSelected]}>
-                  {isSelected ? <View style={styles.radioDot} /> : null}
+                  {isSelected ? (
+                    <MaterialCommunityIcons name="check" size={13} color="#FFFFFF" />
+                  ) : null}
                 </View>
                 <View style={styles.rowText}>
-                  <Text style={styles.rowLabel}>{option.label}</Text>
+                  <View style={styles.rowTopLine}>
+                    <Text style={styles.rowLabel}>{option.label}</Text>
+                    <View style={[styles.vibeBadge, isSelected && styles.vibeBadgeSelected]}>
+                      <Text style={[styles.vibeBadgeText, isSelected && styles.vibeBadgeTextSelected]}>
+                        {option.vibe}
+                      </Text>
+                    </View>
+                  </View>
                   <Text style={[styles.preview, { fontFamily: option.fontFamily }]}>
                     7/20(월) 현장학습이 있어요
                   </Text>
@@ -61,25 +80,37 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     screenBg: { flex: 1, backgroundColor: t.bg },
     headerBackButton: { paddingHorizontal: 4 },
+    headerSizeButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.gray100,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 4,
+    },
     safeArea: { flex: 1 },
     content: { padding: 20 },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: colors.cardWhite,
-      borderRadius: 14,
-      padding: 14,
+      borderRadius: 16,
+      padding: 16,
       marginBottom: 10,
+      borderWidth: 1,
+      borderColor: 'transparent',
       ...SHADOW,
     },
     rowSelected: {
-      borderWidth: 2,
+      borderWidth: 1.5,
       borderColor: colors.accent,
+      borderLeftWidth: 4,
     },
     radio: {
-      width: 20,
-      height: 20,
-      borderRadius: 10,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
       borderWidth: 2,
       borderColor: colors.border,
       alignItems: 'center',
@@ -88,19 +119,37 @@ function createStyles(colors: ThemeColors) {
     },
     radioSelected: {
       borderColor: colors.accent,
-    },
-    radioDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
       backgroundColor: colors.accent,
     },
-    rowText: { flex: 1 },
+    rowText: { flex: 1, minWidth: 0 },
+    rowTopLine: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    vibeBadge: {
+      backgroundColor: colors.gray100,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      marginLeft: 8,
+    },
+    vibeBadgeSelected: {
+      backgroundColor: colors.lightBlueBg,
+    },
+    vibeBadgeText: {
+      fontSize: 10.5,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    vibeBadgeTextSelected: {
+      color: colors.accent,
+    },
     rowLabel: {
       fontSize: 13,
       fontWeight: '600',
       color: colors.textSecondary,
-      marginBottom: 4,
     },
     preview: {
       fontSize: 18,
