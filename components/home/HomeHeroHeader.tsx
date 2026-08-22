@@ -320,7 +320,7 @@ export default function HomeHeroHeader({
           </View>
         </View>
       ) : (
-        <Pressable onPress={() => setWeatherExpanded(true)}>
+        <Pressable style={styles.weatherCollapsedWrap} onPress={() => setWeatherExpanded(true)}>
           <LinearGradient
             colors={weatherLoading && !today ? ['#E2E8F0', '#E2E8F0'] : getWeatherGradient(today?.label ?? '')}
             start={{ x: 0, y: 0 }}
@@ -330,7 +330,7 @@ export default function HomeHeroHeader({
             {weatherLoading && !today ? (
               <Text style={styles.weatherCollapsedText}>날씨 불러오는 중...</Text>
             ) : (
-              <>
+              <View style={styles.weatherCollapsedLeft}>
                 <AnimatedWeatherEmoji
                   emoji={today?.emoji ?? '🌤️'}
                   label={today?.label ?? ''}
@@ -339,9 +339,11 @@ export default function HomeHeroHeader({
                 <Text style={styles.weatherCollapsedText} numberOfLines={1}>
                   오늘 {today?.label ?? '날씨'} · 최고 {today?.tempMax ?? '--'}° / 최저 {today?.tempMin ?? '--'}°
                 </Text>
-              </>
+              </View>
             )}
-            <Feather name="chevron-down" size={16} color="#FFFFFF" />
+            <View style={styles.weatherCollapsedChevron}>
+              <Feather name="chevron-down" size={16} color="#FFFFFF" />
+            </View>
           </LinearGradient>
         </Pressable>
       )}
@@ -573,25 +575,42 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '700',
       color: colors.gray400,
     },
+    weatherCollapsedWrap: {
+      marginHorizontal: 20,
+      marginBottom: 16,
+    },
     weatherCollapsedBanner: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-      marginHorizontal: 20,
-      marginBottom: 16,
+      justifyContent: 'space-between',
       borderRadius: 18,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
+      paddingVertical: 14,
+      paddingHorizontal: 18,
       ...SHADOW,
       shadowOpacity: 0.1,
       elevation: 2,
     },
+    weatherCollapsedLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      flex: 1,
+      minWidth: 0,
+    },
+    weatherCollapsedChevron: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: 'rgba(255,255,255,0.25)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     weatherCollapsedEmoji: {
-      fontSize: 18,
+      fontSize: 22,
     },
     weatherCollapsedText: {
-      fontSize: 13,
+      flexShrink: 1,
+      fontSize: 14,
       fontWeight: '800',
       color: '#FFFFFF',
     },
