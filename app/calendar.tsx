@@ -79,15 +79,11 @@ export default function CalendarScreen() {
   const EXPAND_PULL_ZONE = 70;
   const EXPAND_PULL_THRESHOLD = 10;
   // 펼쳐진 상태에서 일정이 1개뿐이라 스크롤이 필요 없을 만큼 내용이 짧으면, 실제로
-  // 스크롤할 여지가 없어 위로 스와이프해도 아무 반응이 없었다(축소가 안 됨). 화면
-  // 전체 높이(rootHeight)보다 이만큼 더 큰 minHeight를 항상 보장해서, 내용 길이와
-  // 무관하게 위로 스와이프하면 언제나 진짜 스크롤이 발생하도록 한다.
-  // rootHeight는 ScrollView 자신이 아니라 최상위 루트 View에서 한 번만 측정한다.
-  // ScrollView 자신의 높이로 측정하면 아코디언이 펼쳐지고 접힐 때마다(300ms 애니메이션
-  // 동안 매 프레임) onLayout이 다시 불려서 화면 전체가 계속 리렌더링되어 스크롤이
-  // 버벅였다 — 루트 View의 높이는 아코디언 내부 배분과 무관하게 항상 고정이라
-  // 회전 등으로만 바뀌므로 이 문제가 없다.
-  const COLLAPSE_SWIPE_BUFFER = 80;
+  // 스크롤할 여지가 없어 위로 스와이프해도 아무 반응이 없었다(축소가 안 됨). 실제
+  // 목록 영역 높이(rootHeight - HEADER_AND_ACCORDION_ESTIMATE)보다 이만큼 더 큰
+  // minHeight를 펼쳐진 상태에서만 보장해서, 내용 길이와 무관하게 위로 스와이프하면
+  // 언제나 진짜 스크롤이 발생하도록 한다.
+  const COLLAPSE_SWIPE_BUFFER = 40;
   const [rootHeight, setRootHeight] = useState(0);
   // 일정이 없는 날의 "일정 없음" 카드처럼 내부에서 flex:1로 화면을 꽉 채우는
   // 콘텐츠는, 위 버퍼가 더해진 늘어난 전체 높이 기준으로 다시 가운데 정렬되면
@@ -96,7 +92,7 @@ export default function CalendarScreen() {
   // minHeight를 줘서, 늘어난 전체 높이가 아니라 화면에 보이는 범위 안에서만
   // 가운데 정렬되게 한다. 픽셀 단위로 정확할 필요는 없고, 실제 목록 영역보다
   // 작기만 하면 되므로 넉넉히 뺀 고정값을 쓴다.
-  const HEADER_AND_ACCORDION_ESTIMATE = 500;
+  const HEADER_AND_ACCORDION_ESTIMATE = 420;
 
   const scrollY = useSharedValue(0);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -127,19 +123,30 @@ export default function CalendarScreen() {
     onScroll: (event) => {
       const y = event.contentOffset.y;
       scrollY.value = y;
-      if (expandedProgress.value > 0.5) {
-        if (y > 20) {
+
+      // 새로고침(Pull-to-refresh) 중에는 달력 상태 변화를 막아 꿀렁임을 방지한다.
+      if (refreshing) return;
+
+      if (expandedProgress.value > 0.5 && !collapsedThisGesture.value) {
+        if (y > 30) {
           runOnJS(setExpanded)(0);
           collapsedThisGesture.value = true;
         }
       } else if (y <= EXPAND_PULL_ZONE - EXPAND_PULL_THRESHOLD) {
-        runOnJS(setExpanded)(1);
+        if (expandedProgress.value < 0.5) {
+          runOnJS(setExpanded)(1);
+        }
       }
     },
-    onEndDrag: () => {
+    onEndDrag: (event) => {
       if (collapsedThisGesture.value) {
         collapsedThisGesture.value = false;
-        scrollTo(scrollRef, 0, EXPAND_PULL_ZONE, true);
+        const y = event.contentOffset.y;
+        // 사용자가 이미 첫 번째 일정보다 더 아래로 스크롤했다면(y >= 70)
+        // 강제로 위로 튕겨 올리지 않고 관성을 유지시킨다.
+        if (y < EXPAND_PULL_ZONE) {
+          scrollTo(scrollRef, 0, EXPAND_PULL_ZONE, true);
+        }
       }
     },
     onMomentumEnd: (event) => {
@@ -159,10 +166,29 @@ export default function CalendarScreen() {
   useLayoutEffect(() => {
     runOnUI((expand: boolean) => {
       'worklet';
+      // 사용자가 직접 스크롤해서 접는 중일 때는 강제 scrollTo를 생략하여
+      // 스크롤 끊김(두 번 스와이프해야 하는 현상)을 방지한다.
+      if (!expand && collapsedThisGesture.value) return;
+
       const next = expand ? Math.max(0, scrollY.value - EXPAND_PULL_ZONE) : EXPAND_PULL_ZONE;
       scrollTo(scrollRef, 0, next, false);
     })(isExpanded);
   }, [isExpanded, scrollRef, scrollY]);
+
+  // 날짜 탭이나 좌우 스와이프로 selectedDate가 바뀌면 이전 날짜의 스크롤 위치가
+  // 그대로 남아있었다. 새 날짜의 일정이 이전보다 짧으면(예: 일정 많은 날 → 적은
+  // 날) 그 위치가 새 콘텐츠 범위를 벗어나 빈 여백만 보이고, 한 번 더 스크롤해야
+  // 카드가 나타나는 문제가 있었다. 날짜가 바뀔 때마다 스크롤을 맨 위로 되돌린다.
+  useLayoutEffect(() => {
+    // 레이아웃이 갱신된 후 스크롤이 일어나도록 아주 짧은 지연을 준다.
+    const timeoutId = setTimeout(() => {
+      runOnUI((expand: boolean) => {
+        'worklet';
+        scrollTo(scrollRef, 0, expand ? 0 : EXPAND_PULL_ZONE, false);
+      })(isExpanded);
+    }, 50);
+    return () => clearTimeout(timeoutId);
+  }, [selectedDate, scrollRef, isExpanded]);
 
   // 달력 그리드(월간 뷰) 영역에서 위/아래로 스와이프하면 아래 일정 목록이 그대로
   // 스크롤된다 — 화면 전체가 하나로 이어진 스크롤 영역처럼 느껴지게 한다.
@@ -308,7 +334,9 @@ export default function CalendarScreen() {
             style={styles.scrollFlex}
             contentContainerStyle={[
               styles.scrollContent,
-              rootHeight ? { minHeight: rootHeight + COLLAPSE_SWIPE_BUFFER } : null,
+              rootHeight && isExpanded
+                ? { minHeight: Math.max(0, rootHeight - HEADER_AND_ACCORDION_ESTIMATE) + COLLAPSE_SWIPE_BUFFER + 60 }
+                : null,
             ]}
             showsVerticalScrollIndicator={false}
             onScroll={scrollHandler}
