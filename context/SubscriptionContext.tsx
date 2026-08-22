@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import Purchases, { CustomerInfo } from 'react-native-purchases';
-import { useAppData } from './AppDataContext';
+import { getFirebaseAuth } from '../utils/firebase';
 
 const REVENUECAT_ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY;
 /** RevenueCat 대시보드에서 만든 Entitlement 식별자 — 구독 상품을 이 Entitlement에 연결해두어야 함. */
@@ -25,7 +25,6 @@ const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(
 let configured = false;
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
-  const { googleAccount } = useAppData();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [managementURL, setManagementURL] = useState<string | null>(null);
@@ -53,13 +52,23 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     };
   }, [applyCustomerInfo]);
 
-  // 계정 이메일이 확정되면 RevenueCat 사용자와 연결 — 기기를 바꾸거나 재설치해도 같은 구독으로 인식되게 함.
+  // Firebase Auth 로그인이 확정되면 그 UID로 RevenueCat 사용자와 연결한다 — 기기를
+  // 바꾸거나 재설치해도 같은 구독으로 인식되게 함. 이메일 대신 UID를 쓰는 이유는,
+  // 이메일은 로그인 경로(구글/카카오)에 따라 검증 강도가 다를 수 있어 식별자로
+  // 쓰기엔 약하고, Firebase Auth가 발급하는 UID가 실제 인증된 사용자를 훨씬
+  // 신뢰성 있게 가리키기 때문이다. onAuthStateChanged를 쓰는 이유는, 앱을 껐다
+  // 켰을 때 AppDataContext의 googleAccount(AsyncStorage 복원)보다 Firebase Auth
+  // 세션 복원이 늦게 끝날 수 있어 그 상태 변화를 직접 구독해야 놓치지 않기 때문.
   useEffect(() => {
-    if (!REVENUECAT_ANDROID_KEY || !googleAccount?.email) return;
-    Purchases.logIn(googleAccount.email)
-      .then(({ customerInfo }) => applyCustomerInfo(customerInfo))
-      .catch(() => {});
-  }, [googleAccount?.email, applyCustomerInfo]);
+    if (!REVENUECAT_ANDROID_KEY) return;
+    const unsubscribe = getFirebaseAuth().onAuthStateChanged((user: { uid: string } | null) => {
+      if (!user) return;
+      Purchases.logIn(user.uid)
+        .then(({ customerInfo }: { customerInfo: CustomerInfo }) => applyCustomerInfo(customerInfo))
+        .catch(() => {});
+    });
+    return unsubscribe;
+  }, [applyCustomerInfo]);
 
   const refresh = useCallback(async () => {
     if (!REVENUECAT_ANDROID_KEY) return;
