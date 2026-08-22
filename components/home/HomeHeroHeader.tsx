@@ -342,7 +342,7 @@ export default function HomeHeroHeader({
               </View>
             )}
             <View style={styles.weatherCollapsedChevron}>
-              <Feather name="chevron-down" size={16} color="#FFFFFF" />
+              <Feather name="chevron-down" size={18} color="#FFFFFF" />
             </View>
           </LinearGradient>
         </Pressable>
@@ -583,9 +583,9 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      borderRadius: 18,
-      paddingVertical: 14,
-      paddingHorizontal: 18,
+      borderRadius: 20,
+      paddingVertical: 20,
+      paddingHorizontal: 20,
       ...SHADOW,
       shadowOpacity: 0.1,
       elevation: 2,
@@ -593,24 +593,24 @@ function createStyles(colors: ThemeColors) {
     weatherCollapsedLeft: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: 12,
       flex: 1,
       minWidth: 0,
     },
     weatherCollapsedChevron: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
       backgroundColor: 'rgba(255,255,255,0.25)',
       alignItems: 'center',
       justifyContent: 'center',
     },
     weatherCollapsedEmoji: {
-      fontSize: 22,
+      fontSize: 28,
     },
     weatherCollapsedText: {
       flexShrink: 1,
-      fontSize: 14,
+      fontSize: 16,
       fontWeight: '800',
       color: '#FFFFFF',
     },
