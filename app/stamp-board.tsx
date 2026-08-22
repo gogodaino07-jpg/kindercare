@@ -340,10 +340,16 @@ export default function StampBoardScreen() {
                 <MaterialIcons name="star" size={12} color="#FDE68A" />
                 <Text style={styles.wishBadgeText}>우리 아이 소원 보상</Text>
               </LinearGradient>
-              <Pressable onPress={openWishModal} style={styles.wishEditButton}>
-                <Feather name="edit-3" size={12} color="#0369A1" />
-                <Text style={styles.wishEditButtonText}>소원 수정</Text>
-              </Pressable>
+              <View style={styles.wishTopRowRight}>
+                <Pressable onPress={openWishModal} style={styles.wishEditButton}>
+                  <Feather name="edit-3" size={12} color="#0369A1" />
+                  <Text style={styles.wishEditButtonText}>소원 수정</Text>
+                </Pressable>
+                {/* TODO: 도장 애니메이션 확인용 임시 버튼 — 확인 끝나면 제거 */}
+                <Pressable onPress={confirmReset} style={styles.devResetButton} hitSlop={6}>
+                  <Feather name="refresh-ccw" size={11} color="#EF4444" />
+                </Pressable>
+              </View>
             </View>
             <Pressable onPress={openWishModal}>
               <Text style={styles.wishTitle}>{wish || '소원을 설정해보세요 ⚙️'}</Text>
@@ -759,6 +765,15 @@ const styles = StyleSheet.create({
     opacity: 0.18,
   },
   wishTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  wishTopRowRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  devResetButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   wishBadge: {
     flexDirection: 'row',
     alignItems: 'center',
