@@ -1,10 +1,11 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   runOnJS,
+  runOnUI,
   scrollTo,
   useAnimatedRef,
   useAnimatedScrollHandler,
@@ -110,6 +111,14 @@ export default function CalendarScreen() {
     scrollTo(scrollRef, 0, next, false);
   };
 
+  // 위로 스와이프해 축소를 트리거한 바로 그 손짓인지 표시해둔다. scrollEnabled를
+  // 손짓 도중에 꺼서 목록을 못 움직이게 막아보려 했었는데, 그러면 네이티브
+  // ScrollView가 그 손짓을 더 이상 드래그로 취급하지 않아 onEndDrag 자체가 안
+  // 불려서 스크롤이 계속 잠긴 채로 남는 문제가 있었다. 그래서 스크롤 자체는
+  // 막지 않고, 대신 이 손짓이 끝나는 순간(onEndDrag)에 맨 위로 스냅백시켜서
+  // "달력만 접히고 첫 일정은 그대로 보인다"는 결과만 보장한다.
+  const collapsedThisGesture = useSharedValue(false);
+
   // 스크롤이 완전히 멈춘 뒤에만 스냅백 여부를 판단한다 — onEndDrag(손을 뗀 시점)에서
   // 판단하면 아직 관성(fling)으로 계속 움직이는 중일 수 있는데, 그 시점 오프셋만 보고
   // 스냅백을 걸면 관성 스크롤이 확대 문턱까지 도달하기 전에 강제로 멈춰버려 "빠르게
@@ -121,9 +130,16 @@ export default function CalendarScreen() {
       if (expandedProgress.value > 0.5) {
         if (y > 20) {
           runOnJS(setExpanded)(0);
+          collapsedThisGesture.value = true;
         }
       } else if (y <= EXPAND_PULL_ZONE - EXPAND_PULL_THRESHOLD) {
         runOnJS(setExpanded)(1);
+      }
+    },
+    onEndDrag: () => {
+      if (collapsedThisGesture.value) {
+        collapsedThisGesture.value = false;
+        scrollTo(scrollRef, 0, EXPAND_PULL_ZONE, true);
       }
     },
     onMomentumEnd: (event) => {
@@ -133,6 +149,20 @@ export default function CalendarScreen() {
       }
     },
   });
+
+  // isExpanded가 바뀌어 스페이서(EXPAND_PULL_ZONE)가 새로 생기거나 사라질 때 스크롤
+  // 오프셋을 보정해준다. 접힐 때는 항상 "스페이서만 가려진 맨 위"(EXPAND_PULL_ZONE)로
+  // 고정해서, 위로 스와이프해 달력이 축소되는 순간 첫 번째 일정이 스크롤에 가려지지
+  // 않고 항상 그대로 보이게 한다 — 달력만 접히고 목록 자체는 스크롤되지 않은 것처럼
+  // 느껴지게 하려는 것. (펼칠 때는 반대로, 당겨서 열었던 위치 기준으로 스페이서만큼
+  // 빼서 자연스럽게 이어지게 한다.)
+  useLayoutEffect(() => {
+    runOnUI((expand: boolean) => {
+      'worklet';
+      const next = expand ? Math.max(0, scrollY.value - EXPAND_PULL_ZONE) : EXPAND_PULL_ZONE;
+      scrollTo(scrollRef, 0, next, false);
+    })(isExpanded);
+  }, [isExpanded, scrollRef, scrollY]);
 
   // 달력 그리드(월간 뷰) 영역에서 위/아래로 스와이프하면 아래 일정 목록이 그대로
   // 스크롤된다 — 화면 전체가 하나로 이어진 스크롤 영역처럼 느껴지게 한다.
