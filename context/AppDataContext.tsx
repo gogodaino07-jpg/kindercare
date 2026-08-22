@@ -404,7 +404,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     if (!effectiveFamilyOwnerEmail || !googleAccount?.email || !onboardingLoaded || !syncChecked) return;
 
     const email = effectiveFamilyOwnerEmail;
-    console.log('🔄 Firestore Listener Started for:', email);
+    console.log('🔄 Firestore Listener Started');
 
     // Listen to Children
     const unsubChildren = getDb()
@@ -551,7 +551,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     const syncUp = async () => {
       const email = effectiveFamilyOwnerEmail;
       try {
-        console.log('📤 Initial Sync-Up Checking for:', email);
+        console.log('📤 Initial Sync-Up Checking');
 
         // Wait for Firebase Auth to be ready
         let retry = 0;
@@ -684,7 +684,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
   const restoreDataFromCloud = async (email: string) => {
     try {
-      console.log('🔄 Restoring data for:', email);
+      console.log('🔄 Restoring data from cloud');
 
       const childrenSnap = await getDb().collection('users').doc(email).collection('children').get();
       const eventsSnap = await getDb().collection('users').doc(email).collection('events').get();
@@ -1232,7 +1232,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
         return prev;
       });
 
-      console.log('✅ Kakao Sign-In Success:', account.email);
+      console.log('✅ Kakao Sign-In Success');
       return account;
     } catch (error: any) {
       console.error('Kakao Sign-In Error:', error);
@@ -1309,7 +1309,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     if (googleAccount?.email) {
       const email = googleAccount.email;
       try {
-        console.log('📡 Requesting withdrawal for:', email);
+        console.log('📡 Requesting withdrawal');
         // 즉시 삭제로 변경: 유예기간 없이 바로 purgeCloudData 호출
         await purgeCloudData(email);
         console.log('✅ Withdrawal (immediate) processed successfully');
@@ -1322,7 +1322,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
   const cancelWithdrawal = async (email: string) => {
     try {
-      console.log('📡 Canceling withdrawal for:', email);
+      console.log('📡 Canceling withdrawal');
       await getDb().collection('users').doc(email).update({
         withdrawalRequestedAt: firestore.FieldValue.delete(),
       });
@@ -1337,7 +1337,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   // 같은 계정으로 재가입할 때 실시간 리스너를 통해 그대로 되살아나는 문제가 있었다.
   // 그래서 여기서는 catch하지 않고 실패를 그대로 위로 던진다.
   const purgeCloudData = async (email: string) => {
-    console.log('📡 Purging all cloud data for:', email);
+    console.log('📡 Purging all cloud data');
 
     // Delete children collection
     const childrenSnap = await getDb().collection('users').doc(email).collection('children').get();
