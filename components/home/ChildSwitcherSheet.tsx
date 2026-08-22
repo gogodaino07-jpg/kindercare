@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
 import { AppState, Image, Modal, Pressable, StyleSheet, View, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -135,7 +135,10 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
       animationType="none"
       statusBarTranslucent
     >
-      <View style={styles.overlayContainer}>
+      {/* RN Modal은 안드로이드에서 별도 네이티브 윈도우에 렌더링돼 앱 루트의
+          GestureHandlerRootView 밖에 놓이면서 스와이프 제스처가 먹지 않는다 —
+          Modal 내부에 별도로 하나 더 씌워줘야 제스처가 정상 동작한다. */}
+      <GestureHandlerRootView style={styles.overlayContainer}>
         <Animated.View style={[styles.overlay, overlayStyle]}>
           <Pressable style={{ flex: 1 }} onPress={handleClose} />
         </Animated.View>
@@ -195,7 +198,7 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
             </Pressable>
           </Animated.View>
         </GestureDetector>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }

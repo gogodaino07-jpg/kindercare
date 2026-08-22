@@ -705,7 +705,6 @@ function AnalyzingBody({ label }: { label: string }) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: C.appBg },
   header: {
-    backgroundColor: C.white,
     paddingHorizontal: 12,
     paddingVertical: 10,
     flexDirection: 'row',

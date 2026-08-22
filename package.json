@@ -24,6 +24,7 @@
     "@react-native-seoul/kakao-login": "^6.0.4",
     "babel-preset-expo": "~57.0.0",
     "expo": "~57.0.7",
+    "expo-camera": "~57.0.4",
     "expo-clipboard": "~57.0.1",
     "expo-constants": "~57.0.6",
     "expo-contacts": "~57.0.2",

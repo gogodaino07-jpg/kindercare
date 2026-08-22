@@ -1,9 +1,10 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../components/common/AppText';
@@ -48,24 +49,34 @@ export default function MealScanScreen() {
   const maxMealCredits = isSubscribed ? PREMIUM_MEAL_WEEKLY_LIMIT : FREE_MEAL_WEEKLY_LIMIT;
   const skipAd = isAdTestAccount(googleAccount?.email);
 
+  const cameraRef = useRef<CameraView>(null);
+  const [permission, requestPermission] = useCameraPermissions();
+
   useEffect(() => {
     AIUsageLimitService.getRemainingCount(googleAccount?.email, isSubscribed, 'meal').then(setRemainingCount);
   }, [googleAccount?.email, isSubscribed]);
 
-  const handleTakePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      showAlert({ title: '권한 필요', message: '카메라 권한이 필요해요' });
+  // 화면에 들어오면 바로 라이브 카메라 화면을 보여줄 수 있도록 미리 권한을 요청해둔다.
+  useEffect(() => {
+    requestPermission();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 뷰파인더의 가운데 촬영 버튼: 사진을 아직 안 찍었으면 그 자리에서 바로 촬영하고,
+  // 이미 찍은 사진이 보이는 중이면(다시 찍기) 라이브 화면으로 되돌아간다.
+  const handleShutterPress = async () => {
+    if (doc) {
+      setDoc(null);
       return;
     }
-    setPickerActive(true);
+    if (!cameraRef.current) return;
     try {
-      const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
-      if (!result.canceled && result.assets[0]) {
-        setDoc({ id: `meal-${Date.now()}`, uri: result.assets[0].uri, kind: 'image', pickSource: 'camera' });
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
+      if (photo?.uri) {
+        setDoc({ id: `meal-${Date.now()}`, uri: photo.uri, kind: 'image', pickSource: 'camera' });
       }
-    } finally {
-      setPickerActive(false);
+    } catch {
+      showAlert({ title: '촬영 실패', message: '사진을 촬영하지 못했어요. 다시 시도해주세요.' });
     }
   };
 
@@ -185,7 +196,6 @@ export default function MealScanScreen() {
               <Feather name="x" size={22} color={C.slate900} />
             </Pressable>
             <Text style={styles.headerTitle}>급식표 스캔</Text>
-            <View style={styles.headerButton} />
           </View>
 
           {remainingCount !== null && (
@@ -205,8 +215,21 @@ export default function MealScanScreen() {
                     <Text style={styles.previewFileName} numberOfLines={1}>{doc.name ?? '선택한 파일'}</Text>
                   </View>
                 )
+              ) : !permission ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : permission.granted ? (
+                <>
+                  <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
+                  <Text style={styles.viewfinderHint}>급식표를 사각형 안에{'\n'}맞춰주세요</Text>
+                </>
               ) : (
-                <Text style={styles.viewfinderHint}>급식표를 사각형 안에{'\n'}맞춰주세요</Text>
+                <View style={styles.permissionFallback}>
+                  <Feather name="camera-off" size={26} color="rgba(255,255,255,0.85)" />
+                  <Text style={styles.viewfinderHint}>카메라 권한이 필요해요</Text>
+                  <Pressable onPress={requestPermission} style={styles.permissionButton}>
+                    <Text style={styles.permissionButtonText}>권한 허용하기</Text>
+                  </Pressable>
+                </View>
               )}
               <View style={[styles.corner, styles.cornerTL]} />
               <View style={[styles.corner, styles.cornerTR]} />
@@ -221,9 +244,9 @@ export default function MealScanScreen() {
                 <Feather name="image" size={22} color={C.slate600} />
                 <Text style={styles.dockButtonText}>갤러리</Text>
               </Pressable>
-              <Pressable onPress={handleTakePhoto} style={[styles.dockButton, styles.dockButtonAccent]}>
-                <Feather name="camera" size={22} color="#FFFFFF" />
-                <Text style={styles.dockButtonTextAccent}>촬영</Text>
+              <Pressable onPress={handleShutterPress} style={[styles.dockButton, styles.dockButtonAccent]}>
+                <Feather name={doc ? 'refresh-ccw' : 'camera'} size={22} color="#FFFFFF" />
+                <Text style={styles.dockButtonTextAccent}>{doc ? '다시 찍기' : '촬영'}</Text>
               </Pressable>
               <Pressable onPress={handlePickFile} style={styles.dockButton}>
                 <Feather name="file-text" size={22} color={C.slate600} />
@@ -276,10 +299,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: C.white,
     borderBottomWidth: 1,
     borderBottomColor: C.slate100,
   },
@@ -316,11 +338,23 @@ const styles = StyleSheet.create({
   viewfinderHint: {
     fontSize: 15,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.85)',
+    color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 24,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
+  permissionFallback: { alignItems: 'center', gap: 10, paddingHorizontal: 24 },
+  permissionButton: {
+    marginTop: 4,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  permissionButtonText: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
   previewImage: { width: '100%', height: '100%' },
   previewFile: { alignItems: 'center', gap: 10, paddingHorizontal: 24 },
   previewFileName: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
