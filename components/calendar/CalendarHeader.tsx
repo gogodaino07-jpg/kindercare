@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
     borderWidth: 2,
-    borderColor: t.amberBg,
+    borderColor: t.skyBg,
   },
   avatarPlaceholder: {
     width: AVATAR_SIZE,
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     borderRadius: AVATAR_SIZE / 2,
     backgroundColor: t.gray100,
     borderWidth: 2,
-    borderColor: t.amberBg,
+    borderColor: t.skyBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
