@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { PixelRatio, StyleSheet, View, ViewStyle, useWindowDimensions, Platform } from 'react-native';
+import { Linking, PixelRatio, StyleSheet, View, ViewStyle, useWindowDimensions, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -93,6 +93,24 @@ export default function CoupangBanner({ style }: CoupangBannerProps) {
               scrollEnabled={false}
               showsHorizontalScrollIndicator={false}
               showsVerticalScrollIndicator={false}
+              onShouldStartLoadWithRequest={(request) => {
+                const url = request.url;
+                // 배너 위젯 자체를 그리는 데 필요한 내부 리소스(스크립트/썸네일)는 그대로 허용
+                if (
+                  url === 'about:blank' ||
+                  url.includes('ads-partners.coupang.com') ||
+                  url.includes('coupangcdn.com') ||
+                  url.includes('coupang.com/thumbnails')
+                ) {
+                  return true;
+                }
+                // 실제 상품 클릭 등 외부로 나가는 이동은 인앱 WebView 안에서 열지 않고 외부 브라우저로 보낸다.
+                if (url.startsWith('http')) {
+                  Linking.openURL(url).catch(() => {});
+                  return false;
+                }
+                return true;
+              }}
               backgroundColor="transparent"
               androidLayerType={Platform.OS === 'android' ? 'hardware' : 'none'}
               domStorageEnabled={true}
