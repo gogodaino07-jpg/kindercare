@@ -116,6 +116,7 @@ export default function StampBoardScreen() {
     wish,
     themeId,
     stampIcon,
+    stampHistory,
     soundEnabled,
     hasStampedToday,
     isCompleted,
@@ -465,7 +466,7 @@ export default function StampBoardScreen() {
                           end={{ x: 1, y: 1 }}
                           style={[styles.stampSlot, styles.stampSlotActive]}
                         >
-                          <Text style={styles.stampEmoji}>{stampIcon}</Text>
+                          <Text style={styles.stampEmoji}>{stampHistory[index] ?? stampIcon}</Text>
                           <View style={styles.stampIndexBadge}>
                             <Text style={styles.stampIndexText}>{index + 1}</Text>
                           </View>

@@ -11,6 +11,9 @@ interface StampBoardData {
   themeId: StampBoardThemeId;
   stampIcon: string;
   soundEnabled: boolean;
+  /** index i = i번째로 찍힌 도장에 실제로 쓰인 아이콘. 이후 stampIcon을 바꿔도
+   *  이미 찍힌 도장은 그때 그 아이콘 그대로 보이게 하기 위함. */
+  stampHistory: string[];
 }
 
 const DEFAULT_DATA: StampBoardData = {
@@ -21,6 +24,7 @@ const DEFAULT_DATA: StampBoardData = {
   themeId: 'blue',
   stampIcon: STAMP_BOARD_THEMES.blue.stickers[0],
   soundEnabled: true,
+  stampHistory: [],
 };
 
 function storageKey(childId: string): string {
@@ -73,7 +77,12 @@ export function useStampBoard(childId: string | undefined) {
   const addStamp = useCallback(() => {
     if (!childId || hasStampedToday || isCompleted) return;
     setData((prev) => {
-      const next: StampBoardData = { ...prev, currentStamps: prev.currentStamps + 1, lastStampedDateISO: todayISO };
+      const next: StampBoardData = {
+        ...prev,
+        currentStamps: prev.currentStamps + 1,
+        lastStampedDateISO: todayISO,
+        stampHistory: [...prev.stampHistory, prev.stampIcon],
+      };
       persist(childId, next);
       return next;
     });
@@ -94,7 +103,7 @@ export function useStampBoard(childId: string | undefined) {
   const resetProgress = useCallback(() => {
     if (!childId) return;
     setData((prev) => {
-      const next: StampBoardData = { ...prev, currentStamps: 0, lastStampedDateISO: null };
+      const next: StampBoardData = { ...prev, currentStamps: 0, lastStampedDateISO: null, stampHistory: [] };
       persist(childId, next);
       return next;
     });
@@ -150,6 +159,7 @@ export function useStampBoard(childId: string | undefined) {
     wish: data.wish,
     themeId: data.themeId,
     stampIcon: data.stampIcon,
+    stampHistory: data.stampHistory,
     soundEnabled: data.soundEnabled,
     hasStampedToday,
     isCompleted,
