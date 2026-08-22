@@ -1,12 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Directions, Gesture, GestureDetector, type PanGesture } from 'react-native-gesture-handler';
+import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   interpolate,
   runOnJS,
   useAnimatedStyle,
-  useSharedValue,
   type SharedValue,
 } from 'react-native-reanimated';
 import Text from '../common/AppText';
@@ -18,7 +17,7 @@ import { calendarTheme as t } from './calendarTheme';
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const ROW_HEIGHT = 46;
 const DRAG_RANGE = 90; // px of drag needed to fully toggle
-const DRAG_THRESHOLD = 18; // px
+const VELOCITY_THRESHOLD = 600; // px/s — 이 이상 튕기면 위치와 무관하게 그 방향으로 스냅
 
 interface CalendarAccordionProps {
   monthCursor: Date;
@@ -32,10 +31,6 @@ interface CalendarAccordionProps {
   isExpanded: boolean;
   setExpanded: (target: 0 | 1) => void;
   onOpenAddEvent: () => void;
-  /** 달력 그리드 영역에서 시작한 세로 스와이프를 아래 일정 목록 스크롤로 이어주는 제스처. */
-  gridScrollGesture: PanGesture;
-  /** 힌트바 드래그가 확대/축소 범위(0~1)를 벗어나는 만큼(px)을 그대로 넘겨 일정 목록을 스크롤시킨다. */
-  onForwardScroll: (deltaY: number) => void;
 }
 
 export default function CalendarAccordion({
@@ -50,8 +45,6 @@ export default function CalendarAccordion({
   isExpanded,
   setExpanded,
   onOpenAddEvent,
-  gridScrollGesture,
-  onForwardScroll,
 }: CalendarAccordionProps) {
   const { canEditFamilyData } = useAppData();
   const cells = useMemo(() => {
@@ -92,52 +85,39 @@ export default function CalendarAccordion({
     opacity: interpolate(expandedProgress.value, [0, 1], [0, 1]),
   }));
 
-  const dragStart = useSharedValue(0);
-
-  const applyDragUpdate = (translationY: number, changeY: number) => {
+  // 카드 전체(요일 헤더 제외 없이 헤더 행 포함) 어디를 잡고 드래그하든 달력
+  // 높이가 손가락을 그대로 따라간다: 위로 밀면 축소(progress→0), 아래로
+  // 당기면 확대(progress→1). 손을 뗄 때는 속도가 충분히 빠르면 그 방향으로,
+  // 아니면 더 가까운 상태로 스냅한다.
+  const applyDragUpdate = (changeY: number) => {
     'worklet';
-    const delta = -translationY / DRAG_RANGE; // 위로 밀면(음수) 축소, 아래로 당기면 확대
-    const next = dragStart.value + delta;
-    const clamped = Math.min(1, Math.max(0, next));
-    if (next !== clamped) {
-      // 이미 완전히 펼쳐지거나(1) 접힌(0) 상태에서 같은 방향으로 계속 끄는 만큼은
-      // 확대/축소에 쓰지 않고 그대로 일정 목록 스크롤로 넘긴다.
-      onForwardScroll(changeY);
-    }
-    expandedProgress.value = clamped;
+    expandedProgress.value = Math.min(1, Math.max(0, expandedProgress.value + changeY / DRAG_RANGE));
   };
-  const applyDragEnd = (translationY: number) => {
+  const applyDragEnd = (velocityY: number) => {
     'worklet';
-    let target: 0 | 1;
-    if (Math.abs(translationY) > DRAG_THRESHOLD) {
-      target = translationY < 0 ? 0 : 1;
-    } else {
-      target = dragStart.value > 0.5 ? 1 : 0;
-    }
+    const target: 0 | 1 =
+      Math.abs(velocityY) > VELOCITY_THRESHOLD
+        ? velocityY < 0
+          ? 0
+          : 1
+        : expandedProgress.value >= 0.5
+        ? 1
+        : 0;
     runOnJS(setExpanded)(target);
   };
 
-  // 힌트바(하단) 드래그 — 터치 영역이 시각적으로 작아 hitSlop으로 위/좌/우는
-  // 넉넉하게 넓혀서 잡기 쉽게 한다. bottom은 넓히지 않는데, 힌트바 바로 아래가
-  // 일정 목록 스크롤 영역 시작 지점이라 여기까지 넓히면 "목록을 스크롤하려고
-  // 아래로 내렸을 뿐인데 달력이 확대/축소되는" 오작동으로 이어졌었다.
-  // activeOffsetY도 둬서 살짝 스친 정도로는 반응하지 않게 한다.
-  const dragGesture = Gesture.Pan()
-    .hitSlop({ top: 16, bottom: 0, left: 24, right: 24 })
-    .activeOffsetY([-12, 12])
-    .onStart(() => {
-      dragStart.value = expandedProgress.value;
-    })
-    .onChange((e) => applyDragUpdate(e.translationY, e.changeY))
-    .onEnd((e) => applyDragEnd(e.translationY));
+  const calendarDragGesture = Gesture.Pan()
+    .activeOffsetY([-10, 10])
+    .failOffsetX([-15, 15])
+    .onChange((e) => applyDragUpdate(e.changeY))
+    .onEnd((e) => applyDragEnd(e.velocityY));
 
   const toggleBadge = () => setExpanded(isExpanded ? 0 : 1);
 
   // 요일 행/날짜 그리드 영역에서 좌우로 스와이프하면 이전/다음 달로 이동한다.
-  // (예전엔 이 영역에서 위/아래로 드래그하면 힌트바처럼 직접 확대/축소했는데, 연속으로
-  // 위아래 스크롤하면 그때마다 걸려서 카드가 깜빡이듯 커졌다 작아지길 반복하는 문제가
-  // 있어 제거함 — 확대/축소는 힌트바 드래그와 토글 배지로만 하고, 그리드에서의 위아래
-  // 스와이프는 gridScrollGesture로 받아 확대/축소 없이 일정 목록만 스크롤시킨다.)
+  // calendarDragGesture와 카드 전체에 Simultaneous로 함께 걸려있지만, 세로
+  // Pan은 failOffsetX로 가로 이동에는 반응하지 않게 되어 있어 서로 방해하지
+  // 않는다.
   const swipeLeftGesture = Gesture.Fling()
     .direction(Directions.LEFT)
     .onStart(() => {
@@ -150,78 +130,81 @@ export default function CalendarAccordion({
     });
   const monthSwipeGesture = Gesture.Race(swipeLeftGesture, swipeRightGesture);
 
+  // 카드 전체(헤더 행·요일 행·그리드·힌트바 어디든)를 하나의 드래그 제스처로
+  // 감싼다 — "달력이나 일정 목록 어디를 잡고 위로 올리든 달력부터 축소되어야
+  // 한다"는 요구를 만족시키려면 세부 영역마다 별도 제스처를 두지 않고 카드
+  // 전체가 하나의 리사이즈 핸들처럼 동작해야 한다. 월 좌우 스와이프(가로)는
+  // failOffsetX 덕분에 계속 따로 인식된다.
+  const cardGesture = Gesture.Simultaneous(calendarDragGesture, monthSwipeGesture);
+
   return (
-    <View style={styles.card}>
-      <View style={styles.headerRow}>
-        <View style={styles.monthNav}>
-          <Pressable style={styles.arrowButton} onPress={onPrevMonth} hitSlop={6}>
-            <MaterialCommunityIcons name="chevron-left" size={18} color={t.textSecondary} />
-          </Pressable>
-          <Text style={styles.monthText}>
-            {monthCursor.getFullYear()}년 {monthCursor.getMonth() + 1}월
-          </Text>
-          <Pressable style={styles.arrowButton} onPress={onNextMonth} hitSlop={6}>
-            <MaterialCommunityIcons name="chevron-right" size={18} color={t.textSecondary} />
-          </Pressable>
-        </View>
-
-        <View style={styles.headerRowRight}>
-          <Pressable style={styles.toggleBadge} onPress={toggleBadge}>
-            <Text style={styles.toggleBadgeText}>{isExpanded ? '월간 보기' : '주간 1줄'}</Text>
-            <MaterialCommunityIcons
-              name={isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={16}
-              color={t.textSecondary}
-            />
-          </Pressable>
-
-          {canEditFamilyData && (
-            <Pressable style={styles.addEventBadge} onPress={onOpenAddEvent}>
-              <MaterialCommunityIcons name="plus" size={14} color={t.textPrimary} />
-              <Text style={styles.addEventBadgeText}>일정 추가</Text>
+    <GestureDetector gesture={cardGesture}>
+      <View style={styles.card}>
+        <View style={styles.headerRow}>
+          <View style={styles.monthNav}>
+            <Pressable style={styles.arrowButton} onPress={onPrevMonth} hitSlop={6}>
+              <MaterialCommunityIcons name="chevron-left" size={18} color={t.textSecondary} />
             </Pressable>
-          )}
-        </View>
-      </View>
-
-      <GestureDetector gesture={Gesture.Simultaneous(monthSwipeGesture, gridScrollGesture)}>
-        <View>
-          <View style={styles.weekdayRow}>
-            {WEEKDAYS.map((day, idx) => (
-              <Text
-                key={day}
-                style={[
-                  styles.weekdayText,
-                  idx === 0 && styles.sunday,
-                  idx === 6 && styles.saturday,
-                ]}
-              >
-                {day}
-              </Text>
-            ))}
+            <Text style={styles.monthText}>
+              {monthCursor.getFullYear()}년 {monthCursor.getMonth() + 1}월
+            </Text>
+            <Pressable style={styles.arrowButton} onPress={onNextMonth} hitSlop={6}>
+              <MaterialCommunityIcons name="chevron-right" size={18} color={t.textSecondary} />
+            </Pressable>
           </View>
 
-          <Animated.View style={[styles.gridContainer, containerAnimatedStyle]}>
-            <Animated.View style={gridAnimatedStyle}>
-              {Array.from({ length: rows }).map((_, rowIndex) => (
-                <WeekRow
-                  key={rowIndex}
-                  rowIndex={rowIndex}
-                  isSelectedRow={rowIndex === selectedWeekIndex}
-                  expandedProgress={expandedProgress}
-                  days={cells.slice(rowIndex * 7, rowIndex * 7 + 7)}
-                  selectedDate={selectedDate}
-                  todayISO={todayISO}
-                  eventsByDate={eventsByDate}
-                  onSelectDate={onSelectDate}
-                />
-              ))}
-            </Animated.View>
-          </Animated.View>
-        </View>
-      </GestureDetector>
+          <View style={styles.headerRowRight}>
+            <Pressable style={styles.toggleBadge} onPress={toggleBadge}>
+              <Text style={styles.toggleBadgeText}>{isExpanded ? '월간 보기' : '주간 1줄'}</Text>
+              <MaterialCommunityIcons
+                name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color={t.textSecondary}
+              />
+            </Pressable>
 
-      <GestureDetector gesture={dragGesture}>
+            {canEditFamilyData && (
+              <Pressable style={styles.addEventBadge} onPress={onOpenAddEvent}>
+                <MaterialCommunityIcons name="plus" size={14} color={t.textPrimary} />
+                <Text style={styles.addEventBadgeText}>일정 추가</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.weekdayRow}>
+          {WEEKDAYS.map((day, idx) => (
+            <Text
+              key={day}
+              style={[
+                styles.weekdayText,
+                idx === 0 && styles.sunday,
+                idx === 6 && styles.saturday,
+              ]}
+            >
+              {day}
+            </Text>
+          ))}
+        </View>
+
+        <Animated.View style={[styles.gridContainer, containerAnimatedStyle]}>
+          <Animated.View style={gridAnimatedStyle}>
+            {Array.from({ length: rows }).map((_, rowIndex) => (
+              <WeekRow
+                key={rowIndex}
+                rowIndex={rowIndex}
+                isSelectedRow={rowIndex === selectedWeekIndex}
+                expandedProgress={expandedProgress}
+                days={cells.slice(rowIndex * 7, rowIndex * 7 + 7)}
+                selectedDate={selectedDate}
+                todayISO={todayISO}
+                eventsByDate={eventsByDate}
+                onSelectDate={onSelectDate}
+              />
+            ))}
+          </Animated.View>
+        </Animated.View>
+
         <View style={styles.hintArea}>
           <View style={styles.hintBar} />
           <View style={styles.hintTextStack}>
@@ -233,8 +216,8 @@ export default function CalendarAccordion({
             </Animated.Text>
           </View>
         </View>
-      </GestureDetector>
-    </View>
+      </View>
+    </GestureDetector>
   );
 }
 

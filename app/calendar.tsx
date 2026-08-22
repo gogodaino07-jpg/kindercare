@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -49,8 +49,9 @@ export default function CalendarScreen() {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [buyState, setBuyState] = useState<{ event: Event; item: EventItem } | null>(null);
 
-  // 달력 축소/확대 진행도(0=주간 1줄, 1=월간). 힌트바 탭·드래그와 아래
-  // 상세 리스트 스크롤 둘 다 이 값을 갱신한다.
+  // 달력 축소/확대 진행도(0=주간 1줄, 1=월간). 카드 드래그·리스트 드래그·아래로
+  // 당겨 펼치기가 모두 이 값을 실시간으로 갱신하고, 손을 떼면 가까운 상태로
+  // 스냅한다.
   const expandedProgress = useSharedValue(1);
   const [isExpanded, setIsExpandedState] = useState(true);
 
@@ -69,111 +70,72 @@ export default function CalendarScreen() {
     await new Promise((resolve) => setTimeout(resolve, 500));
     setRefreshing(false);
   }, []);
-
-  // 접힌 상태에서만 목록 맨 위에 붙는 빈 스페이서 높이. 안드로이드 기본 ScrollView는
-  // 맨 위에서 바운스(음수 오프셋)를 주지 않아, 예전엔 ScrollView와 동시에 실행되는
-  // 별도 Pan 제스처로 "더 당긴 양"을 흉내 냈었다. 그런데 네이티브 스크롤이 터치를
-  // 이미 점유한 상태라 그 Pan 제스처가 터치를 온전히 받지 못해 자주 씹혔다(펼쳐지지
-  // 않음). 대신 스페이서로 진짜 스크롤 가능한 여유 공간을 만들어두면, 아래로 당길 때
-  // 실제 스크롤 오프셋이 움직이므로 onScroll만으로 안정적으로 감지할 수 있다.
-  const EXPAND_PULL_ZONE = 70;
-  const EXPAND_PULL_THRESHOLD = 10;
-  // 펼쳐진 상태에서 일정이 1개뿐이라 스크롤이 필요 없을 만큼 내용이 짧으면, 실제로
-  // 스크롤할 여지가 없어 위로 스와이프해도 아무 반응이 없었다(축소가 안 됨). 실제
-  // 목록 영역 높이(rootHeight - HEADER_AND_ACCORDION_ESTIMATE)보다 이만큼 더 큰
-  // minHeight를 펼쳐진 상태에서만 보장해서, 내용 길이와 무관하게 위로 스와이프하면
-  // 언제나 진짜 스크롤이 발생하도록 한다.
-  const COLLAPSE_SWIPE_BUFFER = 40;
-  const [rootHeight, setRootHeight] = useState(0);
-  // 일정이 없는 날의 "일정 없음" 카드처럼 내부에서 flex:1로 화면을 꽉 채우는
-  // 콘텐츠는, 위 버퍼가 더해진 늘어난 전체 높이 기준으로 다시 가운데 정렬되면
-  // 화면 밖으로 밀려난다. 그래서 그 카드를 감싸는 안쪽 래퍼는 실제 목록 영역
-  // 높이에 훨씬 못 미치는(헤더+달력 카드가 차지하는 공간을 넉넉히 뺀) 값으로만
-  // minHeight를 줘서, 늘어난 전체 높이가 아니라 화면에 보이는 범위 안에서만
-  // 가운데 정렬되게 한다. 픽셀 단위로 정확할 필요는 없고, 실제 목록 영역보다
-  // 작기만 하면 되므로 넉넉히 뺀 고정값을 쓴다.
-  const HEADER_AND_ACCORDION_ESTIMATE = 420;
+  // 새로고침 중에는 드래그로 인한 확대/축소 상태 변화를 막아 꿀렁임을 방지한다.
+  // worklet에서 읽어야 해서 refreshing 상태를 shared value로 미러링해둔다.
+  const refreshingShared = useSharedValue(false);
+  useEffect(() => {
+    refreshingShared.value = refreshing;
+  }, [refreshing, refreshingShared]);
 
   const scrollY = useSharedValue(0);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
-
-  // 달력 그리드·힌트바처럼 ScrollView 바깥 영역에서 시작한 세로 드래그를 그대로
-  // 아래 일정 목록 스크롤로 이어준다. 0 밑으로는 절대 내려가지 않게 막아서(음수 방지),
-  // 이 경로로는 "맨 위에서 더 당기면 확대" 트리거가 걸리지 않게 한다 — 목록을 아무리
-  // 밑으로(끝까지) 스크롤해도 그 자체로 달력이 갑자기 펼쳐지는 일은 없다.
-  const forwardScrollDelta = (deltaY: number) => {
-    'worklet';
-    const next = Math.max(0, scrollY.value - deltaY);
-    scrollTo(scrollRef, 0, next, false);
-  };
-
-  // 위로 스와이프해 축소를 트리거한 바로 그 손짓인지 표시해둔다. scrollEnabled를
-  // 손짓 도중에 꺼서 목록을 못 움직이게 막아보려 했었는데, 그러면 네이티브
-  // ScrollView가 그 손짓을 더 이상 드래그로 취급하지 않아 onEndDrag 자체가 안
-  // 불려서 스크롤이 계속 잠긴 채로 남는 문제가 있었다. 그래서 스크롤 자체는
-  // 막지 않고, 대신 이 손짓이 끝나는 순간(onEndDrag)에 맨 위로 스냅백시켜서
-  // "달력만 접히고 첫 일정은 그대로 보인다"는 결과만 보장한다.
-  const collapsedThisGesture = useSharedValue(false);
-
-  // 스크롤이 완전히 멈춘 뒤에만 스냅백 여부를 판단한다 — onEndDrag(손을 뗀 시점)에서
-  // 판단하면 아직 관성(fling)으로 계속 움직이는 중일 수 있는데, 그 시점 오프셋만 보고
-  // 스냅백을 걸면 관성 스크롤이 확대 문턱까지 도달하기 전에 강제로 멈춰버려 "빠르게
-  // 쓸어올리면 확대되어야 하는" 케이스가 씹히는 문제가 있었다.
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
-      const y = event.contentOffset.y;
-      scrollY.value = y;
-
-      // 새로고침(Pull-to-refresh) 중에는 달력 상태 변화를 막아 꿀렁임을 방지한다.
-      if (refreshing) return;
-
-      if (expandedProgress.value > 0.5 && !collapsedThisGesture.value) {
-        if (y > 30) {
-          runOnJS(setExpanded)(0);
-          collapsedThisGesture.value = true;
-        }
-      } else if (y <= EXPAND_PULL_ZONE - EXPAND_PULL_THRESHOLD) {
-        if (expandedProgress.value < 0.5) {
-          runOnJS(setExpanded)(1);
-        }
-      }
-    },
-    onEndDrag: (event) => {
-      if (collapsedThisGesture.value) {
-        collapsedThisGesture.value = false;
-        const y = event.contentOffset.y;
-        // 사용자가 이미 첫 번째 일정보다 더 아래로 스크롤했다면(y >= 70)
-        // 강제로 위로 튕겨 올리지 않고 관성을 유지시킨다.
-        if (y < EXPAND_PULL_ZONE) {
-          scrollTo(scrollRef, 0, EXPAND_PULL_ZONE, true);
-        }
-      }
-    },
-    onMomentumEnd: (event) => {
-      const y = event.contentOffset.y;
-      if (expandedProgress.value < 0.5 && y > EXPAND_PULL_ZONE - EXPAND_PULL_THRESHOLD && y < EXPAND_PULL_ZONE) {
-        scrollTo(scrollRef, 0, EXPAND_PULL_ZONE, true);
-      }
+      scrollY.value = event.contentOffset.y;
     },
   });
 
-  // isExpanded가 바뀌어 스페이서(EXPAND_PULL_ZONE)가 새로 생기거나 사라질 때 스크롤
-  // 오프셋을 보정해준다. 접힐 때는 항상 "스페이서만 가려진 맨 위"(EXPAND_PULL_ZONE)로
-  // 고정해서, 위로 스와이프해 달력이 축소되는 순간 첫 번째 일정이 스크롤에 가려지지
-  // 않고 항상 그대로 보이게 한다 — 달력만 접히고 목록 자체는 스크롤되지 않은 것처럼
-  // 느껴지게 하려는 것. (펼칠 때는 반대로, 당겨서 열었던 위치 기준으로 스페이서만큼
-  // 빼서 자연스럽게 이어지게 한다.)
-  useLayoutEffect(() => {
-    runOnUI((expand: boolean) => {
-      'worklet';
-      // 사용자가 직접 스크롤해서 접는 중일 때는 강제 scrollTo를 생략하여
-      // 스크롤 끊김(두 번 스와이프해야 하는 현상)을 방지한다.
-      if (!expand && collapsedThisGesture.value) return;
+  const DRAG_RANGE = 90; // 완전 축소↔확대 전환에 필요한 드래그 거리(px)
+  const VELOCITY_THRESHOLD = 600; // px/s — 이 이상으로 튕기면 위치와 무관하게 그 방향으로 스냅
 
-      const next = expand ? Math.max(0, scrollY.value - EXPAND_PULL_ZONE) : EXPAND_PULL_ZONE;
-      scrollTo(scrollRef, 0, next, false);
-    })(isExpanded);
-  }, [isExpanded, scrollRef, scrollY]);
+  const snapToNearest = (velocityY: number) => {
+    'worklet';
+    const target: 0 | 1 =
+      Math.abs(velocityY) > VELOCITY_THRESHOLD
+        ? velocityY < 0
+          ? 0
+          : 1
+        : expandedProgress.value >= 0.5
+        ? 1
+        : 0;
+    runOnJS(setExpanded)(target);
+  };
+
+  // 리스트 영역에서 위/아래로 드래그하면(달력이 펼쳐진 동안) 스크롤 대신 달력
+  // 높이를 직접 조절한다 — 펼쳐진 동안은 항상 네이티브 스크롤보다 우선한다
+  // (아래 Gesture.Exclusive). 내용이 짧아 실제로 스크롤할 게 없는 날에도 동작에
+  // 영향을 받지 않는다: 스크롤 오프셋과 무관하게 손가락 이동량만으로 판단한다.
+  // 완전히 접힌 뒤에는 비활성화되어 네이티브 스크롤이 그대로 살아난다.
+  const collapsePan = Gesture.Pan()
+    .enabled(isExpanded)
+    .activeOffsetY([-10, 10])
+    .failOffsetX([-15, 15])
+    .onChange((e) => {
+      if (refreshingShared.value) return;
+      expandedProgress.value = Math.min(1, Math.max(0, expandedProgress.value + e.changeY / DRAG_RANGE));
+    })
+    .onEnd((e) => snapToNearest(e.velocityY));
+
+  // 리스트가 완전히 접힌 상태에서만 켜진다. 스크롤 위치가 맨 위(0)일 때 아래로
+  // 당기면 달력을 다시 펼친다. 네이티브 스크롤과 동시에 인식되어야 해서(맨 위에서
+  // 더 당기는 동작은 네이티브 스크롤 관점에서는 그냥 정지해 있는 것과 같다)
+  // Exclusive가 아니라 Simultaneous로 묶는다.
+  const pulledThisGesture = useSharedValue(false);
+  const pullExpandPan = Gesture.Pan()
+    .enabled(!isExpanded)
+    .activeOffsetY([-10, 10])
+    .failOffsetX([-15, 15])
+    .onChange((e) => {
+      if (refreshingShared.value) return;
+      if (scrollY.value > 0.5 || e.changeY <= 0) return;
+      pulledThisGesture.value = true;
+      expandedProgress.value = Math.min(1, Math.max(0, expandedProgress.value + e.changeY / DRAG_RANGE));
+    })
+    .onEnd((e) => {
+      if (!pulledThisGesture.value) return;
+      pulledThisGesture.value = false;
+      snapToNearest(e.velocityY);
+    });
 
   // 날짜 탭이나 좌우 스와이프로 selectedDate가 바뀌면 이전 날짜의 스크롤 위치가
   // 그대로 남아있었다. 새 날짜의 일정이 이전보다 짧으면(예: 일정 많은 날 → 적은
@@ -182,22 +144,13 @@ export default function CalendarScreen() {
   useLayoutEffect(() => {
     // 레이아웃이 갱신된 후 스크롤이 일어나도록 아주 짧은 지연을 준다.
     const timeoutId = setTimeout(() => {
-      runOnUI((expand: boolean) => {
+      runOnUI(() => {
         'worklet';
-        scrollTo(scrollRef, 0, expand ? 0 : EXPAND_PULL_ZONE, false);
-      })(isExpanded);
+        scrollTo(scrollRef, 0, 0, false);
+      })();
     }, 50);
     return () => clearTimeout(timeoutId);
-  }, [selectedDate, scrollRef, isExpanded]);
-
-  // 달력 그리드(월간 뷰) 영역에서 위/아래로 스와이프하면 아래 일정 목록이 그대로
-  // 스크롤된다 — 화면 전체가 하나로 이어진 스크롤 영역처럼 느껴지게 한다.
-  const gridForwardScrollGesture = Gesture.Pan()
-    .activeOffsetY([-10, 10])
-    .failOffsetX([-15, 15])
-    .onChange((e) => {
-      forwardScrollDelta(e.changeY);
-    });
+  }, [selectedDate, scrollRef]);
 
   const childEvents = useMemo(
     () => events.filter((e) => e.childId === selectedChild?.id),
@@ -272,10 +225,14 @@ export default function CalendarScreen() {
     });
   // ScrollView를 GestureDetector로 감쌀 때 네이티브 스크롤 제스처(Gesture.Native)를
   // 함께 묶어주지 않으면 세로 스크롤 자체가 먹통이 되므로 항상 같이 묶는다.
+  // collapsePan이 켜져 있는(펼쳐진) 동안은 Exclusive로 네이티브 스크롤보다 먼저
+  // 손짓을 가로채 달력을 접는다. pullExpandPan은 접힌 동안 네이티브 스크롤과
+  // 동시에 인식되어 "맨 위에서 더 당기면 펼치기"를 감지한다.
   const nativeScrollGesture = Gesture.Native();
-  const daySwipeGesture = Gesture.Simultaneous(
-    Gesture.Race(swipeNextDayGesture, swipePrevDayGesture),
-    nativeScrollGesture
+  const listGesture = Gesture.Simultaneous(
+    Gesture.Exclusive(collapsePan, nativeScrollGesture),
+    pullExpandPan,
+    Gesture.Race(swipeNextDayGesture, swipePrevDayGesture)
   );
 
   const setItemCompleted = useCallback((event: Event, item: EventItem, completed: boolean) => {
@@ -298,7 +255,7 @@ export default function CalendarScreen() {
   }, [buyState, setItemCompleted]);
 
   return (
-    <View style={styles.root} onLayout={(e) => setRootHeight(e.nativeEvent.layout.height)}>
+    <View style={styles.root}>
       <SafeAreaView style={styles.safeArea}>
         <Stack.Screen options={{ headerShown: false }} />
 
@@ -324,20 +281,13 @@ export default function CalendarScreen() {
           isExpanded={isExpanded}
           setExpanded={setExpanded}
           onOpenAddEvent={() => setAddEventVisible(true)}
-          gridScrollGesture={gridForwardScrollGesture}
-          onForwardScroll={forwardScrollDelta}
         />
 
-        <GestureDetector gesture={daySwipeGesture}>
+        <GestureDetector gesture={listGesture}>
           <Animated.ScrollView
             ref={scrollRef}
             style={styles.scrollFlex}
-            contentContainerStyle={[
-              styles.scrollContent,
-              rootHeight && isExpanded
-                ? { minHeight: Math.max(0, rootHeight - HEADER_AND_ACCORDION_ESTIMATE) + COLLAPSE_SWIPE_BUFFER + 60 }
-                : null,
-            ]}
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             onScroll={scrollHandler}
             scrollEventThrottle={16}
@@ -348,25 +298,15 @@ export default function CalendarScreen() {
               ) : undefined
             }
           >
-            <View
-              style={
-                rootHeight
-                  ? { minHeight: Math.max(200, rootHeight - HEADER_AND_ACCORDION_ESTIMATE) }
-                  : styles.scrollInnerFallback
-              }
-            >
-              {!isExpanded && <View style={{ height: EXPAND_PULL_ZONE }} />}
-              <DayDetailSection
-                selectedDate={selectedDate}
-                events={selectedDateEvents}
-                todayISO={todayISO}
-                onAddEvent={() => setAddEventVisible(true)}
-                onPressEvent={setEditingEvent}
-                onToggleItem={handleToggleItem}
-                onOpenBuy={handleOpenBuy}
-              />
-            </View>
-            <View style={{ height: COLLAPSE_SWIPE_BUFFER }} />
+            <DayDetailSection
+              selectedDate={selectedDate}
+              events={selectedDateEvents}
+              todayISO={todayISO}
+              onAddEvent={() => setAddEventVisible(true)}
+              onPressEvent={setEditingEvent}
+              onToggleItem={handleToggleItem}
+              onOpenBuy={handleOpenBuy}
+            />
           </Animated.ScrollView>
         </GestureDetector>
       </SafeAreaView>
@@ -411,9 +351,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 40,
-  },
-  scrollInnerFallback: {
-    flex: 1,
   },
   todayFloatingWrap: {
     position: 'absolute',
