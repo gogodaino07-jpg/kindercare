@@ -1,11 +1,10 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   runOnJS,
-  runOnUI,
   scrollTo,
   useAnimatedRef,
   useAnimatedScrollHandler,
@@ -79,15 +78,24 @@ export default function CalendarScreen() {
   const EXPAND_PULL_ZONE = 70;
   const EXPAND_PULL_THRESHOLD = 10;
   // 펼쳐진 상태에서 일정이 1개뿐이라 스크롤이 필요 없을 만큼 내용이 짧으면, 실제로
-  // 스크롤할 여지가 없어 위로 스와이프해도 아무 반응이 없었다(축소가 안 됨). 목록
-  // 영역 실제 높이(viewportHeight)보다 이만큼 더 큰 minHeight를 항상 보장해서,
-  // 내용 길이와 무관하게 위로 스와이프하면 언제나 진짜 스크롤이 발생하도록 한다.
-  // 이 여분은 일정이 없는 날의 "일정 없음" 카드처럼 내부에서 flex:1로 화면을 꽉
-  // 채우는 콘텐츠와는 별도의 고정 높이 스페이서로만 추가해, 그 카드가 늘어난
-  // 전체 높이(viewport+버퍼) 기준으로 다시 가운데 정렬되어 화면 밖으로 밀려나지
-  // 않고 항상 viewportHeight 안에서만 정렬되도록 한다.
+  // 스크롤할 여지가 없어 위로 스와이프해도 아무 반응이 없었다(축소가 안 됨). 화면
+  // 전체 높이(rootHeight)보다 이만큼 더 큰 minHeight를 항상 보장해서, 내용 길이와
+  // 무관하게 위로 스와이프하면 언제나 진짜 스크롤이 발생하도록 한다.
+  // rootHeight는 ScrollView 자신이 아니라 최상위 루트 View에서 한 번만 측정한다.
+  // ScrollView 자신의 높이로 측정하면 아코디언이 펼쳐지고 접힐 때마다(300ms 애니메이션
+  // 동안 매 프레임) onLayout이 다시 불려서 화면 전체가 계속 리렌더링되어 스크롤이
+  // 버벅였다 — 루트 View의 높이는 아코디언 내부 배분과 무관하게 항상 고정이라
+  // 회전 등으로만 바뀌므로 이 문제가 없다.
   const COLLAPSE_SWIPE_BUFFER = 80;
-  const [viewportHeight, setViewportHeight] = useState(0);
+  const [rootHeight, setRootHeight] = useState(0);
+  // 일정이 없는 날의 "일정 없음" 카드처럼 내부에서 flex:1로 화면을 꽉 채우는
+  // 콘텐츠는, 위 버퍼가 더해진 늘어난 전체 높이 기준으로 다시 가운데 정렬되면
+  // 화면 밖으로 밀려난다. 그래서 그 카드를 감싸는 안쪽 래퍼는 실제 목록 영역
+  // 높이에 훨씬 못 미치는(헤더+달력 카드가 차지하는 공간을 넉넉히 뺀) 값으로만
+  // minHeight를 줘서, 늘어난 전체 높이가 아니라 화면에 보이는 범위 안에서만
+  // 가운데 정렬되게 한다. 픽셀 단위로 정확할 필요는 없고, 실제 목록 영역보다
+  // 작기만 하면 되므로 넉넉히 뺀 고정값을 쓴다.
+  const HEADER_AND_ACCORDION_ESTIMATE = 500;
 
   const scrollY = useSharedValue(0);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -102,6 +110,10 @@ export default function CalendarScreen() {
     scrollTo(scrollRef, 0, next, false);
   };
 
+  // 스크롤이 완전히 멈춘 뒤에만 스냅백 여부를 판단한다 — onEndDrag(손을 뗀 시점)에서
+  // 판단하면 아직 관성(fling)으로 계속 움직이는 중일 수 있는데, 그 시점 오프셋만 보고
+  // 스냅백을 걸면 관성 스크롤이 확대 문턱까지 도달하기 전에 강제로 멈춰버려 "빠르게
+  // 쓸어올리면 확대되어야 하는" 케이스가 씹히는 문제가 있었다.
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       const y = event.contentOffset.y;
@@ -114,25 +126,13 @@ export default function CalendarScreen() {
         runOnJS(setExpanded)(1);
       }
     },
-    onEndDrag: (event) => {
-      // 확대 문턱까지는 못 미쳤지만 스페이서가 살짝 드러난 채로 손을 뗀 경우,
-      // 다시 감춰지도록 스냅백한다.
+    onMomentumEnd: (event) => {
       const y = event.contentOffset.y;
       if (expandedProgress.value < 0.5 && y > EXPAND_PULL_ZONE - EXPAND_PULL_THRESHOLD && y < EXPAND_PULL_ZONE) {
         scrollTo(scrollRef, 0, EXPAND_PULL_ZONE, true);
       }
     },
   });
-
-  // isExpanded가 바뀌어 스페이서가 새로 생기거나 사라질 때, 화면에 보이는 내용이
-  // 그대로 유지되도록 스크롤 오프셋을 스페이서 높이만큼 보정해준다.
-  useLayoutEffect(() => {
-    runOnUI((expand: boolean) => {
-      'worklet';
-      const next = expand ? Math.max(0, scrollY.value - EXPAND_PULL_ZONE) : scrollY.value + EXPAND_PULL_ZONE;
-      scrollTo(scrollRef, 0, next, false);
-    })(isExpanded);
-  }, [isExpanded, scrollRef, scrollY]);
 
   // 달력 그리드(월간 뷰) 영역에서 위/아래로 스와이프하면 아래 일정 목록이 그대로
   // 스크롤된다 — 화면 전체가 하나로 이어진 스크롤 영역처럼 느껴지게 한다.
@@ -242,7 +242,7 @@ export default function CalendarScreen() {
   }, [buyState, setItemCompleted]);
 
   return (
-    <View style={styles.root}>
+    <View style={styles.root} onLayout={(e) => setRootHeight(e.nativeEvent.layout.height)}>
       <SafeAreaView style={styles.safeArea}>
         <Stack.Screen options={{ headerShown: false }} />
 
@@ -276,10 +276,9 @@ export default function CalendarScreen() {
           <Animated.ScrollView
             ref={scrollRef}
             style={styles.scrollFlex}
-            onLayout={(e) => setViewportHeight(e.nativeEvent.layout.height)}
             contentContainerStyle={[
               styles.scrollContent,
-              viewportHeight ? { minHeight: viewportHeight + COLLAPSE_SWIPE_BUFFER } : null,
+              rootHeight ? { minHeight: rootHeight + COLLAPSE_SWIPE_BUFFER } : null,
             ]}
             showsVerticalScrollIndicator={false}
             onScroll={scrollHandler}
@@ -291,7 +290,13 @@ export default function CalendarScreen() {
               ) : undefined
             }
           >
-            <View style={viewportHeight ? { minHeight: viewportHeight } : styles.scrollInnerFallback}>
+            <View
+              style={
+                rootHeight
+                  ? { minHeight: Math.max(200, rootHeight - HEADER_AND_ACCORDION_ESTIMATE) }
+                  : styles.scrollInnerFallback
+              }
+            >
               {!isExpanded && <View style={{ height: EXPAND_PULL_ZONE }} />}
               <DayDetailSection
                 selectedDate={selectedDate}
