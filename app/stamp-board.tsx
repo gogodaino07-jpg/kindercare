@@ -122,6 +122,7 @@ export default function StampBoardScreen() {
     isCompleted,
     addStamp,
     updateSettings,
+    clearTodayStampFlag,
     resetProgress,
     setTheme,
     setStampIcon,
@@ -349,6 +350,12 @@ export default function StampBoardScreen() {
                 {/* TODO: 도장 애니메이션 확인용 임시 버튼 — 확인 끝나면 제거 */}
                 <Pressable onPress={confirmReset} style={styles.devResetButton} hitSlop={6}>
                   <Feather name="refresh-ccw" size={11} color="#EF4444" />
+                </Pressable>
+                {/* TODO: 도장 아이콘 기록(stampHistory) 확인용 임시 버튼 — 오늘 이미 찍음
+                    플래그만 지워서 currentStamps는 그대로 두고 연속으로 도장을 찍어볼 수
+                    있게 함. 확인 끝나면 제거. */}
+                <Pressable onPress={clearTodayStampFlag} style={styles.devResetButton} hitSlop={6}>
+                  <Feather name="skip-forward" size={11} color="#0EA5E9" />
                 </Pressable>
               </View>
             </View>

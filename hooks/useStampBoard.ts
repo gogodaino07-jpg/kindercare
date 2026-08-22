@@ -100,6 +100,18 @@ export function useStampBoard(childId: string | undefined) {
     [childId]
   );
 
+  // TODO: 도장 아이콘별 기록(stampHistory) 확인용 임시 함수 — 확인 끝나면 제거.
+  // currentStamps/stampHistory는 그대로 두고 "오늘 이미 찍음" 플래그만 지워서,
+  // 하루 1회 제한 없이 연속으로 도장을 찍어보며 아이콘이 각각 유지되는지 볼 수 있다.
+  const clearTodayStampFlag = useCallback(() => {
+    if (!childId) return;
+    setData((prev) => {
+      const next: StampBoardData = { ...prev, lastStampedDateISO: null };
+      persist(childId, next);
+      return next;
+    });
+  }, [childId]);
+
   const resetProgress = useCallback(() => {
     if (!childId) return;
     setData((prev) => {
@@ -165,6 +177,7 @@ export function useStampBoard(childId: string | undefined) {
     isCompleted,
     addStamp,
     updateSettings,
+    clearTodayStampFlag,
     resetProgress,
     setTheme,
     setStampIcon,
