@@ -284,7 +284,10 @@ export default function StampBoardScreen() {
           <View style={styles.profileBlock}>
             <View style={styles.avatarWrap}>
               {selectedChild?.photoUri ? (
-                <Image source={{ uri: selectedChild.photoUri }} style={styles.avatarImage} />
+                <Image
+                  source={{ uri: selectedChild.photoUri }}
+                  style={[styles.avatarImage, { borderColor: theme.avatarBorder }]}
+                />
               ) : (
                 <LinearGradient
                   colors={theme.avatarGradient}
@@ -713,7 +716,7 @@ const styles = StyleSheet.create({
   },
   profileBlock: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0 },
   avatarWrap: { width: 56, height: 56, position: 'relative' },
-  avatarImage: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)' },
+  avatarImage: { width: 56, height: 56, borderRadius: 28, borderWidth: 2 },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   avatarEmoji: { fontSize: 25 },
   onlineDot: {
