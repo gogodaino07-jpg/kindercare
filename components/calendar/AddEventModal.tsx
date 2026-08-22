@@ -103,7 +103,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleRequestClose} statusBarTranslucent>
       <KeyboardAvoidingView
         style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={handleRequestClose} />
         <View style={styles.card}>
