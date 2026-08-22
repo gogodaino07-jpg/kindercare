@@ -200,13 +200,32 @@ export default function FamilyMembersScreen() {
               <Text style={styles.sectionLabel}>가족 키</Text>
               <View style={styles.keyCard}>
                 <Text style={styles.keyText}>{displayedKey}</Text>
+                <Text style={styles.keyHint}>구성원 등록 시 입력하는 6자리 인증키입니다</Text>
                 <Pressable
                   style={styles.copyButton}
                   onPress={handleCopy}
                   accessibilityLabel="키 복사"
                 >
-                  <Text style={styles.copyButtonText}>{copied ? '✓ 복사됨' : '📋 복사하기'}</Text>
+                  <MaterialCommunityIcons
+                    name="content-copy"
+                    size={14}
+                    color={colors.gray900}
+                    style={styles.copyButtonIcon}
+                  />
+                  <Text style={styles.copyButtonText}>{copied ? '복사됨' : '복사하기'}</Text>
                 </Pressable>
+              </View>
+
+              <View style={styles.noticeCard}>
+                <View style={styles.noticeIconBadge}>
+                  <MaterialCommunityIcons name="shield-check-outline" size={18} color={BLUE_DEEP} />
+                </View>
+                <View style={styles.noticeTextArea}>
+                  <Text style={styles.noticeTitle}>키 재발급 시 유의사항</Text>
+                  <Text style={styles.noticeBody}>
+                    키를 재발급하면 기존 키는 즉시 무효화됩니다. 새로운 구성원을 초대할 때만 재발급해 주세요.
+                  </Text>
+                </View>
               </View>
             </>
           )}
@@ -338,30 +357,74 @@ function createStyles(colors: ThemeColors) {
     },
     keyCard: {
       backgroundColor: colors.cardWhite,
-      borderRadius: 14,
-      paddingVertical: 18,
+      borderRadius: 24,
+      paddingVertical: 32,
+      paddingHorizontal: 20,
       alignItems: 'center',
+      overflow: 'hidden',
       ...SHADOW,
     },
     keyText: {
-      fontSize: 20,
+      fontSize: 34,
       fontWeight: '800',
-      letterSpacing: 2,
+      letterSpacing: 6,
       color: colors.accent,
     },
-    copyButton: {
+    keyHint: {
+      fontSize: 12.5,
+      fontWeight: '600',
+      color: colors.textSecondary,
       marginTop: 10,
-      paddingVertical: 6,
-      paddingHorizontal: 14,
+    },
+    copyButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 20,
+      paddingVertical: 10,
+      paddingHorizontal: 18,
       borderRadius: 999,
-      backgroundColor: colors.gray100,
+      backgroundColor: colors.cardWhite,
       borderWidth: 1,
       borderColor: colors.gray400,
     },
+    copyButtonIcon: {
+      marginRight: 6,
+    },
     copyButtonText: {
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: '700',
       color: colors.gray900,
+    },
+    noticeCard: {
+      flexDirection: 'row',
+      gap: 12,
+      backgroundColor: colors.cardWhite,
+      borderRadius: 18,
+      padding: 16,
+      marginTop: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    noticeIconBadge: {
+      width: 36,
+      height: 36,
+      borderRadius: 12,
+      backgroundColor: BLUE_SOFT,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    noticeTextArea: { flex: 1 },
+    noticeTitle: {
+      fontSize: 13.5,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      marginBottom: 4,
+    },
+    noticeBody: {
+      fontSize: 12.5,
+      fontWeight: '500',
+      color: colors.textSecondary,
+      lineHeight: 18,
     },
     memberCard: {
       flexDirection: 'row',
