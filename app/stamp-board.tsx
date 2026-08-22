@@ -151,9 +151,14 @@ export default function StampBoardScreen() {
   // 다른 칸에 애니메이션이 겹쳐 찍힐 수 있다. ref로 애니메이션 도중엔 새 찍기를 막는다.
   const isStampingRef = useRef(false);
 
+  // 완성 팝업은 "닫기"로 끄고 나면 같은 완성 상태에서는 다시 안 뜨다가, 도장판을
+  // 초기화하고 새로 완성했을 때만 다시 뜨게 한다.
+  const [celebrationDismissed, setCelebrationDismissed] = useState(false);
+
   useEffect(() => {
-    if (isCompleted && !prevCompletedRef.current && soundEnabled) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    if (isCompleted && !prevCompletedRef.current) {
+      setCelebrationDismissed(false);
+      if (soundEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     }
     prevCompletedRef.current = isCompleted;
   }, [isCompleted, soundEnabled]);
@@ -574,8 +579,8 @@ export default function StampBoardScreen() {
           동시에 짧게 흔들린다. */}
       <StampCelebrationEffect triggerKey={celebrationTriggerKey} icon={celebrationIcon} />
 
-      {/* 목표 달성 축하 오버레이 */}
-      <Modal visible={isCompleted} animationType="fade" transparent>
+      {/* 목표 달성 축하 오버레이 — 완성되는 순간 바로 뜨도록 애니메이션 없이 표시. */}
+      <Modal visible={isCompleted && !celebrationDismissed} animationType="none" transparent>
         <View style={styles.celebrationOverlay}>
           <View style={styles.celebrationCard}>
             {isCompleted && <ThemeCelebrationHero themeId={themeId} />}
@@ -593,8 +598,8 @@ export default function StampBoardScreen() {
             </LinearGradient>
             <Text style={styles.celebrationFooterText}>칭찬 약속을 멋지게 지킨 최고의 어린이! 👍</Text>
 
-            <Pressable style={styles.celebrationButton} onPress={resetProgress}>
-              <Text style={styles.celebrationButtonText}>신나게 선물 받으러 가기! 🎁</Text>
+            <Pressable style={styles.celebrationButton} onPress={() => setCelebrationDismissed(true)}>
+              <Text style={styles.celebrationButtonText}>닫기</Text>
             </Pressable>
           </View>
         </View>
