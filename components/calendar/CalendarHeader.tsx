@@ -57,6 +57,7 @@ export default function CalendarHeader({
             <Text style={styles.avatarPlaceholderIcon}>🧒</Text>
           </View>
         )}
+        <View style={styles.onlineDot} />
       </View>
 
       <View style={styles.textBlock}>
@@ -99,22 +100,38 @@ const styles = StyleSheet.create({
   avatarWrap: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
+    position: 'relative',
   },
   avatar: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
+    borderWidth: 2,
+    borderColor: t.amberBg,
   },
   avatarPlaceholder: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
     backgroundColor: t.gray100,
+    borderWidth: 2,
+    borderColor: t.amberBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarPlaceholderIcon: {
     fontSize: 25,
+  },
+  onlineDot: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 15,
+    height: 15,
+    borderRadius: 8,
+    backgroundColor: t.emerald,
+    borderWidth: 2,
+    borderColor: t.bg,
   },
   textBlock: {
     flex: 1,

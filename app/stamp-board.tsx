@@ -666,15 +666,12 @@ export default function StampBoardScreen() {
 
             <Text style={styles.modalSectionLabel}>인기 소원 추천 💡</Text>
             <View style={styles.presetRow}>
-              {WISH_PRESETS.map((preset) => {
-                const [emoji, word] = preset.split(' ');
-                return (
-                  <Pressable key={preset} onPress={() => setTempWish(preset)} style={styles.presetChip}>
-                    <Text style={styles.presetChipEmoji}>{emoji}</Text>
-                    <Text style={styles.presetChipText}>{word}</Text>
-                  </Pressable>
-                );
-              })}
+              {WISH_PRESETS.map((preset) => (
+                <Pressable key={preset.text} onPress={() => setTempWish(preset.text)} style={styles.presetChip}>
+                  <Text style={styles.presetChipEmoji}>{preset.emoji}</Text>
+                  <Text style={styles.presetChipText}>{preset.label}</Text>
+                </Pressable>
+              ))}
             </View>
 
             <View style={styles.modalActionsRow}>
@@ -715,7 +712,7 @@ const styles = StyleSheet.create({
   },
   profileBlock: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0 },
   avatarWrap: { width: 56, height: 56, position: 'relative' },
-  avatarImage: { width: 56, height: 56, borderRadius: 28 },
+  avatarImage: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)' },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   avatarEmoji: { fontSize: 25 },
   onlineDot: {

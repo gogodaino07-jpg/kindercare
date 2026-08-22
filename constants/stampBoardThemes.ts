@@ -89,10 +89,11 @@ export const RAINBOW_PROGRESS_GRADIENT: [string, string, string, string, string]
   '#C084FC',
 ];
 
-export const WISH_PRESETS = [
-  '🧸 도장 모아서 장난감 선물 받기!',
-  '🍦 달콤한 아이스크림 먹기!',
-  '🎠 신나는 키즈카페 놀러 가기!',
-  '🍕 맛있는 치킨&피자 파티!',
-  '⏰ 만화 1시간 마음껏 보기!',
+/** label은 추천 칩에 보여줄 짧은 핵심 단어, text는 탭했을 때 입력창에 채워질 전체 문구. */
+export const WISH_PRESETS: { emoji: string; label: string; text: string }[] = [
+  { emoji: '🧸', label: '장난감', text: '🧸 도장 모아서 장난감 선물 받기!' },
+  { emoji: '🍦', label: '아이스크림', text: '🍦 달콤한 아이스크림 먹기!' },
+  { emoji: '🎠', label: '키즈카페', text: '🎠 신나는 키즈카페 놀러 가기!' },
+  { emoji: '🍕', label: '치킨&피자', text: '🍕 맛있는 치킨&피자 파티!' },
+  { emoji: '⏰', label: '만화 보기', text: '⏰ 만화 1시간 마음껏 보기!' },
 ];
