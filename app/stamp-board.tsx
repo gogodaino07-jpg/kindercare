@@ -178,19 +178,28 @@ export default function StampBoardScreen() {
     if (isStampingRef.current) return;
     isStampingRef.current = true;
 
-    if (soundEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    if (soundEnabled) {
+      // 쿵! 하고 한 번 세게, 아주 살짝 뒤에 가볍게 한 번 더 — 임팩트가 통통 튀는 느낌.
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+      setTimeout(() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      }, 110);
+    }
 
     setStampingIndex(index);
 
-    // 도장이 종이에 콱 부딪히는 순간(약 150ms 뒤)에 맞춰 화면이 짧게 흔들린다.
+    // 도장이 종이에 콱 부딪히는 순간(약 150ms 뒤)에 맞춰 화면이 크게 통통 흔들린다.
     screenShakeAnim.setValue(0);
     Animated.sequence([
       Animated.delay(140),
-      Animated.timing(screenShakeAnim, { toValue: 1, duration: 35, useNativeDriver: true }),
-      Animated.timing(screenShakeAnim, { toValue: -1, duration: 35, useNativeDriver: true }),
-      Animated.timing(screenShakeAnim, { toValue: 0.6, duration: 35, useNativeDriver: true }),
-      Animated.timing(screenShakeAnim, { toValue: -0.6, duration: 35, useNativeDriver: true }),
-      Animated.timing(screenShakeAnim, { toValue: 0, duration: 35, useNativeDriver: true }),
+      Animated.timing(screenShakeAnim, { toValue: 1, duration: 30, useNativeDriver: true }),
+      Animated.timing(screenShakeAnim, { toValue: -1, duration: 30, useNativeDriver: true }),
+      Animated.timing(screenShakeAnim, { toValue: 0.85, duration: 30, useNativeDriver: true }),
+      Animated.timing(screenShakeAnim, { toValue: -0.85, duration: 30, useNativeDriver: true }),
+      Animated.timing(screenShakeAnim, { toValue: 0.5, duration: 30, useNativeDriver: true }),
+      Animated.timing(screenShakeAnim, { toValue: -0.5, duration: 30, useNativeDriver: true }),
+      Animated.timing(screenShakeAnim, { toValue: 0.2, duration: 30, useNativeDriver: true }),
+      Animated.timing(screenShakeAnim, { toValue: 0, duration: 30, useNativeDriver: true }),
     ]).start();
 
     stampAnim.setValue(2.6);
@@ -303,7 +312,19 @@ export default function StampBoardScreen() {
       {
         translateX: screenShakeAnim.interpolate({
           inputRange: [-1, 1],
-          outputRange: [-8, 8],
+          outputRange: [-16, 16],
+        }),
+      },
+      {
+        translateY: screenShakeAnim.interpolate({
+          inputRange: [-1, 0, 1],
+          outputRange: [3, 0, 3],
+        }),
+      },
+      {
+        rotate: screenShakeAnim.interpolate({
+          inputRange: [-1, 1],
+          outputRange: ['-2.5deg', '2.5deg'],
         }),
       },
     ],
@@ -1043,7 +1064,7 @@ const styles = StyleSheet.create({
   soundToggleText: { fontSize: 10.5, fontWeight: '700', color: '#64748B' },
   celebrationOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15,23,42,0.7)',
+    backgroundColor: 'rgba(15,23,42,0.97)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
