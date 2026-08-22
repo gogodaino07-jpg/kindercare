@@ -90,13 +90,13 @@ export function useStampBoard(childId: string | undefined) {
   const currentStamps = data.stamps.filter((s) => s !== null).length;
   const isCompleted = data.targetCount > 0 && currentStamps >= data.targetCount;
 
-  /** 칸을 탭했을 때: 비어있으면 현재 선택된 아이콘으로 채우고, 이미 차 있으면 지운다. */
-  const toggleStamp = useCallback((index: number) => {
+  /** 빈 칸을 현재 선택된 아이콘으로 채운다 — 이미 찍힌 칸은 지울 수 없다(실수 방지). */
+  const placeStamp = useCallback((index: number) => {
     if (!childId) return;
     setData((prev) => {
-      if (index < 0 || index >= prev.targetCount) return prev;
+      if (index < 0 || index >= prev.targetCount || prev.stamps[index]) return prev;
       const nextStamps = [...prev.stamps];
-      nextStamps[index] = nextStamps[index] ? null : prev.stampIcon;
+      nextStamps[index] = prev.stampIcon;
       const next: StampBoardData = { ...prev, stamps: nextStamps };
       persist(childId, next);
       return next;
@@ -179,7 +179,7 @@ export function useStampBoard(childId: string | undefined) {
     stampIcon: data.stampIcon,
     soundEnabled: data.soundEnabled,
     isCompleted,
-    toggleStamp,
+    placeStamp,
     updateSettings,
     resetProgress,
     setTheme,

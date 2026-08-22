@@ -119,7 +119,7 @@ export default function StampBoardScreen() {
     stampIcon,
     soundEnabled,
     isCompleted,
-    toggleStamp,
+    placeStamp,
     updateSettings,
     resetProgress,
     setTheme,
@@ -189,7 +189,7 @@ export default function StampBoardScreen() {
       ]),
       Animated.spring(stampAnim, { toValue: 1, friction: 3, tension: 220, useNativeDriver: true }),
     ]).start(() => {
-      toggleStamp(index);
+      placeStamp(index);
       setStampingIndex(null);
       isStampingRef.current = false;
     });
@@ -232,12 +232,9 @@ export default function StampBoardScreen() {
     runStampSlamAnimation(emptyIndex);
   };
 
-  // 칸을 직접 탭했을 때 — 비어있으면 그 자리에 바로 찍고, 이미 찍혀있으면 지운다(즉시, 애니메이션 없음).
+  // 빈 칸을 직접 탭하면 그 자리에 바로 찍힌다. 이미 찍힌 칸은 탭해도 아무 반응 없음(지우기 불가).
   const handleSlotPress = (index: number) => {
-    if (stamps[index]) {
-      toggleStamp(index);
-      return;
-    }
+    if (stamps[index]) return;
     runStampSlamAnimation(index);
   };
 
@@ -458,36 +455,34 @@ export default function StampBoardScreen() {
                 return (
                   <View key={index} style={styles.stampSlotWrap}>
                     {isStamped || isJustStamped ? (
-                      <Pressable onPress={() => handleSlotPress(index)}>
-                        <Animated.View
-                          style={[
-                            styles.stampSlotAnimatedWrap,
-                            isJustStamped && {
-                              transform: [
-                                { scale: stampAnim },
-                                {
-                                  rotate: stampRotateAnim.interpolate({
-                                    inputRange: [0, 1],
-                                    outputRange: ['0deg', '-14deg'],
-                                  }),
-                                },
-                              ],
-                            },
-                          ]}
+                      <Animated.View
+                        style={[
+                          styles.stampSlotAnimatedWrap,
+                          isJustStamped && {
+                            transform: [
+                              { scale: stampAnim },
+                              {
+                                rotate: stampRotateAnim.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: ['0deg', '-14deg'],
+                                }),
+                              },
+                            ],
+                          },
+                        ]}
+                      >
+                        <LinearGradient
+                          colors={['#FEF3C7', '#FCE7F3', '#E0F2FE']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={[styles.stampSlot, styles.stampSlotActive]}
                         >
-                          <LinearGradient
-                            colors={['#FEF3C7', '#FCE7F3', '#E0F2FE']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={[styles.stampSlot, styles.stampSlotActive]}
-                          >
-                            <Text style={styles.stampEmoji}>{icon ?? stampIcon}</Text>
-                            <View style={styles.stampIndexBadge}>
-                              <Text style={styles.stampIndexText}>{index + 1}</Text>
-                            </View>
-                          </LinearGradient>
-                        </Animated.View>
-                      </Pressable>
+                          <Text style={styles.stampEmoji}>{icon ?? stampIcon}</Text>
+                          <View style={styles.stampIndexBadge}>
+                            <Text style={styles.stampIndexText}>{index + 1}</Text>
+                          </View>
+                        </LinearGradient>
+                      </Animated.View>
                     ) : (
                       <Pressable
                         onPress={() => handleSlotPress(index)}
