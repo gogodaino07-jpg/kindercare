@@ -248,7 +248,7 @@ export default function AIReviewScreen() {
                 {docs.map((doc) => (
                   <View key={doc.id} style={styles.originalPreviewSlide}>
                     {doc.kind === 'image' ? (
-                      <Image source={{ uri: doc.uri }} style={styles.originalPreviewImage} resizeMode="cover" />
+                      <Image source={{ uri: doc.uri }} style={styles.originalPreviewImage} resizeMode="contain" />
                     ) : (
                       <View style={styles.originalPreviewFile}>
                         <Feather name="file" size={22} color={C.slate400} />
@@ -457,13 +457,13 @@ const styles = StyleSheet.create({
   zoomButtonDisabled: { opacity: 0.4 },
   zoomButtonText: { fontSize: 10, fontWeight: '700', color: C.white },
   originalPreviewCard: {
-    backgroundColor: C.white,
+    backgroundColor: C.slate50,
     borderRadius: 16,
     overflow: 'hidden',
-    height: 120,
+    height: 220,
   },
   originalEmptyText: { flex: 1, textAlign: 'center', textAlignVertical: 'center', color: C.slate400, fontSize: 12 },
-  originalPreviewSlide: { width: PREVIEW_WIDTH, height: 120 },
+  originalPreviewSlide: { width: PREVIEW_WIDTH, height: 220, backgroundColor: C.slate50 },
   originalPreviewImage: { width: '100%', height: '100%' },
   originalPreviewFile: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 20 },
   originalPreviewFileName: { fontSize: 11, color: C.slate500, fontWeight: '600' },
