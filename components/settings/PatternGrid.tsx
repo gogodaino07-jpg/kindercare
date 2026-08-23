@@ -8,6 +8,8 @@ interface PatternGridProps {
   showTrail: boolean;
   onComplete: (path: number[]) => void;
   size?: number;
+  /** true면 손을 뗀 뒤에도 그린 패턴이 화면에 남아있는다(확인 버튼으로 다음 단계 넘어가는 흐름용). */
+  keepTrailAfterComplete?: boolean;
 }
 
 const GRID_SIZE = 3;
@@ -19,7 +21,7 @@ function centerFor(index: number, cell: number) {
   return { x: col * cell + cell / 2, y: row * cell + cell / 2 };
 }
 
-export default function PatternGrid({ colors, showTrail, onComplete, size = 240 }: PatternGridProps) {
+export default function PatternGrid({ colors, showTrail, onComplete, size = 240, keepTrailAfterComplete = false }: PatternGridProps) {
   const cell = size / GRID_SIZE;
   const [path, setPath] = useState<number[]>([]);
   const [dragPoint, setDragPoint] = useState<{ x: number; y: number } | null>(null);
@@ -48,6 +50,8 @@ export default function PatternGrid({ colors, showTrail, onComplete, size = 240 
   // kept current every render so the handlers always call the latest callback.
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+  const keepTrailRef = useRef(keepTrailAfterComplete);
+  keepTrailRef.current = keepTrailAfterComplete;
 
   const handleTouch = (evt: GestureResponderEvent) => {
     const { pageX, pageY } = evt.nativeEvent;
@@ -85,8 +89,10 @@ export default function PatternGrid({ colors, showTrail, onComplete, size = 240 
       onPanResponderMove: (evt) => handleTouch(evt),
       onPanResponderRelease: () => {
         onCompleteRef.current(pathRef.current);
-        pathRef.current = [];
-        setPath([]);
+        if (!keepTrailRef.current) {
+          pathRef.current = [];
+          setPath([]);
+        }
         setDragPoint(null);
       },
       onPanResponderTerminate: () => {

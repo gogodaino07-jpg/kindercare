@@ -18,14 +18,23 @@ interface LockOption {
   id: LockMethod;
   title: string;
   description: string;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
 }
 
 const LOCK_OPTIONS: LockOption[] = [
-  { id: 'pin', title: 'PIN(숫자)', description: '보안강도 약간 높음' },
-  { id: 'password', title: '비밀번호(영문+숫자)', description: '보안강도 높음' },
-  { id: 'pattern', title: '패턴', description: '보안강도 중간' },
-  { id: 'none', title: '설정 안 함', description: '' },
+  { id: 'pin', title: 'PIN(숫자)', description: '보안강도 약간 높음', icon: 'dialpad' },
+  { id: 'password', title: '비밀번호(영문+숫자)', description: '보안강도 높음', icon: 'lock-outline' },
+  { id: 'pattern', title: '패턴', description: '보안강도 중간', icon: 'grid' },
+  { id: 'none', title: '설정 안 함', description: '', icon: 'shield-check-outline' },
 ];
+
+/** 선택 안 된 상태일 때 방식별 아이콘 뱃지 색 — 선택되면 전부 accent 파랑으로 통일된다. */
+const OPTION_BADGE_COLORS: Record<LockMethod, { bg: (colors: any) => string; fg: (colors: any) => string }> = {
+  pin: { bg: (c) => c.lightBlueBg, fg: (c) => c.accent },
+  password: { bg: (c) => c.green50, fg: (c) => c.green500 },
+  pattern: { bg: (c) => c.orangeLight1, fg: (c) => c.orange500 },
+  none: { bg: (c) => c.gray100, fg: (c) => c.gray500 },
+};
 
 type SetupStage =
   | { kind: 'idle' }
@@ -60,6 +69,10 @@ export default function AppLockSettingsScreen() {
   const [inputText, setInputText] = useState('');
   const [error, setError] = useState(false);
   const [pendingAction, setPendingAction] = useState<'none' | null>(null);
+  const [secureVisible, setSecureVisible] = useState(false);
+  // 패턴은 손을 뗀 뒤에도 화면에 남아있다가, "다음"을 눌러야 다음 단계로 확정된다.
+  const [drawnPattern, setDrawnPattern] = useState<string | null>(null);
+  const [patternResetKey, setPatternResetKey] = useState(0);
 
   type Strength = 'low' | 'medium' | 'high';
 
@@ -139,6 +152,8 @@ export default function AppLockSettingsScreen() {
     }
 
     setInputText('');
+    setDrawnPattern(null);
+    setSecureVisible(false);
     if (target === 'pin') setStage({ kind: 'pin-first' });
     else if (target === 'password') setStage({ kind: 'password-first' });
     else if (target === 'pattern') setStage({ kind: 'pattern-first' });
@@ -193,21 +208,32 @@ export default function AppLockSettingsScreen() {
     }
   };
 
+  // 패턴을 그리고 손을 떼면 여기로 들어오는데, 바로 다음 단계로 넘기지 않고
+  // 화면에 그린 패턴을 남겨둔 채 "다음"을 눌러야 확정되도록 보류만 해둔다.
   const handlePatternComplete = (path: number[]) => {
     if (path.length < 4) {
       showToast('4개 이상의 점을 연결해주세요.');
       return;
     }
-    const serialized = serializePattern(path);
+    setDrawnPattern(serializePattern(path));
+  };
+
+  const confirmPattern = () => {
+    if (!drawnPattern) return;
     if (stage.kind === 'pattern-first') {
-      setStage({ kind: 'pattern-confirm', first: serialized });
+      setStage({ kind: 'pattern-confirm', first: drawnPattern });
+      setDrawnPattern(null);
+      setPatternResetKey((k) => k + 1);
     } else if (stage.kind === 'pattern-confirm') {
-      if (serialized === stage.first) {
-        setLockMethod('pattern', serialized);
+      if (drawnPattern === stage.first) {
+        setLockMethod('pattern', drawnPattern);
         setStage({ kind: 'idle' });
+        setDrawnPattern(null);
         showToast('잠금 설정이 완료되었습니다.');
       } else {
         setError(true);
+        setDrawnPattern(null);
+        setPatternResetKey((k) => k + 1);
         setTimeout(() => {
           setError(false);
           setStage({ kind: 'pattern-first' });
@@ -219,6 +245,7 @@ export default function AppLockSettingsScreen() {
   const cancelSetup = () => {
     setStage({ kind: 'idle' });
     setInputText('');
+    setDrawnPattern(null);
   };
 
   const handleToggleBiometric = async (enabled: boolean) => {
@@ -243,7 +270,7 @@ export default function AppLockSettingsScreen() {
 
     return (
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.setupContainer}
       >
         <View style={[styles.card, { backgroundColor: colors.cardWhite, padding: 24 }]}>
@@ -262,18 +289,33 @@ export default function AppLockSettingsScreen() {
 
           {(isPin || isPassword) && (
             <>
-              <TextInput
-                style={[
-                  styles.input,
-                  { borderColor: error ? colors.tomorrowRed : colors.border, color: colors.textPrimary }
-                ]}
-                value={inputText}
-                onChangeText={(text) => setInputText(stripInvalidCharacters(text))}
-                secureTextEntry
-                keyboardType={isPin ? 'number-pad' : 'default'}
-                maxLength={isPin ? 4 : 12}
-                autoFocus
-              />
+              <View style={styles.inputWrap}>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { borderColor: error ? colors.tomorrowRed : colors.border, color: colors.textPrimary }
+                  ]}
+                  value={inputText}
+                  onChangeText={(text) => setInputText(stripInvalidCharacters(text))}
+                  secureTextEntry={!secureVisible}
+                  placeholder={isPin ? 'PIN 입력' : '비밀번호 입력'}
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType={isPin ? 'number-pad' : 'default'}
+                  maxLength={isPin ? 4 : 12}
+                  autoFocus
+                />
+                <Pressable
+                  onPress={() => setSecureVisible((v) => !v)}
+                  hitSlop={10}
+                  style={styles.eyeButton}
+                >
+                  <MaterialCommunityIcons
+                    name={secureVisible ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={colors.textSecondary}
+                  />
+                </Pressable>
+              </View>
               {inputText.length > 0 && !error && stage.kind.includes('first') && (
                 <Text style={[styles.strengthText, { color: strengthColor }]}>
                   {getStrengthLabel(strength!)}
@@ -283,10 +325,12 @@ export default function AppLockSettingsScreen() {
           )}
 
           {isPattern && (
-            <View style={{ marginVertical: 20 }}>
+            <View style={styles.patternPanel}>
               <PatternGrid
+                key={patternResetKey}
                 colors={{...colors, accent: error ? colors.tomorrowRed : colors.accent}}
                 showTrail
+                keepTrailAfterComplete
                 onComplete={handlePatternComplete}
               />
             </View>
@@ -301,10 +345,22 @@ export default function AppLockSettingsScreen() {
                 style={styles.retryBtn}
                 onPress={() => {
                   setStage({ kind: 'pattern-first' });
-                  showToast('첫 번째 단계부터 다시 시작합니다.');
+                  setDrawnPattern(null);
+                  setPatternResetKey((k) => k + 1);
+                  showToast('첫 번째 단계부터 다시 그려주세요.');
                 }}
               >
-                <Text style={styles.retryBtnText}>🔄 다시 그리기</Text>
+                <MaterialCommunityIcons name="refresh" size={14} color={colors.green500} />
+                <Text style={styles.retryBtnText}>다시 그리기</Text>
+              </Pressable>
+            )}
+            {isPattern && (
+              <Pressable
+                style={[styles.nextBtn, !drawnPattern && styles.nextBtnDisabled]}
+                onPress={confirmPattern}
+                disabled={!drawnPattern}
+              >
+                <Text style={styles.nextBtnText}>{stage.kind.includes('first') ? '다음' : '완료'}</Text>
               </Pressable>
             )}
             {(isPin || isPassword) && (
@@ -339,20 +395,35 @@ export default function AppLockSettingsScreen() {
             <View style={[styles.card, { backgroundColor: colors.cardWhite }]}>
               {LOCK_OPTIONS.map((option, idx) => {
                 const isSelected = option.id === method;
+                const unselectedColors = OPTION_BADGE_COLORS[option.id];
                 return (
                   <View key={option.id}>
                     <Pressable
-                      style={styles.row}
+                      style={[styles.row, isSelected && { backgroundColor: colors.lightBlueBg }]}
                       onPress={() => startSetup(option.id)}
                     >
+                      <View
+                        style={[
+                          styles.rowIconBadge,
+                          isSelected
+                            ? { backgroundColor: colors.accent }
+                            : { backgroundColor: unselectedColors.bg(colors) },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name={option.icon}
+                          size={19}
+                          color={isSelected ? '#FFFFFF' : unselectedColors.fg(colors)}
+                        />
+                      </View>
                       <View style={styles.rowInfo}>
                         <Text style={[styles.rowTitle, { color: colors.textPrimary }]}>{option.title}</Text>
                         {option.description ? (
                           <Text style={[styles.rowDesc, { color: colors.textSecondary }]}>{option.description}</Text>
                         ) : null}
                       </View>
-                      <View style={[styles.radioOuter, { borderColor: isSelected ? colors.accent : colors.border }]}>
-                        {isSelected && <View style={[styles.radioInner, { backgroundColor: colors.accent }]} />}
+                      <View style={[styles.radioOuter, { borderColor: isSelected ? colors.accent : colors.border, backgroundColor: isSelected ? colors.accent : 'transparent' }]}>
+                        {isSelected && <MaterialCommunityIcons name="check" size={13} color="#FFFFFF" />}
                       </View>
                     </Pressable>
                     {idx < LOCK_OPTIONS.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
@@ -390,10 +461,16 @@ export default function AppLockSettingsScreen() {
               </View>
             )}
 
-            <View style={[styles.warningBox, { backgroundColor: colors.tomorrowRed + '10' }]}>
-              <Text style={[styles.warningText, { color: colors.tomorrowRed }]}>
-                ❗ 잠금 정보를 잊어버린 경우 앱을 재설치해야 하며, 이 경우 기존 데이터는 모두 삭제되니 주의해주세요.
-              </Text>
+            <View style={[styles.warningBox, { backgroundColor: colors.tomorrowRedBg }]}>
+              <View style={[styles.warningIconBadge, { backgroundColor: colors.tomorrowRed }]}>
+                <MaterialCommunityIcons name="alert" size={20} color="#FFFFFF" />
+              </View>
+              <View style={styles.warningTextBlock}>
+                <Text style={[styles.warningTitle, { color: colors.tomorrowRed }]}>주의사항</Text>
+                <Text style={[styles.warningText, { color: colors.textPrimary }]}>
+                  잠금 정보를 잊어버린 경우 앱을 재설치해야 하며, 이 경우 기존 데이터는 모두 삭제되니 주의해주세요.
+                </Text>
+              </View>
             </View>
           </ScrollView>
         )}
@@ -419,8 +496,17 @@ function createStyles(colors: any) {
     row: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 18,
-      paddingHorizontal: 20,
+      gap: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderRadius: 16,
+    },
+    rowIconBadge: {
+      width: 38,
+      height: 38,
+      borderRadius: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     rowInfo: { flex: 1 },
     radioOuter: {
@@ -436,17 +522,26 @@ function createStyles(colors: any) {
       height: 12,
       borderRadius: 6,
     },
-    rowTitle: { fontSize: 16, fontWeight: '700' },
+    rowTitle: { fontSize: 15.5, fontWeight: '700' },
     rowDesc: { fontSize: 12, marginTop: 2 },
     divider: { height: 1, marginHorizontal: 20 },
+    inputWrap: { position: 'relative', justifyContent: 'center', marginBottom: 24 },
     input: {
       borderWidth: 1.5,
-      borderRadius: 12,
-      padding: 14,
-      fontSize: 18,
+      borderRadius: 999,
+      paddingVertical: 16,
+      paddingHorizontal: 20,
+      paddingRight: 48,
+      fontSize: 17,
       textAlign: 'center',
-      marginBottom: 24,
       letterSpacing: 2,
+    },
+    eyeButton: {
+      position: 'absolute',
+      right: 16,
+      top: 0,
+      bottom: 0,
+      justifyContent: 'center',
     },
     strengthText: {
       fontSize: 12,
@@ -455,41 +550,68 @@ function createStyles(colors: any) {
       marginTop: -16,
       marginBottom: 20,
     },
-    buttonRow: { flexDirection: 'row', gap: 12 },
+    patternPanel: {
+      backgroundColor: colors.gray100,
+      borderRadius: 24,
+      paddingVertical: 24,
+      alignItems: 'center',
+      marginVertical: 20,
+    },
+    buttonRow: { flexDirection: 'row', gap: 10 },
     cancelBtn: {
       flex: 1,
       paddingVertical: 14,
-      borderRadius: 12,
+      borderRadius: 999,
       backgroundColor: colors.gray100,
       alignItems: 'center',
     },
-    cancelBtnText: { fontSize: 15, fontWeight: '700', color: colors.textSecondary },
+    cancelBtnText: { fontSize: 14.5, fontWeight: '700', color: colors.textSecondary },
     nextBtn: {
       flex: 1,
       paddingVertical: 14,
-      borderRadius: 12,
+      borderRadius: 999,
       backgroundColor: colors.gray900,
       alignItems: 'center',
     },
-    nextBtnText: { fontSize: 15, fontWeight: '700', color: colors.cardWhite },
+    nextBtnDisabled: { opacity: 0.35 },
+    nextBtnText: { fontSize: 14.5, fontWeight: '700', color: colors.cardWhite },
     retryBtn: {
       flex: 1,
+      flexDirection: 'row',
+      gap: 5,
       paddingVertical: 14,
-      borderRadius: 12,
+      borderRadius: 999,
       backgroundColor: colors.green50,
       alignItems: 'center',
+      justifyContent: 'center',
       borderWidth: 1,
       borderColor: colors.green500,
     },
     retryBtnText: {
-      fontSize: 15,
+      fontSize: 13.5,
       fontWeight: '700',
       color: colors.green500,
     },
     warningBox: {
+      flexDirection: 'row',
+      gap: 12,
+      alignItems: 'flex-start',
       marginTop: 24,
       padding: 16,
-      borderRadius: 16,
+      borderRadius: 20,
+    },
+    warningIconBadge: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    warningTextBlock: { flex: 1 },
+    warningTitle: {
+      fontSize: 14,
+      fontWeight: '800',
+      marginBottom: 4,
     },
     warningText: {
       fontSize: 12,
