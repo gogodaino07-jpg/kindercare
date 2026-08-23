@@ -64,8 +64,11 @@ export default function FontSizeSettingsScreen() {
                   thumbTintColor={colors.accent}
                 />
                 <View style={styles.tickRow} pointerEvents="none">
-                  {FONT_SIZE_OPTIONS.map((option) => (
-                    <View key={option.id} style={styles.tick} />
+                  {FONT_SIZE_OPTIONS.map((option, idx) => (
+                    <View
+                      key={option.id}
+                      style={[styles.tick, idx <= (sliderIndex < 0 ? 2 : sliderIndex) && styles.tickActive]}
+                    />
                   ))}
                 </View>
               </View>
@@ -168,6 +171,9 @@ function createStyles(colors: ThemeColors) {
       height: 4,
       borderRadius: 2,
       backgroundColor: colors.border,
+    },
+    tickActive: {
+      backgroundColor: colors.accent,
     },
   });
 }
