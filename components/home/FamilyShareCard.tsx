@@ -31,14 +31,16 @@ export default function FamilyShareCard({ events, dayLabel }: FamilyShareCardPro
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const handleShare = () => {
-    const lines = events.flatMap((event) => {
+    const lines = events.map((event) => {
       const items = getDisplayItems(event);
-      return items.length > 0 ? [`• ${event.title}: ${items.map((i) => i.name).join(', ')}`] : [];
+      return items.length > 0
+        ? `• ${event.title}: ${items.map((i) => i.name).join(', ')}`
+        : `• ${event.title}`;
     });
     const particle = hasFinalConsonant(dayLabel) ? '은' : '는';
     const message = lines.length > 0
-      ? `${dayLabel} 챙길 준비물이에요!\n${lines.join('\n')}`
-      : `${dayLabel}${particle} 따로 챙길 준비물이 없어요!`;
+      ? `${dayLabel} 일정이에요!\n${lines.join('\n')}`
+      : `${dayLabel}${particle} 일정이 없어요!`;
     Share.share({ message }).catch(() => {});
   };
 
@@ -50,7 +52,7 @@ export default function FamilyShareCard({ events, dayLabel }: FamilyShareCardPro
         </View>
         <View style={styles.shareTextBlock}>
           <Text style={styles.shareTitle}>가족과 함께 보기</Text>
-          <Text style={styles.shareSubtitle}>{dayLabel} 챙길 준비물을 가족에게 전달해보세요.</Text>
+          <Text style={styles.shareSubtitle}>{dayLabel} 일정과 준비물을 가족에게 전달해보세요.</Text>
         </View>
       </View>
       <Pressable style={styles.shareButton} onPress={handleShare}>
