@@ -27,6 +27,12 @@ export function formatMD(isoDate: string): string {
   return `${date.getMonth() + 1}/${date.getDate()}(${weekday})`;
 }
 
+/** Formats an ISO date string as "M월 D일", e.g. "8월 23일". */
+export function formatMonthDayKo(isoDate: string): string {
+  const date = parseISODate(isoDate);
+  return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+}
+
 export function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }

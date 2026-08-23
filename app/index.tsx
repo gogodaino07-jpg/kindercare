@@ -241,6 +241,11 @@ export default function HomeScreen() {
     return upcoming.laterGroups.find((g) => g.date === dayAfterTomorrowISO)?.events ?? [];
   }, [activeTab, upcoming, dayAfterTomorrowISO]);
   const activeDayLabel = activeTab === 'today' ? '오늘' : activeTab === 'tomorrow' ? '내일' : '모레';
+  const activeDayISO = useMemo(() => {
+    if (activeTab === 'today') return toISODate(new Date());
+    if (activeTab === 'tomorrow') return toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+    return dayAfterTomorrowISO;
+  }, [activeTab, dayAfterTomorrowISO]);
 
   // Show ad popup once per app session when app is ready — never while the
   // app-lock screen is still up, since a native Modal always renders above it
@@ -384,7 +389,9 @@ export default function HomeScreen() {
       <BirthdayCenterConfetti triggerKey={birthdayBurstKey} />
 
       <View style={[styles.bottomFixedStack, { bottom: insets.bottom }]}>
-        {!upcoming.isEmpty && <FamilyShareCard events={activeDayEvents} dayLabel={activeDayLabel} />}
+        {!upcoming.isEmpty && (
+          <FamilyShareCard events={activeDayEvents} dayLabel={activeDayLabel} dateISO={activeDayISO} />
+        )}
         {!isSubscribed && <CoupangBanner />}
       </View>
 

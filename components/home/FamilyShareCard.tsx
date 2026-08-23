@@ -3,22 +3,19 @@ import React, { useMemo } from 'react';
 import { Pressable, Share, StyleSheet, View } from 'react-native';
 import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
+import { useToast } from '../../context/ToastContext';
 import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { Event } from '../../types/models';
+import { formatMonthDayKo } from '../../utils/date';
 import Text from '../common/AppText';
-
-function hasFinalConsonant(text: string): boolean {
-  const trimmed = text.trim();
-  const code = trimmed.charCodeAt(trimmed.length - 1);
-  if (code < 0xac00 || code > 0xd7a3) return true;
-  return (code - 0xac00) % 28 !== 0;
-}
 
 interface FamilyShareCardProps {
   /** 공유 문구를 만드는 데 쓰는 일정 목록 — 지금 보고 있는 탭(오늘/내일/모레) 기준. */
   events: Event[];
   /** "오늘"/"내일"/"모레" — 지금 보고 있는 탭에 맞춰 문구에 그대로 들어간다. */
   dayLabel: string;
+  /** dayLabel이 가리키는 실제 날짜 — "YYYY-MM-DD". 몇월 며칠인지 문구에 함께 표시한다. */
+  dateISO: string;
 }
 
 /**
@@ -26,21 +23,24 @@ interface FamilyShareCardProps {
  * 바로 위에 붙어서, 일정이 없어 스크롤 내용이 짧을 때도 밑에 빈 여백이
  * 생기지 않게 한다.
  */
-export default function FamilyShareCard({ events, dayLabel }: FamilyShareCardProps) {
+export default function FamilyShareCard({ events, dayLabel, dateISO }: FamilyShareCardProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { showToast } = useToast();
+  const dateLabel = formatMonthDayKo(dateISO);
 
   const handleShare = () => {
+    if (events.length === 0) {
+      showToast('공유할 일정이 없어요.');
+      return;
+    }
     const lines = events.map((event) => {
       const items = getDisplayItems(event);
       return items.length > 0
         ? `• ${event.title}: ${items.map((i) => i.name).join(', ')}`
         : `• ${event.title}`;
     });
-    const particle = hasFinalConsonant(dayLabel) ? '은' : '는';
-    const message = lines.length > 0
-      ? `${dayLabel} 일정이에요!\n${lines.join('\n')}`
-      : `${dayLabel}${particle} 일정이 없어요!`;
+    const message = `${dayLabel}(${dateLabel}) 일정이에요!\n${lines.join('\n')}`;
     Share.share({ message }).catch(() => {});
   };
 
@@ -52,7 +52,9 @@ export default function FamilyShareCard({ events, dayLabel }: FamilyShareCardPro
         </View>
         <View style={styles.shareTextBlock}>
           <Text style={styles.shareTitle}>가족과 함께 보기</Text>
-          <Text style={styles.shareSubtitle}>{dayLabel} 일정과 준비물을 가족에게 전달해보세요.</Text>
+          <Text style={styles.shareSubtitle}>
+            {dayLabel}({dateLabel}) 일정과 준비물을 가족에게 전달해보세요.
+          </Text>
         </View>
       </View>
       <Pressable style={styles.shareButton} onPress={handleShare}>
