@@ -97,17 +97,3 @@ export const WISH_PRESETS: { emoji: string; label: string; text: string }[] = [
   { emoji: '🍕', label: '치킨&피자', text: '🍕 맛있는 치킨&피자 파티!' },
   { emoji: '⏰', label: '만화 보기', text: '⏰ 만화 1시간 마음껏 보기!' },
 ];
-
-/** 미션 입력칸 placeholder — 칸마다 다른 예시가 보이도록 순서대로(모자라면 반복) 돌려 쓴다. */
-export const MISSION_EXAMPLES: string[] = [
-  '이불 개기',
-  '양치하기',
-  '장난감 정리하기',
-  '숙제하기',
-  '골고루 먹기',
-  '혼자 옷 입기',
-  '인사 잘하기',
-  '동생과 사이좋게 놀기',
-  '손 씻기',
-  '책 읽기',
-];

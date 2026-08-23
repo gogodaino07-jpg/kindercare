@@ -7,8 +7,6 @@ interface StampBoardData {
   /** index i = i번째 칸에 찍힌 아이콘, 비어있으면 null. 칸을 직접 탭해서 채우거나
    *  지울 수 있어(자유 배치), 순서와 무관하게 각 칸이 자기 아이콘을 그대로 기억한다. */
   stamps: (string | null)[];
-  /** index i = i번째 칸에 해당하는 미션 문구. targetCount와 항상 길이가 같다. */
-  missions: string[];
   wish: string;
   themeId: StampBoardThemeId;
   stampIcon: string;
@@ -21,14 +19,9 @@ function emptyStamps(count: number): (string | null)[] {
   return Array.from({ length: count }, () => null);
 }
 
-function emptyMissions(count: number): string[] {
-  return Array.from({ length: count }, () => '');
-}
-
 const DEFAULT_DATA: StampBoardData = {
   targetCount: DEFAULT_TARGET_COUNT,
   stamps: emptyStamps(DEFAULT_TARGET_COUNT),
-  missions: emptyMissions(DEFAULT_TARGET_COUNT),
   wish: '',
   themeId: 'blue',
   stampIcon: STAMP_BOARD_THEMES.blue.stickers[0],
@@ -45,10 +38,9 @@ const cache: Record<string, StampBoardData> = {};
  *  칸별 배열(stamps) 방식으로 변환한다. 이미 새 방식이면 그대로 쓴다. */
 function migrateData(raw: any): StampBoardData {
   const targetCount = Math.max(1, raw.targetCount ?? DEFAULT_TARGET_COUNT);
-  const missions = Array.from({ length: targetCount }, (_, i) => raw.missions?.[i] ?? '');
   if (Array.isArray(raw.stamps)) {
     const stamps = Array.from({ length: targetCount }, (_, i) => raw.stamps[i] ?? null);
-    return { ...DEFAULT_DATA, ...raw, targetCount, stamps, missions };
+    return { ...DEFAULT_DATA, ...raw, targetCount, stamps };
   }
   const currentStamps: number = raw.currentStamps ?? 0;
   const stampHistory: string[] = raw.stampHistory ?? [];
@@ -56,7 +48,7 @@ function migrateData(raw: any): StampBoardData {
   const stamps = Array.from({ length: targetCount }, (_, i) =>
     i < currentStamps ? stampHistory[i] ?? fallbackIcon : null
   );
-  return { ...DEFAULT_DATA, ...raw, targetCount, stamps, missions };
+  return { ...DEFAULT_DATA, ...raw, targetCount, stamps };
 }
 
 async function loadData(childId: string): Promise<StampBoardData> {
@@ -117,22 +109,7 @@ export function useStampBoard(childId: string | undefined) {
       setData((prev) => {
         const clampedTarget = Math.max(1, targetCount);
         const nextStamps = Array.from({ length: clampedTarget }, (_, i) => prev.stamps[i] ?? null);
-        const nextMissions = Array.from({ length: clampedTarget }, (_, i) => prev.missions[i] ?? '');
-        const next: StampBoardData = { ...prev, targetCount: clampedTarget, stamps: nextStamps, missions: nextMissions, wish };
-        persist(childId, next);
-        return next;
-      });
-    },
-    [childId]
-  );
-
-  /** 미션 확인 화면에서 칸별 미션 문구를 한 번에 저장한다. */
-  const setMissions = useCallback(
-    (missions: string[]) => {
-      if (!childId) return;
-      setData((prev) => {
-        const nextMissions = Array.from({ length: prev.targetCount }, (_, i) => missions[i] ?? '');
-        const next: StampBoardData = { ...prev, missions: nextMissions };
+        const next: StampBoardData = { ...prev, targetCount: clampedTarget, stamps: nextStamps, wish };
         persist(childId, next);
         return next;
       });
@@ -196,7 +173,6 @@ export function useStampBoard(childId: string | undefined) {
   return {
     targetCount: data.targetCount,
     stamps: data.stamps,
-    missions: data.missions,
     currentStamps,
     wish: data.wish,
     themeId: data.themeId,
@@ -205,7 +181,6 @@ export function useStampBoard(childId: string | undefined) {
     isCompleted,
     placeStamp,
     updateSettings,
-    setMissions,
     resetProgress,
     setTheme,
     setStampIcon,
