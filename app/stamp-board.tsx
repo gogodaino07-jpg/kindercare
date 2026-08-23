@@ -141,6 +141,9 @@ export default function StampBoardScreen() {
   const stampAnim = useRef(new Animated.Value(1)).current;
   const stampRotateAnim = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
+  // 진행률 게이지 채우기 애니메이션 — 도장이 실제로 찍히는 순간(placeStamp 호출 시점)과
+  // 같은 타이밍에 부드럽게 차오르도록 한다.
+  const progressFillAnim = useRef(new Animated.Value(0)).current;
   // 도장이 찍히는 순간 화면 전체가 짧게 흔들리는 효과.
   const screenShakeAnim = useRef(new Animated.Value(0)).current;
   // 화면 중앙 축하 연출 — 아이콘 종류(무지개/별빛, 풍선, 그 외)에 맞춰 다른 파티클이 재생된다.
@@ -197,6 +200,12 @@ export default function StampBoardScreen() {
     setCelebrationIcon(stampIcon);
     setCelebrationTriggerKey((k) => k + 1);
 
+    // 도장이 종이에 콱 부딪히는 순간(약 140ms 뒤)에 맞춰 실제로 칸을 채운다 — 진행률
+    // 게이지가 그 순간과 동시에 차오르도록, 스프링 튕김이 다 끝날 때까지 기다리지 않는다.
+    setTimeout(() => {
+      placeStamp(index);
+    }, 140);
+
     // 도장이 종이에 콱 부딪히는 순간(약 150ms 뒤)에 맞춰 화면이 크게 통통 흔들린다.
     screenShakeAnim.setValue(0);
     Animated.sequence([
@@ -220,7 +229,6 @@ export default function StampBoardScreen() {
       ]),
       Animated.spring(stampAnim, { toValue: 1, friction: 3, tension: 220, useNativeDriver: true }),
     ]).start(() => {
-      placeStamp(index);
       setStampingIndex(null);
       isStampingRef.current = false;
     });
@@ -270,6 +278,16 @@ export default function StampBoardScreen() {
   };
 
   const progressPercent = Math.round((currentStamps / Math.max(targetCount, 1)) * 100);
+
+  useEffect(() => {
+    Animated.timing(progressFillAnim, {
+      toValue: Math.min(progressPercent, 100),
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [progressPercent]);
+
   const progressCaption =
     progressPercent >= 100
       ? '모든 도장을 다 모았어요! 🎉'
@@ -416,12 +434,24 @@ export default function StampBoardScreen() {
             </View>
 
             <View style={styles.progressTrack}>
-              <LinearGradient
-                colors={RAINBOW_PROGRESS_GRADIENT}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[styles.progressFill, { width: `${Math.min(progressPercent, 100)}%` }]}
-              />
+              <Animated.View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: progressFillAnim.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: ['0%', '100%'],
+                    }),
+                  },
+                ]}
+              >
+                <LinearGradient
+                  colors={RAINBOW_PROGRESS_GRADIENT}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.progressFillGradient}
+                />
+              </Animated.View>
             </View>
 
             <Text style={styles.progressCaption}>☁️ {progressCaption}</Text>
@@ -848,7 +878,8 @@ const styles = StyleSheet.create({
     padding: 2,
     overflow: 'hidden',
   },
-  progressFill: { height: '100%', borderRadius: 999 },
+  progressFill: { height: '100%', borderRadius: 999, overflow: 'hidden' },
+  progressFillGradient: { width: '100%', height: '100%' },
   progressCaption: { marginTop: 8, fontSize: 11.5, fontWeight: '700', color: '#475569', textAlign: 'center' },
   stickerRow: {
     flexDirection: 'row',
