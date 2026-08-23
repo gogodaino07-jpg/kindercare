@@ -62,7 +62,7 @@ export function useWeatherFavorites() {
     };
   }, []);
 
-  const saveToSlot = useCallback((key: WeatherFavoriteSlot['key'], region: StoredWeatherRegion) => {
+  const saveToSlot = useCallback((key: WeatherFavoriteSlot['key'], region: StoredWeatherRegion | null) => {
     setSlots((prev) => {
       const next = prev.map((slot) => (slot.key === key ? { ...slot, region } : slot));
       persist(next);

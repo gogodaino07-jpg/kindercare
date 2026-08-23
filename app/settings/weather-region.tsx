@@ -38,6 +38,9 @@ export default function WeatherRegionSettingsScreen() {
   const [preview, setPreview] = useState<WeatherPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(true);
   const [displayLabel, setDisplayLabel] = useState(region?.label ?? '내 위치');
+  // GPS 자동 모드일 때 새로고침 버튼을 누르면 이 값을 올려서 아래 useEffect를 다시 태운다
+  // (region이 이미 null이면 setRegion(null)을 다시 불러도 상태가 안 바뀌어 재조회가 안 되기 때문).
+  const [gpsRefreshTick, setGpsRefreshTick] = useState(0);
 
   // 즐겨찾기 각 칸의 실시간 기온(설정된 칸만).
   const [favoriteTemps, setFavoriteTemps] = useState<Record<string, number | null>>({});
@@ -46,6 +49,8 @@ export default function WeatherRegionSettingsScreen() {
   // 눌러야 실제로 적용된다).
   const [openProvinceIdx, setOpenProvinceIdx] = useState(0);
   const [openDistrictIdx, setOpenDistrictIdx] = useState<number | null>(0);
+  // 1단계(시/도) 칩 목록 접기/펼치기 — 이미 골랐으면 접어서 화면을 아낄 수 있게.
+  const [provinceCollapsed, setProvinceCollapsed] = useState(false);
 
   // 화면 진입/지역 변경 시 상단 미리보기 카드를 갱신 — 자동(GPS) 모드면 실제 위치를 다시 구해온다.
   useEffect(() => {
@@ -76,7 +81,7 @@ export default function WeatherRegionSettingsScreen() {
     return () => {
       cancelled = true;
     };
-  }, [region]);
+  }, [region, gpsRefreshTick]);
 
   // 지금 적용된 지역이 트리 데이터 안에 있으면, 피커를 그 경로(시/도 -> 시/군/구)로
   // 자동으로 열어서 보여준다 — 처음 들어왔을 때 내가 고른 동네가 어디쯤인지 바로 보이게.
@@ -141,6 +146,17 @@ export default function WeatherRegionSettingsScreen() {
       return;
     }
     saveToSlot(slot.key, region);
+  };
+
+  const handleFavoriteClear = (slot: WeatherFavoriteSlot) => {
+    showAlert({
+      title: `'${slot.label}' 즐겨찾기 삭제`,
+      message: '저장된 동네를 지울까요?',
+      buttons: [
+        { text: '취소', style: 'cancel' },
+        { text: '삭제', style: 'destructive', onPress: () => saveToSlot(slot.key, null) },
+      ],
+    });
   };
 
   // 로컬 데이터(트리) 안에서 실시간으로 매칭되는 동/구 이름을 찾아 즉시 보여준다 —
@@ -209,6 +225,14 @@ export default function WeatherRegionSettingsScreen() {
     }
   };
 
+  // "대전 서구 둔산동"처럼 공백으로 이어진 라벨을 "대전 서구"(작게) + "둔산동"(크게)로
+  // 나눠서 미리보기 카드에 위계감 있게 보여준다 — 한 줄로 뭉쳐 보이던 걸 개선.
+  const previewLabelParts = useMemo(() => {
+    const words = displayLabel.trim().split(/\s+/);
+    if (words.length <= 1) return { path: '', leaf: displayLabel };
+    return { path: words.slice(0, -1).join(' '), leaf: words[words.length - 1] };
+  }, [displayLabel]);
+
   const openProvince = WEATHER_REGION_TREE[openProvinceIdx];
   const openDistrict =
     openProvince.districts && openDistrictIdx !== null ? openProvince.districts[openDistrictIdx] : null;
@@ -271,9 +295,16 @@ export default function WeatherRegionSettingsScreen() {
               <Text style={styles.previewBadgeText}>{region ? '선택된 지역' : 'GPS 위치 사용 중'}</Text>
             </View>
             <View style={styles.previewBottomRow}>
-              <Text style={styles.previewLabel} numberOfLines={2}>
-                {displayLabel}
-              </Text>
+              <View style={styles.previewLabelBlock}>
+                {previewLabelParts.path ? (
+                  <Text style={styles.previewLabelPath} numberOfLines={1}>
+                    {previewLabelParts.path}
+                  </Text>
+                ) : null}
+                <Text style={styles.previewLabelLeaf} numberOfLines={1}>
+                  {previewLabelParts.leaf}
+                </Text>
+              </View>
               {previewLoading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : preview ? (
@@ -299,7 +330,17 @@ export default function WeatherRegionSettingsScreen() {
               <Text style={styles.gpsTitle}>자동 (기기 위치/GPS 사용)</Text>
               <Text style={styles.gpsSubtitle}>내 위치 기반 실시간 날씨 자동 조회</Text>
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textSecondary} />
+            {region === null ? (
+              <Pressable
+                onPress={() => setGpsRefreshTick((v) => v + 1)}
+                hitSlop={8}
+                style={styles.gpsRefreshButton}
+              >
+                <MaterialCommunityIcons name="refresh" size={18} color={colors.accent} />
+              </Pressable>
+            ) : (
+              <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textSecondary} />
+            )}
           </Pressable>
 
           {/* 3단계 지역 피커 */}
@@ -311,28 +352,46 @@ export default function WeatherRegionSettingsScreen() {
               </View>
             </View>
 
-            <Text style={styles.stepLabel}>1단계: 시/도</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-              <View style={styles.chipRow}>
-                {WEATHER_REGION_TREE.map((province, idx) => {
-                  const isOpen = idx === openProvinceIdx;
-                  return (
-                    <Pressable
-                      key={province.name}
-                      style={[styles.provinceChip, isOpen && styles.provinceChipActive]}
-                      onPress={() => {
-                        setOpenProvinceIdx(idx);
-                        setOpenDistrictIdx(province.districts ? 0 : null);
-                      }}
-                    >
-                      <Text style={[styles.provinceChipText, isOpen && styles.provinceChipTextActive]}>
-                        {province.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+            <Pressable
+              style={styles.stepLabelRow}
+              onPress={() => setProvinceCollapsed((v) => !v)}
+              hitSlop={6}
+            >
+              <Text style={[styles.stepLabel, { marginBottom: 0 }]}>1단계: 시/도</Text>
+              <View style={styles.stepCollapseHint}>
+                {provinceCollapsed && (
+                  <Text style={styles.stepCollapseHintText}>{openProvince.name}</Text>
+                )}
+                <MaterialCommunityIcons
+                  name={provinceCollapsed ? 'chevron-down' : 'chevron-up'}
+                  size={16}
+                  color={colors.textSecondary}
+                />
               </View>
-            </ScrollView>
+            </Pressable>
+            {!provinceCollapsed && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+                <View style={styles.chipRow}>
+                  {WEATHER_REGION_TREE.map((province, idx) => {
+                    const isOpen = idx === openProvinceIdx;
+                    return (
+                      <Pressable
+                        key={province.name}
+                        style={[styles.provinceChip, isOpen && styles.provinceChipActive]}
+                        onPress={() => {
+                          setOpenProvinceIdx(idx);
+                          setOpenDistrictIdx(province.districts ? 0 : null);
+                        }}
+                      >
+                        <Text style={[styles.provinceChipText, isOpen && styles.provinceChipTextActive]}>
+                          {province.name}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            )}
 
             {openProvince.districts && (
               <>
@@ -401,6 +460,9 @@ export default function WeatherRegionSettingsScreen() {
                     )}
                     <Pressable onPress={() => handleFavoriteOverwrite(slot)} hitSlop={8} style={styles.favoriteEditButton}>
                       <MaterialCommunityIcons name="refresh" size={14} color={colors.textSecondary} />
+                    </Pressable>
+                    <Pressable onPress={() => handleFavoriteClear(slot)} hitSlop={8} style={styles.favoriteEditButton}>
+                      <MaterialCommunityIcons name="trash-can-outline" size={14} color={colors.tomorrowRed} />
                     </Pressable>
                   </>
                 )}
@@ -478,13 +540,19 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      minHeight: 56,
     },
-    previewLabel: {
-      flex: 1,
-      fontSize: 19,
+    previewLabelBlock: { flex: 1, marginRight: 12 },
+    previewLabelPath: {
+      fontSize: 12.5,
+      fontWeight: '600',
+      color: 'rgba(255,255,255,0.75)',
+      marginBottom: 2,
+    },
+    previewLabelLeaf: {
+      fontSize: 22,
       fontWeight: '800',
       color: '#FFFFFF',
-      marginRight: 12,
     },
     previewWeather: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     previewEmoji: { fontSize: 30 },
@@ -508,6 +576,14 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'center',
     },
     gpsTextArea: { flex: 1 },
+    gpsRefreshButton: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: colors.lightBlueBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     gpsTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
     gpsSubtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
     pickerCard: {
@@ -532,6 +608,14 @@ function createStyles(colors: ThemeColors) {
     },
     breadcrumbText: { fontSize: 11.5, fontWeight: '700', color: colors.accent },
     stepLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 8 },
+    stepLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    stepCollapseHint: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    stepCollapseHintText: { fontSize: 12.5, fontWeight: '700', color: colors.accent },
     stepDivider: { height: 1, backgroundColor: colors.border, marginVertical: 14 },
     chipScroll: { marginHorizontal: -4 },
     chipRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 4 },
