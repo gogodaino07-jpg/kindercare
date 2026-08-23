@@ -651,9 +651,6 @@ export default function StampBoardScreen() {
                 <MaterialIcons name="settings" size={18} color="#475569" />
                 <Text style={styles.modalTitle}>도장판 설정</Text>
               </View>
-              <Pressable onPress={() => setShowSettings(false)} hitSlop={8}>
-                <Feather name="x" size={18} color="#94A3B8" />
-              </Pressable>
             </View>
 
             <Text style={styles.modalSectionLabel}>무지개 테마 색상 선택</Text>
