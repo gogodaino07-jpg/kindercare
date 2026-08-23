@@ -303,6 +303,7 @@ export default function SettingsScreen() {
                       <MaterialCommunityIcons name="bell-outline" size={18} color={colors.orange500} />
                     </View>
                     <Switch
+                      style={styles.notifSwitch}
                       value={notificationSettings.enabled}
                       onValueChange={(v) => updateNotificationSettings({ ...notificationSettings, enabled: v })}
                       trackColor={{ true: colors.accent, false: colors.border }}
@@ -580,6 +581,7 @@ function createStyles(colors: any) {
     quickRow: { flexDirection: 'row', gap: 12 },
     quickCard: { flex: 1, padding: 14 },
     quickCardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+    notifSwitch: { transform: [{ scaleX: 1.18 }, { scaleY: 1.05 }] },
     quickCardTitle: { fontSize: 13.5, fontWeight: '800', color: colors.textPrimary, marginBottom: 2 },
     quickCardSubtitle: { fontSize: 11.5, color: colors.textSecondary, fontWeight: '600' },
     quickCardKey: { fontSize: 15, fontWeight: '800', color: colors.accent, letterSpacing: 0.5 },
