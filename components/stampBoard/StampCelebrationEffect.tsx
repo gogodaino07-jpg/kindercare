@@ -10,25 +10,33 @@ interface StampCelebrationEffectProps {
 }
 
 /** 빛/마법 계열 — 부드러운 빛 무리가 사방으로 은은하게 퍼지는 연출. */
-const RAY_ICONS = new Set(['🌈', '🌟', '✨', '💫', '👑', '🪄', '🎯']);
+const RAY_ICONS = new Set(['🌈', '🌟', '✨', '💫', '👑', '🪄', '🎯', '🎉']);
 /** 둥실 뜨는 계열 — 방울들이 위로 두둥실 떠오르는 연출. */
-const FLOAT_ICONS = new Set(['🎈', '🪁']);
+const FLOAT_ICONS = new Set(['🎈', '🪁', '🦋', '🐣', '🐥']);
+/** 탈것/바다 계열 — 시원한 파란 톤으로 팡 퍼짐. */
+const SPLASH_ICONS = new Set(['🚀', '🛸', '🌊', '🐳', '⚓', '⚽', '🏀', '🚗', '🦕', '🦖']);
+/** 달콤한 계열(간식/꽃/사랑) — 따뜻한 핑크 톤으로 팡 퍼짐. */
+const BLOOM_ICONS = new Set(['🍓', '🧁', '🍭', '💖', '🍩', '🍬', '🍉', '🎀', '🌸', '🌷', '🌻', '🦄', '🐰', '🧸']);
 
-type EffectKind = 'rays' | 'float' | 'pop';
+type EffectKind = 'rays' | 'float' | 'splash' | 'bloom' | 'pop';
 
 function getEffectKind(icon: string): EffectKind {
   if (RAY_ICONS.has(icon)) return 'rays';
   if (FLOAT_ICONS.has(icon)) return 'float';
-  return 'pop'; // 그 외 전부(별/동물/음식/탈것 등) — 알갱이들이 부드럽게 팡 퍼짐
+  if (SPLASH_ICONS.has(icon)) return 'splash';
+  if (BLOOM_ICONS.has(icon)) return 'bloom';
+  return 'pop'; // 그 외(😊🍀🎁 등) — 기본 다색 알갱이가 부드럽게 팡 퍼짐
 }
 
 const RAY_COLORS = ['#F87171', '#FBBF24', '#34D399', '#38BDF8', '#A78BFA', '#F472B6', '#FB923C', '#FDE047'];
 const FLOAT_COLORS = ['#93C5FD', '#FBCFE8', '#FDE68A', '#A7F3D0', '#C4B5FD'];
+const SPLASH_COLORS = ['#38BDF8', '#0EA5E9', '#22D3EE', '#60A5FA', '#7DD3FC'];
+const BLOOM_COLORS = ['#F472B6', '#FB7185', '#FBCFE8', '#F9A8D4', '#FDBA74'];
 const POP_COLORS = ['#FBBF24', '#F87171', '#60A5FA', '#34D399', '#F472B6', '#A78BFA'];
 
 const RAY_COUNT = 12;
 const FLOAT_COUNT = 7;
-const POP_COUNT = 16;
+const BURST_COUNT = 16;
 
 // 전 구간에서 급하게 꺾이지 않고 끝까지 매끄럽게 감속하는 곡선 — "딱딱해 보이는" 느낌을 줄인다.
 const SMOOTH_EASE = Easing.bezier(0.16, 1, 0.3, 1);
@@ -68,7 +76,9 @@ export default function StampCelebrationEffect({ triggerKey, icon }: StampCelebr
     <View pointerEvents="none" style={styles.overlay}>
       {kind === 'rays' && <RaysEffect progress={progress} />}
       {kind === 'float' && <FloatEffect progress={progress} />}
-      {kind === 'pop' && <PopEffect progress={progress} />}
+      {kind === 'splash' && <BurstEffect progress={progress} colors={SPLASH_COLORS} />}
+      {kind === 'bloom' && <BurstEffect progress={progress} colors={BLOOM_COLORS} />}
+      {kind === 'pop' && <BurstEffect progress={progress} colors={POP_COLORS} />}
     </View>
   );
 }
@@ -172,15 +182,16 @@ function FloatEffect({ progress }: { progress: Animated.Value }) {
   );
 }
 
-/** 그 외 전부(별/동물/음식 등): 작고 둥근 색색 알갱이들이 부드럽게 팡 퍼졌다가 사르르 사라진다. */
-function PopEffect({ progress }: { progress: Animated.Value }) {
+/** 탈것/바다(splash), 달콤한 계열(bloom), 그 외 전부(pop) 공통: 작고 둥근 알갱이들이
+ *  팡 퍼졌다가 사르르 사라진다 — 전달된 색 팔레트로 아이콘 종류별 느낌을 구분한다. */
+function BurstEffect({ progress, colors }: { progress: Animated.Value; colors: string[] }) {
   return (
     <>
-      {Array.from({ length: POP_COUNT }).map((_, i) => {
-        const angle = (Math.PI * 2 * i) / POP_COUNT + (i % 2 === 0 ? 0.12 : -0.12);
+      {Array.from({ length: BURST_COUNT }).map((_, i) => {
+        const angle = (Math.PI * 2 * i) / BURST_COUNT + (i % 2 === 0 ? 0.12 : -0.12);
         const distance = 85 + (i % 5) * 20;
         const size = 14 + (i % 4) * 6;
-        const color = POP_COLORS[i % POP_COLORS.length];
+        const color = colors[i % colors.length];
         const delay = (i % 8) * 0.03;
 
         const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [0, Math.cos(angle) * distance] });

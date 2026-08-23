@@ -598,8 +598,8 @@ export default function StampBoardScreen() {
             </LinearGradient>
             <Text style={styles.celebrationFooterText}>칭찬 약속을 멋지게 지킨 최고의 어린이! 👍</Text>
 
-            <Pressable style={styles.celebrationButton} onPress={() => setCelebrationDismissed(true)}>
-              <Text style={styles.celebrationButtonText}>닫기</Text>
+            <Pressable style={styles.celebrationButton} onPress={confirmReset}>
+              <Text style={styles.celebrationButtonText}>새로 시작하기</Text>
             </Pressable>
           </View>
         </View>
@@ -1007,7 +1007,7 @@ const styles = StyleSheet.create({
   celebrationWishBox: { width: '100%', borderRadius: 16, padding: 16, marginBottom: 12 },
   celebrationWishText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900', textAlign: 'center' },
   celebrationFooterText: { fontSize: 12, fontWeight: '700', color: '#64748B', marginBottom: 18, textAlign: 'center' },
-  celebrationButton: { width: '100%', backgroundColor: '#F59E0B', paddingVertical: 15, borderRadius: 16, alignItems: 'center' },
+  celebrationButton: { width: '100%', backgroundColor: '#1E293B', paddingVertical: 15, borderRadius: 16, alignItems: 'center' },
   celebrationButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.6)', alignItems: 'center', justifyContent: 'center', padding: 20 },
   modalCard: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 24, padding: 20, gap: 12 },

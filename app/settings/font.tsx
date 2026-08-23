@@ -27,16 +27,6 @@ export default function FontSettingsScreen() {
               <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
             </Pressable>
           ),
-          headerRight: () => (
-            <Pressable
-              onPress={() => router.push('/settings/font-size')}
-              hitSlop={8}
-              style={styles.headerSizeButton}
-              accessibilityLabel="글자 크기 설정"
-            >
-              <MaterialCommunityIcons name="pencil-outline" size={20} color={t.textPrimary} />
-            </Pressable>
-          ),
         }}
       />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -80,15 +70,6 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     screenBg: { flex: 1, backgroundColor: t.bg },
     headerBackButton: { paddingHorizontal: 4 },
-    headerSizeButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.gray100,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 4,
-    },
     safeArea: { flex: 1 },
     content: { padding: 20 },
     row: {
