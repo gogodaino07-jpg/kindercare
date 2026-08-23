@@ -415,7 +415,7 @@ export default function SettingsScreen() {
 
                 <View style={styles.divider} />
                 <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => router.push('/settings/font')}>
-                  <Text style={[styles.rowTitle, { flex: 0 }]}>글씨체 설정</Text>
+                  <Text style={styles.rowTitle}>글씨체 설정</Text>
                   <Text style={styles.rowValue} numberOfLines={1}>{fontLabel}</Text>
                   <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
                 </TouchableOpacity>
@@ -425,7 +425,7 @@ export default function SettingsScreen() {
                   activeOpacity={0.7}
                   onPress={() => router.push('/settings/font-size')}
                 >
-                  <Text style={[styles.rowTitle, { flex: 0 }]}>글자 크기 설정</Text>
+                  <Text style={styles.rowTitle}>글자 크기 설정</Text>
                   <Text style={styles.rowValue} numberOfLines={1}>
                     {fontSizeOption.label} ({fontSizePx}px)
                   </Text>
@@ -437,7 +437,7 @@ export default function SettingsScreen() {
                   activeOpacity={0.7}
                   onPress={() => router.push('/settings/weather-region')}
                 >
-                  <Text style={[styles.rowTitle, { flex: 0 }]}>날씨 지역 설정</Text>
+                  <Text style={styles.rowTitle}>날씨 지역 설정</Text>
                   <Text style={styles.rowValue} numberOfLines={1}>
                     {weatherLabel}
                     {weatherPreview ? ` ${weatherPreview.emoji} ${weatherPreview.tempC}°` : ''}
