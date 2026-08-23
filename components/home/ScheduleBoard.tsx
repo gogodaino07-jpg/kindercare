@@ -1,10 +1,12 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
+import { ZoomableImage } from '../../features/newsletter-analysis/components/ZoomableImage';
 import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { EventDateGroup } from '../../hooks/useUpcomingEvents';
 import { Event, EventItem } from '../../types/models';
@@ -16,6 +18,10 @@ import Text from '../common/AppText';
 import EventIcon from '../common/EventIcon';
 
 export type ScheduleTab = 'today' | 'tomorrow' | 'dayAfterTomorrow';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const PHOTO_ZOOM_WIDTH = SCREEN_WIDTH - 80;
+const PHOTO_ZOOM_HEIGHT = 380;
 
 interface ScheduleBoardProps {
   mainEvents: Event[];
@@ -82,6 +88,7 @@ export default function ScheduleBoard({
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [viewerPhotos, setViewerPhotos] = useState<string[] | null>(null);
 
   const dayAfterTomorrowISO = useMemo(() => toISODate(new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)), []);
 
@@ -174,10 +181,42 @@ export default function ScheduleBoard({
               onPress={() => onEventPress(event)}
               onToggleItem={onToggleItem}
               onToggleAll={onToggleAll}
+              onOpenPhotos={setViewerPhotos}
             />
           ))}
         </View>
       )}
+
+      <Modal
+        visible={!!viewerPhotos}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewerPhotos(null)}
+      >
+        {/* RN Modal은 안드로이드에서 별도 네이티브 윈도우에 렌더링돼 앱 루트의
+            GestureHandlerRootView 밖에 놓이면서 핀치줌/팬 제스처가 먹지 않는다 —
+            Modal 내부에 별도로 하나 더 씌워줘야 제스처가 정상 동작한다. */}
+        <GestureHandlerRootView style={styles.zoomOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setViewerPhotos(null)} />
+          <View style={styles.zoomCard}>
+            <View style={styles.zoomHeader}>
+              <View style={styles.zoomHeaderLeft}>
+                <MaterialIcons name="image" size={16} color={colors.purple500} />
+                <Text style={styles.zoomHeaderText}>스캔한 원본 사진</Text>
+              </View>
+              <Pressable onPress={() => setViewerPhotos(null)} style={styles.zoomCloseButton} hitSlop={6}>
+                <MaterialIcons name="close" size={16} color={colors.gray500} />
+              </Pressable>
+            </View>
+
+            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+              {(viewerPhotos ?? []).map((uri) => (
+                <ZoomableImage key={uri} uri={uri} width={PHOTO_ZOOM_WIDTH} height={PHOTO_ZOOM_HEIGHT} />
+              ))}
+            </ScrollView>
+          </View>
+        </GestureHandlerRootView>
+      </Modal>
     </View>
   );
 }
@@ -190,6 +229,7 @@ function ScheduleCard({
   onPress,
   onToggleItem,
   onToggleAll,
+  onOpenPhotos,
 }: {
   event: Event;
   dateText: string;
@@ -198,6 +238,7 @@ function ScheduleCard({
   onPress: () => void;
   onToggleItem: (event: Event, item: EventItem) => void;
   onToggleAll: (event: Event, items: EventItem[], value: boolean) => void;
+  onOpenPhotos: (photoUris: string[]) => void;
 }) {
   const items = getDisplayItems(event);
   const checkedCount = items.filter((i) => i.completed).length;
@@ -206,6 +247,7 @@ function ScheduleCard({
   const isToday = computeDday(event.date) === 'D-DAY';
   const metaLine = [event.time, event.location].filter(Boolean).join(' · ');
   const specialTheme = getSpecialEventTheme(event.title);
+  const photoUris = event.photoUris ?? [];
 
   return (
     <View style={[styles.card, isToday && styles.cardToday]}>
@@ -224,8 +266,15 @@ function ScheduleCard({
             )}
             <Text style={styles.dateTextOnDark}>{dateText}</Text>
           </View>
-          <View style={styles.specialLabelPill}>
-            <Text style={styles.specialLabelPillText}>{specialTheme.emoji} {specialTheme.label}</Text>
+          <View style={styles.cardHeaderRight}>
+            {photoUris.length > 0 && (
+              <Pressable onPress={() => onOpenPhotos(photoUris)} style={styles.photoBadgeOnDark} hitSlop={6}>
+                <MaterialIcons name="image" size={13} color="#FFFFFF" />
+              </Pressable>
+            )}
+            <View style={styles.specialLabelPill}>
+              <Text style={styles.specialLabelPillText}>{specialTheme.emoji} {specialTheme.label}</Text>
+            </View>
           </View>
         </LinearGradient>
       ) : (
@@ -238,11 +287,18 @@ function ScheduleCard({
             )}
             <Text style={[styles.dateText, isToday && styles.dateTextToday]}>{dateText}</Text>
           </View>
-          {event.category && (
-            <View style={[styles.categoryBadge, { backgroundColor: lighten(category.accent, 0.85) }]}>
-              <Text style={[styles.categoryBadgeText, { color: category.accent }]}>{event.category}</Text>
-            </View>
-          )}
+          <View style={styles.cardHeaderRight}>
+            {photoUris.length > 0 && (
+              <Pressable onPress={() => onOpenPhotos(photoUris)} style={styles.photoBadge} hitSlop={6}>
+                <MaterialIcons name="image" size={13} color={colors.purple500} />
+              </Pressable>
+            )}
+            {event.category && (
+              <View style={[styles.categoryBadge, { backgroundColor: lighten(category.accent, 0.85) }]}>
+                <Text style={[styles.categoryBadgeText, { color: category.accent }]}>{event.category}</Text>
+              </View>
+            )}
+          </View>
         </View>
       )}
 
@@ -393,6 +449,23 @@ function createStyles(colors: ThemeColors) {
     },
     cardHeaderRowToday: { backgroundColor: lighten('#F97316', 0.9) },
     cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    cardHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    photoBadge: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: colors.purpleBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    photoBadgeOnDark: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: 'rgba(255,255,255,0.25)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     ddayBadge: { backgroundColor: colors.tomorrowRed, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
     ddayBadgeText: { fontSize: 10, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.3 },
     dateText: { fontSize: 12, fontWeight: '700', color: colors.gray600 },
@@ -488,5 +561,38 @@ function createStyles(colors: ThemeColors) {
     },
     emptyEmoji: { fontSize: 28, marginBottom: 8 },
     emptyTitle: { fontSize: 13, fontWeight: '700', color: colors.gray600 },
+    zoomOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(2, 6, 23, 0.8)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    zoomCard: {
+      width: '100%',
+      maxHeight: '85%',
+      backgroundColor: colors.cardWhite,
+      borderRadius: 32,
+      padding: 20,
+      gap: 12,
+    },
+    zoomHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderBottomWidth: 1,
+      borderBottomColor: colors.gray100,
+      paddingBottom: 10,
+    },
+    zoomHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    zoomHeaderText: { fontSize: 13, fontWeight: '900', color: colors.textPrimary },
+    zoomCloseButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.gray100,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
   });
 }
