@@ -101,14 +101,17 @@ export default function CalendarScreen() {
     runOnJS(setExpanded)(target);
   };
 
-  // 리스트 영역에서 위/아래로 드래그하면(달력이 펼쳐진 동안) 스크롤 대신 달력
+  // 리스트 영역에서 위로 드래그하면(달력이 펼쳐진 동안) 스크롤 대신 달력
   // 높이를 직접 조절한다 — 펼쳐진 동안은 항상 네이티브 스크롤보다 우선한다
   // (아래 Gesture.Exclusive). 내용이 짧아 실제로 스크롤할 게 없는 날에도 동작에
   // 영향을 받지 않는다: 스크롤 오프셋과 무관하게 손가락 이동량만으로 판단한다.
   // 완전히 접힌 뒤에는 비활성화되어 네이티브 스크롤이 그대로 살아난다.
+  // 아래 방향은 잡지 않는다: enabled인 동안 expandedProgress는 항상 이미 최댓값(1)이라
+  // 아래로 당겨도 시각적으로는 아무 효과가 없는데, 손짓만 가로채면 그 아래
+  // 네이티브 스크롤에 딸린 당겨서 새로고침(RefreshControl)이 아예 동작하지 않게 된다.
   const collapsePan = Gesture.Pan()
     .enabled(isExpanded)
-    .activeOffsetY([-10, 10])
+    .activeOffsetY(-10)
     .failOffsetX([-15, 15])
     .onChange((e) => {
       if (refreshingShared.value) return;
