@@ -22,6 +22,7 @@ import TextInput from '../components/common/ClearableTextInput';
 import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
 import {
+  MISSION_EXAMPLES,
   RAINBOW_PROGRESS_GRADIENT,
   STAMP_BOARD_THEMES,
   StampBoardThemeId,
@@ -823,7 +824,7 @@ export default function StampBoardScreen() {
                       onChangeText={(text) =>
                         setTempMissions((prev) => prev.map((v, idx) => (idx === i ? text : v)))
                       }
-                      placeholder="예: 이불 개기"
+                      placeholder={`예: ${MISSION_EXAMPLES[i % MISSION_EXAMPLES.length]}`}
                       placeholderTextColor="#94A3B8"
                       maxLength={14}
                     />
