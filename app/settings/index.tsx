@@ -8,6 +8,7 @@ import {
   Pressable,
   StyleSheet,
   Platform,
+  Switch,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -48,6 +49,7 @@ export default function SettingsScreen() {
     familyKey,
     familyMembers,
     notificationSettings,
+    updateNotificationSettings,
     fontChoiceId,
     fontSizeChoice,
   } = useAppData();
@@ -300,6 +302,12 @@ export default function SettingsScreen() {
                     <View style={[styles.rowIconBadge, { backgroundColor: colors.orangeLight1 }]}>
                       <MaterialCommunityIcons name="bell-outline" size={18} color={colors.orange500} />
                     </View>
+                    <Switch
+                      value={notificationSettings.enabled}
+                      onValueChange={(v) => updateNotificationSettings({ ...notificationSettings, enabled: v })}
+                      trackColor={{ true: colors.accent, false: colors.border }}
+                      thumbColor={colors.cardWhite}
+                    />
                   </View>
                   <Text style={styles.quickCardTitle}>알림 설정</Text>
                   <Text style={styles.quickCardSubtitle} numberOfLines={1}>
@@ -334,27 +342,41 @@ export default function SettingsScreen() {
             {showMembership && (
               <View style={styles.card}>
                 <TouchableOpacity
-                  style={styles.row}
+                  style={[styles.row, styles.rowSpaceBetween]}
                   activeOpacity={0.7}
                   onPress={() => router.push('/settings/subscription')}
                 >
-                  <Text style={[styles.rowTitle, { flex: 0 }]}>프리미엄 구독</Text>
-                  <Text style={[styles.rowValue, isSubscribed && { color: colors.accent }]} numberOfLines={1}>
-                    {isSubscribed ? '구독 중' : '주 5회 → 주 10회·월 50회'}
-                  </Text>
-                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
+                  <View style={styles.rowLeftGroup}>
+                    <View style={[styles.rowIconBadge, { backgroundColor: colors.orangeLight1 }]}>
+                      <MaterialCommunityIcons name="creation" size={17} color={colors.orange500} />
+                    </View>
+                    <Text style={[styles.rowTitle, { flex: 0 }]}>프리미엄 구독</Text>
+                  </View>
+                  <View style={styles.rowRightGroup}>
+                    <Text style={[styles.rowValue, isSubscribed && { color: colors.accent }]} numberOfLines={1}>
+                      {isSubscribed ? '구독 중' : '주 5회 → 주 10회·월 50회'}
+                    </Text>
+                    <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
+                  </View>
                 </TouchableOpacity>
                 <View style={styles.divider} />
                 <TouchableOpacity
-                  style={styles.row}
+                  style={[styles.row, styles.rowSpaceBetween]}
                   activeOpacity={0.7}
                   onPress={() => router.push({ pathname: '/settings/family', params: { title: '구성원 관리' } })}
                 >
-                  <Text style={[styles.rowTitle, { flex: 0 }]}>구성원 관리</Text>
-                  <View style={styles.countPill}>
-                    <Text style={styles.countPillText}>{familyMembers.length}명</Text>
+                  <View style={styles.rowLeftGroup}>
+                    <View style={[styles.rowIconBadge, { backgroundColor: colors.lightBlueBg }]}>
+                      <MaterialCommunityIcons name="account-group-outline" size={17} color={colors.accent} />
+                    </View>
+                    <Text style={[styles.rowTitle, { flex: 0 }]}>구성원 관리</Text>
                   </View>
-                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
+                  <View style={styles.rowRightGroup}>
+                    <View style={styles.countPill}>
+                      <Text style={styles.countPillText}>{familyMembers.length}명</Text>
+                    </View>
+                    <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
+                  </View>
                 </TouchableOpacity>
               </View>
             )}
@@ -583,6 +605,9 @@ function createStyles(colors: any) {
       paddingHorizontal: 12,
       borderRadius: 16,
     },
+    rowSpaceBetween: { justifyContent: 'space-between' },
+    rowLeftGroup: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    rowRightGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     plainRow: {
       flexDirection: 'row',
       alignItems: 'center',
