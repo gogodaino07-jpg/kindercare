@@ -492,6 +492,7 @@ export default function SettingsScreen() {
               <Text style={styles.versionText}>버전 정보 v{appVersion}</Text>
             </View>
 
+            {!noResults && (
             <View style={styles.footerLinkRow}>
               <TouchableOpacity onPress={handleLogout}>
                 <Text style={styles.footerLinkText}>로그아웃</Text>
@@ -501,6 +502,7 @@ export default function SettingsScreen() {
                 <Text style={styles.footerLinkText}>회원탈퇴</Text>
               </TouchableOpacity>
             </View>
+            )}
           </ScrollView>
         </View>
       </SafeAreaView>
@@ -514,7 +516,7 @@ function createStyles(colors: any) {
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     container: { flex: 1 },
-    scrollContent: { paddingTop: 8, paddingHorizontal: 16 },
+    scrollContent: { paddingTop: 8, paddingHorizontal: 16, flexGrow: 1 },
     securePill: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -538,9 +540,9 @@ function createStyles(colors: any) {
       paddingVertical: 12,
       marginBottom: 16,
     },
-    searchInput: { flex: 1, fontSize: 13, color: colors.textPrimary, padding: 0 },
-    emptyState: { alignItems: 'center', paddingVertical: 32, gap: 8 },
-    emptyStateText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
+    searchInput: { flex: 1, fontSize: 13, color: colors.textPrimary, padding: 0, minHeight: 26 },
+    emptyState: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 32, gap: 8 },
+    emptyStateText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600', textAlign: 'center' },
     card: {
       backgroundColor: colors.cardWhite,
       borderRadius: 24,

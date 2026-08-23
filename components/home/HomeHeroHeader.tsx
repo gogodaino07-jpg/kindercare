@@ -399,9 +399,8 @@ function AnimatedWeatherEmoji({ emoji, label, style }: { emoji: string; label: s
     return <Animated.Text style={[style, { transform: [{ translateX }] }]}>{emoji}</Animated.Text>;
   }
   if (kind === 'fall') {
-    const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [-2, 4] });
     const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.7] });
-    return <Animated.Text style={[style, { opacity, transform: [{ translateY }] }]}>{emoji}</Animated.Text>;
+    return <Animated.Text style={[style, { opacity }]}>{emoji}</Animated.Text>;
   }
   return <Text style={style}>{emoji}</Text>;
 }

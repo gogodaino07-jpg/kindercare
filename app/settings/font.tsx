@@ -46,14 +46,22 @@ export default function FontSettingsScreen() {
                 </View>
                 <View style={styles.rowText}>
                   <View style={styles.rowTopLine}>
-                    <Text style={styles.rowLabel}>{option.label}</Text>
+                    <Text style={[styles.rowLabel, { fontFamily: option.fontFamily ?? 'System' }]}>
+                      {option.label}
+                    </Text>
                     <View style={[styles.vibeBadge, isSelected && styles.vibeBadgeSelected]}>
-                      <Text style={[styles.vibeBadgeText, isSelected && styles.vibeBadgeTextSelected]}>
+                      <Text
+                        style={[
+                          styles.vibeBadgeText,
+                          isSelected && styles.vibeBadgeTextSelected,
+                          { fontFamily: 'System' },
+                        ]}
+                      >
                         {option.vibe}
                       </Text>
                     </View>
                   </View>
-                  <Text style={[styles.preview, { fontFamily: option.fontFamily }]}>
+                  <Text style={[styles.preview, { fontFamily: option.fontFamily ?? 'System' }]}>
                     7/20(월) 현장학습이 있어요
                   </Text>
                 </View>
@@ -84,9 +92,8 @@ function createStyles(colors: ThemeColors) {
       ...SHADOW,
     },
     rowSelected: {
-      borderWidth: 1.5,
+      borderWidth: 2,
       borderColor: colors.accent,
-      borderLeftWidth: 4,
     },
     radio: {
       width: 22,
