@@ -114,6 +114,7 @@ export default function StampBoardScreen() {
   const {
     targetCount,
     stamps,
+    missions,
     currentStamps,
     wish,
     themeId,
@@ -122,6 +123,7 @@ export default function StampBoardScreen() {
     isCompleted,
     placeStamp,
     updateSettings,
+    setMissions,
     resetProgress,
     setTheme,
     setStampIcon,
@@ -134,6 +136,8 @@ export default function StampBoardScreen() {
   const [showSettings, setShowSettings] = useState(false);
   const [showWish, setShowWish] = useState(false);
   const [tempWish, setTempWish] = useState(wish);
+  const [showMissions, setShowMissions] = useState(false);
+  const [tempMissions, setTempMissions] = useState<string[]>(missions);
   const [stampingIndex, setStampingIndex] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [stickerPanelOpen, setStickerPanelOpen] = useState(false);
@@ -178,6 +182,16 @@ export default function StampBoardScreen() {
   const openWishModal = () => {
     setTempWish(wish);
     setShowWish(true);
+  };
+
+  const openMissionsModal = () => {
+    setTempMissions(missions);
+    setShowMissions(true);
+  };
+
+  const saveMissions = () => {
+    setMissions(tempMissions.map((m) => m.trim()));
+    setShowMissions(false);
   };
 
   // 빈 칸(index)에 새 도장을 찍을 때 공통으로 쓰는 슬램 애니메이션 — 도장이 위에서
@@ -285,6 +299,10 @@ export default function StampBoardScreen() {
   };
 
   const progressPercent = Math.round((currentStamps / Math.max(targetCount, 1)) * 100);
+
+  // 다음에 찍을 칸에 적어둔 미션 문구가 있으면, 하단 "도장 쾅!" 버튼에 그 문구를 보여준다.
+  const nextEmptyIndex = stamps.findIndex((s) => s === null);
+  const nextMissionText = nextEmptyIndex >= 0 ? missions[nextEmptyIndex]?.trim() : '';
 
   useEffect(() => {
     Animated.timing(progressFillAnim, {
@@ -461,7 +479,15 @@ export default function StampBoardScreen() {
               </Animated.View>
             </View>
 
-            <Text style={styles.progressCaption}>☁️ {progressCaption}</Text>
+            <View style={styles.progressBottomRow}>
+              <Text style={styles.progressCaption} numberOfLines={1}>
+                ☁️ {progressCaption}
+              </Text>
+              <Pressable onPress={openMissionsModal} style={styles.missionCheckButton} hitSlop={6}>
+                <Text style={styles.missionCheckButtonText}>미션 확인</Text>
+                <Feather name="chevron-right" size={14} color={theme.progressIconColor} />
+              </Pressable>
+            </View>
           </View>
 
           <View style={styles.stickerRow}>
@@ -588,7 +614,15 @@ export default function StampBoardScreen() {
                 ) : (
                   <>
                     <Text style={styles.stampButtonEmoji}>{stampIcon}</Text>
-                    <Text style={styles.stampButtonText}>도장 쾅!</Text>
+                    <Text
+                      style={styles.stampButtonText}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.7}
+                    >
+                      {nextMissionText || '도장 쾅!'}
+                    </Text>
                   </>
                 )}
               </LinearGradient>
@@ -758,6 +792,57 @@ export default function StampBoardScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* 미션 확인 모달 — 도장 칸마다 어떤 미션인지 문구를 적는다 */}
+      <Modal visible={showMissions} animationType="fade" transparent onRequestClose={() => setShowMissions(false)}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.select({ ios: 0, android: -100 })}
+        >
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderLeft}>
+                <Ionicons name="sparkles" size={16} color="#0369A1" />
+                <Text style={styles.modalTitle}>미션 확인</Text>
+              </View>
+              <Pressable onPress={() => setShowMissions(false)} hitSlop={8}>
+                <Feather name="x" size={18} color="#94A3B8" />
+              </Pressable>
+            </View>
+
+            <Text style={styles.modalSectionLabel}>도장 칸마다 어떤 미션인지 적어주세요:</Text>
+            <ScrollView style={styles.missionListScroll} showsVerticalScrollIndicator={false}>
+              <View style={styles.missionListInner}>
+                {tempMissions.map((m, i) => (
+                  <View key={i} style={styles.missionInputRow}>
+                    <Text style={styles.missionInputIndex}>{i + 1}</Text>
+                    <TextInput
+                      style={styles.missionInput}
+                      value={m}
+                      onChangeText={(text) =>
+                        setTempMissions((prev) => prev.map((v, idx) => (idx === i ? text : v)))
+                      }
+                      placeholder="예: 이불 개기"
+                      placeholderTextColor="#94A3B8"
+                      maxLength={14}
+                    />
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalActionsRow}>
+              <Pressable onPress={() => setShowMissions(false)} style={styles.cancelButton}>
+                <Text style={styles.cancelButtonText}>취소</Text>
+              </Pressable>
+              <Pressable onPress={saveMissions} style={styles.saveButton}>
+                <Text style={styles.saveButtonText}>저장하기</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </Animated.View>
   );
 }
@@ -884,7 +969,16 @@ const styles = StyleSheet.create({
   },
   progressFill: { height: '100%', borderRadius: 999, overflow: 'hidden' },
   progressFillGradient: { width: '100%', height: '100%' },
-  progressCaption: { marginTop: 8, fontSize: 11.5, fontWeight: '700', color: '#475569', textAlign: 'center' },
+  progressBottomRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  progressCaption: { flex: 1, fontSize: 11.5, fontWeight: '700', color: '#475569' },
+  missionCheckButton: { flexDirection: 'row', alignItems: 'center', gap: 1 },
+  missionCheckButtonText: { fontSize: 12, fontWeight: '800', color: '#0369A1' },
   stickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1008,7 +1102,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   stampButtonEmoji: { fontSize: 20 },
-  stampButtonText: { color: '#FFFFFF', fontSize: 17, fontWeight: '900' },
+  stampButtonText: { flexShrink: 1, color: '#FFFFFF', fontSize: 17, fontWeight: '900' },
   stampButtonTextDisabled: { color: '#94A3B8', fontSize: 16, fontWeight: '800' },
   footerBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 },
   footerHint: { fontSize: 10.5, fontWeight: '700', color: '#94A3B8', flexShrink: 1 },
@@ -1108,6 +1202,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 13.5,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  missionListScroll: { maxHeight: 320 },
+  missionListInner: { gap: 8, paddingVertical: 2 },
+  missionInputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  missionInputIndex: {
+    width: 22,
+    fontSize: 12.5,
+    fontWeight: '900',
+    color: '#0369A1',
+    textAlign: 'center',
+  },
+  missionInput: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
     fontWeight: '700',
     color: '#1E293B',
   },
