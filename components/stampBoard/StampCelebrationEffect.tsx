@@ -4,35 +4,29 @@ import { Animated, Easing, StyleSheet, View } from 'react-native';
 interface StampCelebrationEffectProps {
   /** 값이 바뀔 때마다(도장을 새로 찍을 때마다) 화면 중앙에 아이콘에 맞는 연출이 한 번 재생된다. */
   triggerKey: number;
-  /** 방금 찍힌 스탬프 아이콘 — 이 값으로 연출 종류(빛/두둥실/팡팡)를 고른다. 글자 자체는
-   *  화면에 다시 그리지 않고, 종류를 고르는 용도로만 쓴다(도장 모양은 슬롯에서 이미 보임). */
+  /** 방금 찍힌 스탬프 아이콘 — 연출 종류(빛/두둥실/솟구침/팡팡)를 고르는 데 쓰이고,
+   *  연출 안에서도 이 아이콘 자체가 여러 개 등장해 날아다닌다. */
   icon: string;
 }
 
-/** 빛/마법 계열 — 부드러운 빛 무리가 사방으로 은은하게 퍼지는 연출. */
-const RAY_ICONS = new Set(['🌈', '🌟', '✨', '💫', '👑', '🪄', '🎯', '🎉']);
-/** 둥실 뜨는 계열 — 방울들이 위로 두둥실 떠오르는 연출. */
+/** 빛/마법 계열 — 아이콘이 가운데서 스스로 반짝반짝 빙글 도는 연출. */
+const RAY_ICONS = new Set(['🌈', '🌟', '⭐', '✨', '💫', '👑', '🪄', '🎯', '🎉']);
+/** 둥실 뜨는 계열 — 아이콘 여러 개가 좌우로 살랑이며 위로 두둥실 떠오르는 연출. */
 const FLOAT_ICONS = new Set(['🎈', '🪁', '🦋', '🐣', '🐥']);
-/** 탈것/바다 계열 — 시원한 파란 톤으로 팡 퍼짐. */
-const SPLASH_ICONS = new Set(['🚀', '🛸', '🌊', '🐳', '⚓', '⚽', '🏀', '🚗', '🦕', '🦖']);
-/** 달콤한 계열(간식/꽃/사랑) — 따뜻한 핑크 톤으로 팡 퍼짐. */
+/** 탈것/동물/스포츠 계열 — 아이콘이 위로 솟구쳐 오르는 연출(로켓 발사 느낌). */
+const LAUNCH_ICONS = new Set(['🚀', '🛸', '🌊', '🐳', '⚓', '⚽', '🏀', '🚗', '🦕', '🦖']);
+/** 달콤한 계열(간식/꽃/사랑) — 아이콘이 사방으로 팡 퍼졌다가 꽃잎처럼 사르르 떨어짐. */
 const BLOOM_ICONS = new Set(['🍓', '🧁', '🍭', '💖', '🍩', '🍬', '🍉', '🎀', '🌸', '🌷', '🌻', '🦄', '🐰', '🧸']);
 
-type EffectKind = 'rays' | 'float' | 'splash' | 'bloom' | 'pop';
+type EffectKind = 'rays' | 'float' | 'launch' | 'bloom' | 'pop';
 
 function getEffectKind(icon: string): EffectKind {
   if (RAY_ICONS.has(icon)) return 'rays';
   if (FLOAT_ICONS.has(icon)) return 'float';
-  if (SPLASH_ICONS.has(icon)) return 'splash';
+  if (LAUNCH_ICONS.has(icon)) return 'launch';
   if (BLOOM_ICONS.has(icon)) return 'bloom';
-  return 'pop'; // 그 외(😊🍀🎁 등) — 기본 다색 알갱이가 부드럽게 팡 퍼짐
+  return 'pop'; // 그 외(😊🍀🎁 등) — 기본으로 사방에 팡 퍼짐
 }
-
-const RAY_COLORS = ['#F87171', '#FBBF24', '#34D399', '#38BDF8', '#A78BFA', '#F472B6', '#FB923C', '#FDE047'];
-const FLOAT_COLORS = ['#93C5FD', '#FBCFE8', '#FDE68A', '#A7F3D0', '#C4B5FD'];
-const SPLASH_COLORS = ['#38BDF8', '#0EA5E9', '#22D3EE', '#60A5FA', '#7DD3FC'];
-const BLOOM_COLORS = ['#F472B6', '#FB7185', '#FBCFE8', '#F9A8D4', '#FDBA74'];
-const POP_COLORS = ['#FBBF24', '#F87171', '#60A5FA', '#34D399', '#F472B6', '#A78BFA'];
 
 const RAY_COUNT = 12;
 const FLOAT_COUNT = 7;
@@ -74,18 +68,22 @@ export default function StampCelebrationEffect({ triggerKey, icon }: StampCelebr
 
   return (
     <View pointerEvents="none" style={styles.overlay}>
-      {kind === 'rays' && <RaysEffect progress={progress} />}
-      {kind === 'float' && <FloatEffect progress={progress} />}
-      {kind === 'splash' && <BurstEffect progress={progress} colors={SPLASH_COLORS} />}
-      {kind === 'bloom' && <BurstEffect progress={progress} colors={BLOOM_COLORS} />}
-      {kind === 'pop' && <BurstEffect progress={progress} colors={POP_COLORS} />}
+      {kind === 'rays' && <RaysEffect progress={progress} icon={icon} />}
+      {kind === 'float' && <FloatEffect progress={progress} icon={icon} />}
+      {kind === 'launch' && <BurstEffect progress={progress} icon={icon} upward />}
+      {kind === 'bloom' && <BurstEffect progress={progress} icon={icon} />}
+      {kind === 'pop' && <BurstEffect progress={progress} icon={icon} />}
     </View>
   );
 }
 
-/** 무지개/별빛/마법 계열: 부드러운 빛 무리 여러 개가 은은하게 커지며 사방으로 번지고,
- *  중심에 옅은 링이 잔물결처럼 퍼져나간다. 딱딱한 직선 광선 대신 둥근 빛 덩어리로 표현. */
-function RaysEffect({ progress }: { progress: Animated.Value }) {
+/** 무지개/별빛/마법 계열: 찍힌 아이콘 자체가 가운데서 커지며 반짝반짝 빙글 돌고,
+ *  그 뒤로 옅은 빛 무리와 링이 은은하게 퍼진다. */
+function RaysEffect({ progress, icon }: { progress: Animated.Value; icon: string }) {
+  const heroScale = progress.interpolate({ inputRange: [0, 0.3, 0.7, 1], outputRange: [0.2, 1.3, 1.1, 0.9] });
+  const heroSpin = progress.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const heroOpacity = progress.interpolate({ inputRange: [0, 0.15, 0.8, 1], outputRange: [0, 1, 1, 0] });
+
   return (
     <>
       <Animated.View
@@ -100,8 +98,7 @@ function RaysEffect({ progress }: { progress: Animated.Value }) {
       {Array.from({ length: RAY_COUNT }).map((_, i) => {
         const angle = (Math.PI * 2 * i) / RAY_COUNT;
         const distance = 70 + (i % 3) * 26;
-        const size = 22 + (i % 4) * 10;
-        const color = RAY_COLORS[i % RAY_COLORS.length];
+        const size = 12 + (i % 3) * 5;
         const stagger = (i % 6) * 0.03;
 
         const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [0, Math.cos(angle) * distance] });
@@ -116,36 +113,35 @@ function RaysEffect({ progress }: { progress: Animated.Value }) {
         });
 
         return (
-          <Animated.View
+          <Animated.Text
             key={i}
             style={[
-              rayStyles.glow,
-              {
-                width: size,
-                height: size,
-                borderRadius: size / 2,
-                backgroundColor: color,
-                opacity,
-                transform: [{ translateX }, { translateY }, { scale }],
-              },
+              rayStyles.sparkle,
+              { fontSize: size, opacity, transform: [{ translateX }, { translateY }, { scale }] },
             ]}
-          />
+          >
+            ✨
+          </Animated.Text>
         );
       })}
+      <Animated.Text
+        style={[rayStyles.hero, { opacity: heroOpacity, transform: [{ scale: heroScale }, { rotate: heroSpin }] }]}
+      >
+        {icon}
+      </Animated.Text>
     </>
   );
 }
 
-/** 풍선/연 계열: 부드러운 색의 방울 여러 개가 좌우로 느긋하게 살랑이며 위로 두둥실 떠오른다. */
-function FloatEffect({ progress }: { progress: Animated.Value }) {
+/** 풍선/연 계열: 찍힌 아이콘 여러 개가 좌우로 느긋하게 살랑이며 위로 두둥실 떠오른다. */
+function FloatEffect({ progress, icon }: { progress: Animated.Value; icon: string }) {
   return (
     <>
       {Array.from({ length: FLOAT_COUNT }).map((_, i) => {
-        const startX = (i - (FLOAT_COUNT - 1) / 2) * 36;
+        const startX = (i - (FLOAT_COUNT - 1) / 2) * 40;
         const swayDir = i % 2 === 0 ? 1 : -1;
-        const size = 20 + (i % 3) * 10;
+        const size = 22 + (i % 3) * 8;
         const delay = (i % FLOAT_COUNT) * 0.07;
-        const color = FLOAT_COLORS[i % FLOAT_COLORS.length];
 
         const translateY = progress.interpolate({
           inputRange: [0, 1],
@@ -162,64 +158,72 @@ function FloatEffect({ progress }: { progress: Animated.Value }) {
         const scale = progress.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0.3, 1, 1] });
 
         return (
-          <Animated.View
+          <Animated.Text
             key={i}
             style={[
-              floatStyles.bubble,
-              {
-                width: size,
-                height: size,
-                borderRadius: size / 2,
-                backgroundColor: color,
-                opacity,
-                transform: [{ translateX }, { translateY }, { scale }],
-              },
+              floatStyles.icon,
+              { fontSize: size, opacity, transform: [{ translateX }, { translateY }, { scale }] },
             ]}
-          />
+          >
+            {icon}
+          </Animated.Text>
         );
       })}
     </>
   );
 }
 
-/** 탈것/바다(splash), 달콤한 계열(bloom), 그 외 전부(pop) 공통: 작고 둥근 알갱이들이
- *  팡 퍼졌다가 사르르 사라진다 — 전달된 색 팔레트로 아이콘 종류별 느낌을 구분한다. */
-function BurstEffect({ progress, colors }: { progress: Animated.Value; colors: string[] }) {
+/** launch(탈것/동물/스포츠): 찍힌 아이콘이 위쪽 부채꼴로 솟구쳐 오른다(로켓 발사 느낌).
+ *  bloom(달콤한 계열)/pop(그 외): 아이콘이 사방으로 팡 퍼졌다가 사르르 떨어진다. */
+function BurstEffect({
+  progress,
+  icon,
+  upward = false,
+}: {
+  progress: Animated.Value;
+  icon: string;
+  upward?: boolean;
+}) {
   return (
     <>
       {Array.from({ length: BURST_COUNT }).map((_, i) => {
-        const angle = (Math.PI * 2 * i) / BURST_COUNT + (i % 2 === 0 ? 0.12 : -0.12);
-        const distance = 85 + (i % 5) * 20;
-        const size = 14 + (i % 4) * 6;
-        const color = colors[i % colors.length];
+        // upward: -90°(정위) 기준 좌우 ±70° 부채꼴 안에서만 튀어 올라 "솟구치는" 느낌을 준다.
+        // 그 외에는 기존처럼 360도 전방향으로 퍼진다.
+        const angle = upward
+          ? -Math.PI / 2 + ((i / (BURST_COUNT - 1)) * 2 - 1) * ((Math.PI * 70) / 180)
+          : (Math.PI * 2 * i) / BURST_COUNT + (i % 2 === 0 ? 0.12 : -0.12);
+        const distance = upward ? 110 + (i % 5) * 24 : 85 + (i % 5) * 20;
+        const size = 16 + (i % 4) * 6;
         const delay = (i % 8) * 0.03;
 
         const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [0, Math.cos(angle) * distance] });
         const translateY = progress.interpolate({
           inputRange: [0, 0.45, 1],
-          outputRange: [0, Math.sin(angle) * distance - 6, Math.sin(angle) * distance + 46],
+          outputRange: upward
+            ? [0, Math.sin(angle) * distance, Math.sin(angle) * distance + 20]
+            : [0, Math.sin(angle) * distance - 6, Math.sin(angle) * distance + 46],
         });
         const opacity = progress.interpolate({
           inputRange: [delay, Math.min(delay + 0.15, 1), 0.75, 1],
           outputRange: [0, 0.95, 0.8, 0],
         });
         const scale = progress.interpolate({ inputRange: [0, 0.25, 1], outputRange: [0.2, 1, 0.7] });
+        const spin = progress.interpolate({ inputRange: [0, 1], outputRange: ['0deg', upward ? '20deg' : '90deg'] });
 
         return (
-          <Animated.View
+          <Animated.Text
             key={i}
             style={[
-              popStyles.dot,
+              popStyles.icon,
               {
-                width: size,
-                height: size,
-                borderRadius: size / 2,
-                backgroundColor: color,
+                fontSize: size,
                 opacity,
-                transform: [{ translateX }, { translateY }, { scale }],
+                transform: [{ translateX }, { translateY }, { scale }, { rotate: spin }],
               },
             ]}
-          />
+          >
+            {icon}
+          </Animated.Text>
         );
       })}
     </>
@@ -248,19 +252,23 @@ const rayStyles = StyleSheet.create({
     borderWidth: 5,
     borderColor: '#FDE68A',
   },
-  glow: {
+  sparkle: {
     position: 'absolute',
+  },
+  hero: {
+    position: 'absolute',
+    fontSize: 64,
   },
 });
 
 const floatStyles = StyleSheet.create({
-  bubble: {
+  icon: {
     position: 'absolute',
   },
 });
 
 const popStyles = StyleSheet.create({
-  dot: {
+  icon: {
     position: 'absolute',
   },
 });
