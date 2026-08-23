@@ -3,7 +3,7 @@ import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
@@ -26,7 +26,11 @@ interface SearchHit {
 export default function WeatherRegionSettingsScreen() {
   const router = useRouter();
   const { region, setRegion } = useWeatherRegion();
-  const { slots, saveToSlot } = useWeatherFavorites();
+  const { slots, saveToSlot, addSlot, renameSlot, removeSlot } = useWeatherFavorites();
+  // 즐겨찾기 칸 추가/이름 변경용 작은 모달 — mode가 'add'면 새 칸 추가, slotId가 있으면 이름 변경.
+  const [labelModal, setLabelModal] = useState<{ mode: 'add' | 'rename'; slotId?: string; draft: string } | null>(
+    null
+  );
   const { showAlert } = useAlert();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -110,7 +114,7 @@ export default function WeatherRegionSettingsScreen() {
     slots.forEach((slot) => {
       if (!slot.region) return;
       fetchWeatherPreview(slot.region.latitude, slot.region.longitude).then((result) => {
-        setFavoriteTemps((prev) => ({ ...prev, [slot.key]: result?.tempC ?? null }));
+        setFavoriteTemps((prev) => ({ ...prev, [slot.id]: result?.tempC ?? null }));
       });
     });
   }, [slots]);
@@ -127,7 +131,7 @@ export default function WeatherRegionSettingsScreen() {
 
   const applyAuto = () => applyRegion(null);
 
-  // 우리집/회사/본가 칸: 비어있으면 지금 지역을 저장, 채워져 있으면 그 지역으로 바로 전환.
+  // 즐겨찾기 칸: 비어있으면 지금 지역을 저장, 채워져 있으면 그 지역으로 바로 전환.
   const handleFavoritePress = (slot: WeatherFavoriteSlot) => {
     if (slot.region) {
       applyRegion(slot.region);
@@ -137,7 +141,7 @@ export default function WeatherRegionSettingsScreen() {
       showAlert({ title: '자동(GPS) 위치는 저장할 수 없어요', message: '먼저 지역을 직접 선택한 뒤 즐겨찾기에 저장해주세요.' });
       return;
     }
-    saveToSlot(slot.key, region);
+    saveToSlot(slot.id, region);
   };
 
   const handleFavoriteOverwrite = (slot: WeatherFavoriteSlot) => {
@@ -145,18 +149,31 @@ export default function WeatherRegionSettingsScreen() {
       showAlert({ title: '자동(GPS) 위치는 저장할 수 없어요', message: '먼저 지역을 직접 선택한 뒤 즐겨찾기에 저장해주세요.' });
       return;
     }
-    saveToSlot(slot.key, region);
+    saveToSlot(slot.id, region);
   };
 
-  const handleFavoriteClear = (slot: WeatherFavoriteSlot) => {
+  const handleFavoriteDelete = (slot: WeatherFavoriteSlot) => {
     showAlert({
-      title: `'${slot.label}' 즐겨찾기 삭제`,
-      message: '저장된 동네를 지울까요?',
+      title: `'${slot.label}' 칸 삭제`,
+      message: '즐겨찾기 칸 자체를 목록에서 지울까요?',
       buttons: [
         { text: '취소', style: 'cancel' },
-        { text: '삭제', style: 'destructive', onPress: () => saveToSlot(slot.key, null) },
+        { text: '삭제', style: 'destructive', onPress: () => removeSlot(slot.id) },
       ],
     });
+  };
+
+  const openAddSlotModal = () => setLabelModal({ mode: 'add', draft: '' });
+  const openRenameModal = (slot: WeatherFavoriteSlot) =>
+    setLabelModal({ mode: 'rename', slotId: slot.id, draft: slot.label });
+
+  const confirmLabelModal = () => {
+    if (!labelModal) return;
+    const trimmed = labelModal.draft.trim();
+    if (!trimmed) return;
+    if (labelModal.mode === 'add') addSlot(trimmed);
+    else if (labelModal.slotId) renameSlot(labelModal.slotId, trimmed);
+    setLabelModal(null);
   };
 
   // 로컬 데이터(트리) 안에서 실시간으로 매칭되는 동/구 이름을 찾아 즉시 보여준다 —
@@ -439,9 +456,15 @@ export default function WeatherRegionSettingsScreen() {
 
           {/* 즐겨찾기 */}
           <View style={styles.favoritesCard}>
-            <Text style={styles.pickerTitle}>자주 찾는 동네</Text>
+            <View style={styles.favoritesTopRow}>
+              <Text style={styles.pickerTitle}>자주 찾는 동네</Text>
+              <Pressable onPress={openAddSlotModal} hitSlop={8} style={styles.favoriteAddButton}>
+                <MaterialCommunityIcons name="plus" size={16} color={colors.accent} />
+                <Text style={styles.favoriteAddButtonText}>칸 추가</Text>
+              </Pressable>
+            </View>
             {slots.map((slot) => (
-              <View key={slot.key} style={styles.favoriteRow}>
+              <View key={slot.id} style={styles.favoriteRow}>
                 <Pressable style={styles.favoriteMain} onPress={() => handleFavoritePress(slot)}>
                   <MaterialCommunityIcons
                     name={slot.region ? 'star' : 'star-outline'}
@@ -453,24 +476,71 @@ export default function WeatherRegionSettingsScreen() {
                     {slot.region ? slot.region.label : '지금 지역을 여기에 저장'}
                   </Text>
                 </Pressable>
-                {slot.region && (
-                  <>
-                    {favoriteTemps[slot.key] != null && (
-                      <Text style={styles.favoriteTemp}>{favoriteTemps[slot.key]}°</Text>
-                    )}
-                    <Pressable onPress={() => handleFavoriteOverwrite(slot)} hitSlop={8} style={styles.favoriteEditButton}>
-                      <MaterialCommunityIcons name="refresh" size={14} color={colors.textSecondary} />
-                    </Pressable>
-                    <Pressable onPress={() => handleFavoriteClear(slot)} hitSlop={8} style={styles.favoriteEditButton}>
-                      <MaterialCommunityIcons name="trash-can-outline" size={14} color={colors.tomorrowRed} />
-                    </Pressable>
-                  </>
+                {slot.region && favoriteTemps[slot.id] != null && (
+                  <Text style={styles.favoriteTemp}>{favoriteTemps[slot.id]}°</Text>
                 )}
+                {slot.region && (
+                  <Pressable onPress={() => handleFavoriteOverwrite(slot)} hitSlop={8} style={styles.favoriteEditButton}>
+                    <MaterialCommunityIcons name="refresh" size={14} color={colors.textSecondary} />
+                  </Pressable>
+                )}
+                <Pressable onPress={() => openRenameModal(slot)} hitSlop={8} style={styles.favoriteEditButton}>
+                  <MaterialCommunityIcons name="pencil-outline" size={14} color={colors.textSecondary} />
+                </Pressable>
+                <Pressable onPress={() => handleFavoriteDelete(slot)} hitSlop={8} style={styles.favoriteEditButton}>
+                  <MaterialCommunityIcons name="trash-can-outline" size={14} color={colors.tomorrowRed} />
+                </Pressable>
               </View>
             ))}
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* 즐겨찾기 칸 추가/이름 변경 모달 */}
+      <Modal visible={!!labelModal} animationType="fade" transparent onRequestClose={() => setLabelModal(null)}>
+        <KeyboardAvoidingView
+          style={styles.labelModalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.labelModalCard}>
+            <Text style={styles.labelModalTitle}>
+              {labelModal?.mode === 'add' ? '새 즐겨찾기 칸' : '이름 바꾸기'}
+            </Text>
+            <TextInput
+              style={styles.labelModalInput}
+              value={labelModal?.draft ?? ''}
+              onChangeText={(text) => setLabelModal((prev) => (prev ? { ...prev, draft: text } : prev))}
+              placeholder="예: 할머니댁, 유치원"
+              placeholderTextColor={colors.textSecondary}
+              maxLength={10}
+              autoFocus
+            />
+            {labelModal?.mode === 'add' && (
+              <View style={styles.labelPresetRow}>
+                {['집', '회사', '학교', '기타'].map((preset) => (
+                  <Pressable
+                    key={preset}
+                    style={styles.labelPresetChip}
+                    onPress={() => setLabelModal((prev) => (prev ? { ...prev, draft: preset } : prev))}
+                  >
+                    <Text style={styles.labelPresetChipText}>{preset}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            <View style={styles.labelModalActions}>
+              <Pressable style={styles.labelModalCancel} onPress={() => setLabelModal(null)}>
+                <Text style={styles.labelModalCancelText}>취소</Text>
+              </Pressable>
+              <Pressable style={styles.labelModalConfirm} onPress={confirmLabelModal}>
+                <Text style={styles.labelModalConfirmText}>
+                  {labelModal?.mode === 'add' ? '추가' : '저장'}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -664,6 +734,22 @@ function createStyles(colors: ThemeColors) {
       gap: 4,
       ...SHADOW,
     },
+    favoritesTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    favoriteAddButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      backgroundColor: colors.lightBlueBg,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    favoriteAddButtonText: { fontSize: 11.5, fontWeight: '700', color: colors.accent },
     favoriteRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -682,7 +768,7 @@ function createStyles(colors: ThemeColors) {
     favoriteValue: { flex: 1, fontSize: 12.5, fontWeight: '500', color: colors.textSecondary },
     favoriteTemp: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginLeft: 8 },
     favoriteEditButton: {
-      marginLeft: 10,
+      marginLeft: 6,
       width: 26,
       height: 26,
       borderRadius: 13,
@@ -690,5 +776,54 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    labelModalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(15,18,17,0.6)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    labelModalCard: {
+      width: '100%',
+      backgroundColor: colors.cardWhite,
+      borderRadius: 24,
+      padding: 22,
+    },
+    labelModalTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, marginBottom: 14 },
+    labelModalInput: {
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      borderRadius: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    labelPresetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+    labelPresetChip: {
+      backgroundColor: colors.gray100,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    labelPresetChipText: { fontSize: 12.5, fontWeight: '700', color: colors.textSecondary },
+    labelModalActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
+    labelModalCancel: {
+      flex: 1,
+      paddingVertical: 13,
+      borderRadius: 14,
+      backgroundColor: colors.gray100,
+      alignItems: 'center',
+    },
+    labelModalCancelText: { fontSize: 14.5, fontWeight: '700', color: colors.textSecondary },
+    labelModalConfirm: {
+      flex: 1,
+      paddingVertical: 13,
+      borderRadius: 14,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+    },
+    labelModalConfirmText: { fontSize: 14.5, fontWeight: '700', color: '#FFFFFF' },
   });
 }
