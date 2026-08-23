@@ -351,14 +351,17 @@ export default function SettingsScreen() {
                     <View style={[styles.rowIconBadge, { backgroundColor: colors.orangeLight1 }]}>
                       <MaterialCommunityIcons name="creation" size={17} color={colors.orange500} />
                     </View>
-                    <Text style={[styles.rowTitle, { flex: 0 }]}>프리미엄 구독</Text>
+                    <View>
+                      <Text style={styles.rowTitle}>프리미엄 구독</Text>
+                      <Text
+                        style={[styles.rowSubtitleInline, isSubscribed && { color: colors.accent }]}
+                        numberOfLines={1}
+                      >
+                        {isSubscribed ? '구독 중' : '주 5회 → 주 10회·월 50회'}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.rowRightGroup}>
-                    <Text style={[styles.rowValue, isSubscribed && { color: colors.accent }]} numberOfLines={1}>
-                      {isSubscribed ? '구독 중' : '주 5회 → 주 10회·월 50회'}
-                    </Text>
-                    <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
-                  </View>
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
                 </TouchableOpacity>
                 <View style={styles.divider} />
                 <TouchableOpacity
@@ -610,6 +613,7 @@ function createStyles(colors: any) {
     rowSpaceBetween: { justifyContent: 'space-between' },
     rowLeftGroup: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     rowRightGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    rowSubtitleInline: { fontSize: 12, color: colors.textSecondary, fontWeight: '600', marginTop: 2 },
     plainRow: {
       flexDirection: 'row',
       alignItems: 'center',
