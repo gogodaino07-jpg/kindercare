@@ -614,7 +614,7 @@ export default function StampBoardScreen() {
                   </>
                 ) : (
                   <>
-                    <Text style={styles.stampButtonEmoji}>{stampIcon}</Text>
+                    {!nextMissionText && <Text style={styles.stampButtonEmoji}>{stampIcon}</Text>}
                     <Text
                       style={styles.stampButtonText}
                       numberOfLines={1}
