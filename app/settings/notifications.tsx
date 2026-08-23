@@ -23,6 +23,16 @@ export default function NotificationSettingsScreen() {
   const [draft, setDraft] = useState(notificationSettings);
   const [saving, setSaving] = useState(false);
 
+  // "알림 받기" 마스터 스위치는 다른 세부 설정(시간 등)과 달리 저장 버튼을 기다리지 않고
+  // 바로 반영한다 — 설정 홈 화면의 알림 카드 토글과 상태가 어긋나 보이지 않게 하기 위함.
+  const handleToggleEnabled = (enabled: boolean) => {
+    setDraft((prev) => {
+      const next = { ...prev, enabled };
+      updateNotificationSettings(next);
+      return next;
+    });
+  };
+
   const handleSave = async () => {
     setSaving(true);
     updateNotificationSettings(draft);
@@ -62,7 +72,7 @@ export default function NotificationSettingsScreen() {
             <Text style={styles.rowLabel}>알림 받기</Text>
             <Switch
               value={draft.enabled}
-              onValueChange={(enabled) => setDraft((prev) => ({ ...prev, enabled }))}
+              onValueChange={handleToggleEnabled}
               trackColor={{ true: colors.accent, false: colors.border }}
               thumbColor={colors.cardWhite}
             />
@@ -70,6 +80,22 @@ export default function NotificationSettingsScreen() {
 
           {draft.enabled && (
             <>
+              <Text style={styles.sectionLabel}>미리보기</Text>
+              <View style={styles.previewCard}>
+                <View style={styles.previewIconCircle}>
+                  <MaterialCommunityIcons name="school-outline" size={16} color="#FFFFFF" />
+                </View>
+                <View style={styles.previewTextArea}>
+                  <View style={styles.previewTopRow}>
+                    <Text style={styles.previewAppName}>kindercare</Text>
+                    <Text style={styles.previewTime}>{formatTimeOfDay(draft.dayBeforeTime)}</Text>
+                  </View>
+                  <Text style={styles.previewTitle} numberOfLines={1}>[내일] 소풍</Text>
+                  <Text style={styles.previewBody} numberOfLines={2}>준비물: 물통, 도시락</Text>
+                </View>
+              </View>
+              <Text style={styles.previewCaption}>설정한 시간에 이런 알림이 도착해요</Text>
+
               <Text style={styles.sectionLabel}>
                 전날 알림 시간 · {formatTimeOfDay(draft.dayBeforeTime)}
               </Text>
@@ -105,22 +131,6 @@ export default function NotificationSettingsScreen() {
                   </View>
                 </>
               )}
-
-              <Text style={styles.sectionLabel}>미리보기</Text>
-              <View style={styles.previewCard}>
-                <View style={styles.previewIconCircle}>
-                  <MaterialCommunityIcons name="school-outline" size={16} color="#FFFFFF" />
-                </View>
-                <View style={styles.previewTextArea}>
-                  <View style={styles.previewTopRow}>
-                    <Text style={styles.previewAppName}>kindercare</Text>
-                    <Text style={styles.previewTime}>{formatTimeOfDay(draft.dayBeforeTime)}</Text>
-                  </View>
-                  <Text style={styles.previewTitle} numberOfLines={1}>[내일] 소풍</Text>
-                  <Text style={styles.previewBody} numberOfLines={2}>준비물: 물통, 도시락</Text>
-                </View>
-              </View>
-              <Text style={styles.previewCaption}>설정한 시간에 이런 알림이 도착해요</Text>
             </>
           )}
         </ScrollView>

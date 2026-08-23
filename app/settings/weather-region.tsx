@@ -480,7 +480,7 @@ function createStyles(colors: ThemeColors) {
     screenBg: { flex: 1, backgroundColor: t.bg },
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
-    content: { padding: 20, paddingBottom: 48, gap: 16 },
+    content: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 48, gap: 16 },
     subtitle: {
       fontSize: 12.5,
       color: colors.textSecondary,

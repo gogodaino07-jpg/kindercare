@@ -595,7 +595,7 @@ function createStyles(colors: any) {
     warningBox: {
       flexDirection: 'row',
       gap: 12,
-      alignItems: 'flex-start',
+      alignItems: 'center',
       marginTop: 24,
       padding: 16,
       borderRadius: 20,

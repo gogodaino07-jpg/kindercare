@@ -258,6 +258,13 @@ export default function StampBoardScreen() {
     setShowWish(false);
   };
 
+  // 완성 팝업의 "새로 시작하기"는 목표를 다 채운 자연스러운 다음 동작이라 되묻지 않고
+  // 바로 초기화한다(설정 메뉴 안의 위험한 초기화 버튼과는 다르게 확인 절차 없음).
+  const handleCelebrationRestart = () => {
+    resetProgress();
+    setCelebrationDismissed(true);
+  };
+
   const confirmReset = () => {
     showAlert({
       title: '도장판 처음부터 다시 시작',
@@ -628,7 +635,7 @@ export default function StampBoardScreen() {
             </LinearGradient>
             <Text style={styles.celebrationFooterText}>칭찬 약속을 멋지게 지킨 최고의 어린이! 👍</Text>
 
-            <Pressable style={styles.celebrationButton} onPress={confirmReset}>
+            <Pressable style={styles.celebrationButton} onPress={handleCelebrationRestart}>
               <Text style={styles.celebrationButtonText}>새로 시작하기</Text>
             </Pressable>
           </View>

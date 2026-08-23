@@ -35,7 +35,6 @@ export default function FontSizeSettingsScreen() {
       />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.title}>글자 크기</Text>
           <Text style={styles.subtitle}>앱 전체에 표시되는 글씨 크기를 골라주세요.</Text>
 
           <View style={styles.previewCard}>
@@ -87,12 +86,6 @@ function createStyles(colors: ThemeColors) {
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20 },
-    title: {
-      fontSize: 17,
-      fontWeight: '800',
-      color: colors.textPrimary,
-      marginBottom: 4,
-    },
     subtitle: {
       fontSize: 12,
       color: colors.textSecondary,
