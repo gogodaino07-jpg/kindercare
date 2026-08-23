@@ -452,7 +452,14 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
         // after an app update, before the real server data arrives) must not wipe
         // local data. Only trust an empty result once the server has confirmed it.
         if (cloudEvents.length > 0 || !snap.metadata.fromCache) {
-          setEvents(cloudEvents);
+          // Cloud never stores photoUris (device-local only) — keep whatever the
+          // local state already has for each event, same as children's photoUri.
+          setEvents((prev) =>
+            cloudEvents.map((cloudEvent) => {
+              const localEvent = prev.find((p) => p.id === cloudEvent.id);
+              return { ...cloudEvent, photoUris: localEvent?.photoUris ?? (cloudEvent as any).photoUris };
+            })
+          );
         }
       }, (err) => console.error('❌ Firestore Events Listener Error:', err));
 
@@ -635,7 +642,9 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const pushEventToCloud = async (email: string, event: Event) => {
     try {
       console.log('📡 Pushing event to cloud:', event.id);
-      await getDb().collection('users').doc(email).collection('events').doc(event.id).set(sanitizeData(event));
+      // Exclude local photoUris from cloud backup — local file paths won't work on other devices.
+      const { photoUris, ...eventData } = event;
+      await getDb().collection('users').doc(email).collection('events').doc(event.id).set(sanitizeData(eventData));
       console.log('✅ Event push success');
     } catch (error) {
       console.error('❌ Firestore Push Event Error:', error);

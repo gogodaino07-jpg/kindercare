@@ -55,6 +55,10 @@ export interface Event {
   /** 'ai' = 가정통신문 업로드 → AI 확인 화면에서 저장된 일정, 'manual' = 캘린더에서 직접 추가 */
   source: 'ai' | 'manual';
   icon?: string;
+  /** 이 일정을 만든 AI 분석에 사용된 원본 스캔 사진들의 기기 로컬 경로. Child.photoUri와
+   *  마찬가지로 기기 로컬 전용이라 클라우드 동기화에서 제외되며, OS가 캐시를 정리하거나
+   *  기기를 바꾸면 사라질 수 있다. */
+  photoUris?: string[];
   needsReview?: boolean;
   reviewReason?: string;
 }

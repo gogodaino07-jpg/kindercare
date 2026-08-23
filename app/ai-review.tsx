@@ -173,7 +173,16 @@ export default function AIReviewScreen() {
 
     const finalWithoutIds = draftEvents.map(({ localId, ...rest }) => rest);
     await AnalysisLogService.logCorrection(originalEvents, finalWithoutIds);
-    addEvents(finalWithoutIds);
+
+    // 이 스캔에서 나온 원본 사진들을 각 일정에 매달아둔다 — 어떤 일정이 정확히 어떤
+    // 사진에서 나왔는지는 알 수 없어(AI가 여러 장을 한 번에 분석), 이번 스캔에서
+    // 나온 모든 사진을 함께 붙인다. 캘린더에서 작은 아이콘으로 원본을 다시 볼 수 있다.
+    const scannedPhotoUris = imageDocs.map((d) => d.uri);
+    const eventsToSave =
+      scannedPhotoUris.length > 0
+        ? finalWithoutIds.map((e) => ({ ...e, photoUris: scannedPhotoUris }))
+        : finalWithoutIds;
+    addEvents(eventsToSave);
 
     const keyword = draftEvents.find((e) => e.note?.trim())?.note;
     addNotification({
