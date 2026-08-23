@@ -463,7 +463,7 @@ export default function AppLockSettingsScreen() {
 
             <View style={[styles.warningBox, { backgroundColor: colors.tomorrowRedBg }]}>
               <View style={[styles.warningIconBadge, { backgroundColor: colors.tomorrowRed }]}>
-                <MaterialCommunityIcons name="alert" size={20} color="#FFFFFF" />
+                <MaterialCommunityIcons name="alert" size={15} color="#FFFFFF" />
               </View>
               <View style={styles.warningTextBlock}>
                 <Text style={[styles.warningTitle, { color: colors.tomorrowRed }]}>주의사항</Text>
@@ -601,9 +601,9 @@ function createStyles(colors: any) {
       borderRadius: 20,
     },
     warningIconBadge: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 30,
+      height: 30,
+      borderRadius: 15,
       alignItems: 'center',
       justifyContent: 'center',
     },
