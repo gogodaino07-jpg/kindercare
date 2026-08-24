@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: '#1E293B',
-    marginBottom: 8,
+    marginBottom: 14,
     textAlign: 'center',
   },
   subtitle: {
