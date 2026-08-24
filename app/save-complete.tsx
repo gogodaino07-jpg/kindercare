@@ -21,8 +21,6 @@ export default function SaveCompleteScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
           <View style={styles.card}>
-            <Text style={styles.sparkleTopLeft}>✨</Text>
-            <Text style={styles.sparkleTopRight}>🎉</Text>
             <LinearGradient
               colors={CELEBRATE_GRADIENT}
               start={{ x: 0, y: 0 }}
@@ -75,29 +73,27 @@ function createStyles(colors: ThemeColors) {
       shadowOffset: { width: 0, height: 10 },
       elevation: 6,
     },
-    sparkleTopLeft: { position: 'absolute', top: 18, left: 20, fontSize: 18 },
-    sparkleTopRight: { position: 'absolute', top: 16, right: 18, fontSize: 20 },
     checkCircle: {
-      width: 76,
-      height: 76,
-      borderRadius: 38,
+      width: 72,
+      height: 72,
+      borderRadius: 36,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 20,
       shadowColor: '#7C3AED',
-      shadowOpacity: 0.35,
-      shadowRadius: 14,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 6,
+      shadowOpacity: 0.18,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 4,
     },
     checkIcon: {
       color: '#FFFFFF',
-      fontSize: 34,
-      fontWeight: '900',
+      fontSize: 30,
+      fontWeight: '800',
     },
     title: {
-      fontSize: 19,
-      fontWeight: '900',
+      fontSize: 18,
+      fontWeight: '800',
       color: colors.textPrimary,
       marginBottom: 8,
       textAlign: 'center',
@@ -113,10 +109,10 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 18,
       overflow: 'hidden',
       shadowColor: '#7C3AED',
-      shadowOpacity: 0.25,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: 6 },
-      elevation: 4,
+      shadowOpacity: 0.14,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 3,
     },
     homeButton: {
       width: '100%',
