@@ -17,9 +17,21 @@ import {
 } from '../../features/newsletter-analysis';
 
 const BENEFITS = [
-  { icon: 'bolt' as const, text: `스캔 횟수 대폭 확대 (주 ${PREMIUM_WEEKLY_LIMIT}회 · 월 ${PREMIUM_MONTHLY_LIMIT}회)` },
-  { icon: 'block' as const, text: '홈 화면 진입 시 뜨는 추천 팝업 광고 제거' },
-  { icon: 'movie-filter' as const, text: '스캔할 때마다 뜨던 광고 시청 없이 바로 분석' },
+  {
+    icon: 'bolt' as const,
+    text: `스캔 횟수 대폭 확대 (주 ${PREMIUM_WEEKLY_LIMIT}회 · 월 ${PREMIUM_MONTHLY_LIMIT}회)`,
+    badgeKey: 'purple' as const,
+  },
+  {
+    icon: 'block' as const,
+    text: '홈 화면 진입 시 뜨는 추천 팝업 광고 제거',
+    badgeKey: 'red' as const,
+  },
+  {
+    icon: 'movie-filter' as const,
+    text: '스캔할 때마다 뜨던 광고 시청 없이 바로 분석',
+    badgeKey: 'blue' as const,
+  },
 ];
 
 export default function SubscriptionScreen() {
@@ -29,6 +41,14 @@ export default function SubscriptionScreen() {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const badgeColors = useMemo(
+    () => ({
+      purple: { bg: colors.purpleBg, fg: colors.purple500 },
+      red: { bg: colors.tomorrowRedBg, fg: colors.tomorrowRed },
+      blue: { bg: colors.lightBlueBg, fg: colors.blue500 },
+    }),
+    [colors]
+  );
 
   const [monthlyPackage, setMonthlyPackage] = useState<PurchasesPackage | null>(null);
   const [annualPackage, setAnnualPackage] = useState<PurchasesPackage | null>(null);
@@ -106,14 +126,17 @@ export default function SubscriptionScreen() {
           <View style={styles.headerCard}>
             <Text style={styles.headerEmoji}>💎</Text>
             <Text style={styles.headerTitle}>프리미엄 구독</Text>
-            <Text style={styles.headerPrice}>월 990원</Text>
+            <Text style={styles.headerTagline}>광고 없이, 제한 없이 편하게 이용하세요</Text>
           </View>
 
           <View style={styles.benefitsCard}>
             {BENEFITS.map((b) => (
               <View key={b.text} style={styles.benefitRow}>
-                <MaterialIcons name={b.icon} size={20} color={colors.purple500} />
+                <View style={[styles.benefitIconBadge, { backgroundColor: badgeColors[b.badgeKey].bg }]}>
+                  <MaterialIcons name={b.icon} size={18} color={badgeColors[b.badgeKey].fg} />
+                </View>
                 <Text style={styles.benefitText}>{b.text}</Text>
+                <MaterialIcons name="check-circle" size={18} color={colors.purple500} />
               </View>
             ))}
             <Text style={styles.freeNote}>무료 이용 시 스캔은 1주일 최대 {FREE_WEEKLY_LIMIT}회까지예요.</Text>
@@ -149,9 +172,15 @@ export default function SubscriptionScreen() {
                     style={[styles.planCard, selectedPeriod === 'annual' && styles.planCardSelected]}
                     onPress={() => setSelectedPeriod('annual')}
                   >
+                    <View style={styles.recommendedBadge}>
+                      <Text style={styles.recommendedBadgeText}>추천</Text>
+                    </View>
                     <Text style={styles.planLabel}>연간</Text>
                     <Text style={styles.planPrice}>{annualPackage.product.priceString}</Text>
                     <Text style={styles.planUnit}>/ 년</Text>
+                    {annualPackage.product.pricePerMonthString && (
+                      <Text style={styles.planSubNote}>월 {annualPackage.product.pricePerMonthString} 꼴</Text>
+                    )}
                   </Pressable>
                 )}
               </View>
@@ -161,6 +190,11 @@ export default function SubscriptionScreen() {
 
         {isBillingConfigured && (
           <View style={[styles.bottomBar, { paddingBottom: 12 + insets.bottom }]}>
+            {!isSubscribed && !loadingOfferings && selectedPackage && (
+              <Text style={styles.confirmNote}>
+                {selectedPeriod === 'annual' ? '매년' : '매월'} {selectedPackage.product.priceString}이 자동으로 결제돼요
+              </Text>
+            )}
             {!isSubscribed && !loadingOfferings && (
               <Pressable style={styles.purchaseButton} onPress={handlePurchase} disabled={purchasing || !selectedPackage}>
                 {purchasing ? (
@@ -175,6 +209,7 @@ export default function SubscriptionScreen() {
             <Pressable style={styles.restoreButton} onPress={handleRestore} disabled={restoring}>
               <Text style={styles.restoreButtonText}>{restoring ? '복원 중...' : '구매 복원하기'}</Text>
             </Pressable>
+            <Text style={styles.footerNote}>결제는 Google Play 계정으로 진행되며 언제든 해지할 수 있어요.</Text>
           </View>
         )}
       </SafeAreaView>
@@ -204,7 +239,7 @@ function createStyles(colors: ThemeColors) {
     },
     headerEmoji: { fontSize: 36, marginBottom: 8 },
     headerTitle: { fontSize: 18, fontWeight: '900', color: colors.gray900 },
-    headerPrice: { fontSize: 15, fontWeight: '800', color: colors.purple500, marginTop: 4 },
+    headerTagline: { fontSize: 12.5, fontWeight: '600', color: colors.gray500, marginTop: 6 },
     benefitsCard: {
       backgroundColor: colors.cardWhite,
       borderRadius: 18,
@@ -216,6 +251,13 @@ function createStyles(colors: ThemeColors) {
       elevation: 2,
     },
     benefitRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    benefitIconBadge: {
+      width: 34,
+      height: 34,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     benefitText: { flex: 1, fontSize: 13.5, fontWeight: '700', color: colors.gray900 },
     freeNote: { fontSize: 11.5, fontWeight: '600', color: colors.gray500, marginTop: 4 },
     statusCard: {
@@ -252,9 +294,19 @@ function createStyles(colors: ThemeColors) {
       elevation: 2,
     },
     planCardSelected: { borderColor: colors.purple500 },
+    recommendedBadge: {
+      position: 'absolute',
+      top: -10,
+      backgroundColor: colors.purple500,
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+    },
+    recommendedBadgeText: { fontSize: 10, fontWeight: '800', color: '#FFFFFF' },
     planLabel: { fontSize: 12.5, fontWeight: '700', color: colors.gray500, marginTop: 4 },
     planPrice: { fontSize: 16, fontWeight: '900', color: colors.gray900, marginTop: 4 },
     planUnit: { fontSize: 11, fontWeight: '600', color: colors.gray500 },
+    planSubNote: { fontSize: 10.5, fontWeight: '700', color: colors.purple500, marginTop: 6 },
     purchaseButton: {
       backgroundColor: colors.purple500,
       borderRadius: 16,
@@ -265,7 +317,21 @@ function createStyles(colors: ThemeColors) {
       elevation: 3,
     },
     purchaseButtonText: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
-    restoreButton: { marginTop: 16, alignItems: 'center', paddingVertical: 10 },
+    confirmNote: {
+      textAlign: 'center',
+      fontSize: 11.5,
+      fontWeight: '700',
+      color: colors.gray500,
+      marginBottom: 8,
+    },
+    restoreButton: { marginTop: 12, alignItems: 'center', paddingVertical: 10 },
     restoreButtonText: { fontSize: 12.5, fontWeight: '700', color: colors.gray500 },
+    footerNote: {
+      textAlign: 'center',
+      fontSize: 10.5,
+      fontWeight: '500',
+      color: colors.gray400,
+      marginTop: 2,
+    },
   });
 }
