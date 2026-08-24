@@ -149,9 +149,6 @@ export default function SubscriptionScreen() {
                     style={[styles.planCard, selectedPeriod === 'annual' && styles.planCardSelected]}
                     onPress={() => setSelectedPeriod('annual')}
                   >
-                    <View style={styles.planBadge}>
-                      <Text style={styles.planBadgeText}>2개월 무료</Text>
-                    </View>
                     <Text style={styles.planLabel}>연간</Text>
                     <Text style={styles.planPrice}>{annualPackage.product.priceString}</Text>
                     <Text style={styles.planUnit}>/ 년</Text>
@@ -255,15 +252,6 @@ function createStyles(colors: ThemeColors) {
       elevation: 2,
     },
     planCardSelected: { borderColor: colors.purple500 },
-    planBadge: {
-      position: 'absolute',
-      top: -10,
-      backgroundColor: colors.purple500,
-      borderRadius: 10,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-    },
-    planBadgeText: { fontSize: 10, fontWeight: '800', color: '#FFFFFF' },
     planLabel: { fontSize: 12.5, fontWeight: '700', color: colors.gray500, marginTop: 4 },
     planPrice: { fontSize: 16, fontWeight: '900', color: colors.gray900, marginTop: 4 },
     planUnit: { fontSize: 11, fontWeight: '600', color: colors.gray500 },
