@@ -3,7 +3,17 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Dimensions, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../components/common/AppText';
@@ -297,9 +307,14 @@ export default function AIReviewScreen() {
         </View>
       )}
 
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoider}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 110 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {sortedEvents.map((ev) => (
           <EventReviewCard
@@ -347,6 +362,7 @@ export default function AIReviewScreen() {
           )}
         </Pressable>
       </View>
+      </KeyboardAvoidingView>
 
       {showDatePicker && dateTargetId && (
         <DateTimePicker
@@ -438,6 +454,7 @@ export default function AIReviewScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: C.appBg },
+  keyboardAvoider: { flex: 1 },
   header: {
     backgroundColor: C.white,
     paddingHorizontal: 16,
