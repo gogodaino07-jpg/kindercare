@@ -2,7 +2,7 @@ import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Purchases, { PurchasesPackage } from 'react-native-purchases';
 import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
@@ -26,6 +26,7 @@ export default function SubscriptionScreen() {
   const router = useRouter();
   const { isSubscribed, isBillingConfigured, managementURL, refresh } = useSubscription();
   const { showAlert } = useAlert();
+  const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -131,35 +132,39 @@ export default function SubscriptionScreen() {
           ) : loadingOfferings ? (
             <ActivityIndicator style={{ marginTop: 20 }} color={colors.purple500} />
           ) : (
-            <>
-              {(monthlyPackage || annualPackage) && (
-                <View style={styles.planRow}>
-                  {monthlyPackage && (
-                    <Pressable
-                      style={[styles.planCard, selectedPeriod === 'monthly' && styles.planCardSelected]}
-                      onPress={() => setSelectedPeriod('monthly')}
-                    >
-                      <Text style={styles.planLabel}>월간</Text>
-                      <Text style={styles.planPrice}>{monthlyPackage.product.priceString}</Text>
-                      <Text style={styles.planUnit}>/ 월</Text>
-                    </Pressable>
-                  )}
-                  {annualPackage && (
-                    <Pressable
-                      style={[styles.planCard, selectedPeriod === 'annual' && styles.planCardSelected]}
-                      onPress={() => setSelectedPeriod('annual')}
-                    >
-                      <View style={styles.planBadge}>
-                        <Text style={styles.planBadgeText}>2개월 무료</Text>
-                      </View>
-                      <Text style={styles.planLabel}>연간</Text>
-                      <Text style={styles.planPrice}>{annualPackage.product.priceString}</Text>
-                      <Text style={styles.planUnit}>/ 년</Text>
-                    </Pressable>
-                  )}
-                </View>
-              )}
+            (monthlyPackage || annualPackage) && (
+              <View style={styles.planRow}>
+                {monthlyPackage && (
+                  <Pressable
+                    style={[styles.planCard, selectedPeriod === 'monthly' && styles.planCardSelected]}
+                    onPress={() => setSelectedPeriod('monthly')}
+                  >
+                    <Text style={styles.planLabel}>월간</Text>
+                    <Text style={styles.planPrice}>{monthlyPackage.product.priceString}</Text>
+                    <Text style={styles.planUnit}>/ 월</Text>
+                  </Pressable>
+                )}
+                {annualPackage && (
+                  <Pressable
+                    style={[styles.planCard, selectedPeriod === 'annual' && styles.planCardSelected]}
+                    onPress={() => setSelectedPeriod('annual')}
+                  >
+                    <View style={styles.planBadge}>
+                      <Text style={styles.planBadgeText}>2개월 무료</Text>
+                    </View>
+                    <Text style={styles.planLabel}>연간</Text>
+                    <Text style={styles.planPrice}>{annualPackage.product.priceString}</Text>
+                    <Text style={styles.planUnit}>/ 년</Text>
+                  </Pressable>
+                )}
+              </View>
+            )
+          )}
+        </ScrollView>
 
+        {isBillingConfigured && (
+          <View style={[styles.bottomBar, { paddingBottom: 12 + insets.bottom }]}>
+            {!isSubscribed && !loadingOfferings && (
               <Pressable style={styles.purchaseButton} onPress={handlePurchase} disabled={purchasing || !selectedPackage}>
                 {purchasing ? (
                   <ActivityIndicator color="#FFFFFF" />
@@ -169,15 +174,12 @@ export default function SubscriptionScreen() {
                   </Text>
                 )}
               </Pressable>
-            </>
-          )}
-
-          {isBillingConfigured && (
+            )}
             <Pressable style={styles.restoreButton} onPress={handleRestore} disabled={restoring}>
               <Text style={styles.restoreButtonText}>{restoring ? '복원 중...' : '구매 복원하기'}</Text>
             </Pressable>
-          )}
-        </ScrollView>
+          </View>
+        )}
       </SafeAreaView>
     </View>
   );
@@ -188,7 +190,14 @@ function createStyles(colors: ThemeColors) {
     screenBg: { flex: 1, backgroundColor: t.bg },
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
-    content: { padding: 20, paddingBottom: 40 },
+    content: { padding: 20, paddingBottom: 160 },
+    bottomBar: {
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      backgroundColor: t.bg,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+    },
     headerCard: {
       alignItems: 'center',
       backgroundColor: colors.purpleBg,
