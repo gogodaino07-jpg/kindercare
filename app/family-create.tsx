@@ -35,6 +35,8 @@ export default function FamilyCreateScreen() {
           </Pressable>
         </View>
 
+        <View style={styles.topSpacer} />
+
         <View style={styles.topSection}>
           <Text style={styles.title}>새로운 가족 그룹 생성</Text>
           <Text style={styles.subtitle}>
@@ -180,6 +182,9 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   spacer: {
+    flex: 1,
+  },
+  topSpacer: {
     flex: 1,
   },
   nextButtonShadow: {
