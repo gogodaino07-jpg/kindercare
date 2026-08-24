@@ -495,7 +495,6 @@ function createStyles(colors: ThemeColors) {
       marginLeft: 16,
       marginTop: 8,
       borderRadius: 18,
-      backgroundColor: 'rgba(255,255,255,0.7)',
       justifyContent: 'center',
       alignSelf: 'flex-start',
     },
