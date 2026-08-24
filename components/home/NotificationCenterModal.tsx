@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { AppState, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -102,13 +103,17 @@ export default function NotificationCenterModal({ visible, onClose }: Notificati
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={() => {}}>
           <View style={styles.headerRow}>
-            <Text style={styles.title}>알림 센터</Text>
-            <View style={styles.headerActions}>
-              <Pressable onPress={onClose} accessibilityLabel="닫기" hitSlop={8}>
-                <Text style={styles.closeIcon}>✕</Text>
-              </Pressable>
+            <View style={styles.headerLeft}>
+              <View style={styles.titleIconBadge}>
+                <Feather name="bell" size={16} color={colors.purple500} />
+              </View>
+              <Text style={styles.title}>알림 센터</Text>
             </View>
+            <Pressable onPress={onClose} accessibilityLabel="닫기" hitSlop={8} style={styles.closeButton}>
+              <Feather name="x" size={18} color={colors.gray500} />
+            </Pressable>
           </View>
+          <View style={styles.headerDivider} />
 
           {children.length > 1 && (
             <ScrollView
@@ -191,7 +196,7 @@ function NotificationRow({
   onPress: () => void;
 }) {
   return (
-    <Pressable style={[styles.card, !item.read && styles.unreadCard]} onPress={onPress}>
+    <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.cardContentRow}>
         <View style={styles.logoCircle}>
           <View style={styles.logoCropContainer}>
@@ -203,9 +208,15 @@ function NotificationRow({
           </View>
         </View>
         <View style={styles.cardBody}>
-          <Text style={styles.cardMessage} numberOfLines={3}>
-            {item.body}
-          </Text>
+          <View style={styles.cardMessageRow}>
+            {!item.read && <View style={styles.unreadDot} />}
+            <Text
+              style={[styles.cardMessage, !item.read && styles.cardMessageUnread]}
+              numberOfLines={3}
+            >
+              {item.body}
+            </Text>
+          </View>
           <Text style={styles.cardTimeOnly}>{formatTime(item.createdAt)}</Text>
         </View>
       </View>
@@ -217,43 +228,63 @@ function createStyles(colors: ThemeColors, topInset: number) {
   return StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(20, 24, 22, 0.3)',
+      backgroundColor: 'rgba(15, 23, 42, 0.5)',
       alignItems: 'center',
       justifyContent: 'center',
     },
     sheet: {
       width: 360,
       maxWidth: '92%',
-      height: '60%',
-      maxHeight: '70%',
+      height: '62%',
+      maxHeight: '72%',
       backgroundColor: '#FFFFFF',
-      borderRadius: 24,
+      borderRadius: 28,
       padding: 20,
       ...SHADOW,
+      shadowOpacity: 0.18,
+      shadowRadius: 24,
     },
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 16,
+    },
+    headerLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    titleIconBadge: {
+      width: 30,
+      height: 30,
+      borderRadius: 10,
+      backgroundColor: colors.purpleBg,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     title: {
-      fontSize: 18,
+      fontSize: 17,
       fontWeight: '800',
       color: colors.textPrimary,
     },
-    headerActions: {
-      flexDirection: 'row',
+    closeButton: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: colors.gray50,
       alignItems: 'center',
+      justifyContent: 'center',
     },
-    closeIcon: {
-      fontSize: 18,
-      color: colors.textSecondary,
-      fontWeight: '600',
+    headerDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.border,
+      marginTop: 16,
+      marginBottom: 14,
+      marginHorizontal: -20,
     },
     childTabRow: {
       flexGrow: 0,
-      marginBottom: 12,
+      marginBottom: 10,
     },
     childTabContent: {
       gap: 8,
@@ -263,12 +294,9 @@ function createStyles(colors: ThemeColors, topInset: number) {
       paddingVertical: 7,
       borderRadius: 16,
       backgroundColor: colors.gray50,
-      borderWidth: 1,
-      borderColor: colors.border,
     },
     childTabActive: {
-      backgroundColor: colors.coralPink,
-      borderColor: colors.coralPink,
+      backgroundColor: colors.purple500,
     },
     childTabText: {
       fontSize: 13,
@@ -285,81 +313,99 @@ function createStyles(colors: ThemeColors, topInset: number) {
       paddingBottom: 60,
     },
     emptyImage: {
-      width: 220,
-      height: 220,
-      marginBottom: 8,
+      width: 160,
+      height: 160,
+      marginBottom: 4,
+      opacity: 0.9,
     },
     emptyText: {
-      fontSize: 20,
-      fontWeight: '800',
+      fontSize: 15,
+      fontWeight: '700',
       color: colors.textSecondary,
       textAlign: 'center',
-      lineHeight: 28,
+      lineHeight: 22,
     },
     list: {
       flex: 1,
     },
     dateGroup: {
-      marginBottom: 20,
+      marginBottom: 18,
     },
     groupDateText: {
-      fontSize: 15,
-      fontWeight: '800',
-      color: colors.textPrimary,
-      marginBottom: 12,
+      fontSize: 12.5,
+      fontWeight: '700',
+      color: colors.gray400,
+      marginBottom: 10,
       marginLeft: 4,
+      textTransform: 'uppercase',
+      letterSpacing: 0.3,
     },
     card: {
-      backgroundColor: '#FFFFFF',
-      borderRadius: 16,
-      padding: 10,
-      marginBottom: 4,
-    },
-    unreadCard: {
-      backgroundColor: '#F0F9FF',
+      borderRadius: 14,
+      paddingVertical: 10,
+      paddingHorizontal: 6,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.gray50,
     },
     cardContentRow: {
       flexDirection: 'row',
       alignItems: 'center',
     },
     logoCircle: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 42,
+      height: 42,
+      borderRadius: 21,
       backgroundColor: '#FFFFFF',
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: 12,
       borderWidth: 1,
-      borderColor: '#F1F5F9',
+      borderColor: colors.border,
       overflow: 'hidden',
     },
     logoCropContainer: {
-      width: 44,
-      height: 34,
+      width: 42,
+      height: 32,
       overflow: 'hidden',
       alignItems: 'center',
       justifyContent: 'flex-start',
     },
     cardLogoOnly: {
-      width: 44,
-      height: 54,
+      width: 42,
+      height: 51,
       marginTop: -4,
     },
     cardBody: {
       flex: 1,
     },
+    cardMessageRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 6,
+    },
+    unreadDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.purple500,
+      marginTop: 6,
+    },
     cardMessage: {
-      fontSize: 14,
-      fontWeight: '600',
+      flex: 1,
+      fontSize: 13.5,
+      fontWeight: '500',
+      color: colors.textSecondary,
+      lineHeight: 19,
+    },
+    cardMessageUnread: {
+      fontWeight: '700',
       color: colors.textPrimary,
-      lineHeight: 18,
     },
     cardTimeOnly: {
       fontSize: 11,
       fontWeight: '500',
-      color: '#94A3B8',
-      marginTop: 2,
+      color: colors.gray400,
+      marginTop: 3,
     },
   });
 }
