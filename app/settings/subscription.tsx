@@ -163,8 +163,10 @@ export default function SubscriptionScreen() {
                     onPress={() => setSelectedPeriod('monthly')}
                   >
                     <Text style={styles.planLabel}>월간</Text>
-                    <Text style={styles.planPrice}>{monthlyPackage.product.priceString}</Text>
-                    <Text style={styles.planUnit}>/ 월</Text>
+                    <Text style={styles.planPrice}>
+                      {monthlyPackage.product.priceString}
+                      <Text style={styles.planUnitInline}>/월</Text>
+                    </Text>
                   </Pressable>
                 )}
                 {annualPackage && (
@@ -176,8 +178,10 @@ export default function SubscriptionScreen() {
                       <Text style={styles.recommendedBadgeText}>추천</Text>
                     </View>
                     <Text style={styles.planLabel}>연간</Text>
-                    <Text style={styles.planPrice}>{annualPackage.product.priceString}</Text>
-                    <Text style={styles.planUnit}>/ 년</Text>
+                    <Text style={styles.planPrice}>
+                      {annualPackage.product.priceString}
+                      <Text style={styles.planUnitInline}>/년</Text>
+                    </Text>
                     {annualPackage.product.pricePerMonthString && (
                       <Text style={styles.planSubNote}>월 {annualPackage.product.pricePerMonthString} 꼴</Text>
                     )}
@@ -304,8 +308,8 @@ function createStyles(colors: ThemeColors) {
     },
     recommendedBadgeText: { fontSize: 10, fontWeight: '800', color: '#FFFFFF' },
     planLabel: { fontSize: 12.5, fontWeight: '700', color: colors.gray500, marginTop: 4 },
-    planPrice: { fontSize: 16, fontWeight: '900', color: colors.gray900, marginTop: 4 },
-    planUnit: { fontSize: 11, fontWeight: '600', color: colors.gray500 },
+    planPrice: { fontSize: 17, fontWeight: '900', color: colors.gray900, marginTop: 6 },
+    planUnitInline: { fontSize: 11.5, fontWeight: '700', color: colors.gray500 },
     planSubNote: { fontSize: 10.5, fontWeight: '700', color: colors.purple500, marginTop: 6 },
     purchaseButton: {
       backgroundColor: colors.purple500,
