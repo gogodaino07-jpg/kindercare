@@ -909,6 +909,14 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
         .doc(googleAccount.email)
         .delete()
         .catch((err) => console.error('❌ Firestore Leave Family Error:', err));
+      // 내 문서에 남아있는 familyOwnerEmail도 지워야 한다 — 안 지우면 재로그인 시
+      // (google-signin.tsx의 checkFamilyOwnerEmail) 이미 나간 가족으로 다시
+      // 복귀 처리되는 문제가 있었다.
+      getDb()
+        .collection('users')
+        .doc(googleAccount.email)
+        .set({ familyOwnerEmail: firestore.FieldValue.delete() }, { merge: true })
+        .catch((err) => console.error('❌ Firestore Clear familyOwnerEmail Error:', err));
     }
     setFamilyOwnerEmail(null);
     AsyncStorage.removeItem(FAMILY_OWNER_EMAIL_KEY).catch(() => {});
@@ -1360,15 +1368,25 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     const mealPlansSnap = await getDb().collection('users').doc(email).collection('mealPlans').get();
     const mealPlanDeletes = mealPlansSnap.docs.map(doc => doc.ref.delete());
 
+    // 이 계정이 가족 소유자였다면 자신의 members 서브컬렉션(합류해있던 구성원들의
+    // 권한 기록)도 함께 지운다 — 안 지우면 구성원들이 탈퇴한 소유자를 계속
+    // familyOwnerEmail로 바라보게 된다.
+    const membersSnap = await getDb().collection('users').doc(email).collection('members').get();
+    const memberDeletes = membersSnap.docs.map(doc => doc.ref.delete());
+
     // Reset user doc (keeping basic info but clearing withdrawal state)
+    // familyOwnerEmail도 함께 지워야 한다 — 안 지우면 재로그인 시 예전에 합류했던
+    // 가족의 구성원으로 계속 인식돼(google-signin.tsx의 relogin 분기), 탈퇴 후
+    // 재가입해도 신규 가입이 아니라 그 가족으로 바로 복귀해버리는 문제가 있었다.
     const userReset = getDb().collection('users').doc(email).set({
       email,
       lastLogin: new Date().toISOString(),
       hasOnboarded: false,
       withdrawalRequestedAt: firestore.FieldValue.delete(),
+      familyOwnerEmail: firestore.FieldValue.delete(),
     }, { merge: true });
 
-    await Promise.all([...childDeletes, ...eventDeletes, ...mealPlanDeletes, userReset]);
+    await Promise.all([...childDeletes, ...eventDeletes, ...mealPlanDeletes, ...memberDeletes, userReset]);
     console.log('✅ Cloud data purge complete');
   };
 

@@ -27,7 +27,7 @@ const ZOOM_HEIGHT = 380;
 export default function AIReviewScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const { children, selectedChild, events, addEvents, deleteEvents } = useAppData();
+  const { children, selectedChild, events, addEvents, deleteEvents, canEditFamilyData } = useAppData();
   const { showAlert } = useAlert();
   const { addNotification } = useNotificationCenter();
   const insets = useSafeAreaInsets();
@@ -163,6 +163,10 @@ export default function AIReviewScreen() {
     // isSaving 가드: 저장 완료 전(await 도중) 버튼을 빠르게 연타하면 addEvents가 두 번 불려
     // 완전히 동일한 일정이 두 개 저장되는 문제가 있어, 첫 탭에서 바로 동기적으로 막는다.
     if (draftEvents.length === 0 || isSaving || isSaved) return;
+    if (!canEditFamilyData) {
+      showAlert({ title: '읽기 전용 구성원이에요', message: '가족 일정은 엄마/아빠 역할만 등록할 수 있어요.' });
+      return;
+    }
     setIsSaving(true);
 
     if (duplicateResolution === 'overwrite') {
