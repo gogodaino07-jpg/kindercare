@@ -1,0 +1,15 @@
+{
+  "name": "functions",
+  "description": "킨더케어 서버 함수 — Gemini API 프록시",
+  "private": true,
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "logs": "firebase functions:log"
+  },
+  "dependencies": {
+    "firebase-functions": "^6.1.0"
+  }
+}

@@ -20,6 +20,7 @@
     "@react-native-firebase/app": "^21.0.0",
     "@react-native-firebase/auth": "^21.0.0",
     "@react-native-firebase/firestore": "^21.0.0",
+    "@react-native-firebase/functions": "^21.14.0",
     "@react-native-google-signin/google-signin": "^16.1.2",
     "@react-native-seoul/kakao-login": "^6.0.4",
     "babel-preset-expo": "~57.0.0",

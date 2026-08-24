@@ -2,29 +2,9 @@ import { EncodingType, readAsStringAsync } from 'expo-file-system/legacy';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Child, Event, EventItem, MealPlan, UploadedDoc } from '../../../types/models';
 import { toISODate } from '../../../utils/date';
-import { getDb } from '../../../utils/firebase';
-
-const GEMINI_MODEL = 'gemini-3.6-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+import { getFunctions } from '../../../utils/firebase';
 
 export class GeminiAnalysisError extends Error {}
-
-let cachedGeminiApiKey: string | null = null;
-
-/** 앱에 키를 박아두지 않고, Firestore(config/aiConfig.geminiApiKey)에서 실행 시점에 읽어옴. */
-async function getGeminiApiKey(): Promise<string> {
-  if (cachedGeminiApiKey) return cachedGeminiApiKey;
-
-  const snap = await getDb().collection('config').doc('aiConfig').get();
-  const key: string | undefined = snap.exists ? snap.data()?.geminiApiKey : undefined;
-  if (!key) {
-    throw new GeminiAnalysisError(
-      'AI 분석 설정을 불러오지 못했어요. 잠시 후 다시 시도해주세요.'
-    );
-  }
-  cachedGeminiApiKey = key;
-  return key;
-}
 
 interface GeminiExtractedItem {
   name?: string;
@@ -149,13 +129,16 @@ function formatReferenceEvents(events: Omit<Event, 'id'>[]): string {
 }
 
 export const GeminiAnalysisService = {
-  /** 키를 앱에 하드코딩하지 않고 Firestore에서 실행 시점에 읽어와 Gemini를 직접 호출. */
+  /**
+   * Gemini 키는 앱에 절대 내려주지 않는다 — Cloud Functions(analyzeNewsletter)가
+   * 서버에서 키를 붙여 Gemini를 대신 호출해주는 프록시 역할을 하고, 앱은 로그인된
+   * 사용자로서 그 함수만 호출한다(프롬프트 조립·이미지 압축·결과 파싱은 그대로 앱에서 함).
+   */
   async analyze(
     docs: UploadedDoc[],
     child: Child,
     existingEvents: Omit<Event, 'id'>[] = []
   ): Promise<GeminiAnalysisResult> {
-    const apiKey = await getGeminiApiKey();
     const todayISO = toISODate(new Date());
     const parts = await Promise.all(docs.map(async (doc) => {
       const { base64, mimeType } = await this.getOptimizedBase64(doc);
@@ -180,34 +163,25 @@ export const GeminiAnalysisService = {
       },
     };
 
-    let response: Response;
+    let json: any;
     try {
-      response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-    } catch {
-      throw new GeminiAnalysisError('네트워크 연결을 확인해주세요.');
-    }
-
-    if (!response.ok) {
-      let message = `문서 분석에 실패했어요 (HTTP ${response.status})`;
-      try {
-        const errJson = await response.json();
-        console.error('[Gemini API Error Detail]:', JSON.stringify(errJson, null, 2));
-        if (response.status === 429) {
-          message = 'AI 분석 요청이 너무 많습니다. 1분만 기다렸다가 다시 시도해 주세요.';
-        } else if (errJson?.error?.message) {
-          message = `Gemini 오류 (${response.status}): ${errJson.error.message}`;
-        }
-      } catch (e) {
-        console.error('[Gemini API Parse Error]:', e);
+      const result = await getFunctions().httpsCallable('analyzeNewsletter')({ body });
+      json = result.data;
+    } catch (err: any) {
+      console.error('[Gemini Proxy Error]:', err);
+      const code = String(err?.code ?? '');
+      if (code.includes('resource-exhausted')) {
+        throw new GeminiAnalysisError('AI 분석 요청이 너무 많습니다. 1분만 기다렸다가 다시 시도해 주세요.');
       }
-      throw new GeminiAnalysisError(message);
+      if (code.includes('unauthenticated')) {
+        throw new GeminiAnalysisError('로그인이 필요해요. 다시 로그인해주세요.');
+      }
+      if (code.includes('unavailable') || code.includes('deadline-exceeded')) {
+        throw new GeminiAnalysisError('네트워크 연결을 확인해주세요.');
+      }
+      throw new GeminiAnalysisError(err?.message || '문서 분석에 실패했어요. 잠시 후 다시 시도해주세요.');
     }
 
-    const json = await response.json();
     const rawText: string | undefined = json?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!rawText) {
       throw new GeminiAnalysisError('분석 결과를 읽지 못했어요. 다시 시도해주세요.');
