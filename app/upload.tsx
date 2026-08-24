@@ -30,8 +30,6 @@ import { useScanRewardedAd } from '../hooks/useScanRewardedAd';
 import { Event, MealPlan, UploadedDoc } from '../types/models';
 import { toISODate } from '../utils/date';
 
-const MAX_DOCS = 5;
-
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   const kb = bytes / 1024;
@@ -176,18 +174,10 @@ export default function UploadScreen() {
   }, []);
 
   const addDoc = (doc: UploadedDoc) => {
-    if (docs.length >= MAX_DOCS) {
-      showToast('최대 5장까지 첨부할 수 있어요');
-      return;
-    }
     setDocs((prev) => [...prev, doc]);
   };
 
   const handleTakePhoto = async () => {
-    if (docs.length >= MAX_DOCS) {
-      showToast('최대 5장까지 첨부할 수 있어요');
-      return;
-    }
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       showAlert({ title: '권한 필요', message: '카메라 권한이 필요해요' });
@@ -206,10 +196,6 @@ export default function UploadScreen() {
   };
 
   const handlePickGallery = async () => {
-    if (docs.length >= MAX_DOCS) {
-      showToast('최대 5장까지 첨부할 수 있어요');
-      return;
-    }
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       showAlert({ title: '권한 필요', message: '사진첩 권한이 필요해요' });
@@ -221,7 +207,7 @@ export default function UploadScreen() {
         mediaTypes: ['images'],
         quality: 0.8,
         allowsMultipleSelection: true,
-        selectionLimit: MAX_DOCS - docs.length,
+        selectionLimit: 0, // 0 = 개수 제한 없음
         // Android 13+ 기본 선택기는 구글 포토 UI로만 뜨는데, legacy를 켜면
         // 다른 갤러리 앱·파일 앱 등에서도 사진을 고를 수 있게 열린다.
         ...(Platform.OS === 'android' ? { legacy: true } : null),
@@ -244,10 +230,6 @@ export default function UploadScreen() {
   };
 
   const handlePickFile = async () => {
-    if (docs.length >= MAX_DOCS) {
-      showToast('최대 5장까지 첨부할 수 있어요');
-      return;
-    }
     setPickerActive(true);
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -427,7 +409,7 @@ export default function UploadScreen() {
             {docs.length > 0 ? (
               <View style={styles.docsSection}>
                 <Text style={styles.docsCountLabel}>
-                  선택된 파일 {docs.length} / {MAX_DOCS}
+                  선택된 파일 {docs.length}개
                 </Text>
                 {docs.map((doc) => (
                   <DocCard key={doc.id} doc={doc} onRemove={() => removeDoc(doc.id)} />
@@ -451,31 +433,15 @@ export default function UploadScreen() {
 
           <View style={[styles.dock, isSubscribed && { paddingBottom: 8 + insets.bottom }]}>
             <View style={styles.dockRow}>
-              <Pressable
-                onPress={handleTakePhoto}
-                disabled={docs.length >= MAX_DOCS}
-                style={[styles.dockButton, docs.length >= MAX_DOCS && styles.dockButtonDisabled]}
-              >
+              <Pressable onPress={handleTakePhoto} style={styles.dockButton}>
                 <Feather name="camera" size={22} color={C.violet600} />
                 <Text style={styles.dockButtonText}>카메라 촬영</Text>
               </Pressable>
-              <Pressable
-                onPress={handlePickGallery}
-                disabled={docs.length >= MAX_DOCS}
-                style={[
-                  styles.dockButton,
-                  styles.dockButtonAccent,
-                  docs.length >= MAX_DOCS && styles.dockButtonDisabled,
-                ]}
-              >
+              <Pressable onPress={handlePickGallery} style={[styles.dockButton, styles.dockButtonAccent]}>
                 <Feather name="image" size={22} color={C.violet700} />
                 <Text style={styles.dockButtonTextAccent}>앨범 사진</Text>
               </Pressable>
-              <Pressable
-                onPress={handlePickFile}
-                disabled={docs.length >= MAX_DOCS}
-                style={[styles.dockButton, docs.length >= MAX_DOCS && styles.dockButtonDisabled]}
-              >
+              <Pressable onPress={handlePickFile} style={styles.dockButton}>
                 <Feather name="file-text" size={22} color={C.slate600} />
                 <Text style={styles.dockButtonText}>PDF / 문서</Text>
               </Pressable>
@@ -901,7 +867,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   dockButtonAccent: { backgroundColor: C.violet50, borderColor: C.violet200 },
-  dockButtonDisabled: { opacity: 0.4 },
   dockButtonText: { fontSize: 14, fontWeight: '800', color: C.slate800 },
   dockButtonTextAccent: { fontSize: 14, fontWeight: '800', color: C.violet900 },
   analyzeButtonWrap: { borderRadius: 16, overflow: 'hidden' },
