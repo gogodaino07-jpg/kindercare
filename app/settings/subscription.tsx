@@ -30,6 +30,8 @@ export default function SubscriptionScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [monthlyPackage, setMonthlyPackage] = useState<PurchasesPackage | null>(null);
+  const [annualPackage, setAnnualPackage] = useState<PurchasesPackage | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<'monthly' | 'annual'>('monthly');
   const [loadingOfferings, setLoadingOfferings] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
@@ -42,16 +44,19 @@ export default function SubscriptionScreen() {
     Purchases.getOfferings()
       .then((offerings) => {
         setMonthlyPackage(offerings.current?.monthly ?? offerings.current?.availablePackages[0] ?? null);
+        setAnnualPackage(offerings.current?.annual ?? null);
       })
       .catch(() => {})
       .finally(() => setLoadingOfferings(false));
   }, [isBillingConfigured]);
 
+  const selectedPackage = selectedPeriod === 'annual' && annualPackage ? annualPackage : monthlyPackage;
+
   const handlePurchase = async () => {
-    if (!monthlyPackage || purchasing) return;
+    if (!selectedPackage || purchasing) return;
     setPurchasing(true);
     try {
-      await Purchases.purchasePackage(monthlyPackage);
+      await Purchases.purchasePackage(selectedPackage);
       await refresh();
       showAlert({ title: '구독 완료!', message: '프리미엄 혜택이 바로 적용됐어요.', icon: '🎉' });
     } catch (err: any) {
@@ -126,15 +131,45 @@ export default function SubscriptionScreen() {
           ) : loadingOfferings ? (
             <ActivityIndicator style={{ marginTop: 20 }} color={colors.purple500} />
           ) : (
-            <Pressable style={styles.purchaseButton} onPress={handlePurchase} disabled={purchasing || !monthlyPackage}>
-              {purchasing ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.purchaseButtonText}>
-                  {monthlyPackage ? `${monthlyPackage.product.priceString}에 구독하기` : '구독 상품을 준비 중이에요'}
-                </Text>
+            <>
+              {(monthlyPackage || annualPackage) && (
+                <View style={styles.planRow}>
+                  {monthlyPackage && (
+                    <Pressable
+                      style={[styles.planCard, selectedPeriod === 'monthly' && styles.planCardSelected]}
+                      onPress={() => setSelectedPeriod('monthly')}
+                    >
+                      <Text style={styles.planLabel}>월간</Text>
+                      <Text style={styles.planPrice}>{monthlyPackage.product.priceString}</Text>
+                      <Text style={styles.planUnit}>/ 월</Text>
+                    </Pressable>
+                  )}
+                  {annualPackage && (
+                    <Pressable
+                      style={[styles.planCard, selectedPeriod === 'annual' && styles.planCardSelected]}
+                      onPress={() => setSelectedPeriod('annual')}
+                    >
+                      <View style={styles.planBadge}>
+                        <Text style={styles.planBadgeText}>2개월 무료</Text>
+                      </View>
+                      <Text style={styles.planLabel}>연간</Text>
+                      <Text style={styles.planPrice}>{annualPackage.product.priceString}</Text>
+                      <Text style={styles.planUnit}>/ 년</Text>
+                    </Pressable>
+                  )}
+                </View>
               )}
-            </Pressable>
+
+              <Pressable style={styles.purchaseButton} onPress={handlePurchase} disabled={purchasing || !selectedPackage}>
+                {purchasing ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.purchaseButtonText}>
+                    {selectedPackage ? `${selectedPackage.product.priceString}에 구독하기` : '구독 상품을 준비 중이에요'}
+                  </Text>
+                )}
+              </Pressable>
+            </>
           )}
 
           {isBillingConfigured && (
@@ -197,6 +232,32 @@ function createStyles(colors: ThemeColors) {
       color: colors.gray500,
       marginTop: 12,
     },
+    planRow: { flexDirection: 'row', gap: 12, marginBottom: 14 },
+    planCard: {
+      flex: 1,
+      backgroundColor: colors.cardWhite,
+      borderRadius: 16,
+      paddingVertical: 16,
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: 'transparent',
+      ...SHADOW,
+      shadowOpacity: 0.05,
+      elevation: 2,
+    },
+    planCardSelected: { borderColor: colors.purple500 },
+    planBadge: {
+      position: 'absolute',
+      top: -10,
+      backgroundColor: colors.purple500,
+      borderRadius: 10,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    planBadgeText: { fontSize: 10, fontWeight: '800', color: '#FFFFFF' },
+    planLabel: { fontSize: 12.5, fontWeight: '700', color: colors.gray500, marginTop: 4 },
+    planPrice: { fontSize: 16, fontWeight: '900', color: colors.gray900, marginTop: 4 },
+    planUnit: { fontSize: 11, fontWeight: '600', color: colors.gray500 },
     purchaseButton: {
       backgroundColor: colors.purple500,
       borderRadius: 16,
