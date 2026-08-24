@@ -9,7 +9,7 @@ import { Event, EventItem } from '../types/models';
  * 화면과 캘린더 화면이 같은 값을 공유). 예전엔 기기 로컬 AsyncStorage에 별도로 저장해서
  * 홈에서 체크해도 캘린더에는 반영되지 않는 문제가 있었음 — 지금은 이 파일 하나로 통일.
  */
-export function getDisplayItems(event: Event): EventItem[] {
+export function getDisplayItems(event: Pick<Event, 'items' | 'note'>): EventItem[] {
   if (event.items && event.items.length > 0) return event.items;
   if (!event.note) return [];
   return event.note

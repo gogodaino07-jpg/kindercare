@@ -2,10 +2,17 @@ import { Feather } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Text from '../../../components/common/AppText';
+import { getDisplayItems } from '../../../hooks/useLocalChecklist';
+import { EventItem } from '../../../types/models';
 import { stripInvalidCharacters } from '../../../utils/validation';
 import { SCAN_COLORS as C } from '../uiColors';
 import { DraftEvent } from '../types';
 import { ReviewBadgeAccordion } from './ReviewBadgeAccordion';
+
+let itemIdCounter = 0;
+function newItemId(): string {
+  return `draft-item-${Date.now()}-${itemIdCounter++}`;
+}
 
 interface EventReviewCardProps {
   event: DraftEvent;
@@ -27,6 +34,7 @@ export const EventReviewCard = ({
   const [noticeText, setNoticeText] = useState(
     () => [event.noticeText, event.memo].filter(Boolean).join('\n')
   );
+  const [itemsText, setItemsText] = useState(() => getDisplayItems(event).map((i) => i.name).join('\n'));
 
   // 새 디자인은 memo를 별도로 노출하지 않으므로, 진입 시 한 번 noticeText로 합쳐서
   // 다른 화면(홈 카드/일별 상세 등)에서 memo와 noticeText가 중복 노출되지 않게 정리한다.
@@ -41,6 +49,23 @@ export const EventReviewCard = ({
     const cleaned = stripInvalidCharacters(text, '.,!?~()\n');
     setNoticeText(cleaned);
     onUpdate({ noticeText: cleaned || undefined, memo: undefined });
+  };
+
+  const handleItemsChange = (text: string) => {
+    const cleaned = stripInvalidCharacters(text, '\n');
+    setItemsText(cleaned);
+    const items: EventItem[] = cleaned
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((name) => {
+        const existing = (event.items ?? []).find((i) => i.name === name);
+        return existing ?? { id: newItemId(), name, completed: false };
+      });
+    onUpdate({
+      items: items.length > 0 ? items : undefined,
+      note: items.length > 0 ? items.map((i) => i.name).join('\n') : undefined,
+    });
   };
 
   return (
@@ -79,6 +104,26 @@ export const EventReviewCard = ({
             maxLength={20}
           />
         </View>
+      </View>
+
+      <View style={styles.noticeBlock}>
+        <View style={styles.rowHeader}>
+          <View style={styles.rowHeaderLeft}>
+            <Feather name="shopping-bag" size={14} color={C.slate700} />
+            <Text style={styles.noticeLabel}>준비물 (AI 자동 추출)</Text>
+          </View>
+          <Text style={styles.editableHint}>줄바꿈으로 구분 · 수정 가능</Text>
+        </View>
+        <TextInput
+          style={styles.noticeInput}
+          multiline
+          numberOfLines={3}
+          value={itemsText}
+          onChangeText={handleItemsChange}
+          placeholder={'예:\n수건\n갈아입을 옷'}
+          placeholderTextColor={C.slate400}
+          maxLength={200}
+        />
       </View>
 
       <View style={styles.noticeBlock}>
