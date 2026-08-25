@@ -1,0 +1,108 @@
+rules_version = '2';
+
+// 2026-08-25: 실제로 Firebase 콘솔에 배포되어 있던 규칙을 그대로 기준으로 삼고,
+// 코드 감사 중 발견한 두 가지 구멍만 최소한으로 보강했다.
+//   1. serverGuard 컬렉션(AI 사용량 서버 전용 상한 카운터)이 users/{email}/{allPaths=**}에
+//      걸려 본인이 직접 고쳐서 한도를 우회할 수 있었음 → 명시적으로 완전 차단.
+//   2. members/{memberId} 셀프 업데이트 시 canEdit 값 검증이 없어, "보기 전용" 구성원이
+//      스스로 canEdit:true를 심어 편집 권한을 자가 승격할 수 있었음 → canEdit는 반드시
+//      role이 "엄마"/"아빠"(앱의 EDIT_ROLES와 동일)일 때만 true가 되도록 서버 검증 추가.
+// 그 외 로직은 기존 배포 규칙과 동일하다.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 앱의 EDIT_ROLES(context/AppDataContext.tsx)와 반드시 동일하게 유지할 것.
+    function editRoleOk() {
+      return !('canEdit' in request.resource.data) ||
+        request.resource.data.canEdit == (
+          request.resource.data.role == '엄마' || request.resource.data.role == '아빠'
+        );
+    }
+
+    // 사용자의 이메일 경로와 로그인한 계정의 이메일이 일치할 때만 허용
+    match /users/{userEmail} {
+      allow read, write: if request.auth != null && request.auth.token.email == userEmail;
+
+      // 하위 데이터(아이 정보, 일정)에도 동일한 규칙 적용
+      match /{allPaths=**} {
+        allow read, write: if request.auth != null && request.auth.token.email == userEmail;
+      }
+
+      // analyzeNewsletter Cloud Function이 Admin SDK로만 쓰는 서버 전용 AI 사용량 상한 카운터.
+      // 위 {allPaths=**}보다 더 구체적인 경로라 이 규칙이 우선 적용되어, 클라이언트는
+      // (본인 포함) 절대 읽거나 쓸 수 없다 — 한도를 직접 고쳐서 우회하는 걸 막기 위함.
+      match /serverGuard/{docId} {
+        allow read, write: if false;
+      }
+
+      // [가족 공유] 초대 코드로 합류한 구성원의 권한 기록
+      match /members/{memberId} {
+        allow get: if request.auth != null;
+        allow list: if request.auth != null
+          && (request.auth.token.email == userEmail
+              ||
+                exists(/databases/$(database)/documents/users/$(userEmail)/members/$(request.auth.token.email)));
+        allow create: if request.auth != null
+          && request.auth.token.email == memberId
+          && get(/databases/$(database)/documents/familyInvites/$(request.resource.data.joinCode)).data.ownerEmail == userEmail
+          && editRoleOk();
+        allow delete: if request.auth != null
+          && (request.auth.token.email == userEmail || request.auth.token.email == memberId);
+        allow update: if request.auth != null
+          && request.auth.token.email == memberId
+          && editRoleOk();
+      }
+
+      // [가족 공유] 구성원은 읽기만, 쓰기는 소유자 또는 canEdit 구성원만
+      match /children/{childId} {
+        allow read: if request.auth != null
+          && (request.auth.token.email == userEmail
+              ||
+                exists(/databases/$(database)/documents/users/$(userEmail)/members/$(request.auth.token.email)));
+        allow write: if request.auth != null && (
+          request.auth.token.email == userEmail ||
+          get(/databases/$(database)/documents/users/$(userEmail)/members/$(request.auth.token.email
+)).data.canEdit == true
+        );
+      }
+      match /events/{eventId} {
+        allow read: if request.auth != null
+          && (request.auth.token.email == userEmail
+              ||
+                exists(/databases/$(database)/documents/users/$(userEmail)/members/$(request.auth.token.email)));
+        allow write: if request.auth != null && (
+          request.auth.token.email == userEmail ||
+          get(/databases/$(database)/documents/users/$(userEmail)/members/$(request.auth.token.email
+)).data.canEdit == true
+        );
+      }
+      match /mealPlans/{planId} {
+        allow read: if request.auth != null
+          && (request.auth.token.email == userEmail
+              ||
+              exists(/databases/$(database)/documents/users/$(userEmail)/members/$(request.auth.token.email)));
+        allow write: if request.auth != null && (
+          request.auth.token.email == userEmail ||
+          get(/databases/$(database)/documents/users/$(userEmail)/members/$(request.auth.token.email
+)).data.canEdit == true
+        );
+      }
+    }
+
+    // Gemini API 키 등 앱 설정값 — 로그인한 사용자만 읽기 가능, 쓰기는 콘솔에서만
+    // (2026-08-25 확인: 현재 클라이언트 코드 어디서도 이 컬렉션을 읽지 않음 — 이전 구조의
+    // 흔적으로 보이나, 쓰기가 막혀있어 위험하지 않아 그대로 유지)
+    match /config/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // [가족 공유] 초대 코드 → 소유자 이메일 조회용
+    match /familyInvites/{code} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.auth.token.email == request.resource.data.ownerEmail;
+      allow update, delete: if request.auth != null
+        && request.auth.token.email == resource.data.ownerEmail;
+    }
+  }
+}
