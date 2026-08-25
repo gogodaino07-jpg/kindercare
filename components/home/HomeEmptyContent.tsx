@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { WeatherDay } from '../../hooks/useWeeklyWeather';
@@ -17,6 +17,8 @@ interface HomeEmptyContentProps {
   locationLabel?: string;
   onPressDate: (date: string) => void;
   refreshKey?: number;
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }
 
 export default function HomeEmptyContent({
@@ -27,6 +29,8 @@ export default function HomeEmptyContent({
   locationLabel,
   onPressDate,
   refreshKey,
+  refreshing,
+  onRefresh,
 }: HomeEmptyContentProps) {
   const router = useRouter();
   const colors = useThemeColors();
@@ -50,6 +54,9 @@ export default function HomeEmptyContent({
         scrollEnabled={canScroll}
         onLayout={(e) => setContainerHeight(e.nativeEvent.layout.height)}
         onContentSizeChange={(_w, h) => setContentHeight(h)}
+        refreshControl={
+          onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} /> : undefined
+        }
       >
         <HomeHeroHeader
           selectedChild={selectedChild}
