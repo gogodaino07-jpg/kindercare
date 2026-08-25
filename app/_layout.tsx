@@ -147,7 +147,6 @@ function ThemedNavigation() {
               <Stack.Screen name="google-signin" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding-child-setup" options={{ headerShown: false }} />
               <Stack.Screen name="calendar" options={{ title: '캘린더' }} />
-              <Stack.Screen name="add-event" options={{ title: '일정 추가' }} />
               <Stack.Screen name="upload" options={{ title: '가정통신문 업로드' }} />
               <Stack.Screen name="ai-review" options={{ title: 'AI 확인·수정' }} />
               <Stack.Screen name="save-complete" options={{ headerShown: false }} />
