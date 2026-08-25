@@ -5,7 +5,7 @@ import React, { useMemo, useState } from 'react';
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SHADOW, ThemeColors } from '../../constants/theme';
-import { useThemeColors } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 import { ZoomableImage } from '../../features/newsletter-analysis/components/ZoomableImage';
 import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { EventDateGroup } from '../../hooks/useUpcomingEvents';
@@ -41,6 +41,21 @@ function lighten(hex: string, amount: number): string {
   const g = Math.min(255, Math.round(((num >> 8) & 0xff) + (255 - ((num >> 8) & 0xff)) * amount));
   const b = Math.min(255, Math.round((num & 0xff) + (255 - (num & 0xff)) * amount));
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
+/**
+ * 뱃지/헤더 배경을 만들 때 라이트모드에서는 흰색쪽으로 밝히고(lighten), 다크모드에서는
+ * 반대로 원색을 옅은 투명도로 얹어 어두운 배경 위에 은은하게 톤을 낮춘 색으로 만든다.
+ * (lighten만 쓰면 다크모드에서 항상 밝은 크림색 패치가 튀어나와 부자연스러웠음)
+ */
+function tint(hex: string, amount: number, isDark: boolean): string {
+  if (isDark) {
+    const alpha = Math.round((1 - amount) * 255 * 2)
+      .toString(16)
+      .padStart(2, '0');
+    return `${hex}${alpha}`;
+  }
+  return lighten(hex, amount);
 }
 
 /** "D-3" for future dates, "D-DAY" for today, "D+2" for past dates. */
@@ -86,8 +101,9 @@ export default function ScheduleBoard({
   onToggleAll,
 }: ScheduleBoardProps) {
   const router = useRouter();
-  const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { colors, resolvedScheme } = useTheme();
+  const isDark = resolvedScheme === 'dark';
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [viewerPhotos, setViewerPhotos] = useState<string[] | null>(null);
 
   const dayAfterTomorrowISO = useMemo(() => toISODate(new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)), []);
@@ -178,6 +194,7 @@ export default function ScheduleBoard({
               dateText={dateText}
               colors={colors}
               styles={styles}
+              isDark={isDark}
               onPress={() => onEventPress(event)}
               onToggleItem={onToggleItem}
               onToggleAll={onToggleAll}
@@ -226,6 +243,7 @@ function ScheduleCard({
   dateText,
   colors,
   styles,
+  isDark,
   onPress,
   onToggleItem,
   onToggleAll,
@@ -235,6 +253,7 @@ function ScheduleCard({
   dateText: string;
   colors: ThemeColors;
   styles: ReturnType<typeof createStyles>;
+  isDark: boolean;
   onPress: () => void;
   onToggleItem: (event: Event, item: EventItem) => void;
   onToggleAll: (event: Event, items: EventItem[], value: boolean) => void;
@@ -294,7 +313,7 @@ function ScheduleCard({
               </Pressable>
             )}
             {event.category && (
-              <View style={[styles.categoryBadge, { backgroundColor: lighten(category.accent, 0.85) }]}>
+              <View style={[styles.categoryBadge, { backgroundColor: tint(category.accent, 0.85, isDark) }]}>
                 <Text style={[styles.categoryBadgeText, { color: category.accent }]}>{event.category}</Text>
               </View>
             )}
@@ -315,7 +334,7 @@ function ScheduleCard({
 
       <Pressable onPress={onPress} style={styles.cardBody}>
         <View style={styles.cardTitleRow}>
-          <View style={[styles.iconCircle, { backgroundColor: specialTheme ? lighten(specialTheme.gradient[0], 0.85) : lighten(category.accent, 0.85) }]}>
+          <View style={[styles.iconCircle, { backgroundColor: tint(specialTheme ? specialTheme.gradient[0] : category.accent, 0.85, isDark) }]}>
             {specialTheme ? <Text style={styles.specialIconEmoji}>{specialTheme.emoji}</Text> : <EventIcon icon={event.icon} size={22} />}
           </View>
           <View style={styles.cardTitleTextBlock}>
@@ -394,7 +413,7 @@ function ScheduleCard({
   );
 }
 
-function createStyles(colors: ThemeColors) {
+function createStyles(colors: ThemeColors, isDark: boolean) {
   return StyleSheet.create({
     container: { marginTop: 20, paddingHorizontal: 20 },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
@@ -447,7 +466,7 @@ function createStyles(colors: ThemeColors) {
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
-    cardHeaderRowToday: { backgroundColor: lighten('#F97316', 0.9) },
+    cardHeaderRowToday: { backgroundColor: tint('#F97316', 0.9, isDark) },
     cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     cardHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     photoBadge: {
@@ -545,8 +564,8 @@ function createStyles(colors: ThemeColors) {
     },
     buyButtonText: { fontSize: 10, fontWeight: '800', color: colors.purple500 },
     itemStatusPill: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-    itemStatusPillTodo: { backgroundColor: lighten(colors.pastelOrangeAccent, 0.85) },
-    itemStatusPillDone: { backgroundColor: lighten(colors.green500, 0.85) },
+    itemStatusPillTodo: { backgroundColor: tint(colors.pastelOrangeAccent, 0.85, isDark) },
+    itemStatusPillDone: { backgroundColor: tint(colors.green500, 0.85, isDark) },
     itemStatusPillText: { fontSize: 10, fontWeight: '800' },
     itemStatusPillTextTodo: { color: colors.pastelOrangeAccent },
     itemStatusPillTextDone: { color: colors.green500 },
