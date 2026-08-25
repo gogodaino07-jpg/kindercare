@@ -52,7 +52,7 @@ export default function JoinCodeModal({ visible, onClose, onJoin }: JoinCodeModa
     onClose();
   };
 
-  const isValidFormat = (value: string) => /^\d{6}$/.test(value);
+  const isValidFormat = (value: string) => /^\d{8}$/.test(value);
 
   const handleJoin = () => {
     if (!isValidFormat(code.trim())) {
@@ -85,13 +85,13 @@ export default function JoinCodeModal({ visible, onClose, onJoin }: JoinCodeModa
                 style={[styles.input, error && styles.inputError]}
                 value={code}
                 onChangeText={(t) => {
-                  setCode(t.replace(/\D/g, '').slice(0, 6));
+                  setCode(t.replace(/\D/g, '').slice(0, 8));
                   setError(false);
                 }}
-                placeholder="숫자 6자리를 입력해주세요"
+                placeholder="숫자 8자리를 입력해주세요"
                 placeholderTextColor={GRAY}
                 keyboardType="number-pad"
-                maxLength={6}
+                maxLength={8}
               />
               {error ? <Text style={styles.errorText}>올바른 초대 코드를 입력해 주세요</Text> : null}
 

@@ -3,7 +3,6 @@ import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { login as kakaoLogin, logout as kakaoLogout, getProfile as getKakaoProfile } from '@react-native-seoul/kakao-login';
-import * as Crypto from 'expo-crypto';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { DEFAULT_CHALKBOARD_THEME_ID } from '../constants/chalkboardThemes';
 import {
@@ -21,7 +20,7 @@ import { isSimilarEvent } from '../data/mockAIResult';
 import { Child, Event, FamilyInvite, FamilyMember, FamilyMembership, GoogleAccount, MealPlan, NotificationSettings } from '../types/models';
 import { toISODate } from '../utils/date';
 import { withExternalAction } from '../utils/externalAction';
-import { getDb, getFirebaseAuth } from '../utils/firebase';
+import { getDb, getFirebaseAuth, getFunctions } from '../utils/firebase';
 import { scheduleEventNotifications } from '../utils/notifications';
 import { sanitizeData } from '../utils/validation';
 import { AIUsageLimitService } from '../features/newsletter-analysis';
@@ -1189,45 +1188,33 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   // stable password from the email itself (not the provider's uid) and
   // use it to sign into Firebase Auth with email/password every time,
   // creating the account on first login.
-  const signInFirebaseWithSocialAccount = async (email: string) => {
-    const password = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      `kindercare-social-auth-v1:${email.trim().toLowerCase()}`
-    );
-    try {
-      await getFirebaseAuth().createUserWithEmailAndPassword(email, password);
-    } catch (error: any) {
-      if (error.code === 'auth/email-already-in-use') {
-        try {
-          await getFirebaseAuth().signInWithEmailAndPassword(email, password);
-        } catch (signInError: any) {
-          if (signInError.code === 'auth/invalid-credential' || signInError.code === 'auth/wrong-password') {
-            const err = new Error(
-              '이미 다른 로그인 방식(예: 구글)으로 가입된 이메일이에요. 처음 가입했던 방식으로 로그인해주세요.'
-            );
-            (err as any).code = 'auth/account-exists-with-different-credential';
-            throw err;
-          }
-          throw signInError;
-        }
-      } else {
-        throw error;
-      }
+  // 예전에는 "고정 문자열 + 이메일"로 계산한 비밀번호로 Firebase 이메일/비밀번호
+  // 로그인을 흉내냈는데, 그 비밀번호는 이메일만 알면 누구나 똑같이 계산할 수 있어
+  // 계정 탈취에 악용될 수 있었다(이 저장소가 공개라 계산식 자체도 그대로 노출됨).
+  // 이제는 카카오 액세스 토큰을 서버(kakaoSignIn 함수)로 보내 카카오 쪽에서 직접
+  // 신원을 검증받고, 그 결과로 발급된 Firebase Custom Token으로만 로그인한다 —
+  // 클라이언트가 스스로 계산 가능한 값으로는 더 이상 로그인이 성립하지 않는다.
+  const signInFirebaseWithKakao = async (accessToken: string) => {
+    const { data } = await getFunctions().httpsCallable('kakaoSignIn')({ accessToken });
+    const customToken = (data as { customToken?: string } | undefined)?.customToken;
+    if (!customToken) {
+      throw new Error('카카오 인증에 실패했습니다.');
     }
+    await getFirebaseAuth().signInWithCustomToken(customToken);
   };
 
   const signInWithKakao = async (): Promise<GoogleAccount> => {
     try {
       console.log('📡 Starting Kakao Sign-In...');
       const token = await kakaoLogin();
-      if (!token) throw new Error('Kakao login failed - no token');
+      if (!token?.accessToken) throw new Error('Kakao login failed - no token');
 
       const profile = await getKakaoProfile();
       if (!profile || !profile.email) {
         throw new Error('Kakao profile is missing email');
       }
 
-      await signInFirebaseWithSocialAccount(profile.email);
+      await signInFirebaseWithKakao(token.accessToken);
 
       const account: GoogleAccount = {
         email: profile.email,

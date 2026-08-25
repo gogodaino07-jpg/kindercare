@@ -137,7 +137,8 @@ export const GeminiAnalysisService = {
   async analyze(
     docs: UploadedDoc[],
     child: Child,
-    existingEvents: Omit<Event, 'id'>[] = []
+    existingEvents: Omit<Event, 'id'>[] = [],
+    usageType: 'newsletter' | 'meal' = 'newsletter'
   ): Promise<GeminiAnalysisResult> {
     const todayISO = toISODate(new Date());
     const parts = await Promise.all(docs.map(async (doc) => {
@@ -165,7 +166,7 @@ export const GeminiAnalysisService = {
 
     let json: any;
     try {
-      const result = await getFunctions().httpsCallable('analyzeNewsletter')({ body });
+      const result = await getFunctions().httpsCallable('analyzeNewsletter')({ body, usageType });
       json = result.data;
     } catch (err: any) {
       console.error('[Gemini Proxy Error]:', err);

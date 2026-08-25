@@ -158,7 +158,7 @@ export default function MealScanScreen() {
 
       setAnalyzing(true);
       try {
-        const analysis = await GeminiAnalysisService.analyze([doc], selectedChild, []);
+        const analysis = await GeminiAnalysisService.analyze([doc], selectedChild, [], 'meal');
         if (analysis.mealPlans.length === 0) {
           showAlert({ title: '식단표를 찾지 못했어요', message: '더 선명한 사진으로 다시 시도해주세요.' });
           return;
