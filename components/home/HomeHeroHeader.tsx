@@ -307,14 +307,12 @@ export default function HomeHeroHeader({
               label="내일"
               day={tomorrow}
               loading={weatherLoading && !tomorrow}
-              variant="peach"
               onPress={() => tomorrow && onPressDate(tomorrow.date)}
             />
             <MiniWeatherCard
               label="모레"
               day={dayAfter}
               loading={weatherLoading && !dayAfter}
-              variant="plain"
               onPress={() => dayAfter && onPressDate(dayAfter.date)}
             />
           </View>
@@ -448,21 +446,30 @@ const skeletonStyles = StyleSheet.create({
   textCompact: { fontSize: 9.5, fontWeight: '700', color: '#94A3B8' },
 });
 
+/** 그 날 날씨 느낌에 어울리는 은은한 카드 색(배경/테두리)을 골라준다 — 오늘 카드의 날씨별 그라데이션과 같은 계열. */
+function getMiniCardTint(label: string | undefined, colors: ThemeColors): { bg: string; border: string } {
+  if (label === '맑음' || label === '대체로 맑음') return { bg: colors.orangeLight1, border: colors.orangeBorder };
+  if (label === '흐림' || label === '안개') return { bg: colors.gray100, border: colors.border };
+  if (label === '이슬비' || label === '비' || label === '소나기') return { bg: colors.lightBlueBg, border: colors.blue100 };
+  if (label === '눈' || label === '눈 소나기') return { bg: colors.pastelBlue, border: colors.blue100 };
+  if (label === '뇌우') return { bg: colors.purpleBg, border: colors.purpleDeep };
+  return { bg: colors.cardWhite, border: colors.border };
+}
+
 function MiniWeatherCard({
   label,
   day,
   loading,
-  variant,
   onPress,
 }: {
   label: string;
   day?: WeatherDay;
   loading: boolean;
-  variant: 'peach' | 'plain';
   onPress: () => void;
 }) {
   const colors = useThemeColors();
   const styles = useMemo(() => createMiniCardStyles(colors), [colors]);
+  const tint = useMemo(() => getMiniCardTint(day?.label, colors), [day?.label, colors]);
 
   if (loading) {
     return <SkeletonBox style={[styles.container, styles.skeleton]} compact />;
@@ -470,7 +477,7 @@ function MiniWeatherCard({
 
   return (
     <Pressable
-      style={[styles.container, variant === 'peach' ? styles.peach : styles.plain]}
+      style={[styles.container, { backgroundColor: tint.bg, borderColor: tint.border }]}
       onPress={onPress}
       disabled={!day}
     >
@@ -723,14 +730,6 @@ function createMiniCardStyles(colors: ThemeColors) {
       paddingHorizontal: 12,
       justifyContent: 'center',
       alignItems: 'center',
-    },
-    peach: {
-      backgroundColor: colors.orangeLight1,
-      borderColor: colors.orangeBorder,
-    },
-    plain: {
-      backgroundColor: colors.cardWhite,
-      borderColor: colors.border,
     },
     skeleton: {
       backgroundColor: colors.gray100,
