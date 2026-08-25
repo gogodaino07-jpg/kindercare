@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ZoomableImage } from '../../features/newsletter-analysis/components/ZoomableImage';
@@ -8,7 +8,7 @@ import EventIcon from '../common/EventIcon';
 import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { Event, EventItem } from '../../types/models';
 import { isValidCoupangKeyword } from '../../utils/validation';
-import { calendarTheme as t } from './calendarTheme';
+import { useCalendarTheme } from './useCalendarTheme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PHOTO_ZOOM_WIDTH = SCREEN_WIDTH - 80;
@@ -39,6 +39,8 @@ export default function DayDetailSection({
   onToggleItem,
   onOpenBuy,
 }: DayDetailSectionProps) {
+  const t = useCalendarTheme();
+  const styles = useMemo(() => createStyles(t), [t]);
   const [viewerPhotos, setViewerPhotos] = useState<string[] | null>(null);
 
   if (events.length === 0) {
@@ -116,6 +118,8 @@ function EventDetailCard({
   onOpenBuy: (event: Event, item: EventItem) => void;
   onOpenPhotos: (photoUris: string[]) => void;
 }) {
+  const t = useCalendarTheme();
+  const styles = useMemo(() => createStyles(t), [t]);
   const diff = computeDday(event.date, todayISO);
   const photoUris = event.photoUris ?? [];
   const items = getDisplayItems(event);
@@ -236,7 +240,8 @@ function EventDetailCard({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(t: import('./calendarTheme').CalendarTheme) {
+  return StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     gap: 12,
@@ -544,4 +549,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+  });
+}

@@ -12,7 +12,7 @@ import Text from '../common/AppText';
 import { useAppData } from '../../context/AppDataContext';
 import { Event } from '../../types/models';
 import { toISODate } from '../../utils/date';
-import { calendarTheme as t } from './calendarTheme';
+import { useCalendarTheme } from './useCalendarTheme';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const ROW_HEIGHT = 46;
@@ -47,6 +47,8 @@ export default function CalendarAccordion({
   onOpenAddEvent,
 }: CalendarAccordionProps) {
   const { canEditFamilyData } = useAppData();
+  const t = useCalendarTheme();
+  const styles = useMemo(() => createStyles(t), [t]);
   const cells = useMemo(() => {
     const year = monthCursor.getFullYear();
     const month = monthCursor.getMonth();
@@ -246,6 +248,8 @@ function WeekRow({
   eventsByDate: Map<string, Event[]>;
   onSelectDate: (iso: string) => void;
 }) {
+  const t = useCalendarTheme();
+  const styles = useMemo(() => createStyles(t), [t]);
   const rowAnimatedStyle = useAnimatedStyle(() => ({
     opacity: interpolate(expandedProgress.value, [0, 1], [isSelectedRow ? 1 : 0, 1]),
   }), [isSelectedRow]);
@@ -296,7 +300,8 @@ function WeekRow({
 
 const CELL_SIZE = 27;
 
-const styles = StyleSheet.create({
+function createStyles(t: import('./calendarTheme').CalendarTheme) {
+  return StyleSheet.create({
   card: {
     backgroundColor: t.cardWhite,
     borderRadius: 22,
@@ -476,4 +481,5 @@ const styles = StyleSheet.create({
     right: 0,
     textAlign: 'center',
   },
-});
+  });
+}

@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Dimensions, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -11,7 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Text from '../common/AppText';
 import { openCoupangSearch } from '../../utils/coupang';
-import { calendarTheme as t } from './calendarTheme';
+import { useCalendarTheme } from './useCalendarTheme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -23,6 +23,8 @@ interface BuyModalProps {
 }
 
 export default function BuyModal({ visible, itemName, onClose, onMarkOrdered }: BuyModalProps) {
+  const t = useCalendarTheme();
+  const styles = useMemo(() => createStyles(t), [t]);
   const translateY = useSharedValue(SCREEN_HEIGHT);
 
   useEffect(() => {
@@ -108,7 +110,8 @@ export default function BuyModal({ visible, itemName, onClose, onMarkOrdered }: 
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(t: import('./calendarTheme').CalendarTheme) {
+  return StyleSheet.create({
   overlayContainer: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -185,4 +188,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: t.textSecondary,
   },
-});
+  });
+}

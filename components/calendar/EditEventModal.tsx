@@ -1,6 +1,6 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Text from '../common/AppText';
 import TextInput from '../common/ClearableTextInput';
@@ -11,7 +11,7 @@ import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { Event, EventItem } from '../../types/models';
 import { parseISODate, toISODate, WEEKDAY_KO } from '../../utils/date';
 import { stripInvalidCharacters } from '../../utils/validation';
-import { calendarTheme as t } from './calendarTheme';
+import { useCalendarTheme } from './useCalendarTheme';
 
 interface EditEventModalProps {
   visible: boolean;
@@ -28,6 +28,8 @@ export default function EditEventModal({ visible, event, onClose }: EditEventMod
   const { updateEvent, deleteEvent } = useAppData();
   const { showToast } = useToast();
   const { showAlert } = useAlert();
+  const t = useCalendarTheme();
+  const styles = useMemo(() => createStyles(t), [t]);
 
   const [date, setDate] = useState(() => new Date());
   const [showPicker, setShowPicker] = useState(false);
@@ -180,7 +182,8 @@ export default function EditEventModal({ visible, event, onClose }: EditEventMod
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(t: import('./calendarTheme').CalendarTheme) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(30, 27, 46, 0.5)',
@@ -268,4 +271,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: t.rose,
   },
-});
+  });
+}

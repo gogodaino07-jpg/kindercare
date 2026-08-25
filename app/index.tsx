@@ -315,15 +315,28 @@ export default function HomeScreen() {
           />
         )}
         {upcoming.isEmpty ? (
-          <HomeEmptyContent
-            selectedChild={selectedChild}
-            onPressMeal={() => setMealSheetOpen(true)}
-            weatherDays={weather.days}
-            weatherLoading={weather.loading}
-            locationLabel={weather.locationLabel}
-            onPressDate={onDatePress}
-            refreshKey={greetingRefreshKey}
-          />
+          <GestureDetector gesture={pullGesture}>
+            <View style={styles.mainContainer}>
+              <Animated.View style={[styles.pullIndicator, pullIndicatorStyle]}>
+                {refreshing ? (
+                  <ActivityIndicator color={colors.gray400} />
+                ) : (
+                  <Animated.View style={pullArrowStyle}>
+                    <Feather name="arrow-down" size={18} color={colors.gray400} />
+                  </Animated.View>
+                )}
+              </Animated.View>
+              <HomeEmptyContent
+                selectedChild={selectedChild}
+                onPressMeal={() => setMealSheetOpen(true)}
+                weatherDays={weather.days}
+                weatherLoading={weather.loading}
+                locationLabel={weather.locationLabel}
+                onPressDate={onDatePress}
+                refreshKey={greetingRefreshKey}
+              />
+            </View>
+          </GestureDetector>
         ) : (
           <>
             <GestureDetector gesture={homeScrollGesture}>

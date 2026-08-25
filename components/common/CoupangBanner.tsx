@@ -142,7 +142,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   topLine: {
     height: 1,
-    backgroundColor: '#F0F1F3',
+    backgroundColor: colors.border,
     width: '100%',
   },
   contentWrapper: {
@@ -152,7 +152,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   bottomLine: {
     height: 1,
-    backgroundColor: '#F0F1F3',
+    backgroundColor: colors.border,
     width: '100%',
   },
   webviewContainer: {

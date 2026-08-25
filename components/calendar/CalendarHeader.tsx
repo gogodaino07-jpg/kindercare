@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import Text from '../common/AppText';
-import { calendarTheme as t } from './calendarTheme';
+import { useCalendarTheme } from './useCalendarTheme';
 
 interface CalendarHeaderProps {
   childName: string;
@@ -37,6 +37,8 @@ export default function CalendarHeader({
   selectedDateLabel,
   onBack,
 }: CalendarHeaderProps) {
+  const t = useCalendarTheme();
+  const styles = useMemo(() => createStyles(t), [t]);
   const particle = useMemo(() => (hasFinalConsonant(childName) ? '이' : ''), [childName]);
   const classLabel = useMemo(
     () => [age !== undefined ? `${age}세` : undefined, formatClassName(className)].filter(Boolean).join(' '),
@@ -81,7 +83,8 @@ export default function CalendarHeader({
 
 const AVATAR_SIZE = 56;
 
-const styles = StyleSheet.create({
+function createStyles(t: import('./calendarTheme').CalendarTheme) {
+  return StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -170,4 +173,5 @@ const styles = StyleSheet.create({
     color: t.amberDeep,
     fontWeight: '800',
   },
-});
+  });
+}

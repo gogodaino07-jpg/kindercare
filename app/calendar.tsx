@@ -16,7 +16,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import AddEventModal from '../components/calendar/AddEventModal';
 import BuyModal from '../components/calendar/BuyModal';
 import CalendarAccordion from '../components/calendar/CalendarAccordion';
-import { calendarTheme as t } from '../components/calendar/calendarTheme';
+import { useCalendarTheme } from '../components/calendar/useCalendarTheme';
 import CalendarHeader from '../components/calendar/CalendarHeader';
 import DayDetailSection from '../components/calendar/DayDetailSection';
 import EditEventModal from '../components/calendar/EditEventModal';
@@ -31,6 +31,8 @@ export default function CalendarScreen() {
   const insets = useSafeAreaInsets();
   const { date: dateParam } = useLocalSearchParams<{ date?: string }>();
   const { events, selectedChild, updateEvent } = useAppData();
+  const t = useCalendarTheme();
+  const styles = useMemo(() => createStyles(t), [t]);
 
   const todayISO = useMemo(() => toISODate(new Date()), []);
   // 홈 화면에서 특정 날짜의 일정을 탭해서 들어온 경우, 그 날짜에 포커스한 채로 시작한다.
@@ -346,7 +348,8 @@ export default function CalendarScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(t: import('../components/calendar/calendarTheme').CalendarTheme) {
+  return StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: t.bg,
@@ -383,4 +386,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: t.sky,
   },
-});
+  });
+}
