@@ -480,7 +480,7 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: t.gray50,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,

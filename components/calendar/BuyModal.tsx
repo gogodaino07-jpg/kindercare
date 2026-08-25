@@ -122,7 +122,7 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(30, 27, 46, 0.45)',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
   },
   sheet: {
     backgroundColor: t.cardWhite,

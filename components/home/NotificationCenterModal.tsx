@@ -228,7 +228,7 @@ function createStyles(colors: ThemeColors, topInset: number) {
   return StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(15, 23, 42, 0.5)',
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
       alignItems: 'center',
       justifyContent: 'center',
     },

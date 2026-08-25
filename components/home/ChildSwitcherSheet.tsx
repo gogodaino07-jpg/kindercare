@@ -215,7 +215,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(20, 24, 22, 0.45)',
+      backgroundColor: 'rgba(0, 0, 0, 0.55)',
     },
     sheet: {
       backgroundColor: colors.skyBackground,

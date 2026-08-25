@@ -44,7 +44,7 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(20, 24, 22, 0.45)',
+      backgroundColor: 'rgba(0, 0, 0, 0.55)',
       justifyContent: 'flex-end',
     },
     sheet: {

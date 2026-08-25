@@ -16,7 +16,6 @@ import Animated, {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdPopupModal from '../components/home/AdPopupModal';
 import BirthdayCenterConfetti from '../components/home/BirthdayCenterConfetti';
-import BlackboardModal from '../components/home/BlackboardModal';
 import ChildSwitcherSheet from '../components/home/ChildSwitcherSheet';
 import FamilyShareCard from '../components/home/FamilyShareCard';
 import HomeEmptyContent from '../components/home/HomeEmptyContent';
@@ -110,7 +109,6 @@ export default function HomeScreen() {
     const todayISO = toISODate(new Date());
     return mealPlans.find((m) => m.childId === selectedChild?.id && m.date === todayISO)?.mainMenu;
   }, [mealPlans, selectedChild]);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [mealSheetOpen, setMealSheetOpen] = useState(false);
   const [adPopupVisible, setAdPopupVisible] = useState(false);
@@ -124,7 +122,6 @@ export default function HomeScreen() {
   const [greetingRefreshKey, setGreetingRefreshKey] = useState(0);
   const isChildBirthdayToday = isBirthdayToday(selectedChild?.birthdate);
 
-  const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
   const todayProgress = useMemo(() => {
     const items = upcoming.mainEvents.flatMap((e) => getDisplayItems(e));
     const checked = items.filter((i) => i.completed).length;
@@ -397,7 +394,6 @@ export default function HomeScreen() {
         {!isSubscribed && <CoupangBanner />}
       </View>
 
-      <BlackboardModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
       <MealPlanSheet visible={mealSheetOpen} onClose={() => setMealSheetOpen(false)} />
       {!isLocked && !isSubscribed && <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />}
