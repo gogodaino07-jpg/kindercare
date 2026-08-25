@@ -36,7 +36,7 @@ function createStyles(colors: ThemeColors) {
     box: {
       borderWidth: 2,
       borderColor: colors.border,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.cardWhite,
       alignItems: 'center',
       justifyContent: 'center',
     },

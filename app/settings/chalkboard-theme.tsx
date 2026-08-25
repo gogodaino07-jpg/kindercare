@@ -3,7 +3,6 @@ import { Stack, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import ChalkboardPreview from '../../components/settings/ChalkboardPreview';
 import { CHALKBOARD_THEMES } from '../../constants/chalkboardThemes';
@@ -23,11 +22,11 @@ export default function ChalkboardThemeScreen() {
     <View style={styles.screenBg}>
       <Stack.Screen
         options={{
-          headerStyle: { backgroundColor: t.bg },
+          headerStyle: { backgroundColor: colors.skyBackground },
           headerShadowVisible: false,
           headerLeft: () => (
             <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
-              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+              <MaterialCommunityIcons name="chevron-left" size={28} color={colors.textPrimary} />
             </Pressable>
           ),
         }}
@@ -70,7 +69,7 @@ export default function ChalkboardThemeScreen() {
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    screenBg: { flex: 1, backgroundColor: t.bg },
+    screenBg: { flex: 1, backgroundColor: colors.skyBackground },
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20, alignItems: 'center' },

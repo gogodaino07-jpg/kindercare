@@ -237,7 +237,7 @@ function createStyles(colors: ThemeColors, topInset: number) {
       maxWidth: '92%',
       height: '62%',
       maxHeight: '72%',
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.cardWhite,
       borderRadius: 28,
       padding: 20,
       ...SHADOW,

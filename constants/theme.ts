@@ -123,12 +123,14 @@ export const DARK_COLORS: ThemeColors = {
   peachOrangeDeep: '#CC7B48',
   coralPink: '#E66458',
   statusGreen: '#45A862',
-  // Fallback for dark mode
+  // Fallback for dark mode — 400→900는 라이트 모드와 반대로 "숫자가 클수록 밝아짐"으로
+  // 반전해야 어두운 배경 위에서 읽힘(800/900은 원래 반전돼 있었는데 400~600만 빠져서,
+  // 배경과 거의 구분 안 되는 어두운 회색이라 아이콘·보조 텍스트가 안 보이던 버그가 있었음).
   gray50: '#1C2733',
   gray100: '#2A3744',
   gray400: '#718096',
-  gray500: '#4A5568',
-  gray600: '#2D3748',
+  gray500: '#8B9DB0',
+  gray600: '#AEBBC9',
   gray800: '#EDF2F7',
   gray900: '#FFFFFF',
   blue500: '#4299E1',

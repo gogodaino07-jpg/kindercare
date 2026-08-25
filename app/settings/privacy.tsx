@@ -4,7 +4,6 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import { useThemeColors } from '../../context/ThemeContext';
 
 export default function PrivacyPolicyScreen() {
@@ -41,11 +40,11 @@ export default function PrivacyPolicyScreen() {
       <Stack.Screen
         options={{
           title: '개인정보 처리방침',
-          headerStyle: { backgroundColor: t.bg },
+          headerStyle: { backgroundColor: colors.skyBackground },
           headerShadowVisible: false,
           headerLeft: () => (
             <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
-              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+              <MaterialCommunityIcons name="chevron-left" size={28} color={colors.textPrimary} />
             </Pressable>
           ),
         }}
@@ -73,7 +72,7 @@ function createStyles(colors: any) {
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: t.bg,
+      backgroundColor: colors.skyBackground,
     },
     headerBackButton: {
       paddingHorizontal: 4,

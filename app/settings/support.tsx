@@ -4,7 +4,6 @@ import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import TextInput from '../../components/common/ClearableTextInput';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
@@ -56,11 +55,11 @@ export default function SupportScreen() {
     <View style={styles.screenBg}>
       <Stack.Screen
         options={{
-          headerStyle: { backgroundColor: t.bg },
+          headerStyle: { backgroundColor: colors.skyBackground },
           headerShadowVisible: false,
           headerLeft: () => (
             <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
-              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+              <MaterialCommunityIcons name="chevron-left" size={28} color={colors.textPrimary} />
             </Pressable>
           ),
         }}
@@ -133,7 +132,7 @@ export default function SupportScreen() {
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    screenBg: { flex: 1, backgroundColor: t.bg },
+    screenBg: { flex: 1, backgroundColor: colors.skyBackground },
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20, paddingBottom: 120 },

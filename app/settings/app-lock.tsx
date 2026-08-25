@@ -3,7 +3,6 @@ import { Stack, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import PatternGrid from '../../components/settings/PatternGrid';
 import { SHADOW } from '../../constants/theme';
@@ -378,11 +377,11 @@ export default function AppLockSettingsScreen() {
     <View style={styles.screenBg}>
       <Stack.Screen
         options={{
-          headerStyle: { backgroundColor: t.bg },
+          headerStyle: { backgroundColor: colors.skyBackground },
           headerShadowVisible: false,
           headerLeft: () => (
             <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
-              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+              <MaterialCommunityIcons name="chevron-left" size={28} color={colors.textPrimary} />
             </Pressable>
           ),
         }}
@@ -481,7 +480,7 @@ export default function AppLockSettingsScreen() {
 
 function createStyles(colors: any) {
   return StyleSheet.create({
-    screenBg: { flex: 1, backgroundColor: t.bg },
+    screenBg: { flex: 1, backgroundColor: colors.skyBackground },
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20 },

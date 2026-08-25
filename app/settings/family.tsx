@@ -14,7 +14,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import TextInput from '../../components/common/ClearableTextInput';
 import { SHADOW, ThemeColors } from '../../constants/theme';
@@ -184,11 +183,11 @@ export default function FamilyMembersScreen() {
       <Stack.Screen
         options={{
           title: titleParam ?? '가족 계정',
-          headerStyle: { backgroundColor: t.bg },
+          headerStyle: { backgroundColor: colors.skyBackground },
           headerShadowVisible: false,
           headerLeft: () => (
             <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
-              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+              <MaterialCommunityIcons name="chevron-left" size={28} color={colors.textPrimary} />
             </Pressable>
           ),
         }}
@@ -344,9 +343,9 @@ export default function FamilyMembersScreen() {
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    screenBg: { flex: 1, backgroundColor: t.bg },
+    screenBg: { flex: 1, backgroundColor: colors.skyBackground },
     headerBackButton: { paddingHorizontal: 4 },
-    safeArea: { flex: 1, backgroundColor: t.bg },
+    safeArea: { flex: 1, backgroundColor: colors.skyBackground },
     content: { padding: 20, paddingBottom: 120 },
     sectionLabel: {
       fontSize: 13,

@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Purchases, { PurchasesPackage } from 'react-native-purchases';
-import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAlert } from '../../context/AlertContext';
@@ -112,11 +111,11 @@ export default function SubscriptionScreen() {
     <View style={styles.screenBg}>
       <Stack.Screen
         options={{
-          headerStyle: { backgroundColor: t.bg },
+          headerStyle: { backgroundColor: colors.skyBackground },
           headerShadowVisible: false,
           headerLeft: () => (
             <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
-              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+              <MaterialCommunityIcons name="chevron-left" size={28} color={colors.textPrimary} />
             </Pressable>
           ),
         }}
@@ -223,14 +222,14 @@ export default function SubscriptionScreen() {
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    screenBg: { flex: 1, backgroundColor: t.bg },
+    screenBg: { flex: 1, backgroundColor: colors.skyBackground },
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20, paddingBottom: 160 },
     bottomBar: {
       paddingHorizontal: 20,
       paddingTop: 12,
-      backgroundColor: t.bg,
+      backgroundColor: colors.skyBackground,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.border,
     },

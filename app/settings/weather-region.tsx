@@ -5,7 +5,6 @@ import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { calendarTheme as t } from '../../components/calendar/calendarTheme';
 import Text from '../../components/common/AppText';
 import TextInput from '../../components/common/ClearableTextInput';
 import { SHADOW, ThemeColors } from '../../constants/theme';
@@ -261,11 +260,11 @@ export default function WeatherRegionSettingsScreen() {
       <Stack.Screen
         options={{
           title: '날씨 지역 설정',
-          headerStyle: { backgroundColor: t.bg },
+          headerStyle: { backgroundColor: colors.skyBackground },
           headerShadowVisible: false,
           headerLeft: () => (
             <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
-              <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
+              <MaterialCommunityIcons name="chevron-left" size={28} color={colors.textPrimary} />
             </Pressable>
           ),
         }}
@@ -547,7 +546,7 @@ export default function WeatherRegionSettingsScreen() {
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    screenBg: { flex: 1, backgroundColor: t.bg },
+    screenBg: { flex: 1, backgroundColor: colors.skyBackground },
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 48, gap: 16 },
