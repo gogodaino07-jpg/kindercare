@@ -11,6 +11,7 @@ import { useFonts } from 'expo-font';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import React, { useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus, BackHandler, Keyboard, LogBox, ToastAndroid, View, Platform, Animated, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -61,6 +62,15 @@ function ThemedNavigation() {
 
   // Consolidated readiness flag
   const isReady = themeLoaded && lockLoaded && onboardingLoaded && !isBooting;
+
+  // Android의 네이티브 Activity 창 배경은 앱 내 다크모드 설정과 무관하게 항상
+  // 밝은 색이라, 화면 전환(네이티브 스택 push/pop) 애니메이션 도중 그 배경이
+  // 잠깐 드러나면서 다크모드에서도 흰색이 번쩍이는 문제가 있었다. 테마가
+  // 바뀔 때마다 네이티브 창 배경색 자체를 현재 테마 색으로 맞춰서 해결.
+  useEffect(() => {
+    if (!themeLoaded) return;
+    SystemUI.setBackgroundColorAsync(colors.gray50).catch(() => {});
+  }, [themeLoaded, colors.gray50]);
 
   useEffect(() => {
     if (isReady) {
