@@ -1,8 +1,7 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Linking, PixelRatio, StyleSheet, View, ViewStyle, useWindowDimensions, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useAppData } from '../../context/AppDataContext';
-import { useThemeColors } from '../../context/ThemeContext';
 import Text from './AppText';
 
 interface CoupangBannerProps {
@@ -12,12 +11,11 @@ interface CoupangBannerProps {
 /**
  * CoupangBanner Component
  * Uses official Coupang Partners script via WebView for maximum stability and correct tracking.
+ * 다크모드와 무관하게 항상 라이트 톤으로 고정한다.
  */
 export default function CoupangBanner({ style }: CoupangBannerProps) {
   const { width: windowWidth } = useWindowDimensions();
   const { googleAccount } = useAppData();
-  const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -135,14 +133,15 @@ export default function CoupangBanner({ style }: CoupangBannerProps) {
   );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+// 광고 배너는 다크모드와 무관하게 항상 라이트 톤(테마 색상 미사용)으로 고정한다.
+const styles = StyleSheet.create({
   container: {
     width: '100%',
-    backgroundColor: colors.cardWhite,
+    backgroundColor: '#FFFFFF',
   },
   topLine: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: '#DCE8F0',
     width: '100%',
   },
   contentWrapper: {
@@ -152,7 +151,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   bottomLine: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: '#DCE8F0',
     width: '100%',
   },
   webviewContainer: {
@@ -165,7 +164,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   legalDisclosure: {
     fontSize: 8,
-    color: colors.gray400,
+    color: '#9CA3AF',
     marginTop: 2,
     textAlign: 'center',
     paddingHorizontal: 20,
