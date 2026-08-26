@@ -14,7 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus, BackHandler, Keyboard, LogBox, ToastAndroid, View, Platform, Animated, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import mobileAds from 'react-native-google-mobile-ads';
+import mobileAds, { MaxAdContentRating } from 'react-native-google-mobile-ads';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppLockScreen from '../components/AppLockScreen';
 import BootSplashOverlay from '../components/BootSplashOverlay';
@@ -208,10 +208,23 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    // We handle splash screen hiding in ThemedNavigation once all data is ready.
+    // 이 앱은 부모(성인)가 아이 일정/가정통신문을 관리하는 용도이며 아동이 직접 쓰는
+    // 앱이 아니다 (Play Console 타겟 연령대도 성인 전용으로 등록). AdMob은 이 여부를
+    // 광고 요청마다 명시적으로 알려주지 않으면 정책 위반으로 계정이 정지될 수 있어
+    // 초기화 전에 반드시 설정해야 한다.
     mobileAds()
-      .initialize()
-      .catch(() => {});
+      .setRequestConfiguration({
+        tagForChildDirectedTreatment: false,
+        tagForUnderAgeOfConsent: false,
+        maxAdContentRating: MaxAdContentRating.PG,
+      })
+      .catch(() => {})
+      .finally(() => {
+        // We handle splash screen hiding in ThemedNavigation once all data is ready.
+        mobileAds()
+          .initialize()
+          .catch(() => {});
+      });
   }, []);
 
   if (!fontsLoaded) {
