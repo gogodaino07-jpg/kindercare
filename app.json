@@ -74,6 +74,7 @@
           "contactsPermission": "가족을 초대할 연락처를 선택하기 위해 연락처 접근 권한이 필요해요."
         }
       ],
+      "./plugins/withoutWriteContacts",
       [
         "expo-notifications",
         {
