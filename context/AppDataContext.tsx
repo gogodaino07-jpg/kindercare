@@ -1317,6 +1317,17 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
         // 즉시 삭제로 변경: 유예기간 없이 바로 purgeCloudData 호출
         await purgeCloudData(email);
         console.log('✅ Withdrawal (immediate) processed successfully');
+
+        // Firestore 데이터를 지워도 Firebase Auth 계정 자체는 남아있어서 별도로 지워야
+        // 한다. 위에서 클라우드 데이터는 이미 영구 삭제됐으므로, 여기서 실패해도(예:
+        // 오래된 세션이라 requires-recent-login) 되돌릴 수 없다 — 로그만 남기고
+        // 탈퇴 자체는 성공으로 처리한다.
+        try {
+          await getFirebaseAuth().currentUser?.delete();
+          console.log('✅ Firebase Auth account deleted');
+        } catch (authError) {
+          console.error('⚠️ Failed to delete Firebase Auth account:', authError);
+        }
       } catch (error) {
         console.error('❌ Firestore Withdrawal Request Error:', error);
         throw error;
