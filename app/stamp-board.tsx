@@ -137,15 +137,10 @@ export default function StampBoardScreen() {
   const [stampingIndex, setStampingIndex] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [stickerPanelOpen, setStickerPanelOpen] = useState(false);
-  // 도장판 칸이 항상 5칸 고정 너비(20%)라, 목표 개수가 적어 줄 수가 적을 때(예: 5개=1줄)
-  // 아래쪽에 빈 공간이 많이 남아도 칸 크기는 그대로였다 — 실제로 남는 세로 공간을
-  // 재서 칸을 최대한 키운다. boardFillWrap에 flex:1을 주고 그 실제 렌더 높이를
-  // onLayout으로 재려던 첫 시도는 ScrollView 콘텐츠 안에서 기대만큼 늘어나지
-  // 않아 실기기에서 그대로였다 — 대신 "ScrollView 자체 높이(뷰포트)"에서
-  // "도장판 위쪽 콘텐츠 높이"를 직접 빼는 방식으로 필요한 세로 공간을 확정한다.
+  // 도장 칸(stampSlot)은 카드 너비를 5등분해 정하고, 카드 자체는 그 칸들이 차지하는
+  // 만큼만 세로로 감싼다(남는 화면 공간을 억지로 채우지 않음) — 그래야 흰 배경
+  // 카드 밑으로 배경(테두리)이 자연스럽게 드러난다.
   const [boardCardWidth, setBoardCardWidth] = useState(0);
-  const [scrollViewportHeight, setScrollViewportHeight] = useState(0);
-  const [aboveBoardHeight, setAboveBoardHeight] = useState(0);
 
   const stampAnim = useRef(new Animated.Value(1)).current;
   const stampRotateAnim = useRef(new Animated.Value(0)).current;
@@ -327,23 +322,14 @@ export default function StampBoardScreen() {
   };
 
   const BOARD_COLUMNS = 5;
-  const BOARD_CARD_PADDING = 12; // styles.boardCard의 padding과 동일하게 유지
-  // scrollContent의 paddingTop(4) + "위쪽 콘텐츠 묶음"과 boardFillWrap 사이 gap(8).
-  const ABOVE_BOARD_SPACING = 4 + 8;
-  const boardAreaHeight =
-    scrollViewportHeight > 0 && aboveBoardHeight > 0
-      ? Math.max(0, scrollViewportHeight - aboveBoardHeight - ABOVE_BOARD_SPACING)
-      : null;
-  // 칸 크기는 아직 스타일시트의 20%/aspectRatio 값에서, 실제 레이아웃이 한 번
-  // 측정되고 나면 실제 남는 가로/세로 공간에 맞춘 값으로 바뀐다.
+  const BOARD_CARD_PADDING = 8; // styles.boardCard의 padding과 동일하게 유지
+  // 칸 크기는 카드 너비를 5등분해서 정한다 — 아직 레이아웃이 측정되기 전에는
+  // 스타일시트의 20%/aspectRatio 기본값이 쓰이고, 측정 후엔 이 값으로 덮어써진다.
   const boardSlotSize = useMemo(() => {
-    if (!boardCardWidth || !boardAreaHeight) return null;
-    const rows = Math.max(1, Math.ceil(targetCount / BOARD_COLUMNS));
+    if (!boardCardWidth) return null;
     const innerWidth = boardCardWidth - BOARD_CARD_PADDING * 2;
-    const innerHeight = boardAreaHeight - BOARD_CARD_PADDING * 2;
-    const bySize = Math.min(innerWidth / BOARD_COLUMNS, innerHeight / rows);
-    return Math.max(0, bySize);
-  }, [boardCardWidth, boardAreaHeight, targetCount]);
+    return Math.max(0, innerWidth / BOARD_COLUMNS);
+  }, [boardCardWidth]);
   const boardSlotStyle = boardSlotSize ? { width: boardSlotSize, height: boardSlotSize } : null;
   const boardSlotEmojiSize = boardSlotSize ? Math.round(boardSlotSize * 0.34) : null;
 
@@ -424,12 +410,10 @@ export default function StampBoardScreen() {
           style={styles.scrollFlex}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          onLayout={(e) => setScrollViewportHeight(e.nativeEvent.layout.height)}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accentIconColor} />
           }
         >
-          <View style={styles.aboveBoardGroup} onLayout={(e) => setAboveBoardHeight(e.nativeEvent.layout.height)}>
           <View style={styles.wishCard}>
             <Text style={styles.wishCloudDecor}>🌈</Text>
             <View style={styles.wishTopRow}>
@@ -542,9 +526,8 @@ export default function StampBoardScreen() {
               ))}
             </View>
           )}
-          </View>
 
-          <View style={[styles.boardFillWrap, boardAreaHeight ? { height: boardAreaHeight, flex: undefined } : null]}>
+          <View style={styles.boardFillWrap}>
           <View
             style={styles.boardCard}
             onLayout={(e) => setBoardCardWidth(e.nativeEvent.layout.width)}
@@ -844,11 +827,7 @@ const styles = StyleSheet.create({
   classBadgeText: { fontSize: 12, fontWeight: '800' },
   headerSubtitle: { fontSize: 13, fontWeight: '700', color: '#0369A1', marginTop: 2 },
   scrollFlex: { flex: 1 },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 14, paddingTop: 4, gap: 8 },
-  // 도장판 위쪽 콘텐츠(소원 카드~스티커 패널)를 한 덩어리로 묶어 높이를 재는 용도 —
-  // 이전엔 scrollContent의 gap이 이 항목들 사이사이에 적용됐으니, 여기서도 동일하게
-  // gap을 줘서 간격이 안 바뀌게 유지한다.
-  aboveBoardGroup: { gap: 8 },
+  scrollContent: { paddingHorizontal: 14, paddingTop: 4, gap: 8 },
   wishCard: {
     backgroundColor: 'rgba(255,255,255,0.92)',
     borderRadius: 20,
@@ -984,29 +963,24 @@ const styles = StyleSheet.create({
   },
   stickerGridEmoji: { fontSize: 24 },
   boardFillWrap: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  boardCard: {
-    flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 12,
+  },
+  boardCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 8,
     overflow: 'hidden',
   },
   grid: {
-    flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    alignContent: 'center',
-    marginHorizontal: -5,
+    marginHorizontal: -3,
   },
   // width/aspectRatio는 레이아웃이 측정되기 전 첫 프레임에만 쓰이는 기본값이고,
   // 측정 후에는 boardSlotStyle(width/height 픽셀값)이 덮어써서 실제 크기를 정한다.
-  stampSlotWrap: { width: '20%', aspectRatio: 1, padding: 5, alignItems: 'center', justifyContent: 'center' },
+  stampSlotWrap: { width: '20%', aspectRatio: 1, padding: 3, alignItems: 'center', justifyContent: 'center' },
   stampSlotAnimatedWrap: { width: '100%', height: '100%', position: 'relative' },
   stampSlot: {
     width: '100%',
