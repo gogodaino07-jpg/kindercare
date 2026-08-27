@@ -32,7 +32,9 @@ export default function SaveCompleteScreen() {
             <Text style={styles.title}>{count ?? 0}건이 캘린더에 등록됐어요</Text>
             <Text style={styles.subtitle}>일정 전날 저녁에 준비물을 알려드릴게요</Text>
           </View>
+        </View>
 
+        <View style={styles.footer}>
           <Pressable style={styles.homeButtonWrap} onPress={() => router.replace('/')}>
             <LinearGradient
               colors={CELEBRATE_GRADIENT}
@@ -58,6 +60,10 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'center',
       paddingHorizontal: 28,
     },
+    footer: {
+      paddingHorizontal: 28,
+      paddingBottom: 32,
+    },
     card: {
       width: '100%',
       backgroundColor: colors.cardWhite,
@@ -65,7 +71,6 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 40,
       paddingHorizontal: 28,
       alignItems: 'center',
-      marginBottom: 16,
       overflow: 'hidden',
       ...SHADOW,
       shadowOpacity: 0.12,
