@@ -2,7 +2,7 @@ import { Feather, Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -137,6 +137,10 @@ export default function StampBoardScreen() {
   const [stampingIndex, setStampingIndex] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [stickerPanelOpen, setStickerPanelOpen] = useState(false);
+  // 도장판 칸이 항상 5칸 고정 너비(20%)라, 목표 개수가 적어 줄 수가 적을 때(예: 5개=1줄)
+  // 아래쪽에 빈 공간이 많이 남아도 칸 크기는 그대로였다 — 실제 렌더링된 카드 크기를
+  // 재서, 남는 세로 공간까지 활용해 칸을 최대한 키운다.
+  const [boardCardSize, setBoardCardSize] = useState({ width: 0, height: 0 });
 
   const stampAnim = useRef(new Animated.Value(1)).current;
   const stampRotateAnim = useRef(new Animated.Value(0)).current;
@@ -316,6 +320,22 @@ export default function StampBoardScreen() {
     setStampIcon(stk);
     setStickerPanelOpen(false);
   };
+
+  const BOARD_COLUMNS = 5;
+  const BOARD_CARD_PADDING = 12; // styles.boardCard의 padding과 동일하게 유지
+  const BOARD_SLOT_GAP = 5; // styles.stampSlotWrap의 padding과 동일하게 유지
+  // 칸 크기는 아직 스타일시트의 20%/aspectRatio 값에서, 카드 레이아웃이 한 번
+  // 측정되고 나면 실제 남는 가로/세로 공간에 맞춘 값으로 바뀐다.
+  const boardSlotSize = useMemo(() => {
+    if (!boardCardSize.width || !boardCardSize.height) return null;
+    const rows = Math.max(1, Math.ceil(targetCount / BOARD_COLUMNS));
+    const innerWidth = boardCardSize.width - BOARD_CARD_PADDING * 2;
+    const innerHeight = boardCardSize.height - BOARD_CARD_PADDING * 2;
+    const bySize = Math.min(innerWidth / BOARD_COLUMNS, innerHeight / rows);
+    return Math.max(0, bySize);
+  }, [boardCardSize, targetCount]);
+  const boardSlotStyle = boardSlotSize ? { width: boardSlotSize, height: boardSlotSize } : null;
+  const boardSlotEmojiSize = boardSlotSize ? Math.round(boardSlotSize * 0.34) : null;
 
   const screenShakeStyle = {
     transform: [
@@ -512,7 +532,10 @@ export default function StampBoardScreen() {
           )}
 
           <View style={styles.boardFillWrap}>
-          <View style={styles.boardCard}>
+          <View
+            style={styles.boardCard}
+            onLayout={(e) => setBoardCardSize({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}
+          >
             <View style={styles.grid}>
               {Array.from({ length: targetCount }).map((_, index) => {
                 const icon = stamps[index];
@@ -520,7 +543,7 @@ export default function StampBoardScreen() {
                 const isJustStamped = index === stampingIndex;
 
                 return (
-                  <View key={index} style={styles.stampSlotWrap}>
+                  <View key={index} style={[styles.stampSlotWrap, boardSlotStyle]}>
                     {isStamped || isJustStamped ? (
                       <Animated.View
                         style={[
@@ -544,7 +567,9 @@ export default function StampBoardScreen() {
                           end={{ x: 1, y: 1 }}
                           style={[styles.stampSlot, styles.stampSlotActive]}
                         >
-                          <Text style={styles.stampEmoji}>{icon ?? stampIcon}</Text>
+                          <Text style={[styles.stampEmoji, boardSlotEmojiSize ? { fontSize: boardSlotEmojiSize } : null]}>
+                            {icon ?? stampIcon}
+                          </Text>
                           <View style={styles.stampIndexBadge}>
                             <Text style={styles.stampIndexText}>{index + 1}</Text>
                           </View>
@@ -948,18 +973,22 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 16,
   },
   boardCard: {
+    flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 12,
     overflow: 'hidden',
   },
   grid: {
+    flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
     alignContent: 'center',
     marginHorizontal: -5,
   },
+  // width/aspectRatio는 레이아웃이 측정되기 전 첫 프레임에만 쓰이는 기본값이고,
+  // 측정 후에는 boardSlotStyle(width/height 픽셀값)이 덮어써서 실제 크기를 정한다.
   stampSlotWrap: { width: '20%', aspectRatio: 1, padding: 5, alignItems: 'center', justifyContent: 'center' },
   stampSlotAnimatedWrap: { width: '100%', height: '100%', position: 'relative' },
   stampSlot: {
