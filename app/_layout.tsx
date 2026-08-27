@@ -150,7 +150,6 @@ function ThemedNavigation() {
               <Stack.Screen name="upload" options={{ title: '가정통신문 업로드' }} />
               <Stack.Screen name="ai-review" options={{ title: 'AI 확인·수정' }} />
               <Stack.Screen name="save-complete" options={{ headerShown: false }} />
-              <Stack.Screen name="past-events" options={{ title: '지난 일정' }} />
               <Stack.Screen name="nearby-places" options={{ headerShown: false }} />
               <Stack.Screen name="child-profile" options={{ title: '아이 프로필 설정' }} />
               <Stack.Screen name="edit-event" options={{ title: '일정 수정' }} />
