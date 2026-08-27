@@ -259,7 +259,7 @@ export default function ChildProfileScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>부를 이름 (선택)</Text>
+          <Text style={styles.label}>우리가 불러줄 이름</Text>
           <ClearableTextInput
             style={styles.input}
             value={givenName}
@@ -268,7 +268,6 @@ export default function ChildProfileScreen() {
             placeholder="예: 김서준 → 서준"
             placeholderTextColor="#94A3B8"
           />
-          <Text style={styles.fieldHint}>인사말에서 부를 이름이에요. 성을 뺀 이름을 입력해주세요. 비워두면 이름에서 자동으로 추정해요.</Text>
         </View>
 
         <View style={styles.field}>
