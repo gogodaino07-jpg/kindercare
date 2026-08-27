@@ -496,7 +496,7 @@ export default function UploadScreen() {
         onClose={() => setShowPremiumModal(false)}
         onSubscribe={() => {
           setShowPremiumModal(false);
-          showToast('프리미엄은 곧 출시될 예정이에요! 조금만 기다려주세요 😊');
+          router.push('/settings/subscription');
         }}
       />
     </SafeAreaView>
