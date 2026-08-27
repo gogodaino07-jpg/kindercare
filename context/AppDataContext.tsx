@@ -43,6 +43,7 @@ const FAMILY_OWNER_EMAIL_KEY = 'kindercare_family_owner_email';
 // 회원탈퇴 시 이 키를 안 지우면, 탈퇴 전에 중단된 AI 스캔 세션이 새 계정으로
 // 재가입한 뒤에도 "이어서 진행할까요?" 팝업으로 되살아나 예전 사진 경로를 쓰게 된다.
 const PENDING_ANALYSIS_SESSION_KEY = 'kindercare:pendingAnalysis';
+const PHOTO_URIS_BY_EVENT_KEY = 'kindercare_event_photo_uris';
 
 /** 무료 사용자가 등록할 수 있는 아이 최대 인원 — 3번째부터는 프리미엄 구독이 필요하다. */
 export const FREE_CHILD_LIMIT = 2;
@@ -162,6 +163,17 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
   const [childProfiles, setChildProfiles] = useState<Child[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  // 일정의 원본 스캔 사진(photoUris)은 클라우드에 저장되지 않는 기기 로컬 전용 값이다.
+  // 예전엔 이 값을 events 배열의 각 항목에 직접 실어두고 Firestore 실시간 리스너가
+  // 스냅샷을 받을 때마다 "이전 로컬 상태에 있던 걸 찾아서" 복원하는 식이었는데,
+  // 일정을 여러 건 한 번에 저장하면 각 문서의 저장 확인이 하나씩 따로 도착하면서
+  // 그때마다 "지금까지 확인된 문서만" 담긴 부분적인 목록으로 로컬 상태 전체를
+  // 덮어써버려, 아직 그 스냅샷에 없던(=조금 늦게 확인된) 일정은 사진을 되찾을
+  // 로컬 상태 자체가 사라져 영구히 잃어버리는 경쟁 상태가 있었다. 이제는 events
+  // 배열과 완전히 분리해서 이 맵에만 보관하고, 실제로 노출할 때(아래 useMemo)
+  // 합쳐서 내려준다 — 클라우드 동기화가 몇 번을 겹쳐 돌아도 이 맵은 안 건드리므로
+  // 더 이상 사라지지 않는다.
+  const [photoUrisByEventId, setPhotoUrisByEventId] = useState<Record<string, string[]>>({});
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string | undefined>(undefined);
 
@@ -200,6 +212,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       AsyncStorage.getItem(HAS_ONBOARDED_KEY),
       AsyncStorage.getItem(FONT_SIZE_KEY),
       AsyncStorage.getItem(EVENTS_KEY),
+      AsyncStorage.getItem(PHOTO_URIS_BY_EVENT_KEY),
       AsyncStorage.getItem(MEAL_PLANS_KEY),
       AsyncStorage.getItem(GOOGLE_ACCOUNT_KEY),
       AsyncStorage.getItem(CHILDREN_KEY),
@@ -217,6 +230,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
           storedOnboarded,
           storedFontSize,
           storedEvents,
+          storedPhotoUrisByEventId,
           storedMealPlans,
           storedGoogleAccount,
           storedChildren,
@@ -251,6 +265,14 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
               if (Array.isArray(parsed)) setEvents(parsed);
             } catch (e) {
               console.error('Failed to parse stored events:', e);
+            }
+          }
+          if (storedPhotoUrisByEventId) {
+            try {
+              const parsed = JSON.parse(storedPhotoUrisByEventId);
+              if (parsed && typeof parsed === 'object') setPhotoUrisByEventId(parsed);
+            } catch (e) {
+              console.error('Failed to parse stored event photo uris:', e);
             }
           }
           if (storedMealPlans) {
@@ -327,6 +349,13 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     if (!onboardingLoaded) return;
     AsyncStorage.setItem(EVENTS_KEY, JSON.stringify(events)).catch(() => {});
   }, [events, onboardingLoaded]);
+
+  // Persist the local-only event photo map separately from events — see the
+  // comment on photoUrisByEventId's declaration for why this must stay decoupled.
+  useEffect(() => {
+    if (!onboardingLoaded) return;
+    AsyncStorage.setItem(PHOTO_URIS_BY_EVENT_KEY, JSON.stringify(photoUrisByEventId)).catch(() => {});
+  }, [photoUrisByEventId, onboardingLoaded]);
 
   // Persist meal plans after the initial load above has resolved
   useEffect(() => {
@@ -455,14 +484,13 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
         // after an app update, before the real server data arrives) must not wipe
         // local data. Only trust an empty result once the server has confirmed it.
         if (cloudEvents.length > 0 || !snap.metadata.fromCache) {
-          // Cloud never stores photoUris (device-local only) — keep whatever the
-          // local state already has for each event, same as children's photoUri.
-          setEvents((prev) =>
-            cloudEvents.map((cloudEvent) => {
-              const localEvent = prev.find((p) => p.id === cloudEvent.id);
-              return { ...cloudEvent, photoUris: localEvent?.photoUris ?? (cloudEvent as any).photoUris };
-            })
-          );
+          // photoUris(원본 스캔 사진)는 클라우드에 없는 기기 로컬 전용 값이라 여기서
+          // 신경 쓸 필요가 없다 — photoUrisByEventId 맵에서 별도로 합쳐서 노출된다
+          // (아래 eventsWithPhotos 참고). 예전엔 여기서 prev와 병합하려다가, 일정을
+          // 여러 건 저장할 때 문서별 저장 확인이 하나씩 따로 도착하면서 그때마다
+          // "지금까지 확인된 것만" 담긴 부분적 목록으로 통째로 덮어써서 사진이 자꾸
+          // 사라지는 경쟁 상태가 있었다.
+          setEvents(cloudEvents);
         }
       }, (err) => console.error('❌ Firestore Events Listener Error:', err));
 
@@ -718,15 +746,9 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
         return finalChildren;
       });
 
-      // children의 photoUri처럼, events도 로컬에만 있던 photoUris(원본 스캔 사진)를
-      // 클라우드 값으로 덮어쓸 때 잃어버리면 안 된다 — 클라우드는 애초에 이 필드를
-      // 저장하지 않으므로(pushEventToCloud 참고) 반드시 로컬 값을 그대로 살려야 한다.
-      setEvents(prev =>
-        cloudEvents.map(cloudEvent => {
-          const localEvent = prev.find(p => p.id === cloudEvent.id);
-          return { ...cloudEvent, photoUris: localEvent?.photoUris ?? (cloudEvent as any).photoUris };
-        })
-      );
+      // events의 photoUris(원본 스캔 사진)는 photoUrisByEventId 맵에서 별도로 관리되고
+      // 노출 시점(eventsWithPhotos)에 합쳐지므로, 여기서는 클라우드 값을 그대로 반영하면 된다.
+      setEvents(cloudEvents);
       setMealPlans(cloudMealPlans);
       if (cloudChildren.length > 0) {
         setSelectedChildId(cloudChildren[0].id);
@@ -933,6 +955,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     AsyncStorage.removeItem(FAMILY_OWNER_EMAIL_KEY).catch(() => {});
     setChildProfiles([]);
     setEvents([]);
+    setPhotoUrisByEventId({});
     setMealPlans([]);
     setSelectedChildId(undefined);
   };
@@ -996,6 +1019,12 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
   const deleteEvent = (eventId: string) => {
     setEvents((prev) => prev.filter((e) => e.id !== eventId));
+    setPhotoUrisByEventId((prev) => {
+      if (!(eventId in prev)) return prev;
+      const next = { ...prev };
+      delete next[eventId];
+      return next;
+    });
     if (effectiveFamilyOwnerEmail) {
       deleteEventFromCloud(effectiveFamilyOwnerEmail, eventId);
     }
@@ -1004,6 +1033,12 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   const deleteEvents = (eventIds: string[]) => {
     const idSet = new Set(eventIds);
     setEvents((prev) => prev.filter((e) => !idSet.has(e.id)));
+    setPhotoUrisByEventId((prev) => {
+      if (!eventIds.some((id) => id in prev)) return prev;
+      const next = { ...prev };
+      eventIds.forEach((id) => delete next[id]);
+      return next;
+    });
     if (effectiveFamilyOwnerEmail) {
       eventIds.forEach(id => deleteEventFromCloud(effectiveFamilyOwnerEmail!, id));
     }
@@ -1067,6 +1102,19 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
       const finalizedNewEvents = newEventsToPush.map((input) => ({ ...input, id: nextEventId() }));
       const result = [...filteredPrev, ...finalizedNewEvents];
+
+      // photoUris(원본 스캔 사진)는 photoUrisByEventId 맵에 새 id 기준으로 따로 기록한다
+      // — events 배열 자체에 실어두면 클라우드 동기화가 여러 문서를 한 번에 저장할 때
+      // 스냅샷이 하나씩 따로 도착하면서 사라지는 문제가 있었다(위 photoUrisByEventId
+      // 선언부 주석 참고).
+      const withPhotos = finalizedNewEvents.filter((e) => e.photoUris && e.photoUris.length > 0);
+      if (withPhotos.length > 0) {
+        setPhotoUrisByEventId((prevMap) => {
+          const next = { ...prevMap };
+          withPhotos.forEach((e) => { next[e.id] = e.photoUris as string[]; });
+          return next;
+        });
+      }
 
       if (effectiveFamilyOwnerEmail) {
         finalizedNewEvents.forEach((e) => pushEventToCloud(effectiveFamilyOwnerEmail!, e));
@@ -1288,6 +1336,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       FONT_CHOICE_KEY,
       CHALKBOARD_THEME_KEY,
       EVENTS_KEY,
+      PHOTO_URIS_BY_EVENT_KEY,
       MEAL_PLANS_KEY,
       CHILDREN_KEY,
       SELECTED_CHILD_ID_KEY,
@@ -1309,6 +1358,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setFamilyMembers([]);
     setChildProfiles([]);
     setEvents([]);
+    setPhotoUrisByEventId({});
     setMealPlans([]);
     setSelectedChildId(undefined);
     setNotificationSettings(seedNotificationSettings);
@@ -1461,6 +1511,16 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     );
   }, [events, notificationSettings]);
 
+  // 원본 스캔 사진(photoUris)을 events 상태와 분리해서 관리하는 이유는
+  // photoUrisByEventId 선언부 주석 참고 — 실제로 앱 전체에 노출되는 시점에 여기서 합친다.
+  const eventsWithPhotos = useMemo(
+    () =>
+      events.map((e) =>
+        photoUrisByEventId[e.id] ? { ...e, photoUris: photoUrisByEventId[e.id] } : e
+      ),
+    [events, photoUrisByEventId]
+  );
+
   const value: AppDataContextValue = {
     hasOnboarded,
     onboardingLoaded,
@@ -1487,7 +1547,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     updateChild,
     deleteChild,
 
-    events,
+    events: eventsWithPhotos,
     updateEventNote,
     updateEvent,
     deleteEvent,
