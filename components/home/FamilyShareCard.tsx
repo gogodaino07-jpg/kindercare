@@ -43,6 +43,7 @@ export default function FamilyShareCard({ events, dayLabel, dateISO }: FamilySha
     });
     const message = `${dayLabel}(${dateLabel}) 일정이에요!\n${lines.join('\n')}`;
     await Clipboard.setStringAsync(message);
+    showToast('일정 내용을 복사했어요. 가족에게 붙여넣어 전달해보세요!');
   };
 
   return (
