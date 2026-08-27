@@ -1,6 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import React, { useMemo } from 'react';
-import { Pressable, Share, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
@@ -29,7 +30,7 @@ export default function FamilyShareCard({ events, dayLabel, dateISO }: FamilySha
   const { showToast } = useToast();
   const dateLabel = formatMonthDayKo(dateISO);
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (events.length === 0) {
       showToast('공유할 일정이 없어요.');
       return;
@@ -41,7 +42,8 @@ export default function FamilyShareCard({ events, dayLabel, dateISO }: FamilySha
         : `• ${event.title}`;
     });
     const message = `${dayLabel}(${dateLabel}) 일정이에요!\n${lines.join('\n')}`;
-    Share.share({ message }).catch(() => {});
+    await Clipboard.setStringAsync(message);
+    showToast('일정 내용을 복사했어요. 가족에게 붙여넣어 전달해보세요!');
   };
 
   return (

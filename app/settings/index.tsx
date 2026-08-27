@@ -498,7 +498,7 @@ export default function SettingsScreen() {
               </TouchableOpacity>
               <Text style={styles.footerLinkDivider}>|</Text>
               <TouchableOpacity onPress={handleWithdraw}>
-                <Text style={styles.footerLinkText}>회원탈퇴</Text>
+                <Text style={styles.footerLinkTextMuted}>회원탈퇴</Text>
               </TouchableOpacity>
             </View>
             )}
@@ -663,6 +663,7 @@ function createStyles(colors: any) {
     versionText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
     footerLinkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16 },
     footerLinkText: { fontSize: 13, color: colors.textSecondary, fontWeight: '700' },
+    footerLinkTextMuted: { fontSize: 12, color: colors.gray400, fontWeight: '500' },
     footerLinkDivider: { fontSize: 13, color: colors.border, fontWeight: '400' },
   });
 }
