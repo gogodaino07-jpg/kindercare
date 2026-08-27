@@ -4,6 +4,10 @@
     <item name="colorPrimary">@color/colorPrimary</item>
     <item name="android:statusBarColor">@android:color/transparent</item>
     <item name="android:navigationBarColor">@android:color/transparent</item>
+    <!-- 화면 전환 중 JS 콘텐츠가 그려지기 전 잠깐 보이는 네이티브 창 배경.
+         constants/theme.ts의 LIGHT_COLORS.gray50과 동일하게 맞춰서, 전환
+         애니메이션 중에도 흰색/검은색으로 튀지 않게 한다. -->
+    <item name="android:windowBackground">#F9FAFB</item>
   </style>
   <style name="Theme.App.SplashScreen" parent="AppTheme">
     <item name="android:windowBackground">@drawable/splashscreen_logo</item>

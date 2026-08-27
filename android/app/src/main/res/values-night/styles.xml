@@ -1,0 +1,6 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+  <!-- constants/theme.ts의 DARK_COLORS.gray50과 동일하게 유지할 것. -->
+  <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <item name="android:windowBackground">#1C2733</item>
+  </style>
+</resources>

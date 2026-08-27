@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { Appearance, useColorScheme } from 'react-native';
 import { DARK_COLORS, LIGHT_COLORS, ThemeColors } from '../constants/theme';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
@@ -36,6 +36,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setModeState(next);
     AsyncStorage.setItem(STORAGE_KEY, next).catch(() => {});
   };
+
+  // 앱 안에서 고른 다크모드가 안드로이드 시스템 설정과 다르면(예: 시스템은
+  // 라이트인데 앱에서만 다크를 골랐을 때), 화면 전환 애니메이션 중 잠깐 보이는
+  // 네이티브 창 배경(android:windowBackground)은 여전히 시스템 설정을 따라가서
+  // JS로 그린 다크 화면이 뜨기 직전에 흰색이 번쩍였다. Appearance.setColorScheme로
+  // 안드로이드가 인식하는 uiMode 자체를 앱의 선택에 맞춰 강제로 바꿔주면
+  // values-night 네이티브 리소스가 앱의 실제 테마와 일치하게 된다.
+  useEffect(() => {
+    Appearance.setColorScheme(mode === 'system' ? 'unspecified' : mode);
+  }, [mode]);
 
   const resolvedScheme: ResolvedScheme = mode === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : mode;
   const colors = resolvedScheme === 'dark' ? DARK_COLORS : LIGHT_COLORS;

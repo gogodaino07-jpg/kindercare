@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Purchases, { PurchasesPackage } from 'react-native-purchases';
 import Text from '../../components/common/AppText';
@@ -121,7 +121,7 @@ export default function SubscriptionScreen() {
         }}
       />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.content}>
           <View style={styles.headerCard}>
             <Text style={styles.headerEmoji}>💎</Text>
             <Text style={styles.headerTitle}>프리미엄 구독</Text>
@@ -189,7 +189,7 @@ export default function SubscriptionScreen() {
               </View>
             )
           )}
-        </ScrollView>
+        </View>
 
         {isBillingConfigured && (
           <View style={[styles.bottomBar, { paddingBottom: 12 + insets.bottom }]}>
@@ -225,7 +225,7 @@ function createStyles(colors: ThemeColors) {
     screenBg: { flex: 1, backgroundColor: colors.skyBackground },
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
-    content: { padding: 20, paddingBottom: 160 },
+    content: { flex: 1, padding: 20, justifyContent: 'center' },
     bottomBar: {
       paddingHorizontal: 20,
       paddingTop: 12,
