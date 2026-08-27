@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -33,6 +34,25 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PREVIEW_WIDTH = SCREEN_WIDTH - 32;
 const ZOOM_WIDTH = SCREEN_WIDTH - 80;
 const ZOOM_HEIGHT = 380;
+
+// ImagePicker/카메라가 주는 uri는 OS가 언제든 비울 수 있는 임시 캐시 경로라, 시간이
+// 지나거나 앱을 업데이트 설치하면 캘린더에 저장해둔 "원본 사진 보기"가 파일을 못 찾아
+// 조용히 사라져버렸다 — 문서 디렉토리(documentDirectory)로 복사해서 앱이 지워지기
+// 전까지는 계속 남아있게 한다.
+const SCANNED_PHOTO_DIR = `${FileSystem.documentDirectory}newsletter-photos/`;
+
+async function persistScannedPhoto(uri: string): Promise<string> {
+  try {
+    await FileSystem.makeDirectoryAsync(SCANNED_PHOTO_DIR, { intermediates: true }).catch(() => {});
+    const ext = uri.split('.').pop()?.split('?')[0]?.slice(0, 5) || 'jpg';
+    const dest = `${SCANNED_PHOTO_DIR}${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    await FileSystem.copyAsync({ from: uri, to: dest });
+    return dest;
+  } catch {
+    // 복사 실패해도 저장 자체가 막히면 안 되니, 원본(임시) 경로라도 그대로 사용한다.
+    return uri;
+  }
+}
 
 export default function AIReviewScreen() {
   const router = useRouter();
@@ -191,7 +211,7 @@ export default function AIReviewScreen() {
     // 이 스캔에서 나온 원본 사진들을 각 일정에 매달아둔다 — 어떤 일정이 정확히 어떤
     // 사진에서 나왔는지는 알 수 없어(AI가 여러 장을 한 번에 분석), 이번 스캔에서
     // 나온 모든 사진을 함께 붙인다. 캘린더에서 작은 아이콘으로 원본을 다시 볼 수 있다.
-    const scannedPhotoUris = imageDocs.map((d) => d.uri);
+    const scannedPhotoUris = await Promise.all(imageDocs.map((d) => persistScannedPhoto(d.uri)));
     const eventsToSave =
       scannedPhotoUris.length > 0
         ? finalWithoutIds.map((e) => ({ ...e, photoUris: scannedPhotoUris }))

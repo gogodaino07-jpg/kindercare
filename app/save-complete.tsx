@@ -17,7 +17,7 @@ export default function SaveCompleteScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
-    <ScreenBackground>
+    <ScreenBackground showDots={false}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
           <View style={styles.card}>

@@ -714,7 +714,15 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
         return finalChildren;
       });
 
-      setEvents(cloudEvents);
+      // children의 photoUri처럼, events도 로컬에만 있던 photoUris(원본 스캔 사진)를
+      // 클라우드 값으로 덮어쓸 때 잃어버리면 안 된다 — 클라우드는 애초에 이 필드를
+      // 저장하지 않으므로(pushEventToCloud 참고) 반드시 로컬 값을 그대로 살려야 한다.
+      setEvents(prev =>
+        cloudEvents.map(cloudEvent => {
+          const localEvent = prev.find(p => p.id === cloudEvent.id);
+          return { ...cloudEvent, photoUris: localEvent?.photoUris ?? (cloudEvent as any).photoUris };
+        })
+      );
       setMealPlans(cloudMealPlans);
       if (cloudChildren.length > 0) {
         setSelectedChildId(cloudChildren[0].id);
