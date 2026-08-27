@@ -39,6 +39,10 @@ const FAMILY_MEMBERS_KEY = 'kindercare_family_members';
 const DATA_OWNER_EMAIL_KEY = 'kindercare_data_owner_email';
 const FAMILY_KEY_KEY = 'kindercare_family_key';
 const FAMILY_OWNER_EMAIL_KEY = 'kindercare_family_owner_email';
+// AnalysisResultStore.ts의 PENDING_SESSION_KEY와 반드시 동일하게 유지할 것 —
+// 회원탈퇴 시 이 키를 안 지우면, 탈퇴 전에 중단된 AI 스캔 세션이 새 계정으로
+// 재가입한 뒤에도 "이어서 진행할까요?" 팝업으로 되살아나 예전 사진 경로를 쓰게 된다.
+const PENDING_ANALYSIS_SESSION_KEY = 'kindercare:pendingAnalysis';
 
 /** 무료 사용자가 등록할 수 있는 아이 최대 인원 — 3번째부터는 프리미엄 구독이 필요하다. */
 export const FREE_CHILD_LIMIT = 2;
@@ -1290,6 +1294,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       NOTIFICATION_SETTINGS_KEY,
       FAMILY_MEMBERS_KEY,
       DATA_OWNER_EMAIL_KEY,
+      PENDING_ANALYSIS_SESSION_KEY,
       FAMILY_KEY_KEY,
       FAMILY_OWNER_EMAIL_KEY,
     ];
