@@ -7,7 +7,7 @@ const VISIBLE_MS = 2000;
 const FADE_MS = 250;
 
 interface ToastContextValue {
-  showToast: (message: string) => void;
+  showToast: (message: string, durationMs?: number) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
@@ -20,7 +20,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback(
-    (text: string) => {
+    (text: string, durationMs: number = VISIBLE_MS) => {
       if (hideTimer.current) clearTimeout(hideTimer.current);
       setMessage(text);
       opacity.stopAnimation();
@@ -35,7 +35,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           Animated.timing(opacity, { toValue: 0, duration: FADE_MS, useNativeDriver: true }),
           Animated.timing(translateY, { toValue: 12, duration: FADE_MS, useNativeDriver: true }),
         ]).start(() => setMessage(null));
-      }, VISIBLE_MS);
+      }, durationMs);
     },
     [opacity, translateY]
   );

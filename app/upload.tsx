@@ -263,7 +263,13 @@ export default function UploadScreen() {
     mealPlans: Omit<MealPlan, 'id'>[]
   ) => {
     AnalysisResultStore.setSession(uploadedDocs, result, mealPlans);
-    showToast(mealPlans.length > 0 ? '분석 완료! 식단표도 함께 저장했어요 🍱' : '분석 완료하였습니다');
+    // 식단표까지 함께 저장됐다는 안내는 문장이 길어서 기본 토스트 노출 시간(2초)으로는
+    // 다 읽기 전에 사라진다는 피드백이 있어 더 길게 띄운다.
+    if (mealPlans.length > 0) {
+      showToast('분석 완료! 식단표도 함께 저장했어요 🍱', 4000);
+    } else {
+      showToast('분석 완료하였습니다');
+    }
     router.push('/ai-review');
   };
 
