@@ -162,9 +162,12 @@ exports.kakaoSignIn = onCall(
       }
     }
 
-    await authAdmin.updateUser(userRecord.uid, { password: crypto.randomBytes(32).toString('hex') });
-
-    const customToken = await authAdmin.createCustomToken(userRecord.uid);
+    // 서로 의존하지 않는 두 호출(비밀번호 무효화 + 커스텀 토큰 서명)을 동시에 보내
+    // 로그인 지연 시간을 줄인다.
+    const [, customToken] = await Promise.all([
+      authAdmin.updateUser(userRecord.uid, { password: crypto.randomBytes(32).toString('hex') }),
+      authAdmin.createCustomToken(userRecord.uid),
+    ]);
     return { customToken, email };
   }
 );

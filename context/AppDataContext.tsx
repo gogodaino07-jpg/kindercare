@@ -1269,12 +1269,15 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       const token = await kakaoLogin();
       if (!token?.accessToken) throw new Error('Kakao login failed - no token');
 
-      const profile = await getKakaoProfile();
+      // 카카오 프로필 조회(클라이언트→카카오)와 Firebase 로그인(클라이언트→서버→카카오)은
+      // 서로 결과를 기다릴 필요가 없어 동시에 보내 지연 시간을 줄인다.
+      const [profile] = await Promise.all([
+        getKakaoProfile(),
+        signInFirebaseWithKakao(token.accessToken),
+      ]);
       if (!profile || !profile.email) {
         throw new Error('Kakao profile is missing email');
       }
-
-      await signInFirebaseWithKakao(token.accessToken);
 
       const account: GoogleAccount = {
         email: profile.email,
