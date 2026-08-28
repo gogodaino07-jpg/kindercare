@@ -53,7 +53,7 @@ exports.analyzeNewsletter = onCall(
   {
     secrets: [GEMINI_API_KEY],
     region: 'asia-northeast3',
-    timeoutSeconds: 60,
+    timeoutSeconds: 120,
     memory: '512MiB',
   },
   async (request) => {
