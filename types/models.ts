@@ -1,4 +1,4 @@
-export type ChildAge = 3 | 4 | 5 | 6 | 7;
+export type ChildAge = 2 | 3 | 4 | 5 | 6 | 7;
 
 export interface Child {
   id: string;

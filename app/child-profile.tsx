@@ -32,7 +32,7 @@ import { ChildAge } from '../types/models';
 import { stripInvalidCharacters } from '../utils/validation';
 import { ageFromBirthdate, toISODate, parseISODate } from '../utils/date';
 
-const AGE_OPTIONS: ChildAge[] = [3, 4, 5, 6, 7];
+const AGE_OPTIONS: ChildAge[] = [2, 3, 4, 5, 6, 7];
 
 function formatBirthdate(date: Date): string {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
@@ -63,9 +63,10 @@ export default function ChildProfileScreen() {
   const editingChild = childId ? children.find((c) => c.id === childId) : undefined;
 
   const maxDate = useMemo(() => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - 3);
-    return d;
+    // ageFromBirthdate가 출생연도만으로 나이를 계산하므로(월/일 무시), 만 2세(연나이)에
+    // 해당하는 출생연도 전체(예: 2026년 기준 2023년생)를 선택할 수 있도록 연말까지 허용.
+    const cutoffYear = new Date().getFullYear() - 3;
+    return new Date(cutoffYear, 11, 31);
   }, []);
 
   const minDate = useMemo(() => {

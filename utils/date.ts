@@ -52,12 +52,12 @@ export function isPast(isoDate: string, today: Date = new Date()): boolean {
 }
 
 /** Calendar age from a birthdate (Current Year - Birth Year - 1) to match kindergarten class standards (만 N세반). */
-export function ageFromBirthdate(birthdate: Date): 3 | 4 | 5 | 6 | 7 {
+export function ageFromBirthdate(birthdate: Date): 2 | 3 | 4 | 5 | 6 | 7 {
   const today = new Date();
   // Using academic class age (만 N세반) as requested.
   // Formula: (Current Year - Birth Year) - 1
   const age = today.getFullYear() - birthdate.getFullYear() - 1;
-  return Math.min(7, Math.max(3, age)) as 3 | 4 | 5 | 6 | 7;
+  return Math.min(7, Math.max(2, age)) as 2 | 3 | 4 | 5 | 6 | 7;
 }
 
 /** birthdate(YYYY-MM-DD)의 월-일이 오늘과 같으면 생일. */
