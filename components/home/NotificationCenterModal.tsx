@@ -172,6 +172,11 @@ export default function NotificationCenterModal({ visible, onClose }: Notificati
                     <NotificationRow
                       key={item.id}
                       item={item}
+                      childName={
+                        children.length > 1
+                          ? children.find((c) => c.id === item.childId)?.name
+                          : undefined
+                      }
                       colors={colors}
                       styles={styles}
                       onPress={() => handleItemPress(item)}
@@ -189,11 +194,13 @@ export default function NotificationCenterModal({ visible, onClose }: Notificati
 
 function NotificationRow({
   item,
+  childName,
   colors,
   styles,
   onPress,
 }: {
   item: NotificationCenterItem;
+  childName?: string;
   colors: ThemeColors;
   styles: ReturnType<typeof createStyles>;
   onPress: () => void;
@@ -211,6 +218,11 @@ function NotificationRow({
           </View>
         </View>
         <View style={styles.cardBody}>
+          {childName && (
+            <View style={styles.childBadge}>
+              <Text style={styles.childBadgeText}>{childName}</Text>
+            </View>
+          )}
           <View style={styles.cardMessageRow}>
             {!item.read && <View style={styles.unreadDot} />}
             <Text
@@ -380,6 +392,19 @@ function createStyles(colors: ThemeColors, topInset: number) {
     },
     cardBody: {
       flex: 1,
+    },
+    childBadge: {
+      alignSelf: 'flex-start',
+      backgroundColor: colors.purpleBg,
+      borderRadius: 8,
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      marginBottom: 4,
+    },
+    childBadgeText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.purple500,
     },
     cardMessageRow: {
       flexDirection: 'row',
