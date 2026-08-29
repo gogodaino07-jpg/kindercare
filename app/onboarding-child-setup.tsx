@@ -5,7 +5,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View, Image } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View, Image } from 'react-native';
 import AvatarPickerModal, { AvatarOption } from '../components/child-profile/AvatarPickerModal';
 import PermissionModal from '../components/onboarding/PermissionModal';
 import PhotoCropModal from '../components/child-profile/PhotoCropModal';
@@ -172,6 +172,7 @@ export default function OnboardingChildSetupScreen() {
       return;
     }
     setError(false);
+    Keyboard.dismiss();
     setShowSuccessModal(true);
   };
 
