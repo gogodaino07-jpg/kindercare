@@ -1,5 +1,7 @@
 export type ChildAge = 2 | 3 | 4 | 5 | 6 | 7;
 
+export type ChildGender = 'boy' | 'girl';
+
 export interface Child {
   id: string;
   name?: string;
@@ -14,6 +16,9 @@ export interface Child {
   birthdate?: string; // ISO date string: "YYYY-MM-DD"
   className?: string;
   photoUri?: string;
+  gender?: ChildGender;
+  /** 실제 사진(photoUri)이 없을 때 아바타로 보여줄 기본 캐릭터 이모지. */
+  avatarEmoji?: string;
 }
 
 export interface EventItem {
