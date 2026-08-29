@@ -55,6 +55,15 @@ export default function OnboardingChildSetupScreen() {
     return new Date(cutoffYear, 11, 31);
   }, []);
 
+  // 날짜 선택기가 아직 값이 없을 때 보여줄 기본 위치. maxDate(연말)를 그대로 쓰면
+  // 신규 등록 시 "12월"이 뜨는 게 어색해서, 선택 가능 범위 안에서 자연스러운
+  // "3년 전 오늘"을 기본값으로 따로 둔다.
+  const defaultPickerDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 3);
+    return d;
+  }, []);
+
   const minDate = useMemo(() => {
     const d = new Date();
     d.setFullYear(d.getFullYear() - 8);
@@ -208,7 +217,7 @@ export default function OnboardingChildSetupScreen() {
           <Text style={styles.label}>생년월일</Text>
           {Platform.OS === 'web' ? (
             <DateTimePicker
-              value={birthdate ?? maxDate}
+              value={birthdate ?? defaultPickerDate}
               mode="date"
               maximumDate={maxDate}
               minimumDate={minDate}
@@ -228,7 +237,7 @@ export default function OnboardingChildSetupScreen() {
               </Pressable>
               {showPicker ? (
                 <DateTimePicker
-                  value={birthdate ?? maxDate}
+                  value={birthdate ?? defaultPickerDate}
                   mode="date"
                   maximumDate={maxDate}
                   minimumDate={minDate}
