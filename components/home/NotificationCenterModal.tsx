@@ -43,7 +43,7 @@ export default function NotificationCenterModal({ visible, onClose }: Notificati
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { notifications, markRead, clearNotifications } = useNotificationCenter();
-  const { children } = useAppData();
+  const { children, selectChild } = useAppData();
   const { isLocked } = useAppLock();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.top), [colors, insets.top]);
@@ -86,15 +86,18 @@ export default function NotificationCenterModal({ visible, onClose }: Notificati
     return () => subscription.remove();
   }, [visible, onClose]);
 
-  // Tapping a notification marks it as read and jumps straight to the
-  // related schedule on the calendar.
+  // Tapping a notification marks it as read, switches the active child
+  // profile to match the notification (so a second child's item doesn't
+  // land you on the first child's calendar), and jumps to the related
+  // schedule if there is one.
   const handleItemPress = (item: NotificationCenterItem) => {
     markRead(item.id);
-    // Tapping now marks as read but doesn't immediately close if the user
-    // wants to see the visual change. However, deep-linking still happens.
+    if (item.childId) selectChild(item.childId);
     if (item.date) {
       onClose();
       router.push({ pathname: '/calendar', params: { date: item.date } });
+    } else if (item.childId) {
+      onClose();
     }
   };
 
