@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Dimensions,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -81,6 +82,21 @@ export default function AIReviewScreen() {
   const [expandedReviewId, setExpandedReviewId] = useState<string | null>(null);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateResolution, setDuplicateResolution] = useState<'add' | 'overwrite'>('add');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  // 원본 이미지 미리보기가 화면 위쪽 고정 공간을 차지해서, 키보드가 뜨면
+  // 아래 입력 카드들이 전부 밀려 안 보이는 문제가 있었다 — 키보드가 떠 있는
+  // 동안만 이미지를 잠깐 숨기고, 내려가면 원래 보던 상태(원본 보기 on/off)로 복원한다.
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Prevent accidental navigation back
   useEffect(() => {
@@ -282,7 +298,7 @@ export default function AIReviewScreen() {
         </View>
       )}
 
-      {showOriginal && (
+      {showOriginal && !keyboardVisible && (
         <View style={styles.originalWrap}>
           <View style={styles.originalHeader}>
             <View style={styles.originalHeaderLeft}>
