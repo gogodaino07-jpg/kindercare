@@ -12,6 +12,9 @@ import SettingsIcon from '../common/SettingsIcon';
 import StampIcon from '../common/StampIcon';
 import NotificationCenterModal from './NotificationCenterModal';
 
+/** 구글 스토어 심사 기간 동안 임시로 숨김 — 심사 끝나고 도장판 재디자인하면서 다시 true로. */
+const SHOW_STAMP_BOARD_ICON = false;
+
 interface HomeProfileBarProps {
   selectedChild: Child | undefined;
   onPressChild: () => void;
@@ -150,9 +153,11 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
         <Pressable style={styles.iconButton} onPress={() => router.push('/calendar')}>
           <CalendarIcon size={24} color={colors.gray600} />
         </Pressable>
-        <Pressable style={styles.iconButton} onPress={() => router.push('/stamp-board')}>
-          <StampIcon size={24} color={colors.gray600} />
-        </Pressable>
+        {SHOW_STAMP_BOARD_ICON && (
+          <Pressable style={styles.iconButton} onPress={() => router.push('/stamp-board')}>
+            <StampIcon size={24} color={colors.gray600} />
+          </Pressable>
+        )}
         <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
           <SettingsIcon size={24} color={colors.gray600} />
         </Pressable>
