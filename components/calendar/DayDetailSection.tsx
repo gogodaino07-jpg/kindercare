@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
-import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import * as ScreenOrientation from 'expo-screen-orientation';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ZoomableImage } from '../../features/newsletter-analysis/components/ZoomableImage';
 import Text from '../common/AppText';
@@ -9,10 +10,6 @@ import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { Event, EventItem } from '../../types/models';
 import { isValidCoupangKeyword } from '../../utils/validation';
 import { useCalendarTheme } from './useCalendarTheme';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const PHOTO_ZOOM_WIDTH = SCREEN_WIDTH - 80;
-const PHOTO_ZOOM_HEIGHT = 380;
 
 interface DayDetailSectionProps {
   selectedDate: string;
@@ -42,6 +39,30 @@ export default function DayDetailSection({
   const t = useCalendarTheme();
   const styles = useMemo(() => createStyles(t), [t]);
   const [viewerPhotos, setViewerPhotos] = useState<string[] | null>(null);
+  // 스캔한 원본 사진을 더 크게 보고 싶은 사용자를 위한 가로모드 토글 —
+  // 기기 자동 회전이 꺼져 있어도 버튼 하나로 바로 가로 전환할 수 있게 한다.
+  // 앱 전체는 app.json에서 세로로 고정돼 있어서, 이 뷰어를 닫을 땐 반드시
+  // 다시 세로로 되돌려야 다른 화면이 영향받지 않는다.
+  const [isLandscape, setIsLandscape] = useState(false);
+  const { width: winWidth, height: winHeight } = useWindowDimensions();
+  const photoZoomWidth = winWidth - 80;
+  const photoZoomHeight = Math.min(winHeight - 220, isLandscape ? winHeight * 0.62 : 380);
+
+  useEffect(() => {
+    if (!viewerPhotos) return;
+    return () => {
+      setIsLandscape(false);
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+    };
+  }, [viewerPhotos]);
+
+  const toggleLandscape = () => {
+    const next = !isLandscape;
+    setIsLandscape(next);
+    ScreenOrientation.lockAsync(
+      next ? ScreenOrientation.OrientationLock.LANDSCAPE : ScreenOrientation.OrientationLock.PORTRAIT_UP
+    ).catch(() => {});
+  };
 
   if (events.length === 0) {
     return (
@@ -86,14 +107,30 @@ export default function DayDetailSection({
                 <MaterialCommunityIcons name="image-outline" size={16} color={t.violet} />
                 <Text style={styles.zoomHeaderText}>스캔한 원본 사진</Text>
               </View>
-              <Pressable onPress={() => setViewerPhotos(null)} style={styles.zoomCloseButton} hitSlop={6}>
-                <MaterialCommunityIcons name="close" size={16} color={t.textMuted} />
-              </Pressable>
+              <View style={styles.zoomHeaderRight}>
+                <Pressable
+                  onPress={toggleLandscape}
+                  style={[styles.rotateButton, isLandscape && styles.rotateButtonActive]}
+                  hitSlop={6}
+                >
+                  <MaterialCommunityIcons
+                    name={isLandscape ? 'phone-rotate-portrait' : 'phone-rotate-landscape'}
+                    size={15}
+                    color={isLandscape ? '#FFFFFF' : t.violetDeep}
+                  />
+                  <Text style={[styles.rotateButtonText, isLandscape && styles.rotateButtonTextActive]}>
+                    {isLandscape ? '세로로 보기' : '가로로 보기'}
+                  </Text>
+                </Pressable>
+                <Pressable onPress={() => setViewerPhotos(null)} style={styles.zoomCloseButton} hitSlop={6}>
+                  <MaterialCommunityIcons name="close" size={16} color={t.textMuted} />
+                </Pressable>
+              </View>
             </View>
 
             <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
               {(viewerPhotos ?? []).map((uri) => (
-                <ZoomableImage key={uri} uri={uri} width={PHOTO_ZOOM_WIDTH} height={PHOTO_ZOOM_HEIGHT} />
+                <ZoomableImage key={uri} uri={uri} width={photoZoomWidth} height={photoZoomHeight} />
               ))}
             </ScrollView>
           </View>
@@ -541,6 +578,27 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
   },
   zoomHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   zoomHeaderText: { fontSize: 13, fontWeight: '900', color: t.textPrimary },
+  zoomHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rotateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: t.violetBg,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  rotateButtonActive: {
+    backgroundColor: t.violet,
+  },
+  rotateButtonText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: t.violetDeep,
+  },
+  rotateButtonTextActive: {
+    color: '#FFFFFF',
+  },
   zoomCloseButton: {
     width: 32,
     height: 32,
