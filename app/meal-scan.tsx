@@ -56,6 +56,14 @@ export default function MealScanScreen() {
     AIUsageLimitService.getRemainingCount(googleAccount?.email, isSubscribed, 'meal').then(setRemainingCount);
   }, [googleAccount?.email, isSubscribed]);
 
+  // TEMP(테스트용, 추후 제거 예정): 급식표 스캔 무료 횟수를 즉시 초기화한다.
+  const handleResetTestUsage = async () => {
+    if (!googleAccount?.email) return;
+    await AIUsageLimitService.resetUsage(googleAccount.email, 'meal');
+    setRemainingCount(await AIUsageLimitService.getRemainingCount(googleAccount.email, isSubscribed, 'meal'));
+    showToast('급식표 스캔 횟수가 초기화됐어요.');
+  };
+
   // 화면에 들어오면 바로 라이브 카메라 화면을 보여줄 수 있도록 미리 권한을 요청해둔다.
   useEffect(() => {
     requestPermission();
@@ -204,6 +212,11 @@ export default function MealScanScreen() {
             </Text>
           )}
 
+          {/* TEMP(테스트용, 추후 제거 예정) */}
+          <Pressable onPress={handleResetTestUsage} style={styles.testResetButton}>
+            <Text style={styles.testResetButtonText}>🧪 테스트용: 급식표 스캔 횟수 초기화</Text>
+          </Pressable>
+
           <View style={styles.viewfinderWrap}>
             <View style={styles.viewfinder}>
               {doc ? (
@@ -319,6 +332,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingTop: 10,
   },
+  // TEMP(테스트용, 추후 제거 예정)
+  testResetButton: {
+    alignSelf: 'center',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginTop: 8,
+  },
+  testResetButtonText: { fontSize: 11, fontWeight: '700', color: '#92400E' },
   viewfinderWrap: {
     flex: 1,
     alignItems: 'center',
