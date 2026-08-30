@@ -99,13 +99,31 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
   const { mealPlans, selectedChild } = useAppData();
   const [expanded, setExpanded] = useState(false);
   const [sparkleTrigger, setSparkleTrigger] = useState(0);
+  // 0 = 이번주, +1 = 다음주 ... 유치원이 다음주 식단표를 며칠 전에 미리 공지하는
+  // 경우가 흔해서, "이번주"에는 저장된 식단이 하나도 없는데 "다음주"에는 있으면
+  // 스캔한 급식표가 안 보인다는 오해를 사기 쉽다 — 시트를 열 때 자동으로 데이터가
+  // 있는 주로 넘어가 준다.
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
-      setExpanded(false);
+      const baseMonday = getMondayISO(new Date());
+      const weekHasPlan = (mondayISO: string) =>
+        Array.from({ length: 5 }, (_, i) => addDaysISO(mondayISO, i)).some((dateISO) =>
+          mealPlans.some((m) => m.childId === selectedChild?.id && m.date === dateISO)
+        );
+
+      if (!weekHasPlan(baseMonday) && weekHasPlan(addDaysISO(baseMonday, 7))) {
+        setWeekOffset(1);
+        setExpanded(true);
+      } else {
+        setWeekOffset(0);
+        setExpanded(false);
+      }
+
       setSparkleTrigger((t) => t + 1);
       Animated.parallel([
         Animated.spring(scaleAnim, { toValue: 1, friction: 6, tension: 80, useNativeDriver: true }),
@@ -115,6 +133,7 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
       scaleAnim.setValue(0.8);
       opacityAnim.setValue(0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, scaleAnim, opacityAnim]);
 
   const todayISO = useMemo(() => toISODate(new Date()), []);
@@ -128,13 +147,23 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
   }, [todayISO]);
 
   const weekDays = useMemo(() => {
-    const mondayISO = getMondayISO(new Date());
+    const mondayISO = addDaysISO(getMondayISO(new Date()), weekOffset * 7);
     return Array.from({ length: 5 }, (_, i) => {
       const dateISO = addDaysISO(mondayISO, i);
       const plan = mealPlans.find((m) => m.childId === selectedChild?.id && m.date === dateISO);
       return { date: dateISO, weekday: WEEKDAY_KO[parseISODate(dateISO).getDay()], plan };
     });
-  }, [mealPlans, selectedChild]);
+  }, [mealPlans, selectedChild, weekOffset]);
+
+  const weekRangeLabel = useMemo(() => {
+    const mondayISO = addDaysISO(getMondayISO(new Date()), weekOffset * 7);
+    const fridayISO = addDaysISO(mondayISO, 4);
+    const rangeText = `${formatMD(mondayISO).split('(')[0]}~${formatMD(fridayISO).split('(')[0]}`;
+    if (weekOffset === 0) return `이번주 (${rangeText})`;
+    if (weekOffset === 1) return `다음주 (${rangeText})`;
+    if (weekOffset === -1) return `지난주 (${rangeText})`;
+    return weekOffset > 0 ? `${weekOffset}주 후 (${rangeText})` : `${-weekOffset}주 전 (${rangeText})`;
+  }, [weekOffset]);
 
   const handleClose = () => {
     Animated.parallel([
@@ -209,6 +238,16 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
           </Pressable>
 
           {expanded && (
+            <>
+            <View style={styles.weekNavRow}>
+              <Pressable onPress={() => setWeekOffset((w) => w - 1)} hitSlop={8} style={styles.weekNavButton}>
+                <MaterialIcons name="chevron-left" size={18} color={colors.gray500} />
+              </Pressable>
+              <Text style={styles.weekNavLabel}>{weekRangeLabel}</Text>
+              <Pressable onPress={() => setWeekOffset((w) => w + 1)} hitSlop={8} style={styles.weekNavButton}>
+                <MaterialIcons name="chevron-right" size={18} color={colors.gray500} />
+              </Pressable>
+            </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -236,6 +275,7 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
                 );
               })}
             </ScrollView>
+            </>
           )}
 
           <Pressable
@@ -380,6 +420,28 @@ function createStyles(colors: ThemeColors) {
       fontSize: 13,
       fontWeight: '700',
       color: colors.accent,
+    },
+    weekNavRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      marginTop: 4,
+      marginBottom: 4,
+    },
+    weekNavButton: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    weekNavLabel: {
+      fontSize: 12.5,
+      fontWeight: '800',
+      color: colors.gray900,
+      minWidth: 120,
+      textAlign: 'center',
     },
     weekScroll: {
       gap: 10,
