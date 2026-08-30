@@ -1,11 +1,13 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { ImagePickerAsset } from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useNavigation, Stack } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Pressable,
   ScrollView,
@@ -17,8 +19,8 @@ import {
   Platform
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import AvatarPickerModal, { DEFAULT_AVATARS } from '../components/child-profile/AvatarPickerModal';
 import PhotoCropModal from '../components/child-profile/PhotoCropModal';
-import PhotoSourceSheet from '../components/child-profile/PhotoSourceSheet';
 import ScreenBackground from '../components/ScreenBackground';
 import Text from '../components/common/AppText';
 import ClearableTextInput from '../components/common/ClearableTextInput';
@@ -28,11 +30,14 @@ import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
-import { ChildAge } from '../types/models';
+import { ChildAge, ChildGender } from '../types/models';
 import { stripInvalidCharacters } from '../utils/validation';
 import { ageFromBirthdate, toISODate, parseISODate } from '../utils/date';
 
 const AGE_OPTIONS: ChildAge[] = [2, 3, 4, 5, 6, 7];
+const AVATAR_RING_GRADIENT = ['#BAE6FD', '#DBEAFE', '#C7D2FE'] as const;
+const BOY_BLUE = '#3B82F6';
+const GIRL_ROSE = '#FB7185';
 
 function formatBirthdate(date: Date): string {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
@@ -86,7 +91,15 @@ export default function ChildProfileScreen() {
 
   const [pendingAsset, setPendingAsset] = useState<ImagePickerAsset | null>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(editingChild?.photoUri ?? null);
-  const [showSourceSheet, setShowSourceSheet] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [selectedAvatarId, setSelectedAvatarId] = useState(
+    DEFAULT_AVATARS.find((a) => a.emoji === editingChild?.avatarEmoji)?.id ?? DEFAULT_AVATARS[0].id
+  );
+  const selectedAvatar = useMemo(
+    () => DEFAULT_AVATARS.find((a) => a.id === selectedAvatarId) ?? DEFAULT_AVATARS[0],
+    [selectedAvatarId]
+  );
+  const [gender, setGender] = useState<ChildGender>(editingChild?.gender ?? 'boy');
   const [name, setName] = useState(editingChild?.name ?? '');
   const [givenName, setGivenName] = useState(editingChild?.givenName ?? '');
 
@@ -98,7 +111,9 @@ export default function ChildProfileScreen() {
   const [className, setClassName] = useState(
     editingChild ? editingChild.className ?? '없음' : ''
   );
+  const [hasNoClass, setHasNoClass] = useState(editingChild ? !editingChild.className : false);
   const [attemptedSave, setAttemptedSave] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // 진입 시점 값 스냅샷 — 저장 없이 뒤로가기 시도할 때 변경 여부를 판단하는 기준.
   const initialSnapshot = useRef({
@@ -146,6 +161,25 @@ export default function ChildProfileScreen() {
     }
   };
 
+  // 이름을 2글자 이상 입력하면, 아직 애칭을 직접 안 정했을 때만 마지막
+  // 두 글자를 기본 애칭으로 제안해준다 (예: "김서준" → "서준").
+  const handleNameChange = (t: string) => {
+    const cleaned = stripInvalidCharacters(t);
+    setName(cleaned);
+    if (cleaned.trim().length >= 2 && !givenName) {
+      setGivenName(cleaned.trim().slice(-2));
+    }
+  };
+
+  const toggleNoClass = () => {
+    if (!hasNoClass) {
+      setClassName('없음');
+      setHasNoClass(true);
+    } else {
+      setClassName('');
+      setHasNoClass(false);
+    }
+  };
 
   const nameValid = name.trim().length > 0;
   const classNameValid = className.trim().length > 0;
@@ -187,25 +221,54 @@ export default function ChildProfileScreen() {
     }
   };
 
+  const buildInput = () => ({
+    name: name.trim(),
+    givenName: givenName.trim() || undefined,
+    age: age as ChildAge,
+    className: className.trim() === '없음' ? undefined : className.trim(),
+    photoUri: photoUri ?? undefined,
+    birthdate: birthdate ? toISODate(birthdate) : undefined,
+    gender,
+    avatarEmoji: photoUri ? undefined : selectedAvatar.emoji,
+  });
+
+  // 기존 아이 수정은 바로 저장하고, 신규 추가는 축하 모달에서 "확인"을
+  // 눌러야 실제로 저장되도록 한다(다시 작성으로 취소 가능).
   const handleSave = () => {
     if (!canSave || !age) {
       setAttemptedSave(true);
       return;
     }
-    const trimmedClassName = className.trim();
-    const input = {
-      name: name.trim(),
-      givenName: givenName.trim() || undefined,
-      age,
-      className: trimmedClassName === '없음' ? undefined : trimmedClassName,
-      photoUri: photoUri ?? undefined,
-      birthdate: birthdate ? toISODate(birthdate) : undefined
-    };
-    if (editingChild) updateChild(editingChild.id, input);
-    else addChild(input);
+    if (editingChild) {
+      updateChild(editingChild.id, buildInput());
+      justSavedRef.current = true;
+      showToast('저장이 완료되었습니다.');
+      router.back();
+      return;
+    }
+    Keyboard.dismiss();
+    setShowSuccessModal(true);
+  };
+
+  const handleConfirmCreate = () => {
+    addChild(buildInput());
     justSavedRef.current = true;
+    setShowSuccessModal(false);
     showToast('저장이 완료되었습니다.');
     router.back();
+  };
+
+  const handleResetForm = () => {
+    setName('');
+    setGivenName('');
+    setBirthdate(null);
+    setAge(null);
+    setClassName('');
+    setHasNoClass(false);
+    setGender('boy');
+    setPhotoUri(null);
+    setSelectedAvatarId(DEFAULT_AVATARS[0].id);
+    setShowSuccessModal(false);
   };
 
   const isMainChild = editingChild && children[0]?.id === editingChild.id;
@@ -249,46 +312,103 @@ export default function ChildProfileScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
       <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Pressable style={styles.photoContainer} onPress={() => setShowSourceSheet(true)}>
-          {photoUri ? <Image source={{ uri: photoUri }} style={styles.photo} /> : (
-            <View style={styles.photoPlaceholder}><Text style={styles.photoPlaceholderIcon}>🧒</Text></View>
-          )}
-          <View style={styles.cameraBadge}><Text style={styles.cameraBadgeIcon}>📷</Text></View>
-        </Pressable>
+        <View style={styles.avatarWrap}>
+          <LinearGradient colors={AVATAR_RING_GRADIENT} style={styles.avatarRing}>
+            <Pressable
+              style={[styles.avatarInner, { backgroundColor: photoUri ? colors.cardWhite : selectedAvatar.bg }]}
+              onPress={() => setShowAvatarModal(true)}
+              accessibilityLabel="프로필 사진 또는 캐릭터 선택"
+            >
+              {photoUri ? (
+                <Image source={{ uri: photoUri }} style={styles.photo} />
+              ) : (
+                <Text style={styles.avatarEmoji}>{selectedAvatar.emoji}</Text>
+              )}
+            </Pressable>
+          </LinearGradient>
+          <Pressable
+            style={styles.cameraBadge}
+            onPress={() => setShowAvatarModal(true)}
+            accessibilityLabel="사진 변경하기"
+          >
+            <Feather name="camera" size={14} color={colors.cardWhite} />
+          </Pressable>
+        </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>이름 *</Text>
+          <View style={styles.genderRow}>
+            <Text style={styles.label}>성별</Text>
+            <View style={styles.genderButtons}>
+              <Pressable
+                onPress={() => setGender('boy')}
+                style={[styles.genderChip, gender === 'boy' && styles.genderChipBoyActive]}
+              >
+                <Text style={styles.genderChipEmoji}>👦</Text>
+                <Text style={[styles.genderChipText, gender === 'boy' && styles.genderChipTextActive]}>남아</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setGender('girl')}
+                style={[styles.genderChip, gender === 'girl' && styles.genderChipGirlActive]}
+              >
+                <Text style={styles.genderChipEmoji}>👧</Text>
+                <Text style={[styles.genderChipText, gender === 'girl' && styles.genderChipTextActive]}>여아</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.field}>
+          <View style={styles.labelRow}>
+            <Feather name="user" size={13} color={colors.accent} />
+            <Text style={styles.label}>이름 *</Text>
+          </View>
           <ClearableTextInput
             style={[styles.input, attemptedSave && !nameValid && styles.inputInvalid]}
             value={name}
-            onChangeText={(text) => setName(stripInvalidCharacters(text))}
+            onChangeText={handleNameChange}
             maxLength={10}
             placeholder="이름을 입력해주세요"
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textSecondary}
           />
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>우리가 불러줄 이름</Text>
+          <View style={styles.labelRowBetween}>
+            <View style={styles.labelRow}>
+              <Feather name="heart" size={13} color={GIRL_ROSE} />
+              <Text style={styles.label}>우리가 불러줄 이름</Text>
+            </View>
+            <Text style={styles.labelHint}>예: 김서준 → 서준</Text>
+          </View>
           <ClearableTextInput
             style={styles.input}
             value={givenName}
             onChangeText={(text) => setGivenName(stripInvalidCharacters(text))}
             maxLength={10}
             placeholder="예: 김서준 → 서준"
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textSecondary}
           />
+          {name.trim().length >= 2 && givenName ? (
+            <View style={styles.sparkleHint}>
+              <Feather name="star" size={11} color={colors.accent} />
+              <Text style={styles.sparkleHintText}>앱에서 "{givenName}"(으)로 다정하게 부를게요!</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>생년월일 *</Text>
+          <View style={styles.labelRow}>
+            <Feather name="calendar" size={13} color={colors.accent} />
+            <Text style={styles.label}>생년월일 *</Text>
+          </View>
           <Pressable
-            style={[styles.input, attemptedSave && !birthdate && styles.inputInvalid]}
+            style={[styles.input, styles.dateButton, attemptedSave && !birthdate && styles.inputInvalid]}
             onPress={() => setShowDatePicker(true)}
           >
-            <Text style={[styles.dateText, !birthdate && { color: '#94A3B8' }]}>
+            <Text style={[styles.dateText, !birthdate && { color: colors.textSecondary }]}>
               {birthdate ? formatBirthdate(birthdate) : '생년월일을 선택해주세요'}
             </Text>
+            <Feather name="chevron-down" size={16} color={colors.textSecondary} />
           </Pressable>
           {showDatePicker && (
             <DateTimePicker
@@ -320,17 +440,35 @@ export default function ChildProfileScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>반 이름 *</Text>
+          <View style={styles.labelRowBetween}>
+            <View style={styles.labelRow}>
+              <Feather name="home" size={13} color={colors.accent} />
+              <Text style={styles.label}>반 이름 *</Text>
+            </View>
+            <Pressable
+              onPress={toggleNoClass}
+              style={[styles.noClassChip, hasNoClass && styles.noClassChipActive]}
+            >
+              <Text style={[styles.noClassChipText, hasNoClass && styles.noClassChipTextActive]}>
+                {hasNoClass ? '✓ 반 없음 선택됨' : '반 없음'}
+              </Text>
+            </Pressable>
+          </View>
           <ClearableTextInput
             ref={classNameInputRef}
-            style={[styles.input, attemptedSave && !classNameValid && styles.inputInvalid]}
+            style={[
+              styles.input,
+              hasNoClass && styles.inputDisabled,
+              attemptedSave && !classNameValid && styles.inputInvalid,
+            ]}
+            editable={!hasNoClass}
             value={className}
             onChangeText={(text) => setClassName(stripInvalidCharacters(text))}
             onFocus={scrollToClassNameInput}
-            placeholder="예: 병아리반, 7세반"
-            placeholderTextColor="#94A3B8"
+            placeholder={hasNoClass ? '반 구분이 없습니다' : '예: 병아리반, 7세반'}
+            placeholderTextColor={colors.textSecondary}
           />
-          <Text style={styles.fieldHint}>반 구분이 없으면 '없음'이라고 입력해주세요</Text>
+          <Text style={styles.fieldHint}>반 구분이 없으면 '반 없음'을 눌러주세요</Text>
         </View>
 
         {showErrors && <Text style={styles.summaryErrorText}>이름, 나이, 반 이름을 모두 입력해주세요</Text>}
@@ -354,17 +492,73 @@ export default function ChildProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <PhotoSourceSheet
-        visible={showSourceSheet}
-        onCancel={() => setShowSourceSheet(false)}
-        onPickCamera={() => { setShowSourceSheet(false); openCamera(); }}
-        onPickGallery={() => { setShowSourceSheet(false); openGallery(); }}
+      <AvatarPickerModal
+        visible={showAvatarModal}
+        avatars={DEFAULT_AVATARS}
+        selectedId={photoUri ? '' : selectedAvatarId}
+        onSelect={(avatar) => {
+          setSelectedAvatarId(avatar.id);
+          setPhotoUri(null);
+          setShowAvatarModal(false);
+        }}
+        onPickCamera={() => { setShowAvatarModal(false); openCamera(); }}
+        onPickGallery={() => { setShowAvatarModal(false); openGallery(); }}
+        onClose={() => setShowAvatarModal(false)}
       />
       <PhotoCropModal
         asset={pendingAsset}
         onCancel={() => setPendingAsset(null)}
         onApply={(uri) => { setPhotoUri(uri); setPendingAsset(null); }}
       />
+
+      {showSuccessModal && (
+        <View style={styles.successOverlay}>
+          <View style={styles.successCard}>
+            <View style={styles.successIconCircle}>
+              <Feather name="gift" size={28} color={colors.accent} />
+            </View>
+            <Text style={styles.successTitle}>프로필 등록 완료!</Text>
+            <Text style={styles.successSubtitle}>우리 아이의 새로운 기록 공간이 준비되었습니다.</Text>
+
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryHeader}>
+                <View style={[styles.summaryAvatar, { backgroundColor: photoUri ? colors.cardWhite : selectedAvatar.bg }]}>
+                  {photoUri ? (
+                    <Image source={{ uri: photoUri }} style={styles.summaryAvatarPhoto} />
+                  ) : (
+                    <Text style={styles.summaryAvatarEmoji}>{selectedAvatar.emoji}</Text>
+                  )}
+                </View>
+                <View style={styles.summaryHeaderText}>
+                  <View style={styles.summaryNameRow}>
+                    <Text style={styles.summaryName}>{name}</Text>
+                    {givenName ? <Text style={styles.summaryNickname}>({givenName})</Text> : null}
+                  </View>
+                  <Text style={styles.summaryGender}>{gender === 'boy' ? '남아 👦' : '여아 👧'}</Text>
+                </View>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryRowLabel}>생년월일</Text>
+                <Text style={styles.summaryRowValue}>{birthdate ? formatBirthdate(birthdate) : '-'}</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryRowLabel}>소속 반</Text>
+                <Text style={styles.summaryRowValue}>{hasNoClass ? '반 없음' : className || '반 없음'}</Text>
+              </View>
+            </View>
+
+            <View style={styles.successButtonRow}>
+              <Pressable style={styles.resetButton} onPress={handleResetForm}>
+                <Feather name="rotate-ccw" size={14} color={colors.textSecondary} />
+                <Text style={styles.resetButtonText}>다시 작성</Text>
+              </Pressable>
+              <Pressable style={styles.confirmButton} onPress={handleConfirmCreate}>
+                <Text style={styles.confirmButtonText}>확인</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -389,28 +583,37 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       alignItems: 'center',
       paddingBottom: 100 + bottomInset,
     },
-    photoContainer: {
+    avatarWrap: {
       width: PHOTO_SIZE,
       height: PHOTO_SIZE,
       marginBottom: 18,
     },
+    avatarRing: {
+      width: PHOTO_SIZE,
+      height: PHOTO_SIZE,
+      borderRadius: PHOTO_SIZE / 2,
+      padding: 3,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...SHADOW,
+      shadowOpacity: 0.12,
+    },
+    avatarInner: {
+      width: '100%',
+      height: '100%',
+      borderRadius: (PHOTO_SIZE - 6) / 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      borderWidth: 2,
+      borderColor: colors.cardWhite,
+    },
+    avatarEmoji: { fontSize: 44 },
     photo: {
       width: PHOTO_SIZE,
       height: PHOTO_SIZE,
       borderRadius: PHOTO_SIZE / 2,
     },
-    photoPlaceholder: {
-      width: PHOTO_SIZE,
-      height: PHOTO_SIZE,
-      borderRadius: PHOTO_SIZE / 2,
-      backgroundColor: colors.cardWhite,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 2,
-      borderColor: colors.border,
-      borderStyle: 'dashed',
-    },
-    photoPlaceholderIcon: { fontSize: 40 },
     cameraBadge: {
       position: 'absolute',
       bottom: 0,
@@ -421,12 +624,47 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       backgroundColor: colors.textPrimary,
       alignItems: 'center',
       justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: colors.cardWhite,
       ...SHADOW,
     },
-    cameraBadgeIcon: { fontSize: 16 },
     field: { width: '100%', marginBottom: 14 },
-    label: { fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
+    label: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+    labelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+    labelRowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+    labelHint: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
+    sparkleHint: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6, paddingHorizontal: 2 },
+    sparkleHintText: { fontSize: 11, fontWeight: '600', color: colors.accent, flexShrink: 1 },
     fieldHint: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
+    genderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    genderButtons: { flexDirection: 'row', gap: 8 },
+    genderChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: colors.cardWhite,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+    },
+    genderChipBoyActive: { backgroundColor: BOY_BLUE, borderColor: BOY_BLUE },
+    genderChipGirlActive: { backgroundColor: GIRL_ROSE, borderColor: GIRL_ROSE },
+    genderChipEmoji: { fontSize: 13 },
+    genderChipText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
+    genderChipTextActive: { color: '#FFFFFF' },
+    noClassChip: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 8,
+      backgroundColor: colors.cardWhite,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    noClassChipActive: { backgroundColor: colors.purpleBg, borderColor: colors.purple500 },
+    noClassChipText: { fontSize: 11, fontWeight: '700', color: colors.textSecondary },
+    noClassChipTextActive: { color: colors.purple500 },
     input: {
       backgroundColor: colors.cardWhite,
       borderRadius: 16,
@@ -439,7 +677,9 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       ...SHADOW,
       shadowOpacity: 0.03,
     },
+    inputDisabled: { backgroundColor: colors.gray50, color: colors.textSecondary },
     inputInvalid: { borderColor: colors.tomorrowRed },
+    dateButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     dateText: {
       fontSize: 15,
       color: colors.textPrimary,
@@ -481,5 +721,101 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     saveButtonDisabled: { backgroundColor: colors.gray400, opacity: 0.6 },
     saveButtonText: { color: colors.cardWhite, fontSize: 16, fontWeight: 'bold' },
+    successOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(15, 23, 42, 0.45)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    successCard: {
+      width: '100%',
+      maxWidth: 360,
+      backgroundColor: colors.cardWhite,
+      borderRadius: 24,
+      padding: 24,
+      alignItems: 'center',
+      ...SHADOW,
+      shadowOpacity: 0.2,
+    },
+    successIconCircle: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: colors.purpleBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 14,
+    },
+    successTitle: { fontSize: 19, fontWeight: '800', color: colors.textPrimary, marginBottom: 4 },
+    successSubtitle: { fontSize: 12, color: colors.textSecondary, textAlign: 'center', marginBottom: 18 },
+    summaryCard: {
+      width: '100%',
+      backgroundColor: colors.skyBackground,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 14,
+      marginBottom: 18,
+    },
+    summaryHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingBottom: 10,
+      marginBottom: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    summaryAvatar: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    summaryAvatarPhoto: { width: '100%', height: '100%' },
+    summaryAvatarEmoji: { fontSize: 22 },
+    summaryHeaderText: { flex: 1 },
+    summaryNameRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+    summaryName: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+    summaryNickname: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
+    summaryGender: { fontSize: 11, fontWeight: '700', color: colors.accent, marginTop: 2 },
+    summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
+    summaryRowLabel: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
+    summaryRowValue: { fontSize: 12, color: colors.textPrimary, fontWeight: '700' },
+    successButtonRow: { flexDirection: 'row', gap: 10, width: '100%' },
+    resetButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 13,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+    },
+    resetButtonText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
+    confirmButton: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 13,
+      borderRadius: 14,
+      backgroundColor: colors.accent,
+      ...SHADOW,
+      shadowOpacity: 0.16,
+    },
+    confirmButtonText: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
   });
 }

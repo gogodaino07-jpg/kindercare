@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View, Image } from 'react-native';
-import AvatarPickerModal, { AvatarOption } from '../components/child-profile/AvatarPickerModal';
+import AvatarPickerModal, { DEFAULT_AVATARS } from '../components/child-profile/AvatarPickerModal';
 import PermissionModal from '../components/onboarding/PermissionModal';
 import PhotoCropModal from '../components/child-profile/PhotoCropModal';
 import Text from '../components/common/AppText';
@@ -33,14 +33,6 @@ const GIRL_ROSE = '#FB7185';
 const NO_CLASS_BG = '#DBEAFE';
 const NO_CLASS_BORDER = '#93C5FD';
 const NO_CLASS_TEXT = '#1D4ED8';
-
-const DEFAULT_AVATARS: AvatarOption[] = [
-  { id: 'boy', emoji: '👦', label: '남자아이', bg: '#DBEAFE' },
-  { id: 'girl', emoji: '👧', label: '여자아이', bg: '#FFE4E9' },
-  { id: 'chick', emoji: '🐣', label: '병아리', bg: '#FEF3C7' },
-  { id: 'bear', emoji: '🐻', label: '곰돌이', bg: '#FFEDD5' },
-  { id: 'rabbit', emoji: '🐰', label: '토끼', bg: '#FCE7F3' },
-];
 
 function formatBirthdate(date: Date): string {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;

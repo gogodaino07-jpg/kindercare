@@ -12,6 +12,15 @@ export interface AvatarOption {
   bg: string;
 }
 
+/** 실제 사진을 안 올렸을 때 고를 수 있는 기본 캐릭터 프리셋. 아이 프로필 신규 등록·수정 화면에서 공용으로 사용. */
+export const DEFAULT_AVATARS: AvatarOption[] = [
+  { id: 'boy', emoji: '👦', label: '남자아이', bg: '#DBEAFE' },
+  { id: 'girl', emoji: '👧', label: '여자아이', bg: '#FFE4E9' },
+  { id: 'chick', emoji: '🐣', label: '병아리', bg: '#FEF3C7' },
+  { id: 'bear', emoji: '🐻', label: '곰돌이', bg: '#FFEDD5' },
+  { id: 'rabbit', emoji: '🐰', label: '토끼', bg: '#FCE7F3' },
+];
+
 interface AvatarPickerModalProps {
   visible: boolean;
   avatars: AvatarOption[];
