@@ -29,7 +29,7 @@ import { ZoomableImage } from '../features/newsletter-analysis/components/Zoomab
 import { SCAN_COLORS as C } from '../features/newsletter-analysis/uiColors';
 import { DraftEvent } from '../features/newsletter-analysis/types';
 import { Event } from '../types/models';
-import { parseISODate, toISODate } from '../utils/date';
+import { parseISODate, startOfDay, toISODate } from '../utils/date';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PREVIEW_WIDTH = SCREEN_WIDTH - 32;
@@ -41,6 +41,11 @@ const ZOOM_HEIGHT = 380;
 // 조용히 사라져버렸다 — 문서 디렉토리(documentDirectory)로 복사해서 앱이 지워지기
 // 전까지는 계속 남아있게 한다.
 const SCANNED_PHOTO_DIR = `${FileSystem.documentDirectory}newsletter-photos/`;
+
+function formatMMDD(isoDate: string): string {
+  const date = parseISODate(isoDate);
+  return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+}
 
 async function persistScannedPhoto(uri: string): Promise<string> {
   try {
@@ -165,6 +170,21 @@ export default function AIReviewScreen() {
     () => draftEvents.length > 0 && draftEvents.every((e) => e.date < todayISO),
     [draftEvents, todayISO]
   );
+  const [pastNoticeDismissed, setPastNoticeDismissed] = useState(false);
+
+  // 배너에 보여줄 "지난 날짜(MM/DD ~ MM/DD)"와 "N일 전" — sortedEvents가 이미
+  // 날짜순 정렬돼 있으므로 첫/마지막 항목이 곧 범위의 시작/끝이다.
+  const pastNoticeInfo = useMemo(() => {
+    if (!looksLikePastNewsletter || sortedEvents.length === 0) return null;
+    const minDate = sortedEvents[0].date;
+    const maxDate = sortedEvents[sortedEvents.length - 1].date;
+    const daysAgo = Math.round(
+      (startOfDay(new Date()).getTime() - parseISODate(maxDate).getTime()) / 86400000
+    );
+    const rangeLabel =
+      minDate === maxDate ? formatMMDD(minDate) : `${formatMMDD(minDate)} ~ ${formatMMDD(maxDate)}`;
+    return { rangeLabel, daysAgo };
+  }, [looksLikePastNewsletter, sortedEvents]);
 
   const updateDraft = (localId: string, patch: Partial<DraftEvent>) => {
     setDraftEvents((prev) => prev.map((e) => (e.localId === localId ? { ...e, ...patch } : e)));
@@ -289,12 +309,29 @@ export default function AIReviewScreen() {
         </View>
       </View>
 
-      {looksLikePastNewsletter && (
+      {pastNoticeInfo && !pastNoticeDismissed && (
         <View style={styles.pastNoticeBanner}>
-          <Feather name="alert-triangle" size={14} color={C.amber700} />
-          <Text style={styles.pastNoticeText}>
-            추출된 일정이 모두 지난 날짜예요. 혹시 지난 주 알림장을 올리신 게 아닌지 확인해보세요.
-          </Text>
+          <View style={styles.pastNoticeIconCircle}>
+            <Feather name="alert-triangle" size={20} color={C.amber700} />
+          </View>
+          <View style={styles.pastNoticeBody}>
+            <View style={styles.pastNoticeTitleRow}>
+              <Text style={styles.pastNoticeTitle}>지난 날짜({pastNoticeInfo.rangeLabel}) 알림장이에요</Text>
+              <View style={styles.pastNoticeBadge}>
+                <Text style={styles.pastNoticeBadgeText}>{pastNoticeInfo.daysAgo}일 전</Text>
+              </View>
+            </View>
+            <Text style={styles.pastNoticeSubtext}>혹시 갤러리에서 이전 주 문서를 잘못 선택하셨나요?</Text>
+            <View style={styles.pastNoticeButtonRow}>
+              <Pressable style={styles.pastNoticeReuploadButton} onPress={() => router.back()}>
+                <Feather name="camera" size={14} color={C.white} />
+                <Text style={styles.pastNoticeReuploadButtonText}>이번 주 알림장 다시 올리기</Text>
+              </Pressable>
+              <Pressable style={styles.pastNoticeContinueButton} onPress={() => setPastNoticeDismissed(true)}>
+                <Text style={styles.pastNoticeContinueButtonText}>계속 검토</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
       )}
 
@@ -508,15 +545,54 @@ const styles = StyleSheet.create({
   extractedBadgeText: { fontSize: 10, fontWeight: '700', color: C.emerald800 },
   pastNoticeBanner: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    alignItems: 'flex-start',
+    gap: 12,
     backgroundColor: C.amber50,
     borderBottomWidth: 1,
     borderBottomColor: C.amber200,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 16,
   },
-  pastNoticeText: { flex: 1, fontSize: 12.5, fontWeight: '700', color: C.amber700, lineHeight: 17 },
+  pastNoticeIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: C.amber100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pastNoticeBody: { flex: 1, gap: 6 },
+  pastNoticeTitleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
+  pastNoticeTitle: { fontSize: 14.5, fontWeight: '800', color: C.slate900 },
+  pastNoticeBadge: {
+    backgroundColor: C.amber100,
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+  },
+  pastNoticeBadgeText: { fontSize: 11, fontWeight: '800', color: C.amber800 },
+  pastNoticeSubtext: { fontSize: 12.5, fontWeight: '600', color: C.slate600, lineHeight: 17 },
+  pastNoticeButtonRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  pastNoticeReuploadButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: C.amber600,
+    borderRadius: 999,
+    paddingVertical: 12,
+  },
+  pastNoticeReuploadButtonText: { fontSize: 12.5, fontWeight: '800', color: C.white },
+  pastNoticeContinueButton: {
+    backgroundColor: C.white,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: C.amber200,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  pastNoticeContinueButtonText: { fontSize: 12.5, fontWeight: '800', color: C.amber700 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   togglePill: {
     flexDirection: 'row',
