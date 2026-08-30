@@ -45,8 +45,19 @@ const FAMILY_OWNER_EMAIL_KEY = 'kindercare_family_owner_email';
 const PENDING_ANALYSIS_SESSION_KEY = 'kindercare:pendingAnalysis';
 const PHOTO_URIS_BY_EVENT_KEY = 'kindercare_event_photo_uris';
 
-/** 무료 사용자가 등록할 수 있는 아이 최대 인원 — 3번째부터는 프리미엄 구독이 필요하다. */
-export const FREE_CHILD_LIMIT = 2;
+/** 무료 사용자가 등록할 수 있는 아이 최대 인원 — 2번째부터는 프리미엄 구독이 필요하다. */
+export const FREE_CHILD_LIMIT = 1;
+
+/**
+ * 무료 한도를 넘겨 등록된 아이(가장 나중에 추가된 아이부터)는 구독이 없으면
+ * 접근이 잠긴다. children 배열의 순서를 등록 순서로 취급한다 — child-profile.tsx의
+ * isMainChild(children[0]이 대표 아이)와 동일한 전제.
+ */
+export function isChildLocked(children: Child[], childId: string, isSubscribed: boolean): boolean {
+  if (isSubscribed) return false;
+  const index = children.findIndex((c) => c.id === childId);
+  return index >= FREE_CHILD_LIMIT;
+}
 
 /** 초대로 합류한 구성원 중, 이 역할만 바로 편집 권한을 가진다. 나머지는 읽기 전용. */
 const EDIT_ROLES = new Set(['엄마', '아빠']);

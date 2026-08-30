@@ -29,7 +29,7 @@ import ScreenBackground from '../components/ScreenBackground';
 import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
 import { SHADOW, type ThemeColors } from '../constants/theme';
-import { useAppData } from '../context/AppDataContext';
+import { isChildLocked, useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useThemeColors } from '../context/ThemeContext';
@@ -94,7 +94,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { hasOnboarded, selectedChild, events, googleAccount, onboardingLoaded, mealPlans, updateEvent, isFamilyOwner, canEditFamilyData } = useAppData();
+  const { hasOnboarded, children, selectedChild, selectChild, events, googleAccount, onboardingLoaded, mealPlans, updateEvent, isFamilyOwner, canEditFamilyData } = useAppData();
   const { isLocked } = useAppLock();
   const { isSubscribed } = useSubscription();
   const insets = useSafeAreaInsets();
@@ -121,6 +121,14 @@ export default function HomeScreen() {
   const [birthdayBurstKey, setBirthdayBurstKey] = useState(0);
   const [greetingRefreshKey, setGreetingRefreshKey] = useState(0);
   const isChildBirthdayToday = isBirthdayToday(selectedChild?.birthdate);
+
+  // 구독이 끝나 지금 선택된 아이가 잠기면(무료 한도 초과), 잠기지 않은 첫 아이로
+  // 자동 전환한다 — 안 그러면 잠긴 아이의 일정/급식 등이 홈 화면에 계속 노출된다.
+  useEffect(() => {
+    if (!selectedChild || !isChildLocked(children, selectedChild.id, isSubscribed)) return;
+    const firstUnlocked = children.find((c) => !isChildLocked(children, c.id, isSubscribed));
+    if (firstUnlocked) selectChild(firstUnlocked.id);
+  }, [children, selectedChild, isSubscribed, selectChild]);
 
   const todayProgress = useMemo(() => {
     const items = upcoming.mainEvents.flatMap((e) => getDisplayItems(e));

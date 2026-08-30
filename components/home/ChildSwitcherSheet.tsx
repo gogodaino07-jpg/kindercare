@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAlert } from '../../context/AlertContext';
-import { FREE_CHILD_LIMIT, useAppData } from '../../context/AppDataContext';
+import { FREE_CHILD_LIMIT, isChildLocked, useAppData } from '../../context/AppDataContext';
 import { useAppLock } from '../../context/AppLockContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -52,22 +52,36 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
     });
   };
 
+  const showPremiumRequiredAlert = (title: string, message: string) => {
+    handleClose();
+    showAlert({
+      title,
+      message,
+      icon: '💎',
+      buttons: [
+        { text: '확인', style: 'cancel' },
+        { text: '프리미엄 구독 안내', onPress: () => router.push('/settings/subscription') },
+      ],
+    });
+  };
+
   const handleAddChild = () => {
     if (!isSubscribed && children.length >= FREE_CHILD_LIMIT) {
-      handleClose();
-      showAlert({
-        title: '아이 등록 한도 초과',
-        message: `무료 이용 시 아이는 최대 ${FREE_CHILD_LIMIT}명까지 등록할 수 있어요. 프리미엄으로 구독하시면 제한 없이 등록하실 수 있습니다.`,
-        icon: '💎',
-        buttons: [
-          { text: '확인', style: 'cancel' },
-          { text: '프리미엄 구독 안내', onPress: () => router.push('/settings/subscription') },
-        ],
-      });
+      showPremiumRequiredAlert(
+        '아이 등록 한도 초과',
+        `무료 이용 시 아이는 최대 ${FREE_CHILD_LIMIT}명까지 등록할 수 있어요. 프리미엄으로 구독하시면 제한 없이 등록하실 수 있습니다.`
+      );
       return;
     }
     handleClose();
     router.push('/child-profile');
+  };
+
+  const handleLockedChildPress = () => {
+    showPremiumRequiredAlert(
+      '잠긴 아이 프로필이에요',
+      `무료 이용 시 아이는 최대 ${FREE_CHILD_LIMIT}명까지 이용할 수 있어요. 구독이 종료되면서 나중에 추가한 아이의 정보가 잠겼어요. 프리미엄으로 구독하시면 다시 이용하실 수 있습니다.`
+    );
   };
 
   const context = useSharedValue({ startY: 0 });
@@ -156,39 +170,49 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
 
             {sortedChildren.map((child) => {
               const isSelected = child.id === selectedChild?.id;
+              const locked = isChildLocked(children, child.id, isSubscribed);
               const label = [child.name, `${child.age}세`, child.className]
                 .filter(Boolean)
                 .join(' · ');
               return (
                 <View
                   key={child.id}
-                  style={[styles.card, isSelected && styles.cardSelected]}
+                  style={[styles.card, isSelected && styles.cardSelected, locked && styles.cardLocked]}
                 >
                   <Pressable
                     style={styles.cardMain}
                     onPress={() => {
+                      if (locked) {
+                        handleLockedChildPress();
+                        return;
+                      }
                       selectChild(child.id);
                       handleClose();
                     }}
                   >
                     {child.photoUri ? (
-                      <Image source={{ uri: child.photoUri }} style={styles.avatar} />
+                      <Image source={{ uri: child.photoUri }} style={[styles.avatar, locked && styles.avatarLocked]} />
                     ) : (
                       <View style={styles.avatarPlaceholder}>
                         <Text style={styles.avatarIcon}>🧒</Text>
                       </View>
                     )}
-                    <Text style={styles.cardLabel}>{label}</Text>
+                    <Text style={[styles.cardLabel, locked && styles.cardLabelLocked]}>{label}</Text>
+                    {locked && <Text style={styles.lockIcon}>🔒</Text>}
                   </Pressable>
                   <Pressable
                     style={styles.editButton}
                     onPress={() => {
+                      if (locked) {
+                        handleLockedChildPress();
+                        return;
+                      }
                       handleClose();
                       router.push({ pathname: '/child-profile', params: { childId: child.id } });
                     }}
-                    accessibilityLabel="프로필 수정"
+                    accessibilityLabel={locked ? '잠긴 프로필' : '프로필 수정'}
                   >
-                    <Text style={styles.editButtonText}>수정</Text>
+                    <Text style={styles.editButtonText}>{locked ? '잠김' : '수정'}</Text>
                   </Pressable>
                 </View>
               );
@@ -261,6 +285,9 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     cardSelected: {
       backgroundColor: colors.lightBlueBg,
     },
+    cardLocked: {
+      opacity: 0.55,
+    },
     cardMain: {
       flex: 1,
       flexDirection: 'row',
@@ -272,6 +299,9 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       height: 52,
       borderRadius: 26,
       marginRight: 14,
+    },
+    avatarLocked: {
+      opacity: 0.6,
     },
     avatarPlaceholder: {
       width: 52,
@@ -290,6 +320,13 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       fontSize: 16,
       fontWeight: '600',
       color: colors.gray900,
+    },
+    cardLabelLocked: {
+      color: colors.textSecondary,
+    },
+    lockIcon: {
+      fontSize: 14,
+      marginLeft: 6,
     },
     editButton: {
       paddingVertical: 7,
