@@ -5,7 +5,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../components/common/AppText';
 import { isAdTestAccount } from '../constants/adTestAccounts';
@@ -23,6 +24,7 @@ import {
   PREMIUM_MEAL_WEEKLY_LIMIT,
 } from '../features/newsletter-analysis';
 import { PremiumUpsellModal } from '../features/newsletter-analysis/components/PremiumUpsellModal';
+import { ZoomableImage } from '../features/newsletter-analysis/components/ZoomableImage';
 import { SCAN_COLORS as C } from '../features/newsletter-analysis/uiColors';
 import { useScanRewardedAd } from '../hooks/useScanRewardedAd';
 import { UploadedDoc } from '../types/models';
@@ -30,6 +32,9 @@ import { UploadedDoc } from '../types/models';
 const CORAL = '#FF6F5B';
 const CORAL_DARK = '#FF4E3A';
 const HEADER_BUTTON_SIZE = 36;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const ZOOM_WIDTH = SCREEN_WIDTH - 80;
+const ZOOM_HEIGHT = 480;
 
 export default function MealScanScreen() {
   const router = useRouter();
@@ -45,6 +50,7 @@ export default function MealScanScreen() {
   const [analyzing, setAnalyzing] = useState(false);
   const [starting, setStarting] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showZoomModal, setShowZoomModal] = useState(false);
   const [remainingCount, setRemainingCount] = useState<number | null>(null);
   const maxMealCredits = isSubscribed ? PREMIUM_MEAL_WEEKLY_LIMIT : FREE_MEAL_WEEKLY_LIMIT;
   const skipAd = isAdTestAccount(googleAccount?.email);
@@ -221,7 +227,13 @@ export default function MealScanScreen() {
             <View style={styles.viewfinder}>
               {doc ? (
                 doc.kind === 'image' ? (
-                  <Image source={{ uri: doc.uri }} style={styles.previewImage} />
+                  <>
+                    <Image source={{ uri: doc.uri }} style={styles.previewImage} />
+                    <Pressable onPress={() => setShowZoomModal(true)} style={styles.zoomButton} hitSlop={6}>
+                      <Feather name="zoom-in" size={13} color="#FFFFFF" />
+                      <Text style={styles.zoomButtonText}>확대 보기</Text>
+                    </Pressable>
+                  </>
                 ) : (
                   <View style={styles.previewFile}>
                     <Feather name="file-text" size={40} color="#FFFFFF" />
@@ -303,6 +315,32 @@ export default function MealScanScreen() {
           router.push('/settings/subscription');
         }}
       />
+
+      {doc?.kind === 'image' && (
+        <Modal visible={showZoomModal} transparent animationType="fade" onRequestClose={() => setShowZoomModal(false)}>
+          {/* RN Modal은 안드로이드에서 별도 네이티브 윈도우에 렌더링돼 앱 루트의
+              GestureHandlerRootView 밖에 놓이면서 핀치줌/팬 제스처가 먹지 않는다 —
+              Modal 내부에 별도로 하나 더 씌워줘야 제스처가 정상 동작한다. */}
+          <GestureHandlerRootView style={styles.zoomOverlay}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowZoomModal(false)} />
+            <View style={styles.zoomCard}>
+              <View style={styles.zoomHeader}>
+                <View style={styles.zoomHeaderLeft}>
+                  <Feather name="image" size={16} color={C.violet600} />
+                  <Text style={styles.zoomHeaderText}>급식표 크게보기</Text>
+                </View>
+                <Pressable onPress={() => setShowZoomModal(false)} style={styles.zoomCloseButton} hitSlop={6}>
+                  <Feather name="x" size={16} color={C.slate500} />
+                </Pressable>
+              </View>
+              <ZoomableImage uri={doc.uri} width={ZOOM_WIDTH} height={ZOOM_HEIGHT} />
+              <Pressable onPress={() => setShowZoomModal(false)} style={styles.zoomCloseFooter}>
+                <Text style={styles.zoomCloseFooterText}>닫기</Text>
+              </Pressable>
+            </View>
+          </GestureHandlerRootView>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -381,6 +419,54 @@ const styles = StyleSheet.create({
   previewImage: { width: '100%', height: '100%' },
   previewFile: { alignItems: 'center', gap: 10, paddingHorizontal: 24 },
   previewFileName: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
+  zoomButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  zoomButtonText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
+  zoomOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(2, 6, 23, 0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  zoomCard: {
+    width: '100%',
+    maxHeight: '85%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 32,
+    padding: 20,
+    gap: 12,
+  },
+  zoomHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: C.slate100,
+    paddingBottom: 10,
+  },
+  zoomHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  zoomHeaderText: { fontSize: 13, fontWeight: '900', color: C.slate900 },
+  zoomCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: C.slate100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  zoomCloseFooter: { backgroundColor: C.slate900, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  zoomCloseFooterText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
   corner: {
     position: 'absolute',
     width: 30,
