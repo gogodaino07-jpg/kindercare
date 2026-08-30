@@ -200,7 +200,12 @@ export const GeminiAnalysisService = {
         !!e.date && !!e.title
     );
 
-    if (extracted.length === 0) {
+    // 급식표 스캔(usageType 'meal')은 mealPlan만 있으면 성공이다 — 같은 문서에서
+    // 이 아이 나이/반에 해당하는 '일정'이 하나도 안 뽑혔다고(흔한 경우) 여기서
+    // 에러를 던지면, 제대로 인식된 급식표까지 통째로 버려져 "분석은 됐는데
+    // 저장이 안 된다"는 문제로 이어진다. 급식표를 못 찾았을 때의 안내는
+    // meal-scan.tsx가 mealPlans.length === 0로 따로 처리한다.
+    if (extracted.length === 0 && usageType !== 'meal') {
       throw new GeminiAnalysisError('문서에서 일정을 찾지 못했어요. 더 선명한 사진으로 다시 시도해주세요.');
     }
 
