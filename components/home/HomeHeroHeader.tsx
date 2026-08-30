@@ -174,7 +174,6 @@ export default function HomeHeroHeader({
     : selectedChild?.name
       ? stripSurname(selectedChild.name)
       : undefined;
-  const particle = greetingName ? (hasFinalConsonant(greetingName) ? '아' : '야') : '';
   // 새로고침(refreshKey 변경)할 때마다 랜덤으로 새 문구를 뽑고, 첫 로드 때는 날짜 기준 고정 문구를 보여준다.
   const greetingTemplate = useMemo(() => {
     return refreshKey
@@ -232,7 +231,7 @@ export default function HomeHeroHeader({
               adjustsFontSizeToFit
               minimumFontScale={0.6}
             >
-              {greetingTemplate.before}<Text style={styles.bannerGreetingName}>{greetingName ?? '우리 아이'}{particle}</Text>{greetingTemplate.after}
+              {greetingTemplate.before}<Text style={styles.bannerGreetingName}>{greetingName ?? '우리 아이'}</Text>{greetingTemplate.after}
             </Text>
           )}
         </View>
