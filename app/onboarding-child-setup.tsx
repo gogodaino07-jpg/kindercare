@@ -17,7 +17,7 @@ import { STAMP_BOARD_THEMES } from '../constants/stampBoardThemes';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
-import { ChildAge, ChildGender } from '../types/models';
+import { ChildAge } from '../types/models';
 import { ageFromBirthdate, toISODate } from '../utils/date';
 import { stripInvalidCharacters } from '../utils/validation';
 
@@ -28,7 +28,6 @@ const GRAY = '#64748B';
 const ACCENT_BLUE = '#0EA5E9';
 const ERROR_RED = '#E4574C';
 const BORDER = '#E2E8F0';
-const BOY_BLUE = '#3B82F6';
 const GIRL_ROSE = '#FB7185';
 const NO_CLASS_BG = '#DBEAFE';
 const NO_CLASS_BORDER = '#93C5FD';
@@ -81,7 +80,6 @@ export default function OnboardingChildSetupScreen() {
   const [birthdate, setBirthdate] = useState<Date | null>(null);
   const [className, setClassName] = useState('');
   const [hasNoClass, setHasNoClass] = useState(false);
-  const [gender, setGender] = useState<ChildGender>('boy');
   const [showPicker, setShowPicker] = useState(Platform.OS === 'web');
   const [error, setError] = useState(false);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
@@ -178,7 +176,6 @@ export default function OnboardingChildSetupScreen() {
       birthdate: toISODate(birthdate),
       className: trimmedClassName === '없음' ? undefined : trimmedClassName,
       photoUri: photoUri ?? undefined,
-      gender,
       avatarEmoji: photoUri ? undefined : selectedAvatar.emoji,
     });
     setShowSuccessModal(false);
@@ -191,7 +188,6 @@ export default function OnboardingChildSetupScreen() {
     setBirthdate(null);
     setClassName('');
     setHasNoClass(false);
-    setGender('boy');
     setPhotoUri(null);
     setSelectedAvatarId(DEFAULT_AVATARS[0].id);
     setShowSuccessModal(false);
@@ -256,28 +252,6 @@ export default function OnboardingChildSetupScreen() {
 
         <View style={styles.cardShadow}>
         <View style={styles.card}>
-          <View style={styles.fieldGroup}>
-            <View style={styles.genderRow}>
-              <Text style={styles.genderLabel}>성별</Text>
-              <View style={styles.genderButtons}>
-                <Pressable
-                  onPress={() => setGender('boy')}
-                  style={[styles.genderChip, gender === 'boy' && styles.genderChipBoyActive]}
-                >
-                  <Text style={styles.genderChipEmoji}>👦</Text>
-                  <Text style={[styles.genderChipText, gender === 'boy' && styles.genderChipTextActive]}>남아</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setGender('girl')}
-                  style={[styles.genderChip, gender === 'girl' && styles.genderChipGirlActive]}
-                >
-                  <Text style={styles.genderChipEmoji}>👧</Text>
-                  <Text style={[styles.genderChipText, gender === 'girl' && styles.genderChipTextActive]}>여아</Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-
           <View style={styles.fieldGroup}>
             <View style={styles.labelRow}>
               <Feather name="user" size={13} color={ACCENT_BLUE} />
@@ -478,7 +452,6 @@ export default function OnboardingChildSetupScreen() {
                     <Text style={styles.summaryName}>{name}</Text>
                     {givenName ? <Text style={styles.summaryNickname}>({givenName})</Text> : null}
                   </View>
-                  <Text style={styles.summaryGender}>{gender === 'boy' ? '남아 👦' : '여아 👧'}</Text>
                 </View>
               </View>
               <View style={styles.summaryRow}>
@@ -620,50 +593,6 @@ const styles = StyleSheet.create({
     },
     fieldGroup: {
       marginBottom: 18,
-    },
-    genderRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    genderLabel: {
-      fontSize: 13,
-      fontWeight: '700',
-      color: INK,
-    },
-    genderButtons: {
-      flexDirection: 'row',
-      gap: 8,
-    },
-    genderChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-      borderRadius: 20,
-      backgroundColor: '#FFFFFF',
-      borderWidth: 1.5,
-      borderColor: BORDER,
-    },
-    genderChipBoyActive: {
-      backgroundColor: BOY_BLUE,
-      borderColor: BOY_BLUE,
-    },
-    genderChipGirlActive: {
-      backgroundColor: GIRL_ROSE,
-      borderColor: GIRL_ROSE,
-    },
-    genderChipEmoji: {
-      fontSize: 13,
-    },
-    genderChipText: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: GRAY,
-    },
-    genderChipTextActive: {
-      color: '#FFFFFF',
     },
     labelRow: {
       flexDirection: 'row',
@@ -886,12 +815,6 @@ const styles = StyleSheet.create({
       fontSize: 11,
       color: GRAY,
       fontWeight: '600',
-    },
-    summaryGender: {
-      fontSize: 11,
-      fontWeight: '700',
-      color: ACCENT_BLUE,
-      marginTop: 2,
     },
     summaryRow: {
       flexDirection: 'row',
