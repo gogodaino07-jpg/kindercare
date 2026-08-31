@@ -160,11 +160,18 @@ export default function ChildProfileScreen() {
   };
 
   // 이름을 2글자 이상 입력하면, 아직 애칭을 직접 안 정했을 때만 마지막
-  // 두 글자를 기본 애칭으로 제안해준다 (예: "김서준" → "서준").
+  // 두 글자를 기본 애칭으로 제안해준다 (예: "김서준" → "서준"). 예전엔
+  // "givenName이 비어있는지"로만 판단해서, 이름이 2글자가 되는 순간
+  // (예: "김서") 한 번 자동으로 채워지고 나면 그 뒤로 글자를 더 입력해도
+  // (예: "김서준") givenName이 이미 채워져 있다는 이유로 다시 갱신되지
+  // 않아 성이 포함된 "김서"에서 멈춰버리는 버그가 있었다 — 사용자가 직접
+  // 수정하기 전까지는 계속 최신 이름 기준으로 갱신되도록 별도 플래그로 추적.
+  // 기존 아이를 수정하는 경우엔 이미 등록된 애칭을 덮어쓰면 안 되므로 true로 시작.
+  const givenNameTouchedRef = useRef(!!editingChild?.givenName);
   const handleNameChange = (t: string) => {
     const cleaned = stripInvalidCharacters(t);
     setName(cleaned);
-    if (cleaned.trim().length >= 2 && !givenName) {
+    if (cleaned.trim().length >= 2 && !givenNameTouchedRef.current) {
       setGivenName(cleaned.trim().slice(-2));
     }
   };
@@ -258,6 +265,7 @@ export default function ChildProfileScreen() {
   const handleResetForm = () => {
     setName('');
     setGivenName('');
+    givenNameTouchedRef.current = false;
     setBirthdate(null);
     setAge(null);
     setClassName('');
@@ -357,7 +365,10 @@ export default function ChildProfileScreen() {
           <ClearableTextInput
             style={styles.input}
             value={givenName}
-            onChangeText={(text) => setGivenName(stripInvalidCharacters(text))}
+            onChangeText={(text) => {
+              givenNameTouchedRef.current = true;
+              setGivenName(stripInvalidCharacters(text));
+            }}
             maxLength={10}
             placeholder="예: 김서준 → 서준"
             placeholderTextColor={colors.textSecondary}
