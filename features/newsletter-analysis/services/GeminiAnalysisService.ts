@@ -164,12 +164,31 @@ export const GeminiAnalysisService = {
       },
     };
 
+    // Cloud Functions 콜드 스타트 등 일시적인 이유로 unavailable/deadline-exceeded/internal이
+    // 뜨는 경우가 있는데, 코드 변경 없이 그냥 다시 시도하면 되는 경우가 대부분이었다 — 사용자가
+    // 매번 수동으로 재시도하지 않도록 앱에서 짧은 대기 후 최대 2번까지 자동으로 재시도한다.
+    const RETRYABLE_CODES = ['unavailable', 'deadline-exceeded', 'internal'];
+    const MAX_ATTEMPTS = 3;
     let json: any;
-    try {
-      const result = await getFunctions().httpsCallable('analyzeNewsletter')({ body, usageType });
-      json = result.data;
-    } catch (err: any) {
-      console.error('[Gemini Proxy Error]:', err);
+    let lastErr: any;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const result = await getFunctions().httpsCallable('analyzeNewsletter')({ body, usageType });
+        json = result.data;
+        lastErr = undefined;
+        break;
+      } catch (err: any) {
+        lastErr = err;
+        console.error(`[Gemini Proxy Error] (attempt ${attempt}/${MAX_ATTEMPTS}):`, err);
+        const code = String(err?.code ?? '');
+        const isRetryable = RETRYABLE_CODES.some((c) => code.includes(c));
+        if (!isRetryable || attempt === MAX_ATTEMPTS) break;
+        await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+      }
+    }
+
+    if (lastErr) {
+      const err = lastErr;
       const code = String(err?.code ?? '');
       if (code.includes('resource-exhausted')) {
         throw new GeminiAnalysisError('AI 분석 요청이 너무 많습니다. 1분만 기다렸다가 다시 시도해 주세요.');
@@ -177,8 +196,8 @@ export const GeminiAnalysisService = {
       if (code.includes('unauthenticated')) {
         throw new GeminiAnalysisError('로그인이 필요해요. 다시 로그인해주세요.');
       }
-      if (code.includes('unavailable') || code.includes('deadline-exceeded')) {
-        throw new GeminiAnalysisError('네트워크 연결을 확인해주세요.');
+      if (code.includes('unavailable') || code.includes('deadline-exceeded') || code.includes('internal')) {
+        throw new GeminiAnalysisError('서버가 일시적으로 불안정해요. 잠시 후 다시 시도해주세요.');
       }
       throw new GeminiAnalysisError(err?.message || '문서 분석에 실패했어요. 잠시 후 다시 시도해주세요.');
     }

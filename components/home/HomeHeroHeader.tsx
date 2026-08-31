@@ -296,20 +296,15 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-/** 날씨별 미니 카드 포인트 색 — 오늘 카드 그라데이션과 같은 계열이되, 두 색을 섞지 않고 가장 또렷한 쪽만 골라 탁해지지 않게 함. */
-function getMiniCardAccentHex(label: string | undefined): string {
-  if (label === '맑음' || label === '대체로 맑음') return '#38BDF8';
-  if (label === '흐림' || label === '안개') return '#94A3B8';
-  if (label === '이슬비' || label === '비' || label === '소나기') return '#3B82F6';
-  if (label === '눈' || label === '눈 소나기') return '#93C5FD';
-  if (label === '뇌우') return '#7C3AED';
-  return '#6366F1';
-}
-
-/** 포인트 색을 옅게 우려낸 미니 카드 배경/테두리. */
+/** 날씨별 미니 카드 배경/테두리 — 반투명(rgba)이 이모지와 겹치면 흰 얼룩처럼 보이는
+ *  렌더링 문제가 있어, 알파 블렌딩 없이 완전 불투명한 색만 사용한다. */
 function getMiniCardTint(label: string | undefined): { bg: string; border: string } {
-  const hex = getMiniCardAccentHex(label);
-  return { bg: hexToRgba(hex, 0.16), border: hexToRgba(hex, 0.42) };
+  if (label === '맑음' || label === '대체로 맑음') return { bg: '#E0F2FE', border: '#7DD3FC' };
+  if (label === '흐림' || label === '안개') return { bg: '#F1F5F9', border: '#CBD5E1' };
+  if (label === '이슬비' || label === '비' || label === '소나기') return { bg: '#DBEAFE', border: '#93C5FD' };
+  if (label === '눈' || label === '눈 소나기') return { bg: '#EFF6FF', border: '#BFDBFE' };
+  if (label === '뇌우') return { bg: '#EDE9FE', border: '#C4B5FD' };
+  return { bg: '#E0E7FF', border: '#A5B4FC' };
 }
 
 function MiniWeatherCard({
@@ -683,10 +678,10 @@ function createMiniCardStyles(colors: ThemeColors) {
     },
     tipRow: {
       flexDirection: 'row',
+      alignSelf: 'flex-start',
       alignItems: 'center',
       gap: 4,
       marginVertical: 3,
-      maxWidth: '100%',
     },
     emoji: {
       fontSize: 14,
