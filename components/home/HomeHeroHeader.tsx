@@ -107,7 +107,7 @@ export default function HomeHeroHeader({
 }: HomeHeroHeaderProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const [weatherExpanded, setWeatherExpanded] = useState(true);
+  const [weatherExpanded, setWeatherExpanded] = useState(false);
 
   const today = weatherDays?.find((d) => d.isToday);
   const tomorrow = weatherDays?.find((d) => d.isTomorrow);
