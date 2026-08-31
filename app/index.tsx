@@ -45,6 +45,9 @@ import { isBirthdayToday, toISODate } from '../utils/date';
 // 광고가 또 뜨는 문제가 있어, 모듈 스코프(진짜 콜드 스타트에서만 리셋)로 관리.
 let hasAttemptedAdThisSession = false;
 
+/** 홈 화면 최하단 "가족과 함께 보기" 공유 배너 노출 여부 — 임시로 숨김. */
+const SHOW_FAMILY_SHARE_CARD = false;
+
 function createStyles(colors: ThemeColors, bottomInset: number) {
   return StyleSheet.create({
     safeArea: {
@@ -407,7 +410,7 @@ export default function HomeScreen() {
       <BirthdayCenterConfetti triggerKey={birthdayBurstKey} />
 
       <View style={[styles.bottomFixedStack, { bottom: insets.bottom }]}>
-        {!upcoming.isEmpty && (
+        {SHOW_FAMILY_SHARE_CARD && !upcoming.isEmpty && (
           <FamilyShareCard events={activeDayEvents} dayLabel={activeDayLabel} dateISO={activeDayISO} />
         )}
         {!isSubscribed && <CoupangBanner />}
