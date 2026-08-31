@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
@@ -28,13 +29,15 @@ export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardC
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <View style={styles.iconBadge}>
-          <MaterialCommunityIcons name="bullhorn-outline" size={16} color={colors.blue500} />
-        </View>
+        <LinearGradient
+          colors={['#3B82F6', '#6366F1']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.iconBadge}
+        >
+          <MaterialCommunityIcons name="bullhorn" size={20} color="#FFFFFF" />
+        </LinearGradient>
         <Text style={styles.title}>공지사항</Text>
-        <View style={styles.countPill}>
-          <Text style={styles.countPillText}>{notices.length}</Text>
-        </View>
       </View>
 
       <View style={styles.list}>
@@ -73,39 +76,25 @@ function createStyles(colors: ThemeColors) {
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      marginBottom: 10,
+      gap: 10,
+      marginBottom: 12,
     },
     iconBadge: {
-      width: 28,
-      height: 28,
-      borderRadius: 9,
-      backgroundColor: 'rgba(255,255,255,0.75)',
-      borderWidth: 1,
-      borderColor: 'rgba(0,0,0,0.06)',
+      width: 36,
+      height: 36,
+      borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
+      ...SHADOW,
+      shadowColor: '#3B82F6',
+      shadowOpacity: 0.35,
+      elevation: 3,
     },
     title: {
       flex: 1,
-      fontSize: 14,
+      fontSize: 15.5,
       fontWeight: '800',
       color: colors.gray900,
-    },
-    countPill: {
-      backgroundColor: 'rgba(255,255,255,0.75)',
-      borderWidth: 1,
-      borderColor: 'rgba(0,0,0,0.06)',
-      minWidth: 22,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 999,
-      alignItems: 'center',
-    },
-    countPillText: {
-      fontSize: 11,
-      fontWeight: '800',
-      color: colors.blue500,
     },
     list: {
       backgroundColor: 'rgba(255,255,255,0.6)',
