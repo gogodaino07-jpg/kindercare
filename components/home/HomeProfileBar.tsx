@@ -15,6 +15,9 @@ import NotificationCenterModal from './NotificationCenterModal';
 /** 구글 스토어 심사 기간 동안 임시로 숨김 — 심사 끝나고 도장판 재디자인하면서 다시 true로. */
 const SHOW_STAMP_BOARD_ICON = false;
 
+/** 과거 알림 기록을 다시 훑어보는 인앱 팝업 — 실제 확인하는 사용자가 적어 보여서 숨김. 실제 푸시 알림 발송과는 무관. */
+const SHOW_NOTIFICATION_BELL = false;
+
 interface HomeProfileBarProps {
   selectedChild: Child | undefined;
   onPressChild: () => void;
@@ -146,10 +149,12 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
       </Pressable>
 
       <View style={styles.topIconsRow}>
-        <Pressable style={styles.iconButton} onPress={() => setNotifVisible(true)}>
-          <MaterialIcons name="notifications-none" size={24} color={colors.gray600} />
-          {unreadCount > 0 && <View style={styles.bellDot} />}
-        </Pressable>
+        {SHOW_NOTIFICATION_BELL && (
+          <Pressable style={styles.iconButton} onPress={() => setNotifVisible(true)}>
+            <MaterialIcons name="notifications-none" size={24} color={colors.gray600} />
+            {unreadCount > 0 && <View style={styles.bellDot} />}
+          </Pressable>
+        )}
         <Pressable style={styles.iconButton} onPress={() => router.push('/calendar')}>
           <CalendarIcon size={24} color={colors.gray600} />
         </Pressable>
