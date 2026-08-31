@@ -50,7 +50,6 @@ export default function HomeHeroHeader({
   const [weatherExpanded, setWeatherExpanded] = useState(false);
 
   const today = weatherDays?.find((d) => d.isToday);
-  const todayTint = useMemo(() => getMiniCardTint(today?.label, colors), [today?.label, colors]);
   const tomorrow = weatherDays?.find((d) => d.isTomorrow);
   const dayAfter = useMemo(() => {
     if (!weatherDays) return undefined;
@@ -110,14 +109,13 @@ export default function HomeHeroHeader({
             {weatherLoading && !today ? (
               <SkeletonBox style={[styles.todayCard, styles.skeleton]} />
             ) : (
-              <Pressable
-                style={[
-                  styles.todayCardPressable,
-                  { backgroundColor: todayTint.bg, borderColor: todayTint.border },
-                ]}
-                onPress={() => today && onPressDate(today.date)}
-              >
-                <View style={styles.todayCard}>
+              <Pressable style={styles.todayCardPressable} onPress={() => today && onPressDate(today.date)}>
+                <LinearGradient
+                  colors={getWeatherGradient(today?.label ?? '')}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.todayCard}
+                >
                   <View style={styles.todayTipCenter}>
                     <View style={styles.todayTipBox}>
                       <AnimatedWeatherEmoji
@@ -140,7 +138,7 @@ export default function HomeHeroHeader({
                       <Text style={styles.todayTempMinText}>{today?.tempMin ?? '--'}°</Text>
                     </View>
                   </View>
-                </View>
+                </LinearGradient>
               </Pressable>
             )}
           </View>
@@ -289,14 +287,28 @@ const skeletonStyles = StyleSheet.create({
   textCompact: { fontSize: 9.5, fontWeight: '700', color: '#94A3B8' },
 });
 
-/** 그 날 날씨 느낌에 어울리는 은은한 카드 색(배경/테두리)을 골라준다 — 오늘 카드의 날씨별 그라데이션과 같은 계열. */
-function getMiniCardTint(label: string | undefined, colors: ThemeColors): { bg: string; border: string } {
-  if (label === '맑음' || label === '대체로 맑음') return { bg: colors.orangeLight1, border: colors.orangeBorder };
-  if (label === '흐림' || label === '안개') return { bg: colors.gray100, border: colors.border };
-  if (label === '이슬비' || label === '비' || label === '소나기') return { bg: colors.lightBlueBg, border: colors.blue100 };
-  if (label === '눈' || label === '눈 소나기') return { bg: colors.pastelBlue, border: colors.blue100 };
-  if (label === '뇌우') return { bg: colors.purpleBg, border: colors.purpleDeep };
-  return { bg: colors.cardWhite, border: colors.border };
+function hexToRgba(hex: string, alpha: number): string {
+  const value = parseInt(hex.replace('#', ''), 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/** 날씨별 미니 카드 포인트 색 — 오늘 카드 그라데이션과 같은 계열이되, 두 색을 섞지 않고 가장 또렷한 쪽만 골라 탁해지지 않게 함. */
+function getMiniCardAccentHex(label: string | undefined): string {
+  if (label === '맑음' || label === '대체로 맑음') return '#38BDF8';
+  if (label === '흐림' || label === '안개') return '#94A3B8';
+  if (label === '이슬비' || label === '비' || label === '소나기') return '#3B82F6';
+  if (label === '눈' || label === '눈 소나기') return '#93C5FD';
+  if (label === '뇌우') return '#7C3AED';
+  return '#6366F1';
+}
+
+/** 포인트 색을 옅게 우려낸 미니 카드 배경/테두리. */
+function getMiniCardTint(label: string | undefined): { bg: string; border: string } {
+  const hex = getMiniCardAccentHex(label);
+  return { bg: hexToRgba(hex, 0.16), border: hexToRgba(hex, 0.42) };
 }
 
 function MiniWeatherCard({
@@ -312,7 +324,7 @@ function MiniWeatherCard({
 }) {
   const colors = useThemeColors();
   const styles = useMemo(() => createMiniCardStyles(colors), [colors]);
-  const tint = useMemo(() => getMiniCardTint(day?.label, colors), [day?.label, colors]);
+  const tint = useMemo(() => getMiniCardTint(day?.label), [day?.label]);
 
   if (loading) {
     return <SkeletonBox style={[styles.container, styles.skeleton]} compact />;
@@ -477,7 +489,7 @@ function createMealCardStyles(colors: ThemeColors) {
   });
 }
 
-const TODAY_CARD_HEIGHT = 158;
+const TODAY_CARD_HEIGHT = 148;
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
@@ -561,35 +573,35 @@ function createStyles(colors: ThemeColors) {
     },
     weatherHeroRow: {
       flexDirection: 'row',
-      paddingHorizontal: 20,
-      gap: 10,
+      paddingHorizontal: 18,
+      gap: 8,
       height: TODAY_CARD_HEIGHT,
     },
     todayCardWrapper: {
-      flex: 1.3,
+      flex: 1.1,
     },
     todayCardPressable: {
       flex: 1,
-      borderRadius: 22,
-      borderWidth: 1,
+      borderRadius: 20,
       overflow: 'hidden',
       ...SHADOW,
-      shadowOpacity: 0.05,
-      elevation: 1,
+      shadowOpacity: 0.14,
+      shadowColor: colors.accent,
+      elevation: 3,
     },
     todayCard: {
       flex: 1,
-      padding: 14,
+      padding: 12,
       justifyContent: 'center',
     },
     todayTipCenter: {
       flex: 1,
       justifyContent: 'center',
-      alignItems: 'center',
+      alignItems: 'flex-start',
     },
     skeleton: {
       backgroundColor: colors.gray100,
-      borderRadius: 22,
+      borderRadius: 20,
     },
     todayEmoji: {
       fontSize: 17,
@@ -598,7 +610,7 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'flex-end',
       gap: 8,
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
     },
     todayTempItem: {
       flexDirection: 'row',
@@ -608,39 +620,39 @@ function createStyles(colors: ThemeColors) {
     todayTempLabel: {
       fontSize: 11,
       fontWeight: '700',
-      color: colors.gray500,
+      color: 'rgba(255,255,255,0.75)',
     },
     todayTempText: {
-      fontSize: 32,
+      fontSize: 30,
       fontWeight: '800',
-      color: colors.gray900,
+      color: '#FFFFFF',
       letterSpacing: -0.5,
     },
     todayTempMinText: {
-      fontSize: 17,
+      fontSize: 16,
       fontWeight: '700',
-      color: colors.gray400,
+      color: 'rgba(255,255,255,0.75)',
       letterSpacing: -0.5,
     },
     todayTipBox: {
       flexDirection: 'row',
       alignItems: 'center',
-      alignSelf: 'center',
+      alignSelf: 'flex-start',
       justifyContent: 'center',
       maxWidth: '100%',
       gap: 6,
-      backgroundColor: colors.cardWhite,
+      backgroundColor: 'rgba(255,255,255,0.22)',
       borderRadius: 10,
-      paddingHorizontal: 10,
+      paddingHorizontal: 9,
       paddingVertical: 5,
-      marginBottom: 10,
+      marginBottom: 8,
     },
     todayTipText: {
       flexShrink: 1,
       fontSize: 11.5,
-      fontWeight: '600',
-      color: colors.gray900,
-      textAlign: 'center',
+      fontWeight: '700',
+      color: '#FFFFFF',
+      textAlign: 'left',
     },
     miniCardColumn: {
       flex: 1,
@@ -660,7 +672,7 @@ function createMiniCardStyles(colors: ThemeColors) {
       paddingVertical: 8,
       paddingHorizontal: 10,
       justifyContent: 'center',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       ...SHADOW,
       shadowOpacity: 0.05,
       elevation: 1,
@@ -673,7 +685,7 @@ function createMiniCardStyles(colors: ThemeColors) {
       fontSize: 11,
       fontWeight: '700',
       color: colors.gray600,
-      textAlign: 'center',
+      textAlign: 'left',
       marginBottom: 3,
     },
     tipRow: {
