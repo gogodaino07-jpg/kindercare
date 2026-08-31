@@ -107,9 +107,12 @@ export default function HomeScreen() {
   const upcoming = useUpcomingEvents();
   const weather = useWeeklyWeather();
   const noticeEvents = useMemo(() => {
-    const todayISO = toISODate(new Date());
+    // 날짜가 없는 순수 공통 안내(하원시간 변경 등)는 스캔한 날짜로 고정돼 들어오므로,
+    // "오늘 이후"만 보여주면 하루 지나자마자 사라진다 — 최근 2주 내 공지까지는 계속 보여준다.
+    const NOTICE_WINDOW_DAYS_BEFORE = 14;
+    const windowStart = toISODate(new Date(Date.now() - NOTICE_WINDOW_DAYS_BEFORE * 24 * 60 * 60 * 1000));
     return events
-      .filter((e) => e.category === '공지' && e.childId === selectedChild?.id && e.date >= todayISO)
+      .filter((e) => e.category === '공지' && e.childId === selectedChild?.id && e.date >= windowStart)
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [events, selectedChild]);
   const todayMainMenu = useMemo(() => {
