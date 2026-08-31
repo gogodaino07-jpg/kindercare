@@ -48,7 +48,7 @@ let hasAttemptedAdThisSession = false;
 /** 홈 화면 최하단 "가족과 함께 보기" 공유 배너 노출 여부 — 임시로 숨김. */
 const SHOW_FAMILY_SHARE_CARD = false;
 
-function createStyles(colors: ThemeColors, bottomInset: number) {
+function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -56,9 +56,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     mainContainer: {
       flex: 1,
     },
-    scrollContainer: {
-      paddingBottom: 230 + bottomInset,
-    },
+    scrollContainer: {},
     pullIndicator: {
       alignItems: 'center',
       justifyContent: 'center',
@@ -104,8 +102,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(
-    () => createStyles(colors, insets.bottom),
-    [colors, insets.bottom]
+    () => createStyles(colors),
+    [colors]
   );
   const upcoming = useUpcomingEvents();
   const weather = useWeeklyWeather();
@@ -133,6 +131,9 @@ export default function HomeScreen() {
   const [stickyVisible, setStickyVisible] = useState(false);
   const [birthdayBurstKey, setBirthdayBurstKey] = useState(0);
   const [greetingRefreshKey, setGreetingRefreshKey] = useState(0);
+  // 하단에 떠있는 공유배너/쿠팡배너 높이만큼만 스크롤 여백을 잡아준다 — 고정값을
+  // 쓰면 오늘 일정이 짧아 스크롤 콘텐츠가 짧은 날 그 아래로 빈 여백이 크게 남았다.
+  const [bottomStackHeight, setBottomStackHeight] = useState(0);
   const isChildBirthdayToday = isBirthdayToday(selectedChild?.birthdate);
 
   // 구독이 끝나 지금 선택된 아이가 잠기면(무료 한도 초과), 잠기지 않은 첫 아이로
@@ -350,7 +351,7 @@ export default function HomeScreen() {
               <Animated.ScrollView
                 ref={scrollRef}
                 style={styles.mainContainer}
-                contentContainerStyle={styles.scrollContainer}
+                contentContainerStyle={[styles.scrollContainer, { paddingBottom: bottomStackHeight + insets.bottom + 16 }]}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="always"
                 onScroll={scrollHandler}
@@ -409,7 +410,10 @@ export default function HomeScreen() {
 
       <BirthdayCenterConfetti triggerKey={birthdayBurstKey} />
 
-      <View style={[styles.bottomFixedStack, { bottom: insets.bottom }]}>
+      <View
+        style={[styles.bottomFixedStack, { bottom: insets.bottom }]}
+        onLayout={(e) => setBottomStackHeight(e.nativeEvent.layout.height)}
+      >
         {SHOW_FAMILY_SHARE_CARD && !upcoming.isEmpty && (
           <FamilyShareCard events={activeDayEvents} dayLabel={activeDayLabel} dateISO={activeDayISO} />
         )}
