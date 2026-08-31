@@ -7,7 +7,7 @@ import { useThemeColors } from '../../context/ThemeContext';
 import { WEATHER_SOURCE_LABEL, WeatherDay } from '../../hooks/useWeeklyWeather';
 import { Child } from '../../types/models';
 import { formatMD, toISODate } from '../../utils/date';
-import { describeGuideTip, describeMiniTip, describeTempCompareTip } from '../../utils/weatherCode';
+import { describeGuideTip, describeMiniTip } from '../../utils/weatherCode';
 import Text from '../common/AppText';
 
 interface HomeHeroHeaderProps {
@@ -111,8 +111,6 @@ export default function HomeHeroHeader({
 
   const today = weatherDays?.find((d) => d.isToday);
   const tomorrow = weatherDays?.find((d) => d.isTomorrow);
-  const yesterday = weatherDays?.find((d) => d.isYesterday);
-  const tempCompareTip = today ? describeTempCompareTip(today.tempMax, yesterday?.tempMax) : null;
   const dayAfter = useMemo(() => {
     if (!weatherDays) return undefined;
     const todayIdx = weatherDays.findIndex((d) => d.isToday);
@@ -230,9 +228,6 @@ export default function HomeHeroHeader({
                       <Text style={styles.todayTempMinText}>{today?.tempMin ?? '--'}°</Text>
                     </View>
                   </View>
-                  {tempCompareTip && (
-                    <Text style={styles.todayCompareText} numberOfLines={1}>{tempCompareTip}</Text>
-                  )}
                 </LinearGradient>
               </Pressable>
             )}
@@ -621,12 +616,6 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '700',
       color: 'rgba(255,255,255,0.75)',
       letterSpacing: -0.5,
-    },
-    todayCompareText: {
-      fontSize: 11,
-      fontWeight: '600',
-      color: 'rgba(255,255,255,0.85)',
-      marginTop: 1,
     },
     todayTipBox: {
       flexDirection: 'row',
