@@ -5,7 +5,7 @@ import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { WEATHER_SOURCE_LABEL, WeatherDay } from '../../hooks/useWeeklyWeather';
-import { Child } from '../../types/models';
+import { Child, MealPlan } from '../../types/models';
 import { formatMD, toISODate } from '../../utils/date';
 import { describeGuideTip, describeMiniTip } from '../../utils/weatherCode';
 import Text from '../common/AppText';
@@ -17,18 +17,8 @@ interface HomeHeroHeaderProps {
   weatherLoading: boolean;
   locationLabel?: string;
   onPressDate: (date: string) => void;
-  /** 오늘 등록된 급식의 메인 메뉴. 있으면 인사말 대신 "오늘은 OO를 먹어요~" 문구를 보여줌. */
-  todayMainMenu?: string;
-  /** 값이 바뀔 때마다(당겨서 새로고침) 인사말을 새로 랜덤 선택. 없으면 날짜 기준 고정 문구. */
-  refreshKey?: number;
-}
-
-/** Korean 아/야 particle: true when the syllable ends with a batchim (final consonant). */
-function hasFinalConsonant(text: string): boolean {
-  const trimmed = text.trim();
-  const code = trimmed.charCodeAt(trimmed.length - 1);
-  if (code < 0xac00 || code > 0xd7a3) return true;
-  return (code - 0xac00) % 28 !== 0;
+  /** 오늘 등록된 급식. 있으면 급식 카드에 메인 메뉴 + 나머지 반찬 목록을 보여줌. */
+  todayMeal?: MealPlan;
 }
 
 /** 인사말에 성을 빼고 이름만 부르도록: "김서준" -> "서준". 2자 이하는 성을 뗄 수 없어 그대로 둠. */
@@ -45,56 +35,7 @@ function isBirthdayToday(birthdate?: string): boolean {
   return monthDay === todayMonthDay;
 }
 
-/**
- * 이름+조사(아/야) 앞뒤에 붙는 문구. 배너 옆 여백이 휑해 보이지 않도록
- * 일부러 길게 써서 점심 메뉴 버튼 바로 옆까지 내용이 채워지게 함.
- */
-const GREETING_TEMPLATES: { before: string; after: string }[] = [
-  { before: '', after: ', 오늘 하루도 신나고 즐거운 일들이 가득하길 바랄게!' },
-  { before: '좋은 아침이야, ', after: '! 오늘도 씩씩하게 하루를 시작해보자!' },
-  { before: '', after: ', 잘 잤어? 오늘도 웃음 가득한 하루 보내자!' },
-  { before: '', after: ', 오늘도 신나는 일들로 가득한 하루가 되길 바라!' },
-  { before: '오늘도 반가워, ', after: '! 하루 종일 즐겁고 행복한 시간 보내자!' },
-  { before: '', after: ', 오늘도 힘차게 하루를 시작해볼까? 파이팅!' },
-  { before: '', after: ', 오늘은 또 어떤 신나는 일이 기다리고 있을까? 기대돼!' },
-  { before: '일어났구나, ', after: '! 오늘도 신나고 활기찬 하루 보내보자!' },
-  { before: '', after: ', 오늘도 활짝 웃으며 즐거운 하루 시작해보자!' },
-  { before: '', after: ', 오늘 하루도 무럭무럭 건강하게 자라렴!' },
-  { before: '좋은 하루야, ', after: '! 오늘도 신나고 알찬 하루 보내보자!' },
-  { before: '', after: ', 오늘도 씩씩하게 하루를 힘껏 채워보자!' },
-  { before: '', after: ', 오늘 하루도 두근두근 기대되는 일이 가득하길!' },
-  { before: '', after: ', 신나는 모험이 오늘도 너를 기다리고 있어!' },
-  { before: '', after: ', 오늘도 언제나처럼 네가 최고야, 힘내자!' },
-  { before: '', after: ', 오늘 하루도 알차고 즐겁게 보내볼까?' },
-  { before: '', after: ', 씩씩하고 건강하게 오늘 하루도 잘 지내자!' },
-  { before: '', after: ', 오늘도 무럭무럭 자라나는 소중한 하루야!' },
-  { before: '', after: ', 좋은 하루 시작해볼까? 오늘도 응원할게!' },
-  { before: '', after: ', 오늘도 웃음꽃 활짝 피우는 하루가 되길!' },
-  { before: '상쾌한 아침이야, ', after: '! 오늘 하루도 튼튼하게 지내보자!' },
-  { before: '', after: ', 오늘 하루도 튼튼하고 건강하게 지내자!' },
-  { before: '', after: ', 오늘도 별처럼 반짝반짝 빛나는 하루 보내!' },
-  { before: '', after: ', 오늘 하루도 함께라서 좋아, 즐겁게 지내자!' },
-  { before: '안녕, ', after: '! 오늘 하루도 신나게 보내보자, 파이팅!' },
-  { before: '', after: ', 오늘도 방긋 웃어줄래? 그럼 나도 행복해!' },
-  { before: '', after: ', 오늘 하루도 신나는 일만 가득하길 바랄게!' },
-  { before: '', after: ', 오늘도 사랑스럽고 행복한 하루 보내자!' },
-  { before: '', after: ', 씩씩하게 오늘 하루도 힘차게 파이팅!' },
-  { before: '', after: ', 오늘도 행복 가득한 하루가 되길 바랄게!' },
-];
-
-/** 오늘 날짜를 시드로 30개 중 하나를 고정 선택 — 같은 날엔 항상 같은 문구, 자정 지나면 자동으로 바뀜. */
-function pickDailyGreetingTemplate(): { before: string; after: string } {
-  const todayKey = toISODate(new Date());
-  let hash = 0;
-  for (let i = 0; i < todayKey.length; i++) {
-    hash = (hash * 31 + todayKey.charCodeAt(i)) >>> 0;
-  }
-  return GREETING_TEMPLATES[hash % GREETING_TEMPLATES.length];
-}
-
-
-
-/** Shared greeting banner + weather hero, used for both the empty and has-data home states so the top of the screen never differs. */
+/** Shared meal-menu card + weather hero, used for both the empty and has-data home states so the top of the screen never differs. */
 export default function HomeHeroHeader({
   selectedChild,
   onPressMeal,
@@ -102,8 +43,7 @@ export default function HomeHeroHeader({
   weatherLoading,
   locationLabel,
   onPressDate,
-  todayMainMenu,
-  refreshKey,
+  todayMeal,
 }: HomeHeroHeaderProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -124,58 +64,29 @@ export default function HomeHeroHeader({
     : selectedChild?.name
       ? stripSurname(selectedChild.name)
       : undefined;
-  // 새로고침(refreshKey 변경)할 때마다 랜덤으로 새 문구를 뽑고, 첫 로드 때는 날짜 기준 고정 문구를 보여준다.
-  const greetingTemplate = useMemo(() => {
-    return refreshKey
-      ? GREETING_TEMPLATES[Math.floor(Math.random() * GREETING_TEMPLATES.length)]
-      : pickDailyGreetingTemplate();
-  }, [refreshKey]);
   const isBirthday = isBirthdayToday(selectedChild?.birthdate);
 
   return (
     <View>
-      <LinearGradient
-        colors={isBirthday ? ['#F472B6', '#C084FC', '#818CF8'] : ['#FBBF24', '#FCD34D', '#FDE68A']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.greetingBanner}
-      >
-        <View style={styles.greetingBannerTextBlock}>
-          {isBirthday ? (
-            <Text
-              style={[styles.bannerGreetingText, styles.bannerGreetingTextOnBirthday]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.6}
-            >
-              🎂 오늘은 {greetingName ?? '우리 아이'} 생일이에요! 축하해요!
-            </Text>
-          ) : todayMainMenu ? (
-            <Text
-              style={styles.bannerGreetingText}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.6}
-            >
-              오늘 점심은 <Text style={styles.bannerGreetingName}>{todayMainMenu}</Text>
-              {hasFinalConsonant(todayMainMenu) ? '이에요' : '예요'} 🍽️
-            </Text>
-          ) : (
-            <Text
-              style={styles.bannerGreetingText}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.6}
-            >
-              {greetingTemplate.before}<Text style={styles.bannerGreetingName}>{greetingName ?? '우리 아이'}</Text>{greetingTemplate.after}
-            </Text>
-          )}
-        </View>
-        <Pressable style={styles.mealBannerButton} onPress={onPressMeal}>
-          <Text style={styles.mealBannerButtonIcon}>🍴</Text>
-          <Text style={styles.mealBannerButtonText}>점심 메뉴</Text>
-        </Pressable>
-      </LinearGradient>
+      {isBirthday && (
+        <LinearGradient
+          colors={['#F472B6', '#C084FC', '#818CF8']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.birthdayBanner}
+        >
+          <Text
+            style={styles.birthdayBannerText}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}
+          >
+            🎂 오늘은 {greetingName ?? '우리 아이'} 생일이에요! 축하해요!
+          </Text>
+        </LinearGradient>
+      )}
+
+      <MealMenuCard todayMeal={todayMeal} onPressMeal={onPressMeal} />
 
       {weatherExpanded && (
         <View style={styles.weatherMetaRow}>
@@ -433,62 +344,158 @@ function MiniWeatherCard({
   );
 }
 
+/** 오늘의 급식 카드 — 오렌지 태그 + "전체 식단" 링크(급식 시트를 그대로 엶) + 대표 메뉴 + 나머지 반찬 목록. */
+function MealMenuCard({ todayMeal, onPressMeal }: { todayMeal?: MealPlan; onPressMeal: () => void }) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createMealCardStyles(colors), [colors]);
+
+  const mainText = todayMeal?.mainMenu?.trim() || todayMeal?.menu[0];
+  const sideItems = useMemo(
+    () => (todayMeal ? todayMeal.menu.filter((item) => item !== mainText) : []),
+    [todayMeal, mainText]
+  );
+
+  return (
+    <Pressable style={styles.card} onPress={onPressMeal}>
+      <View style={styles.headerRow}>
+        <View style={styles.tag}>
+          <Text style={styles.tagText}>오늘의 점심</Text>
+        </View>
+        <View style={styles.linkRow}>
+          <Text style={styles.linkText}>전체 식단</Text>
+          <Feather name="chevron-right" size={14} color={colors.gray900} />
+        </View>
+      </View>
+
+      <View style={styles.bodyRow}>
+        <View style={[styles.thumbnail, !todayMeal && styles.thumbnailEmpty]}>
+          <Text style={styles.thumbnailEmoji}>{todayMeal ? '🍲' : '🍽️'}</Text>
+        </View>
+        {todayMeal ? (
+          <View style={styles.textCol}>
+            <Text style={styles.mainMenuText} numberOfLines={1}>
+              {mainText}
+            </Text>
+            {sideItems.length > 0 && (
+              <Text style={styles.sideMenuText} numberOfLines={1}>
+                {sideItems.join(' · ')}
+              </Text>
+            )}
+          </View>
+        ) : (
+          <View style={styles.textCol}>
+            <Text style={styles.emptyText}>오늘 등록된 급식이 없어요</Text>
+          </View>
+        )}
+      </View>
+    </Pressable>
+  );
+}
+
+function createMealCardStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: colors.cardWhite,
+      marginHorizontal: 20,
+      marginTop: 10,
+      marginBottom: 16,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: 16,
+      paddingHorizontal: 18,
+      ...SHADOW,
+      shadowOpacity: 0.08,
+      elevation: 2,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 14,
+    },
+    tag: {
+      backgroundColor: colors.pastelOrangeAccent,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    tagText: {
+      fontSize: 12.5,
+      fontWeight: '800',
+      color: '#FFFFFF',
+    },
+    linkRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+    },
+    linkText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.gray900,
+    },
+    bodyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+    },
+    thumbnail: {
+      width: 64,
+      height: 64,
+      borderRadius: 16,
+      backgroundColor: colors.orangeLight1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    thumbnailEmpty: {
+      backgroundColor: colors.gray100,
+    },
+    thumbnailEmoji: {
+      fontSize: 28,
+    },
+    textCol: {
+      flex: 1,
+      minWidth: 0,
+    },
+    mainMenuText: {
+      fontSize: 16.5,
+      fontWeight: '800',
+      color: colors.gray900,
+      marginBottom: 4,
+    },
+    sideMenuText: {
+      fontSize: 12.5,
+      fontWeight: '600',
+      color: colors.gray500,
+    },
+    emptyText: {
+      fontSize: 13.5,
+      fontWeight: '600',
+      color: colors.gray500,
+    },
+  });
+}
+
 const TODAY_CARD_HEIGHT = 158;
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    greetingBanner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+    birthdayBanner: {
       marginHorizontal: 20,
       marginTop: 10,
-      marginBottom: 16,
+      marginBottom: 10,
       borderRadius: 18,
       paddingVertical: 12,
       paddingHorizontal: 16,
-      gap: 10,
       ...SHADOW,
       shadowOpacity: 0.1,
       elevation: 2,
     },
-    greetingBannerTextBlock: {
-      flex: 1,
-      minWidth: 0,
-    },
-    bannerGreetingText: {
+    birthdayBannerText: {
       fontSize: 16,
       fontWeight: '800',
-      color: '#3D2E06',
-      marginTop: 2,
-    },
-    bannerGreetingName: {
-      color: colors.purpleDeep,
-      fontSize: 20,
-      fontWeight: '900',
-    },
-    bannerGreetingTextOnBirthday: {
       color: '#FFFFFF',
-    },
-    mealBannerButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 5,
-      backgroundColor: 'rgba(255,255,255,0.9)',
-      borderRadius: 12,
-      paddingVertical: 9,
-      paddingHorizontal: 12,
-      ...SHADOW,
-      shadowOpacity: 0.08,
-      elevation: 1,
-    },
-    mealBannerButtonIcon: {
-      fontSize: 14,
-    },
-    mealBannerButtonText: {
-      fontSize: 12.5,
-      fontWeight: '800',
-      color: '#5C4A1E',
     },
     weatherMetaRow: {
       flexDirection: 'row',

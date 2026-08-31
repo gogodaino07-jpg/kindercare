@@ -116,9 +116,9 @@ export default function HomeScreen() {
       .filter((e) => e.category === '공지' && e.childId === selectedChild?.id && e.date >= windowStart)
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [events, selectedChild]);
-  const todayMainMenu = useMemo(() => {
+  const todayMeal = useMemo(() => {
     const todayISO = toISODate(new Date());
-    return mealPlans.find((m) => m.childId === selectedChild?.id && m.date === todayISO)?.mainMenu;
+    return mealPlans.find((m) => m.childId === selectedChild?.id && m.date === todayISO);
   }, [mealPlans, selectedChild]);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [mealSheetOpen, setMealSheetOpen] = useState(false);
@@ -130,7 +130,6 @@ export default function HomeScreen() {
   const progressHeightRef = useRef(0);
   const [stickyVisible, setStickyVisible] = useState(false);
   const [birthdayBurstKey, setBirthdayBurstKey] = useState(0);
-  const [greetingRefreshKey, setGreetingRefreshKey] = useState(0);
   // 하단에 떠있는 공유배너/쿠팡배너 높이만큼만 스크롤 여백을 잡아준다 — 고정값을
   // 쓰면 오늘 일정이 짧아 스크롤 콘텐츠가 짧은 날 그 아래로 빈 여백이 크게 남았다.
   const [bottomStackHeight, setBottomStackHeight] = useState(0);
@@ -175,7 +174,6 @@ export default function HomeScreen() {
     } finally {
       setRefreshing(false);
       if (isChildBirthdayToday) setBirthdayBurstKey((k) => k + 1);
-      setGreetingRefreshKey((k) => k + 1);
     }
   }, [weather, isChildBirthdayToday]);
 
@@ -341,7 +339,7 @@ export default function HomeScreen() {
             weatherLoading={weather.loading}
             locationLabel={weather.locationLabel}
             onPressDate={onDatePress}
-            refreshKey={greetingRefreshKey}
+            todayMeal={todayMeal}
             refreshing={refreshing}
             onRefresh={onRefresh}
           />
@@ -374,8 +372,7 @@ export default function HomeScreen() {
                 weatherLoading={weather.loading}
                 locationLabel={weather.locationLabel}
                 onPressDate={onDatePress}
-                todayMainMenu={todayMainMenu}
-                refreshKey={greetingRefreshKey}
+                todayMeal={todayMeal}
               />
               <NoticeBoardCard notices={noticeEvents} onPressNotice={handleEventPress} />
               <View

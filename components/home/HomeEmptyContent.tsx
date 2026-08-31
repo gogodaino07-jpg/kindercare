@@ -5,7 +5,7 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-n
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { WeatherDay } from '../../hooks/useWeeklyWeather';
-import { Child } from '../../types/models';
+import { Child, MealPlan } from '../../types/models';
 import Text from '../common/AppText';
 import HomeHeroHeader from './HomeHeroHeader';
 
@@ -16,7 +16,7 @@ interface HomeEmptyContentProps {
   weatherLoading: boolean;
   locationLabel?: string;
   onPressDate: (date: string) => void;
-  refreshKey?: number;
+  todayMeal?: MealPlan;
   refreshing?: boolean;
   onRefresh?: () => void;
 }
@@ -28,7 +28,7 @@ export default function HomeEmptyContent({
   weatherLoading,
   locationLabel,
   onPressDate,
-  refreshKey,
+  todayMeal,
   refreshing,
   onRefresh,
 }: HomeEmptyContentProps) {
@@ -65,7 +65,7 @@ export default function HomeEmptyContent({
           weatherLoading={weatherLoading}
           locationLabel={locationLabel}
           onPressDate={onPressDate}
-          refreshKey={refreshKey}
+          todayMeal={todayMeal}
         />
 
         <SectionHeader emoji="🎒" title="가방에 쏙쏙!" />
