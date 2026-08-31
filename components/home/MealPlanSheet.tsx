@@ -198,12 +198,10 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
               <View style={styles.headerTextCol}>
                 <View style={styles.titleRow}>
                   <Text style={styles.title}>오늘의 급식 메뉴</Text>
-                  {!!todayMenu && (
-                    <Pressable style={styles.aiPillButton} onPress={handleAiScan} hitSlop={4}>
-                      <Ionicons name="sparkles" size={12} color={AMBER_DEEP} />
-                      <Text style={styles.aiPillButtonText}>AI 분석</Text>
-                    </Pressable>
-                  )}
+                  <Pressable style={styles.aiPillButton} onPress={handleAiScan} hitSlop={4}>
+                    <Ionicons name="sparkles" size={12} color={AMBER_DEEP} />
+                    <Text style={styles.aiPillButtonText}>AI 분석</Text>
+                  </Pressable>
                 </View>
                 <Text style={styles.dateSubtitle}>{todayDateLabel}</Text>
               </View>
@@ -221,13 +219,7 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
               <Text style={styles.mealCardText}>{todayMenu.menu.join(', ')}</Text>
             </View>
           ) : (
-            <View>
-              <Text style={styles.emptyText}>오늘은 등록된 식단이 없어요</Text>
-              <Pressable style={styles.aiScanButton} onPress={handleAiScan}>
-                <Ionicons name="sparkles" size={16} color={AMBER_DEEP} />
-                <Text style={styles.aiScanButtonText}>급식표 AI 분석</Text>
-              </Pressable>
-            </View>
+            <Text style={styles.emptyText}>오늘은 등록된 식단이 없어요</Text>
           )}
 
           <Pressable
@@ -392,23 +384,6 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '600',
       paddingVertical: 16,
       textAlign: 'center',
-    },
-    aiScanButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 6,
-      width: '100%',
-      backgroundColor: AMBER_SOFT,
-      borderWidth: 1,
-      borderColor: AMBER_SOFT_BORDER,
-      borderRadius: 14,
-      paddingVertical: 12,
-    },
-    aiScanButtonText: {
-      fontSize: 14,
-      fontWeight: '800',
-      color: AMBER_DEEP,
     },
     expandButton: {
       alignSelf: 'center',
