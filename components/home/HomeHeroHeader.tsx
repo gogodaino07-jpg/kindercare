@@ -1,4 +1,4 @@
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
@@ -116,6 +116,9 @@ export default function HomeHeroHeader({
                   end={{ x: 1, y: 1 }}
                   style={styles.todayCard}
                 >
+                  <Text style={styles.todayWatermarkEmoji} numberOfLines={1}>
+                    {today?.emoji ?? '🌤️'}
+                  </Text>
                   <Text style={styles.todayDateText}>
                     오늘{today ? ` ${formatMD(today.date)}` : ''}
                   </Text>
@@ -375,11 +378,11 @@ function MealMenuCard({ todayMeal, onPressMeal }: { todayMeal?: MealPlan; onPres
         </View>
       </View>
 
-      <View style={styles.bodyRow}>
-        <View style={[styles.thumbnail, !todayMeal && styles.thumbnailEmpty]}>
-          <Text style={styles.thumbnailEmoji}>{todayMeal ? '🍲' : '🍽️'}</Text>
-        </View>
-        {todayMeal ? (
+      {todayMeal ? (
+        <View style={styles.bodyRow}>
+          <View style={styles.thumbnail}>
+            <Text style={styles.thumbnailEmoji}>🍲</Text>
+          </View>
           <View style={styles.textCol}>
             <Text style={styles.mainMenuText} numberOfLines={1}>
               {mainText}
@@ -390,12 +393,18 @@ function MealMenuCard({ todayMeal, onPressMeal }: { todayMeal?: MealPlan; onPres
               </Text>
             )}
           </View>
-        ) : (
+        </View>
+      ) : (
+        <View style={styles.bodyRow}>
+          <View style={styles.thumbnailEmpty}>
+            <Ionicons name="camera-outline" size={22} color={colors.peachOrangeDeep} />
+          </View>
           <View style={styles.textCol}>
             <Text style={styles.emptyText}>오늘 등록된 급식이 없어요</Text>
+            <Text style={styles.emptyHintText}>탭해서 급식표를 스캔해보세요</Text>
           </View>
-        )}
-      </View>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -457,7 +466,15 @@ function createMealCardStyles(colors: ThemeColors) {
       justifyContent: 'center',
     },
     thumbnailEmpty: {
-      backgroundColor: colors.gray100,
+      width: 52,
+      height: 52,
+      borderRadius: 14,
+      backgroundColor: colors.cardWhite,
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: colors.pastelOrange,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     thumbnailEmoji: {
       fontSize: 24,
@@ -478,9 +495,15 @@ function createMealCardStyles(colors: ThemeColors) {
       color: colors.gray500,
     },
     emptyText: {
-      fontSize: 13,
+      fontSize: 13.5,
+      fontWeight: '800',
+      color: colors.gray800,
+      marginBottom: 2,
+    },
+    emptyHintText: {
+      fontSize: 12,
       fontWeight: '600',
-      color: colors.gray500,
+      color: colors.peachOrangeDeep,
     },
   });
 }
@@ -590,6 +613,14 @@ function createStyles(colors: ThemeColors) {
       padding: 14,
       justifyContent: 'space-between',
     },
+    todayWatermarkEmoji: {
+      position: 'absolute',
+      right: -18,
+      bottom: -22,
+      fontSize: 108,
+      opacity: 0.16,
+      transform: [{ rotate: '-8deg' }],
+    },
     skeleton: {
       backgroundColor: colors.gray100,
       borderRadius: 18,
@@ -600,7 +631,7 @@ function createStyles(colors: ThemeColors) {
       color: 'rgba(255,255,255,0.8)',
     },
     todayEmoji: {
-      fontSize: 16,
+      fontSize: 19,
     },
     todayTipRow: {
       flexDirection: 'row',
@@ -631,8 +662,8 @@ function createStyles(colors: ThemeColors) {
       color: 'rgba(255,255,255,0.75)',
     },
     todayTempText: {
-      fontSize: 28,
-      fontWeight: '700',
+      fontSize: 32,
+      fontWeight: '800',
       color: '#FFFFFF',
       letterSpacing: -0.5,
     },
