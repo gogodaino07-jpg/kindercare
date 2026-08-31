@@ -22,6 +22,7 @@ import HomeEmptyContent from '../components/home/HomeEmptyContent';
 import HomeHeroHeader from '../components/home/HomeHeroHeader';
 import HomeProfileBar from '../components/home/HomeProfileBar';
 import MealPlanSheet from '../components/home/MealPlanSheet';
+import NoticeBoardCard from '../components/home/NoticeBoardCard';
 import ScheduleBoard, { ScheduleTab } from '../components/home/ScheduleBoard';
 import StickyPrepBar from '../components/home/StickyPrepBar';
 import TodayPrepProgress from '../components/home/TodayPrepProgress';
@@ -105,6 +106,12 @@ export default function HomeScreen() {
   );
   const upcoming = useUpcomingEvents();
   const weather = useWeeklyWeather();
+  const noticeEvents = useMemo(() => {
+    const todayISO = toISODate(new Date());
+    return events
+      .filter((e) => e.category === '공지' && e.childId === selectedChild?.id && e.date >= todayISO)
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [events, selectedChild]);
   const todayMainMenu = useMemo(() => {
     const todayISO = toISODate(new Date());
     return mealPlans.find((m) => m.childId === selectedChild?.id && m.date === todayISO)?.mainMenu;
@@ -363,6 +370,7 @@ export default function HomeScreen() {
                 todayMainMenu={todayMainMenu}
                 refreshKey={greetingRefreshKey}
               />
+              <NoticeBoardCard notices={noticeEvents} onPressNotice={handleEventPress} />
               <View
                 onLayout={(e) => {
                   progressYRef.current = e.nativeEvent.layout.y;
