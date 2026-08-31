@@ -92,55 +92,6 @@ function pickDailyGreetingTemplate(): { before: string; after: string } {
   return GREETING_TEMPLATES[hash % GREETING_TEMPLATES.length];
 }
 
-/**
- * 급식 메인 메뉴가 등록된 날 인사말 대신 보여주는 문구들. {name}/{menu}는 굵게
- * 강조되고, {nameSubj}(이/가)·{menuObj}(을/를)·{menuCopula}(이에요/예요)는
- * 받침 유무에 맞는 조사로 자동 치환된다.
- */
-const MEAL_GREETING_TEMPLATES: string[] = [
-  '🍽️ {name}{nameSubj} 오늘은 {menu}{menuObj} 냠냠 맛있게 먹는 날이에요!',
-  '오늘 급식은 {menu}! {name}{nameSubj} 맛있게 먹었으면 좋겠어요 😋',
-  '🍴 {menu} 냄새가 솔솔~ {name}{nameSubj} 오늘 점심이 기대되겠어요!',
-  '오늘의 급식 하이라이트는 {menu}! {name}{nameSubj} 신나게 먹고 오길 바라요',
-  '{name}{nameSubj} 오늘 먹을 메뉴는 바로 {menu}{menuCopula}! 냠냠 🍽️',
-  '급식 메뉴 공개! 오늘은 {menu}{menuObj} 먹는 날이에요 🍚',
-  '오늘 {name} 급식엔 {menu}{menuObj} 나와요~ 맛있게 먹고 오길!',
-  '따끈따끈한 {menu}, {name}{nameSubj} 오늘 급식으로 만나요 🍴',
-  '{menu}{menuCopula}! 오늘 급식, {name}{nameSubj} 싹싹 비우고 올까요? 😆',
-  '오늘의 메뉴는 {menu}! {name}{nameSubj} 든든하게 먹는 하루 되길 🍽️',
-];
-
-/** 오늘 날짜(+salt)를 시드로 배열에서 하나를 고정 선택. */
-function pickDailyTemplate<T>(templates: T[], salt: string): T {
-  const todayKey = toISODate(new Date()) + salt;
-  let hash = 0;
-  for (let i = 0; i < todayKey.length; i++) {
-    hash = (hash * 31 + todayKey.charCodeAt(i)) >>> 0;
-  }
-  return templates[hash % templates.length];
-}
-
-/** "{name}", "{menu}" 등의 자리표시자를 실제 값으로 치환하며, name/menu만 굵게 렌더링. */
-function renderMealTemplate(
-  template: string,
-  values: { name: string; menu: string; nameSubj: string; menuObj: string; menuCopula: string },
-  boldStyle: object
-) {
-  return template.split(/(\{[a-zA-Z]+\})/g).map((part, i) => {
-    const match = part.match(/^\{([a-zA-Z]+)\}$/);
-    if (!match) return part;
-    const key = match[1] as keyof typeof values;
-    const value = values[key];
-    if (key === 'name' || key === 'menu') {
-      return (
-        <Text key={i} style={boldStyle}>
-          {value}
-        </Text>
-      );
-    }
-    return value ?? part;
-  });
-}
 
 
 /** Shared greeting banner + weather hero, used for both the empty and has-data home states so the top of the screen never differs. */
@@ -180,11 +131,6 @@ export default function HomeHeroHeader({
       ? GREETING_TEMPLATES[Math.floor(Math.random() * GREETING_TEMPLATES.length)]
       : pickDailyGreetingTemplate();
   }, [refreshKey]);
-  const mealGreetingTemplate = useMemo(() => {
-    return refreshKey
-      ? MEAL_GREETING_TEMPLATES[Math.floor(Math.random() * MEAL_GREETING_TEMPLATES.length)]
-      : pickDailyTemplate(MEAL_GREETING_TEMPLATES, 'meal');
-  }, [refreshKey]);
   const isBirthday = isBirthdayToday(selectedChild?.birthdate);
 
   return (
@@ -212,17 +158,8 @@ export default function HomeHeroHeader({
               adjustsFontSizeToFit
               minimumFontScale={0.6}
             >
-              {renderMealTemplate(
-                mealGreetingTemplate,
-                {
-                  name: greetingName ?? '우리 아이',
-                  menu: todayMainMenu,
-                  nameSubj: hasFinalConsonant(greetingName ?? '우리 아이') ? '이' : '가',
-                  menuObj: hasFinalConsonant(todayMainMenu) ? '을' : '를',
-                  menuCopula: hasFinalConsonant(todayMainMenu) ? '이에요' : '예요',
-                },
-                styles.bannerGreetingName
-              )}
+              오늘 점심은 <Text style={styles.bannerGreetingName}>{todayMainMenu}</Text>
+              {hasFinalConsonant(todayMainMenu) ? '이에요' : '예요'} 🍽️
             </Text>
           ) : (
             <Text
