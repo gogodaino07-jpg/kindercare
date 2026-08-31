@@ -116,17 +116,18 @@ export default function HomeHeroHeader({
                   end={{ x: 1, y: 1 }}
                   style={styles.todayCard}
                 >
-                  <View style={styles.todayTipCenter}>
-                    <View style={styles.todayTipBox}>
-                      <AnimatedWeatherEmoji
-                        emoji={today?.emoji ?? '🌤️'}
-                        label={today?.label ?? ''}
-                        style={styles.todayEmoji}
-                      />
-                      <Text style={styles.todayTipText} numberOfLines={2}>
-                        {describeGuideTip(today?.label ?? '')}
-                      </Text>
-                    </View>
+                  <Text style={styles.todayDateText}>
+                    오늘{today ? ` ${formatMD(today.date)}` : ''}
+                  </Text>
+                  <View style={styles.todayTipRow}>
+                    <AnimatedWeatherEmoji
+                      emoji={today?.emoji ?? '🌤️'}
+                      label={today?.label ?? ''}
+                      style={styles.todayEmoji}
+                    />
+                    <Text style={styles.todayTipText} numberOfLines={2}>
+                      {describeGuideTip(today?.label ?? '')}
+                    </Text>
                   </View>
                   <View style={styles.todayTempRow}>
                     <View style={styles.todayTempItem}>
@@ -582,29 +583,41 @@ function createStyles(colors: ThemeColors) {
     },
     todayCardPressable: {
       flex: 1,
-      borderRadius: 20,
+      borderRadius: 18,
       overflow: 'hidden',
       ...SHADOW,
-      shadowOpacity: 0.14,
+      shadowOpacity: 0.12,
       shadowColor: colors.accent,
-      elevation: 3,
+      elevation: 2,
     },
     todayCard: {
       flex: 1,
-      padding: 12,
-      justifyContent: 'center',
-    },
-    todayTipCenter: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'flex-start',
+      padding: 14,
+      justifyContent: 'space-between',
     },
     skeleton: {
       backgroundColor: colors.gray100,
-      borderRadius: 20,
+      borderRadius: 18,
+    },
+    todayDateText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: 'rgba(255,255,255,0.8)',
     },
     todayEmoji: {
-      fontSize: 17,
+      fontSize: 16,
+    },
+    todayTipRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    todayTipText: {
+      flexShrink: 1,
+      fontSize: 12,
+      fontWeight: '600',
+      color: 'rgba(255,255,255,0.92)',
+      textAlign: 'left',
     },
     todayTempRow: {
       flexDirection: 'row',
@@ -623,36 +636,16 @@ function createStyles(colors: ThemeColors) {
       color: 'rgba(255,255,255,0.75)',
     },
     todayTempText: {
-      fontSize: 30,
-      fontWeight: '800',
+      fontSize: 28,
+      fontWeight: '700',
       color: '#FFFFFF',
       letterSpacing: -0.5,
     },
     todayTempMinText: {
-      fontSize: 16,
-      fontWeight: '700',
+      fontSize: 15,
+      fontWeight: '600',
       color: 'rgba(255,255,255,0.75)',
       letterSpacing: -0.5,
-    },
-    todayTipBox: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      alignSelf: 'flex-start',
-      justifyContent: 'center',
-      maxWidth: '100%',
-      gap: 6,
-      backgroundColor: 'rgba(255,255,255,0.22)',
-      borderRadius: 10,
-      paddingHorizontal: 9,
-      paddingVertical: 5,
-      marginBottom: 8,
-    },
-    todayTipText: {
-      flexShrink: 1,
-      fontSize: 11.5,
-      fontWeight: '700',
-      color: '#FFFFFF',
-      textAlign: 'left',
     },
     miniCardColumn: {
       flex: 1,
