@@ -110,6 +110,7 @@ export default function HomeHeroHeader({
   const [weatherExpanded, setWeatherExpanded] = useState(false);
 
   const today = weatherDays?.find((d) => d.isToday);
+  const todayTint = useMemo(() => getMiniCardTint(today?.label, colors), [today?.label, colors]);
   const tomorrow = weatherDays?.find((d) => d.isTomorrow);
   const dayAfter = useMemo(() => {
     if (!weatherDays) return undefined;
@@ -198,14 +199,14 @@ export default function HomeHeroHeader({
             {weatherLoading && !today ? (
               <SkeletonBox style={[styles.todayCard, styles.skeleton]} />
             ) : (
-              <Pressable style={styles.todayCardPressable} onPress={() => today && onPressDate(today.date)}>
-                <LinearGradient
-                  colors={getWeatherGradient(today?.label ?? '')}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.todayCard}
-                >
-                  <Text style={styles.todayDateText}>오늘 {today ? formatMD(today.date) : ''}</Text>
+              <Pressable
+                style={[
+                  styles.todayCardPressable,
+                  { backgroundColor: todayTint.bg, borderColor: todayTint.border },
+                ]}
+                onPress={() => today && onPressDate(today.date)}
+              >
+                <View style={styles.todayCard}>
                   <View style={styles.todayTipCenter}>
                     <View style={styles.todayTipBox}>
                       <AnimatedWeatherEmoji
@@ -228,7 +229,7 @@ export default function HomeHeroHeader({
                       <Text style={styles.todayTempMinText}>{today?.tempMin ?? '--'}°</Text>
                     </View>
                   </View>
-                </LinearGradient>
+                </View>
               </Pressable>
             )}
           </View>
@@ -563,15 +564,16 @@ function createStyles(colors: ThemeColors) {
     todayCardPressable: {
       flex: 1,
       borderRadius: 22,
+      borderWidth: 1,
       overflow: 'hidden',
       ...SHADOW,
-      shadowOpacity: 0.14,
-      shadowColor: colors.accent,
-      elevation: 3,
+      shadowOpacity: 0.05,
+      elevation: 1,
     },
     todayCard: {
       flex: 1,
       padding: 14,
+      justifyContent: 'center',
     },
     todayTipCenter: {
       flex: 1,
@@ -582,11 +584,6 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.gray100,
       borderRadius: 22,
     },
-    todayDateText: {
-      fontSize: 12.5,
-      fontWeight: '700',
-      color: 'rgba(255,255,255,0.9)',
-    },
     todayEmoji: {
       fontSize: 17,
     },
@@ -594,6 +591,7 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'flex-end',
       gap: 8,
+      justifyContent: 'center',
     },
     todayTempItem: {
       flexDirection: 'row',
@@ -603,18 +601,18 @@ function createStyles(colors: ThemeColors) {
     todayTempLabel: {
       fontSize: 11,
       fontWeight: '700',
-      color: 'rgba(255,255,255,0.75)',
+      color: colors.gray500,
     },
     todayTempText: {
       fontSize: 32,
       fontWeight: '800',
-      color: '#FFFFFF',
+      color: colors.gray900,
       letterSpacing: -0.5,
     },
     todayTempMinText: {
       fontSize: 17,
       fontWeight: '700',
-      color: 'rgba(255,255,255,0.75)',
+      color: colors.gray400,
       letterSpacing: -0.5,
     },
     todayTipBox: {
@@ -624,16 +622,17 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'center',
       maxWidth: '100%',
       gap: 6,
-      backgroundColor: 'rgba(255,255,255,0.18)',
+      backgroundColor: colors.cardWhite,
       borderRadius: 10,
       paddingHorizontal: 10,
       paddingVertical: 5,
+      marginBottom: 10,
     },
     todayTipText: {
       flexShrink: 1,
       fontSize: 11.5,
       fontWeight: '600',
-      color: '#FFFFFF',
+      color: colors.gray900,
       textAlign: 'center',
     },
     miniCardColumn: {
