@@ -437,7 +437,7 @@ function MiniWeatherCard({
   );
 }
 
-const TODAY_CARD_HEIGHT = 192;
+const TODAY_CARD_HEIGHT = 158;
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
@@ -559,7 +559,7 @@ function createStyles(colors: ThemeColors) {
     weatherHeroRow: {
       flexDirection: 'row',
       paddingHorizontal: 20,
-      gap: 12,
+      gap: 10,
       height: TODAY_CARD_HEIGHT,
     },
     todayCardWrapper: {
@@ -567,16 +567,16 @@ function createStyles(colors: ThemeColors) {
     },
     todayCardPressable: {
       flex: 1,
-      borderRadius: 26,
+      borderRadius: 22,
       overflow: 'hidden',
       ...SHADOW,
-      shadowOpacity: 0.18,
+      shadowOpacity: 0.14,
       shadowColor: colors.accent,
-      elevation: 4,
+      elevation: 3,
     },
     todayCard: {
       flex: 1,
-      padding: 18,
+      padding: 14,
     },
     todayTipCenter: {
       flex: 1,
@@ -585,20 +585,20 @@ function createStyles(colors: ThemeColors) {
     },
     skeleton: {
       backgroundColor: colors.gray100,
-      borderRadius: 26,
+      borderRadius: 22,
     },
     todayDateText: {
-      fontSize: 14,
+      fontSize: 12.5,
       fontWeight: '700',
       color: 'rgba(255,255,255,0.9)',
     },
     todayEmoji: {
-      fontSize: 20,
+      fontSize: 17,
     },
     todayTempRow: {
       flexDirection: 'row',
       alignItems: 'flex-end',
-      gap: 10,
+      gap: 8,
     },
     todayTempItem: {
       flexDirection: 'row',
@@ -606,27 +606,27 @@ function createStyles(colors: ThemeColors) {
       gap: 4,
     },
     todayTempLabel: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: '700',
       color: 'rgba(255,255,255,0.75)',
     },
     todayTempText: {
-      fontSize: 40,
+      fontSize: 32,
       fontWeight: '800',
       color: '#FFFFFF',
-      letterSpacing: -1,
+      letterSpacing: -0.5,
     },
     todayTempMinText: {
-      fontSize: 20,
+      fontSize: 17,
       fontWeight: '700',
       color: 'rgba(255,255,255,0.75)',
       letterSpacing: -0.5,
     },
     todayCompareText: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: '600',
       color: 'rgba(255,255,255,0.85)',
-      marginTop: 2,
+      marginTop: 1,
     },
     todayTipBox: {
       flexDirection: 'row',
@@ -634,15 +634,15 @@ function createStyles(colors: ThemeColors) {
       alignSelf: 'center',
       justifyContent: 'center',
       maxWidth: '100%',
-      gap: 8,
+      gap: 6,
       backgroundColor: 'rgba(255,255,255,0.18)',
-      borderRadius: 12,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
     },
     todayTipText: {
       flexShrink: 1,
-      fontSize: 13,
+      fontSize: 11.5,
       fontWeight: '600',
       color: '#FFFFFF',
       textAlign: 'center',
@@ -650,7 +650,7 @@ function createStyles(colors: ThemeColors) {
     miniCardColumn: {
       flex: 1,
       justifyContent: 'space-between',
-      gap: 10,
+      gap: 8,
     },
   });
 }
@@ -660,33 +660,36 @@ function createMiniCardStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      borderRadius: 18,
-      borderWidth: 1.5,
-      paddingVertical: 10,
-      paddingHorizontal: 12,
+      borderRadius: 16,
+      borderWidth: 1,
+      paddingVertical: 8,
+      paddingHorizontal: 10,
       justifyContent: 'center',
       alignItems: 'center',
+      ...SHADOW,
+      shadowOpacity: 0.05,
+      elevation: 1,
     },
     skeleton: {
       backgroundColor: colors.gray100,
       borderColor: colors.gray100,
     },
     label: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: '700',
       color: colors.gray600,
       textAlign: 'center',
-      marginBottom: 4,
+      marginBottom: 3,
     },
     tipRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      marginVertical: 4,
+      marginVertical: 3,
       maxWidth: '100%',
     },
     emoji: {
-      fontSize: 16,
+      fontSize: 14,
     },
     tempRow: {
       flexDirection: 'row',
@@ -694,17 +697,17 @@ function createMiniCardStyles(colors: ThemeColors) {
       gap: 4,
     },
     temp: {
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: '800',
       color: colors.gray900,
     },
     tempMin: {
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: '700',
       color: colors.gray400,
     },
     tip: {
-      fontSize: 11,
+      fontSize: 10.5,
       fontWeight: '600',
       color: colors.gray500,
       flexShrink: 1,
