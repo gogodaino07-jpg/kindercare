@@ -136,14 +136,6 @@ export default function UploadScreen() {
     AIUsageLimitService.getRemainingCount(googleAccount?.email, isSubscribed).then(setRemainingAnalyses);
   }, [googleAccount?.email, isSubscribed]);
 
-  // TEMP(테스트용, 추후 제거 예정): AI 분석 무료 횟수를 즉시 초기화한다.
-  const handleResetTestUsage = async () => {
-    if (!googleAccount?.email) return;
-    await AIUsageLimitService.resetUsage(googleAccount.email, 'newsletter');
-    setRemainingAnalyses(await AIUsageLimitService.getRemainingCount(googleAccount.email, isSubscribed));
-    showToast('AI 분석 횟수가 초기화됐어요.');
-  };
-
   useEffect(() => {
     const checkPendingSession = async () => {
       const pending = await AnalysisResultStore.getPendingSession();
@@ -406,10 +398,6 @@ export default function UploadScreen() {
                 <Text style={styles.gaugeFootText}>1회 스캔 시 사진/문서 1건이 분석됩니다</Text>
                 {remainingAnalyses === 0 && <Text style={styles.gaugeExhaustedText}>모두 사용됨</Text>}
               </View>
-              {/* TEMP(테스트용, 추후 제거 예정) */}
-              <Pressable onPress={handleResetTestUsage} style={styles.gaugeTestResetButton}>
-                <Text style={styles.gaugeTestResetButtonText}>🧪 테스트용: AI 분석 횟수 초기화</Text>
-              </Pressable>
             </View>
 
             {docs.length > 0 ? (
@@ -723,15 +711,6 @@ const styles = StyleSheet.create({
   gaugeFootRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   gaugeFootText: { fontSize: 12, color: C.slate400, fontWeight: '500' },
   gaugeExhaustedText: { fontSize: 12, color: C.rose600, fontWeight: '700' },
-  // TEMP(테스트용, 추후 제거 예정)
-  gaugeTestResetButton: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#FEF3C7',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  gaugeTestResetButtonText: { fontSize: 11, fontWeight: '700', color: '#92400E' },
   dropzoneCard: {
     borderWidth: 2,
     borderColor: C.violet200,
