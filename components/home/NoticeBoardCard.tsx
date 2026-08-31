@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Event } from '../../types/models';
@@ -14,17 +14,46 @@ interface NoticeBoardCardProps {
   onPressNotice: (event: Event) => void;
 }
 
-const MAX_VISIBLE = 3;
+function NoticeRow({
+  event,
+  onPress,
+  styles,
+  colors,
+  showDivider,
+}: {
+  event: Event;
+  onPress: () => void;
+  styles: ReturnType<typeof createStyles>;
+  colors: ThemeColors;
+  showDivider?: boolean;
+}) {
+  return (
+    <Pressable style={[styles.row, showDivider && styles.rowDivider]} onPress={onPress}>
+      <Text style={styles.rowDate}>{formatMD(event.date).split('(')[0]}</Text>
+      <Text style={styles.rowText} numberOfLines={1}>
+        {event.noticeText || event.title}
+      </Text>
+      <MaterialCommunityIcons name="chevron-right" size={16} color={colors.gray400} />
+    </Pressable>
+  );
+}
 
-/** 캘린더 일정과 별개로, 특정 날짜에 매이지 않는 "공지" 카테고리 일정만 모아 보여주는 홈 화면 카드. */
+/** 캘린더 일정과 별개로, 특정 날짜에 매이지 않는 "공지" 카테고리 일정만 모아 보여주는 홈 화면 카드 — 가장 가까운 1건만 배너에, 나머지는 더보기 팝업으로. */
 export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardCardProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [showAll, setShowAll] = useState(false);
 
   if (notices.length === 0) return null;
 
-  const visible = notices.slice(0, MAX_VISIBLE);
-  const moreCount = notices.length - visible.length;
+  const featured = notices[0];
+  const moreCount = notices.length - 1;
+
+  const handlePressFeatured = () => onPressNotice(featured);
+  const handlePressInModal = (event: Event) => {
+    setShowAll(false);
+    onPressNotice(event);
+  };
 
   return (
     <View style={styles.container}>
@@ -38,25 +67,44 @@ export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardC
           <MaterialCommunityIcons name="bullhorn" size={20} color="#FFFFFF" />
         </LinearGradient>
         <Text style={styles.title}>공지사항</Text>
+        {moreCount > 0 && (
+          <Pressable onPress={() => setShowAll(true)} style={styles.moreButton} hitSlop={6}>
+            <Text style={styles.moreButtonText}>+{moreCount}개 더보기</Text>
+          </Pressable>
+        )}
       </View>
 
       <View style={styles.list}>
-        {visible.map((event, i) => (
-          <Pressable
-            key={event.id}
-            style={[styles.row, i < visible.length - 1 && styles.rowDivider]}
-            onPress={() => onPressNotice(event)}
-          >
-            <Text style={styles.rowDate}>{formatMD(event.date).split('(')[0]}</Text>
-            <Text style={styles.rowText} numberOfLines={1}>
-              {event.noticeText || event.title}
-            </Text>
-            <MaterialCommunityIcons name="chevron-right" size={16} color={colors.gray400} />
-          </Pressable>
-        ))}
+        <NoticeRow event={featured} onPress={handlePressFeatured} styles={styles} colors={colors} />
       </View>
 
-      {moreCount > 0 && <Text style={styles.moreText}>+{moreCount}개 더보기</Text>}
+      <Modal visible={showAll} transparent animationType="fade" onRequestClose={() => setShowAll(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowAll(false)}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderLeft}>
+                <MaterialCommunityIcons name="bullhorn" size={16} color={colors.blue500} />
+                <Text style={styles.modalHeaderText}>공지사항 전체 ({notices.length})</Text>
+              </View>
+              <Pressable onPress={() => setShowAll(false)} style={styles.modalCloseButton} hitSlop={6}>
+                <MaterialCommunityIcons name="close" size={16} color={colors.gray400} />
+              </Pressable>
+            </View>
+            <ScrollView style={styles.modalList}>
+              {notices.map((event, i) => (
+                <NoticeRow
+                  key={event.id}
+                  event={event}
+                  onPress={() => handlePressInModal(event)}
+                  styles={styles}
+                  colors={colors}
+                  showDivider={i < notices.length - 1}
+                />
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -96,6 +144,17 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '800',
       color: colors.gray900,
     },
+    moreButton: {
+      backgroundColor: 'rgba(255,255,255,0.75)',
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    moreButtonText: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: colors.blue500,
+    },
     list: {
       backgroundColor: 'rgba(255,255,255,0.6)',
       borderRadius: 14,
@@ -124,12 +183,43 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '600',
       color: colors.gray900,
     },
-    moreText: {
-      marginTop: 8,
-      fontSize: 11,
-      fontWeight: '700',
-      color: colors.gray500,
-      textAlign: 'center',
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(2, 6, 23, 0.6)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    modalCard: {
+      width: '100%',
+      maxWidth: 400,
+      maxHeight: '75%',
+      backgroundColor: colors.cardWhite,
+      borderRadius: 24,
+      padding: 18,
+      gap: 10,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingBottom: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    modalHeaderText: { fontSize: 14, fontWeight: '900', color: colors.gray900 },
+    modalCloseButton: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.gray100,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modalList: {
+      backgroundColor: colors.gray50,
+      borderRadius: 14,
     },
   });
 }
