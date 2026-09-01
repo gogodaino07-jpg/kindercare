@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, Easing, Image, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { ThemeColors } from '../../constants/theme';
 import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -34,6 +34,7 @@ function formatClassName(className?: string): string | undefined {
 
 const AVATAR_SMALL_SIZE = 56;
 const ICON_BUTTON_SIZE = 32;
+const PHOTO_PREVIEW_SIZE = Math.min(Dimensions.get('window').width * 0.7, 320);
 
 const CONFETTI_EMOJIS = ['🎉', '🎊', '✨', '🎈', '⭐'];
 const CONFETTI_COUNT = 14;
@@ -119,13 +120,19 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { unreadCount } = useNotificationCenter();
   const [notifVisible, setNotifVisible] = useState(false);
+  const [photoPreviewVisible, setPhotoPreviewVisible] = useState(false);
+  const photoUri = selectedChild?.photoUri;
 
   return (
     <View style={styles.topRow}>
       <View style={styles.profileRow}>
-        <View style={styles.avatarSmallContainer}>
-          {selectedChild?.photoUri ? (
-            <Image source={{ uri: selectedChild.photoUri }} style={styles.avatarSmall} />
+        <Pressable
+          style={styles.avatarSmallContainer}
+          onPress={photoUri ? () => setPhotoPreviewVisible(true) : undefined}
+          accessibilityLabel={photoUri ? '프로필 사진 크게 보기' : undefined}
+        >
+          {photoUri ? (
+            <Image source={{ uri: photoUri }} style={styles.avatarSmall} />
           ) : (
             <View style={styles.avatarSmallPlaceholder}>
               <Text style={styles.avatarSmallIcon}>🧒</Text>
@@ -133,7 +140,7 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
           )}
           <View style={styles.onlineDot} />
           {birthdayBurstKey !== undefined && <BirthdayBurst triggerKey={birthdayBurstKey} />}
-        </View>
+        </Pressable>
         <View style={styles.profileTextBlock}>
           <View style={styles.nameRow}>
             <Text style={styles.profileName} numberOfLines={1}>{selectedChild?.name ?? '우리 아이'}</Text>
@@ -177,6 +184,19 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
       </View>
 
       <NotificationCenterModal visible={notifVisible} onClose={() => setNotifVisible(false)} />
+
+      {photoUri && (
+        <Modal
+          visible={photoPreviewVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setPhotoPreviewVisible(false)}
+        >
+          <Pressable style={styles.photoPreviewBackdrop} onPress={() => setPhotoPreviewVisible(false)}>
+            <Image source={{ uri: photoUri }} style={styles.photoPreviewImage} />
+          </Pressable>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -288,6 +308,19 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.tomorrowRed,
       borderWidth: 1.5,
       borderColor: colors.skyBackground,
+    },
+    photoPreviewBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(15, 23, 42, 0.75)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    photoPreviewImage: {
+      width: PHOTO_PREVIEW_SIZE,
+      height: PHOTO_PREVIEW_SIZE,
+      borderRadius: PHOTO_PREVIEW_SIZE / 2,
+      borderWidth: 3,
+      borderColor: colors.cardWhite,
     },
   });
 }
