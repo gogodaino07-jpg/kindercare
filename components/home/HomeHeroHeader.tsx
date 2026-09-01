@@ -399,7 +399,7 @@ function MealMenuCard({ todayMeal, onPressMeal }: { todayMeal?: MealPlan; onPres
           <View style={styles.thumbnailEmpty}>
             <Ionicons name="camera-outline" size={22} color={colors.peachOrangeDeep} />
           </View>
-          <View style={styles.textCol}>
+          <View style={styles.emptyTextCol}>
             <Text style={styles.emptyText}>오늘 등록된 급식이 없어요</Text>
             <Text style={styles.emptyHintText}>탭해서 급식표를 스캔해보세요</Text>
           </View>
@@ -483,6 +483,11 @@ function createMealCardStyles(colors: ThemeColors) {
       flex: 1,
       minWidth: 0,
     },
+    emptyTextCol: {
+      flex: 1,
+      minWidth: 0,
+      alignItems: 'center',
+    },
     mainMenuText: {
       fontSize: 15,
       fontWeight: '800',
@@ -499,11 +504,13 @@ function createMealCardStyles(colors: ThemeColors) {
       fontWeight: '800',
       color: colors.gray800,
       marginBottom: 2,
+      textAlign: 'center',
     },
     emptyHintText: {
       fontSize: 12,
       fontWeight: '600',
       color: colors.peachOrangeDeep,
+      textAlign: 'center',
     },
   });
 }
