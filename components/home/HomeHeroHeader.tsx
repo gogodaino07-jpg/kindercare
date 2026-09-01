@@ -1,5 +1,6 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
@@ -359,12 +360,35 @@ function MiniWeatherCard({
 function MealMenuCard({ todayMeal, onPressMeal }: { todayMeal?: MealPlan; onPressMeal: () => void }) {
   const colors = useThemeColors();
   const styles = useMemo(() => createMealCardStyles(colors), [colors]);
+  const router = useRouter();
 
   const mainText = todayMeal?.mainMenu?.trim() || todayMeal?.menu[0];
   const sideItems = useMemo(
     () => (todayMeal ? todayMeal.menu.filter((item) => item !== mainText) : []),
     [todayMeal, mainText]
   );
+
+  if (!todayMeal) {
+    return (
+      <Pressable style={styles.card} onPress={onPressMeal}>
+        <View style={styles.emptyRow}>
+          <View style={styles.emptyLeftCol}>
+            <View style={styles.emptyHeaderRow}>
+              <View style={styles.miniTag}>
+                <Text style={styles.miniTagText}>점심</Text>
+              </View>
+              <Text style={styles.unregisteredText}>미등록</Text>
+            </View>
+            <Text style={styles.emptyMainText}>오늘 등록된 급식 없음</Text>
+          </View>
+          <Pressable style={styles.scanButton} onPress={() => router.push('/meal-scan')} hitSlop={4}>
+            <Ionicons name="camera-outline" size={18} color="#FFFFFF" />
+            <Text style={styles.scanButtonText}>스캔하기</Text>
+          </Pressable>
+        </View>
+      </Pressable>
+    );
+  }
 
   return (
     <Pressable style={styles.card} onPress={onPressMeal}>
@@ -378,33 +402,21 @@ function MealMenuCard({ todayMeal, onPressMeal }: { todayMeal?: MealPlan; onPres
         </View>
       </View>
 
-      {todayMeal ? (
-        <View style={styles.bodyRow}>
-          <View style={styles.thumbnail}>
-            <Text style={styles.thumbnailEmoji}>🍲</Text>
-          </View>
-          <View style={styles.textCol}>
-            <Text style={styles.mainMenuText} numberOfLines={1}>
-              {mainText}
+      <View style={styles.bodyRow}>
+        <View style={styles.thumbnail}>
+          <Text style={styles.thumbnailEmoji}>🍲</Text>
+        </View>
+        <View style={styles.textCol}>
+          <Text style={styles.mainMenuText} numberOfLines={1}>
+            {mainText}
+          </Text>
+          {sideItems.length > 0 && (
+            <Text style={styles.sideMenuText} numberOfLines={1}>
+              {sideItems.join(' · ')}
             </Text>
-            {sideItems.length > 0 && (
-              <Text style={styles.sideMenuText} numberOfLines={1}>
-                {sideItems.join(' · ')}
-              </Text>
-            )}
-          </View>
+          )}
         </View>
-      ) : (
-        <View style={styles.bodyRow}>
-          <View style={styles.thumbnailEmpty}>
-            <Ionicons name="camera-outline" size={22} color={colors.peachOrangeDeep} />
-          </View>
-          <View style={styles.emptyTextCol}>
-            <Text style={styles.emptyText}>오늘 등록된 급식이 없어요</Text>
-            <Text style={styles.emptyHintText}>탭해서 급식표를 스캔해보세요</Text>
-          </View>
-        </View>
-      )}
+      </View>
     </Pressable>
   );
 }
@@ -466,32 +478,12 @@ function createMealCardStyles(colors: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    thumbnailEmpty: {
-      width: 52,
-      height: 52,
-      borderRadius: 14,
-      backgroundColor: colors.cardWhite,
-      borderWidth: 1.5,
-      borderStyle: 'dashed',
-      borderColor: colors.pastelOrange,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
     thumbnailEmoji: {
       fontSize: 24,
     },
     textCol: {
       flex: 1,
       minWidth: 0,
-    },
-    emptyTextCol: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      top: 0,
-      bottom: 0,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
     mainMenuText: {
       fontSize: 15,
@@ -504,18 +496,60 @@ function createMealCardStyles(colors: ThemeColors) {
       fontWeight: '600',
       color: colors.gray500,
     },
-    emptyText: {
+    emptyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    emptyLeftCol: {
+      flex: 1,
+      minWidth: 0,
+    },
+    emptyHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 8,
+    },
+    miniTag: {
+      backgroundColor: colors.pastelOrangeAccent,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    miniTagText: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: '#FFFFFF',
+    },
+    unregisteredText: {
+      fontSize: 12.5,
+      fontWeight: '600',
+      color: colors.gray500,
+    },
+    emptyMainText: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.gray900,
+    },
+    scanButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.pastelOrangeAccent,
+      borderRadius: 999,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      ...SHADOW,
+      shadowOpacity: 0.12,
+      shadowColor: colors.peachOrangeDeep,
+      elevation: 2,
+    },
+    scanButtonText: {
       fontSize: 13.5,
       fontWeight: '800',
-      color: colors.gray800,
-      marginBottom: 2,
-      textAlign: 'center',
-    },
-    emptyHintText: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: colors.peachOrangeDeep,
-      textAlign: 'center',
+      color: '#FFFFFF',
     },
   });
 }
