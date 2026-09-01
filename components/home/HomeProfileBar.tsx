@@ -122,7 +122,7 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
 
   return (
     <View style={styles.topRow}>
-      <Pressable style={styles.profileRow} onPress={onPressChild}>
+      <View style={styles.profileRow}>
         <View style={styles.avatarSmallContainer}>
           {selectedChild?.photoUri ? (
             <Image source={{ uri: selectedChild.photoUri }} style={styles.avatarSmall} />
@@ -137,16 +137,24 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
         <View style={styles.profileTextBlock}>
           <View style={styles.nameRow}>
             <Text style={styles.profileName} numberOfLines={1}>{selectedChild?.name ?? '우리 아이'}</Text>
-            {selectedChild && (
-              <View style={styles.miniBadge}>
-                <Text style={styles.miniBadgeText}>
-                  {[`${selectedChild.age}세`, formatClassName(selectedChild.className)].filter(Boolean).join(' ')}
-                </Text>
-              </View>
-            )}
+            <Pressable
+              style={styles.switcherButton}
+              onPress={onPressChild}
+              hitSlop={{ top: 12, bottom: 12, left: 10, right: 14 }}
+              accessibilityLabel="아이 전환하기"
+            >
+              {selectedChild && (
+                <View style={styles.miniBadge}>
+                  <Text style={styles.miniBadgeText}>
+                    {[`${selectedChild.age}세`, formatClassName(selectedChild.className)].filter(Boolean).join(' ')}
+                  </Text>
+                </View>
+              )}
+              <MaterialIcons name="unfold-more" size={16} color={colors.gray600} />
+            </Pressable>
           </View>
         </View>
-      </Pressable>
+      </View>
 
       <View style={styles.topIconsRow}>
         {SHOW_NOTIFICATION_BELL && (
@@ -241,6 +249,11 @@ function createStyles(colors: ThemeColors) {
       fontSize: 19,
       fontWeight: '800',
       color: colors.gray900,
+    },
+    switcherButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
     },
     miniBadge: {
       alignSelf: 'center',
