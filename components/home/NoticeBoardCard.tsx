@@ -84,7 +84,7 @@ export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardC
           <NoticeRow event={featured} onPress={handlePressFeatured} styles={styles} colors={colors} />
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>📭</Text>
+            <Text style={styles.emptyEmoji}>✨</Text>
             <Text style={styles.emptyText}>등록된 공지가 없어요</Text>
           </View>
         )}
@@ -200,13 +200,14 @@ function createStyles(colors: ThemeColors) {
       color: colors.gray900,
     },
     emptyState: {
+      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 22,
+      gap: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
     },
     emptyEmoji: {
-      fontSize: 22,
-      marginBottom: 6,
+      fontSize: 16,
     },
     emptyText: {
       fontSize: 12.5,
