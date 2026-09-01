@@ -157,7 +157,7 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
                   </Text>
                 </View>
               )}
-              <MaterialIcons name="unfold-more" size={16} color={colors.gray600} />
+              <MaterialIcons name="expand-more" size={18} color={colors.gray600} />
             </Pressable>
           </View>
         </View>
