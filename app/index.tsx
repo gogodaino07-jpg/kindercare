@@ -373,7 +373,9 @@ export default function HomeScreen() {
                 onPressDate={onDatePress}
                 todayMeal={todayMeal}
               />
-              <NoticeBoardCard notices={noticeEvents} onPressNotice={handleEventPress} />
+              {noticeEvents.length > 0 && (
+                <NoticeBoardCard notices={noticeEvents} onPressNotice={handleEventPress} />
+              )}
               <View
                 onLayout={(e) => {
                   progressYRef.current = e.nativeEvent.layout.y;

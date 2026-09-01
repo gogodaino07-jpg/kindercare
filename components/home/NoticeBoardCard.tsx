@@ -42,15 +42,14 @@ function NoticeRow({
 
 /**
  * 캘린더 일정과 별개로, 특정 날짜에 매이지 않는 "공지" 카테고리 일정만 모아 보여주는 홈 화면 카드.
- * 가장 가까운 1건만 배너에, 나머지는 더보기 팝업으로. 공지가 없어도 화면 하단 여백이 휑해지지
- * 않도록 카드는 항상 노출하고 빈 상태 문구로 대신한다.
+ * 가장 가까운 1건만 배너에, 나머지는 더보기 팝업으로. 공지가 없으면 호출부(app/index.tsx)에서
+ * 아예 렌더링하지 않으므로, 여기서는 notices가 항상 1건 이상이라고 가정한다.
  */
 export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardCardProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [showAll, setShowAll] = useState(false);
 
-  const hasNotices = notices.length > 0;
   const featured = notices[0];
 
   const handlePressFeatured = () => onPressNotice(featured);
@@ -71,23 +70,14 @@ export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardC
           <MaterialCommunityIcons name="bullhorn" size={20} color="#FFFFFF" />
         </LinearGradient>
         <Text style={styles.title}>공지사항</Text>
-        {hasNotices && (
-          <Pressable onPress={() => setShowAll(true)} style={styles.moreButton} hitSlop={6}>
-            <Text style={styles.moreButtonText}>전체보기</Text>
-            <MaterialCommunityIcons name="chevron-right" size={14} color={colors.gray500} />
-          </Pressable>
-        )}
+        <Pressable onPress={() => setShowAll(true)} style={styles.moreButton} hitSlop={6}>
+          <Text style={styles.moreButtonText}>전체보기</Text>
+          <MaterialCommunityIcons name="chevron-right" size={14} color={colors.gray500} />
+        </Pressable>
       </View>
 
       <View style={styles.list}>
-        {hasNotices ? (
-          <NoticeRow event={featured} onPress={handlePressFeatured} styles={styles} colors={colors} />
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>✨</Text>
-            <Text style={styles.emptyText}>등록된 공지가 없어요</Text>
-          </View>
-        )}
+        <NoticeRow event={featured} onPress={handlePressFeatured} styles={styles} colors={colors} />
       </View>
 
       <Modal visible={showAll} transparent animationType="fade" onRequestClose={() => setShowAll(false)}>
@@ -198,21 +188,6 @@ function createStyles(colors: ThemeColors) {
       fontSize: 12.5,
       fontWeight: '600',
       color: colors.gray900,
-    },
-    emptyState: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 12,
-    },
-    emptyEmoji: {
-      fontSize: 16,
-    },
-    emptyText: {
-      fontSize: 12.5,
-      fontWeight: '700',
-      color: colors.gray500,
     },
     modalOverlay: {
       flex: 1,
