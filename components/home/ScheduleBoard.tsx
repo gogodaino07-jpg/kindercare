@@ -195,6 +195,7 @@ export default function ScheduleBoard({
               colors={colors}
               styles={styles}
               isDark={isDark}
+              isSoleCard={filtered.length === 1}
               onPress={() => onEventPress(event)}
               onToggleItem={onToggleItem}
               onToggleAll={onToggleAll}
@@ -244,6 +245,7 @@ function ScheduleCard({
   colors,
   styles,
   isDark,
+  isSoleCard,
   onPress,
   onToggleItem,
   onToggleAll,
@@ -254,6 +256,8 @@ function ScheduleCard({
   colors: ThemeColors;
   styles: ReturnType<typeof createStyles>;
   isDark: boolean;
+  /** 현재 탭에 카드가 이 1건뿐일 때 — 아래 남는 여백을 활용해 메타 텍스트를 잘라내지 않고 다 보여준다. */
+  isSoleCard: boolean;
   onPress: () => void;
   onToggleItem: (event: Event, item: EventItem) => void;
   onToggleAll: (event: Event, items: EventItem[], value: boolean) => void;
@@ -339,7 +343,11 @@ function ScheduleCard({
           </View>
           <View style={styles.cardTitleTextBlock}>
             <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
-            {!!metaLine && <Text style={styles.cardMeta} numberOfLines={1}>{metaLine}</Text>}
+            {!!metaLine && (
+              <Text style={styles.cardMeta} numberOfLines={isSoleCard ? undefined : 1}>
+                {metaLine}
+              </Text>
+            )}
           </View>
           {items.length > 0 && (
             <Pressable
