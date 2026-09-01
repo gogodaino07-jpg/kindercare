@@ -456,6 +456,7 @@ function createMealCardStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
+      position: 'relative',
     },
     thumbnail: {
       width: 52,
@@ -484,9 +485,13 @@ function createMealCardStyles(colors: ThemeColors) {
       minWidth: 0,
     },
     emptyTextCol: {
-      flex: 1,
-      minWidth: 0,
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
       alignItems: 'center',
+      justifyContent: 'center',
     },
     mainMenuText: {
       fontSize: 15,
