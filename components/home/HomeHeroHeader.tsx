@@ -540,7 +540,7 @@ function createMealCardStyles(colors: ThemeColors) {
       backgroundColor: colors.pastelOrangeAccent,
       borderRadius: 999,
       paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingVertical: 9,
       ...SHADOW,
       shadowOpacity: 0.12,
       shadowColor: colors.peachOrangeDeep,
