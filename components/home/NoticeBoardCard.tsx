@@ -29,7 +29,9 @@ function NoticeRow({
 }) {
   return (
     <Pressable style={[styles.row, showDivider && styles.rowDivider]} onPress={onPress}>
-      <Text style={styles.rowDate}>{formatMD(event.date).split('(')[0]}</Text>
+      <View style={styles.rowDateBadge}>
+        <Text style={styles.rowDate}>{formatMD(event.date).split('(')[0]}</Text>
+      </View>
       <Text style={styles.rowText} numberOfLines={1}>
         {event.noticeText || event.title}
       </Text>
@@ -47,7 +49,6 @@ export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardC
   if (notices.length === 0) return null;
 
   const featured = notices[0];
-  const moreCount = notices.length - 1;
 
   const handlePressFeatured = () => onPressNotice(featured);
   const handlePressInModal = (event: Event) => {
@@ -67,11 +68,10 @@ export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardC
           <MaterialCommunityIcons name="bullhorn" size={20} color="#FFFFFF" />
         </LinearGradient>
         <Text style={styles.title}>공지사항</Text>
-        {moreCount > 0 && (
-          <Pressable onPress={() => setShowAll(true)} style={styles.moreButton} hitSlop={6}>
-            <Text style={styles.moreButtonText}>+{moreCount}개 더보기</Text>
-          </Pressable>
-        )}
+        <Pressable onPress={() => setShowAll(true)} style={styles.moreButton} hitSlop={6}>
+          <Text style={styles.moreButtonText}>전체보기</Text>
+          <MaterialCommunityIcons name="chevron-right" size={14} color={colors.gray500} />
+        </Pressable>
       </View>
 
       <View style={styles.list}>
@@ -130,7 +130,7 @@ function createStyles(colors: ThemeColors) {
     iconBadge: {
       width: 36,
       height: 36,
-      borderRadius: 12,
+      borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
       ...SHADOW,
@@ -145,15 +145,14 @@ function createStyles(colors: ThemeColors) {
       color: colors.gray900,
     },
     moreButton: {
-      backgroundColor: 'rgba(255,255,255,0.75)',
-      borderRadius: 999,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
     },
     moreButtonText: {
-      fontSize: 11,
-      fontWeight: '800',
-      color: colors.blue500,
+      fontSize: 12.5,
+      fontWeight: '700',
+      color: colors.gray500,
     },
     list: {
       backgroundColor: 'rgba(255,255,255,0.6)',
@@ -171,11 +170,16 @@ function createStyles(colors: ThemeColors) {
       borderBottomWidth: 1,
       borderBottomColor: 'rgba(0,0,0,0.06)',
     },
+    rowDateBadge: {
+      backgroundColor: colors.blue100,
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
     rowDate: {
       fontSize: 11.5,
       fontWeight: '800',
       color: colors.blue500,
-      minWidth: 34,
     },
     rowText: {
       flex: 1,
