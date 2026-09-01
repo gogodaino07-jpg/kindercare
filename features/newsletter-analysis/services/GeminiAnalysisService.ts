@@ -87,6 +87,56 @@ const RESPONSE_SCHEMA = {
   required: ['events'],
 };
 
+function normalizeTitle(s: string): string {
+  return s.replace(/[\s.,·\-()[\]~!?:;'"]/g, '');
+}
+
+function isSameTitle(a: string, b: string): boolean {
+  const at = normalizeTitle(a);
+  const bt = normalizeTitle(b);
+  if (!at || !bt) return false;
+  return at === bt || at.includes(bt) || bt.includes(at);
+}
+
+/**
+ * 같은 통신문 안에서 같은 활동이 표와 별도 안내 문구 등 두 군데에 언급되면, AI가
+ * 같은 날짜에 그 일정을 두 번 추출하는 경우가 있다. 저장 전 검수 화면의 "겹치는
+ * 일정" 경고는 기존에 저장된 일정과만 비교하기 때문에 이런 스캔 내부 중복은 못
+ * 걸러내므로, 여기서 날짜+제목이 같은 항목을 하나로 합친다.
+ */
+function dedupeEvents(events: Omit<Event, 'id'>[]): Omit<Event, 'id'>[] {
+  const result: Omit<Event, 'id'>[] = [];
+  for (const ev of events) {
+    const dupIndex = result.findIndex((r) => r.date === ev.date && isSameTitle(r.title, ev.title));
+    if (dupIndex === -1) {
+      result.push(ev);
+      continue;
+    }
+    const existing = result[dupIndex];
+    const mergedItems: EventItem[] = [];
+    const seenNames = new Set<string>();
+    [...(existing.items ?? []), ...(ev.items ?? [])].forEach((item) => {
+      if (item.name && !seenNames.has(item.name)) {
+        seenNames.add(item.name);
+        mergedItems.push(item);
+      }
+    });
+    result[dupIndex] = {
+      ...existing,
+      items: mergedItems.length > 0 ? mergedItems : undefined,
+      note: mergedItems.length > 0 ? mergedItems.map((i) => i.name).join('\n') : existing.note ?? ev.note,
+      memo: (existing.memo?.length ?? 0) >= (ev.memo?.length ?? 0) ? existing.memo ?? ev.memo : ev.memo,
+      noticeText:
+        (existing.noticeText?.length ?? 0) >= (ev.noticeText?.length ?? 0)
+          ? existing.noticeText ?? ev.noticeText
+          : ev.noticeText,
+      location: existing.location ?? ev.location,
+      time: existing.time ?? ev.time,
+    };
+  }
+  return result;
+}
+
 let itemIdCounter = 0;
 function buildEventItems(raw: GeminiExtractedItem[] | undefined): EventItem[] | undefined {
   const items = (raw ?? [])
@@ -229,25 +279,27 @@ export const GeminiAnalysisService = {
     }
 
     return {
-      events: extracted.map((e) => {
-        const items = buildEventItems(e.items);
-        return {
-          date: e.date,
-          title: e.title.trim(),
-          note: items ? items.map((i) => i.name).join('\n') : undefined,
-          memo: e.memo?.trim() || undefined,
-          items,
-          category: e.category?.trim() || undefined,
-          location: e.location?.trim() || undefined,
-          time: e.time?.trim() || undefined,
-          noticeText: e.noticeText?.trim() || undefined,
-          childId: child.id,
-          source: 'ai' as const,
-          icon: e.icon?.trim() || '📌',
-          needsReview: e.needsReview || undefined,
-          reviewReason: e.reviewReason?.trim() || undefined,
-        };
-      }),
+      events: dedupeEvents(
+        extracted.map((e) => {
+          const items = buildEventItems(e.items);
+          return {
+            date: e.date,
+            title: e.title.trim(),
+            note: items ? items.map((i) => i.name).join('\n') : undefined,
+            memo: e.memo?.trim() || undefined,
+            items,
+            category: e.category?.trim() || undefined,
+            location: e.location?.trim() || undefined,
+            time: e.time?.trim() || undefined,
+            noticeText: e.noticeText?.trim() || undefined,
+            childId: child.id,
+            source: 'ai' as const,
+            icon: e.icon?.trim() || '📌',
+            needsReview: e.needsReview || undefined,
+            reviewReason: e.reviewReason?.trim() || undefined,
+          };
+        })
+      ),
       mealPlans: extractMealPlans(parsed.mealPlan, child.id),
     };
   },
