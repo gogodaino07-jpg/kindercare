@@ -109,9 +109,10 @@ export default function HomeScreen() {
   const weather = useWeeklyWeather();
   const noticeEvents = useMemo(() => {
     // 과거 공지가 홈 화면에 계속 노출되지 않도록 오늘 이후의 공지만 보여준다.
+    // 단, 오늘 날짜인 공지는 "오늘 일정"(D-DAY 배지)에 이미 노출되므로 중복을 피하기 위해 내일 이후만 보여준다.
     const todayISO = toISODate(new Date());
     return events
-      .filter((e) => e.category === '공지' && e.childId === selectedChild?.id && e.date >= todayISO)
+      .filter((e) => e.category === '공지' && e.childId === selectedChild?.id && e.date > todayISO)
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [events, selectedChild]);
   const todayMeal = useMemo(() => {
