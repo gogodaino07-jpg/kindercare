@@ -336,15 +336,25 @@ function ScheduleCard({
         </LinearGradient>
       )}
 
-      <Pressable onPress={onPress} style={styles.cardBody}>
+      <Pressable onPress={onPress} style={[styles.cardBody, isSoleCard && styles.cardBodySole]}>
         <View style={styles.cardTitleRow}>
-          <View style={[styles.iconCircle, { backgroundColor: tint(specialTheme ? specialTheme.gradient[0] : category.accent, 0.85, isDark) }]}>
-            {specialTheme ? <Text style={styles.specialIconEmoji}>{specialTheme.emoji}</Text> : <EventIcon icon={event.icon} size={22} />}
+          <View
+            style={[
+              styles.iconCircle,
+              isSoleCard && styles.iconCircleSole,
+              { backgroundColor: tint(specialTheme ? specialTheme.gradient[0] : category.accent, 0.85, isDark) },
+            ]}
+          >
+            {specialTheme ? (
+              <Text style={[styles.specialIconEmoji, isSoleCard && styles.specialIconEmojiSole]}>{specialTheme.emoji}</Text>
+            ) : (
+              <EventIcon icon={event.icon} size={isSoleCard ? 28 : 22} />
+            )}
           </View>
           <View style={styles.cardTitleTextBlock}>
-            <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
+            <Text style={[styles.cardTitle, isSoleCard && styles.cardTitleSole]} numberOfLines={1}>{event.title}</Text>
             {!!metaLine && (
-              <Text style={styles.cardMeta} numberOfLines={isSoleCard ? 3 : 1}>
+              <Text style={[styles.cardMeta, isSoleCard && styles.cardMetaSole]} numberOfLines={isSoleCard ? 3 : 1}>
                 {metaLine}
               </Text>
             )}
@@ -368,9 +378,9 @@ function ScheduleCard({
         </View>
 
         {event.noticeText ? (
-          <View style={styles.noticeBox}>
-            <MaterialIcons name="info-outline" size={14} color={colors.gray500} style={styles.noticeIcon} />
-            <Text style={styles.noticeText}>{event.noticeText}</Text>
+          <View style={[styles.noticeBox, isSoleCard && styles.noticeBoxSole]}>
+            <MaterialIcons name="info-outline" size={isSoleCard ? 16 : 14} color={colors.gray500} style={styles.noticeIcon} />
+            <Text style={[styles.noticeText, isSoleCard && styles.noticeTextSole]}>{event.noticeText}</Text>
           </View>
         ) : null}
       </Pressable>
@@ -514,12 +524,17 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
     specialMessageBlock: { paddingHorizontal: 14, paddingBottom: 12, paddingTop: 2 },
     specialMessageText: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
     specialIconEmoji: { fontSize: 22 },
+    specialIconEmojiSole: { fontSize: 28 },
     cardBody: { padding: 14 },
+    cardBodySole: { padding: 22 },
     cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     iconCircle: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    iconCircleSole: { width: 56, height: 56, borderRadius: 18 },
     cardTitleTextBlock: { flex: 1, minWidth: 0 },
     cardTitle: { fontSize: 15, fontWeight: '800', color: colors.gray900 },
+    cardTitleSole: { fontSize: 18 },
     cardMeta: { fontSize: 12, color: colors.gray500, fontWeight: '600', marginTop: 2 },
+    cardMetaSole: { fontSize: 13, marginTop: 4, lineHeight: 19 },
     allDoneButton: {
       alignItems: 'center',
       justifyContent: 'center',
@@ -544,8 +559,10 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
       borderRadius: 10,
       padding: 10,
     },
+    noticeBoxSole: { marginTop: 16, padding: 14, borderRadius: 14 },
     noticeIcon: { marginTop: 1 },
     noticeText: { flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
+    noticeTextSole: { fontSize: 13.5, lineHeight: 20 },
     itemsBlock: { paddingHorizontal: 14, paddingBottom: 14, gap: 6 },
     itemsLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
     itemsLabelLeft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
