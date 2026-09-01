@@ -319,7 +319,8 @@ export default function ChildProfileScreen() {
         ref={scrollViewRef}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
-        scrollEnabled={false}
+        bounces={false}
+        overScrollMode="never"
       >
         <View style={styles.avatarWrap}>
           <LinearGradient colors={AVATAR_RING_GRADIENT} style={styles.avatarRing}>
