@@ -315,7 +315,12 @@ export default function ChildProfileScreen() {
         style={styles.keyboardAvoider}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        scrollEnabled={false}
+      >
         <View style={styles.avatarWrap}>
           <LinearGradient colors={AVATAR_RING_GRADIENT} style={styles.avatarRing}>
             <Pressable
