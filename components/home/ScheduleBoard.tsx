@@ -256,7 +256,7 @@ function ScheduleCard({
   colors: ThemeColors;
   styles: ReturnType<typeof createStyles>;
   isDark: boolean;
-  /** 현재 탭에 카드가 이 1건뿐일 때 — 아래 남는 여백을 활용해 메타 텍스트를 잘라내지 않고 다 보여준다. */
+  /** 현재 탭에 카드가 이 1건뿐일 때 — 아래 남는 여백을 활용해 메타 텍스트를 1줄에서 최대 3줄까지 늘려 보여준다. */
   isSoleCard: boolean;
   onPress: () => void;
   onToggleItem: (event: Event, item: EventItem) => void;
@@ -344,7 +344,7 @@ function ScheduleCard({
           <View style={styles.cardTitleTextBlock}>
             <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
             {!!metaLine && (
-              <Text style={styles.cardMeta} numberOfLines={isSoleCard ? undefined : 1}>
+              <Text style={styles.cardMeta} numberOfLines={isSoleCard ? 3 : 1}>
                 {metaLine}
               </Text>
             )}
