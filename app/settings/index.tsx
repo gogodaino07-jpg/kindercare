@@ -356,7 +356,7 @@ export default function SettingsScreen() {
                         style={[styles.rowSubtitleInline, isSubscribed && { color: colors.accent }]}
                         numberOfLines={1}
                       >
-                        {isSubscribed ? '구독 중' : '주 5회 → 주 10회·월 50회'}
+                        {isSubscribed ? '구독 중' : '평생 5회 → 주 10회·월 50회'}
                       </Text>
                     </View>
                   </View>

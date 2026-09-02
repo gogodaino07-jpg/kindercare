@@ -10,7 +10,7 @@ import { useAlert } from '../../context/AlertContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import {
-  FREE_WEEKLY_LIMIT,
+  FREE_LIFETIME_LIMIT,
   PREMIUM_MONTHLY_LIMIT,
   PREMIUM_WEEKLY_LIMIT,
 } from '../../features/newsletter-analysis';
@@ -138,7 +138,9 @@ export default function SubscriptionScreen() {
                 <MaterialIcons name="check-circle" size={18} color={colors.purple500} />
               </View>
             ))}
-            <Text style={styles.freeNote}>무료 이용 시 스캔은 1주일 최대 {FREE_WEEKLY_LIMIT}회까지예요.</Text>
+            <Text style={styles.freeNote}>
+              무료 이용 시 스캔(알림장+급식표 합산)은 평생 최대 {FREE_LIFETIME_LIMIT}회까지예요.
+            </Text>
           </View>
 
           {isSubscribed ? (

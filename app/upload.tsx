@@ -18,7 +18,7 @@ import { useToast } from '../context/ToastContext';
 import {
   AIUsageLimitService,
   AnalysisResultStore,
-  FREE_WEEKLY_LIMIT,
+  FREE_LIFETIME_LIMIT,
   GeminiAnalysisError,
   GeminiAnalysisService,
   PREMIUM_MONTHLY_LIMIT,
@@ -84,7 +84,7 @@ export default function UploadScreen() {
   const [starting, setStarting] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
 
-  const maxCredits = isSubscribed ? PREMIUM_WEEKLY_LIMIT : FREE_WEEKLY_LIMIT;
+  const maxCredits = isSubscribed ? PREMIUM_WEEKLY_LIMIT : FREE_LIFETIME_LIMIT;
   const skipAd = isAdTestAccount(googleAccount?.email);
 
   // Prevent accidental navigation during analysis
@@ -377,7 +377,9 @@ export default function UploadScreen() {
               <View style={styles.gaugeTopRow}>
                 <View style={styles.gaugeTopLeft}>
                   <View style={styles.gaugeDot} />
-                  <Text style={styles.gaugeLabel}>무료 스캔 잔여 횟수</Text>
+                  <Text style={styles.gaugeLabel}>
+                    {isSubscribed ? '이번 주 스캔 잔여 횟수' : '무료 스캔 잔여 횟수'}
+                  </Text>
                 </View>
                 <Text style={styles.gaugeValue}>
                   {remainingAnalyses ?? '-'} <Text style={styles.gaugeMax}>/ {maxCredits}회</Text>
@@ -395,7 +397,11 @@ export default function UploadScreen() {
                 ))}
               </View>
               <View style={styles.gaugeFootRow}>
-                <Text style={styles.gaugeFootText}>1회 스캔 시 사진/문서 1건이 분석됩니다</Text>
+                <Text style={styles.gaugeFootText}>
+                  {isSubscribed
+                    ? '1회 스캔 시 사진/문서 1건이 분석됩니다'
+                    : '평생 무료 횟수예요 (알림장+급식표 스캔 합산). 1회 스캔 시 사진/문서 1건이 분석됩니다'}
+                </Text>
                 {remainingAnalyses === 0 && <Text style={styles.gaugeExhaustedText}>모두 사용됨</Text>}
               </View>
             </View>

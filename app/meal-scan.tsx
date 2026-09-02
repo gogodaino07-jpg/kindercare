@@ -17,7 +17,7 @@ import { useSubscription } from '../context/SubscriptionContext';
 import { useToast } from '../context/ToastContext';
 import {
   AIUsageLimitService,
-  FREE_MEAL_WEEKLY_LIMIT,
+  FREE_LIFETIME_LIMIT,
   GeminiAnalysisError,
   GeminiAnalysisService,
   PREMIUM_MEAL_MONTHLY_LIMIT,
@@ -52,7 +52,7 @@ export default function MealScanScreen() {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showZoomModal, setShowZoomModal] = useState(false);
   const [remainingCount, setRemainingCount] = useState<number | null>(null);
-  const maxMealCredits = isSubscribed ? PREMIUM_MEAL_WEEKLY_LIMIT : FREE_MEAL_WEEKLY_LIMIT;
+  const maxMealCredits = isSubscribed ? PREMIUM_MEAL_WEEKLY_LIMIT : FREE_LIFETIME_LIMIT;
   const skipAd = isAdTestAccount(googleAccount?.email);
 
   const cameraRef = useRef<CameraView>(null);
@@ -206,7 +206,9 @@ export default function MealScanScreen() {
 
           {remainingCount !== null && (
             <Text style={styles.remainingCaption}>
-              이번 주 급식표 스캔 {remainingCount} / {maxMealCredits}회 남음
+              {isSubscribed
+                ? `이번 주 급식표 스캔 ${remainingCount} / ${maxMealCredits}회 남음`
+                : `무료 스캔 ${remainingCount} / ${maxMealCredits}회 남음 (알림장+급식표 합산, 평생)`}
             </Text>
           )}
 

@@ -13,12 +13,13 @@ const GEMINI_MODEL = 'gemini-3.6-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 /**
- * 앱(AIUsageLimitService)이 관리하는 무료/프리미엄 주간·월간 한도는 클라이언트에서만
- * 체크되므로, Firestore 문서를 직접 조작하거나 앱을 거치지 않고 이 함수를 반복 호출하면
- * 우회될 수 있다. 여기서는 실제 요금제를 서버가 알 방법이 없어 정확한 무료/프리미엄
- * 한도를 그대로 재현하진 않지만, 프리미엄 최대 한도(월 기준)를 절대 상한으로 걸어
- * 정상 이용자는 걸리지 않으면서 Gemini 비용이 무한정 새는 것만은 막는 최종 방어선이다.
- * 클라이언트가 관리하는 aiUsage/mealAiUsage 문서와는 별도 문서에 서버가 직접 카운트한다.
+ * 앱(AIUsageLimitService)이 관리하는 무료(평생 5회 공유 풀)/프리미엄(주간·월간) 한도는
+ * 클라이언트에서만 체크되므로, Firestore 문서를 직접 조작하거나 앱을 거치지 않고 이 함수를
+ * 반복 호출하면 우회될 수 있다. 여기서는 실제 요금제를 서버가 알 방법이 없어 정확한
+ * 무료/프리미엄 한도를 그대로 재현하진 않지만, 프리미엄 최대 한도(월 기준)를 절대 상한으로
+ * 걸어 정상 이용자는 걸리지 않으면서 Gemini 비용이 무한정 새는 것만은 막는 최종 방어선이다.
+ * 클라이언트가 관리하는 aiUsage/mealAiUsage/aiUsageFreeLifetime 문서와는 별도 문서에
+ * 서버가 직접 카운트한다.
  */
 const HARD_MONTHLY_LIMIT_BY_TYPE = { newsletter: 50, meal: 15 };
 
