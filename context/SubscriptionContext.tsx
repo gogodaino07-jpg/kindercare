@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import Purchases, { CustomerInfo } from 'react-native-purchases';
 import { getFirebaseAuth } from '../utils/firebase';
 
@@ -34,6 +34,39 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     setManagementURL(info.managementURL);
   }, []);
 
+  // getCustomerInfo()/logIn()이 앱 시작 시 거의 동시에 여러 번 날아가는데(마운트 직후 1회,
+  // Firebase 로그인 확정 시 1회, refresh() 호출 시마다 등), 네트워크 응답은 요청한 순서대로
+  // 도착한다는 보장이 없다. 예전엔 먼저 보낸 요청(예: 로그인 전 익명 사용자 기준 조회)의
+  // 응답이 나중에 보낸 요청(로그인된 사용자 기준 조회) 응답보다 늦게 도착하면 그 오래된
+  // 값으로 최신 상태를 덮어써버려서, 화면을 들어갔다 나오거나 백그라운드/포그라운드를
+  // 반복하면 구독 상태가 실제로는 안 바뀌었는데도 잠깐씩 뒤바뀌어 보이는 원인이 됐다.
+  // 요청마다 순번을 매겨 "가장 나중에 보낸 요청"의 응답만 반영하도록 막는다.
+  const requestSeqRef = useRef(0);
+  const fetchAndApply = useCallback(
+    async (promise: Promise<CustomerInfo>) => {
+      const requestId = ++requestSeqRef.current;
+      try {
+        const info = await promise;
+        if (requestId !== requestSeqRef.current) return; // 그 사이 더 최신 요청이 발생 — 이 응답은 버림
+        applyCustomerInfo(info);
+      } catch {
+        // 무시 — 실패한 요청이 기존 상태를 덮어쓰지 않게 그대로 둔다
+      }
+    },
+    [applyCustomerInfo]
+  );
+
+  // RevenueCat SDK가 자체적으로 밀어주는 실시간 업데이트는 그 자체로 항상 최신 진실이므로
+  // 즉시 반영하고, 순번도 함께 올려서 그 전에 보내둔 오래된 요청의 응답이 나중에 도착해도
+  // 이 값을 덮어쓰지 못하게 막는다.
+  const applyPushedCustomerInfo = useCallback(
+    (info: CustomerInfo) => {
+      requestSeqRef.current += 1;
+      applyCustomerInfo(info);
+    },
+    [applyCustomerInfo]
+  );
+
   useEffect(() => {
     if (!REVENUECAT_ANDROID_KEY) return; // 아직 RevenueCat API 키가 없으면 비구독 상태로 동작
     if (!configured) {
@@ -41,16 +74,13 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       Purchases.configure({ apiKey: REVENUECAT_ANDROID_KEY });
     }
 
-    Purchases.getCustomerInfo()
-      .then(applyCustomerInfo)
-      .catch(() => {})
-      .finally(() => setIsReady(true));
+    fetchAndApply(Purchases.getCustomerInfo()).finally(() => setIsReady(true));
 
-    Purchases.addCustomerInfoUpdateListener(applyCustomerInfo);
+    Purchases.addCustomerInfoUpdateListener(applyPushedCustomerInfo);
     return () => {
-      Purchases.removeCustomerInfoUpdateListener(applyCustomerInfo);
+      Purchases.removeCustomerInfoUpdateListener(applyPushedCustomerInfo);
     };
-  }, [applyCustomerInfo]);
+  }, [fetchAndApply, applyPushedCustomerInfo]);
 
   // Firebase Auth 로그인이 확정되면 그 UID로 RevenueCat 사용자와 연결한다 — 기기를
   // 바꾸거나 재설치해도 같은 구독으로 인식되게 함. 이메일 대신 UID를 쓰는 이유는,
@@ -63,19 +93,15 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     if (!REVENUECAT_ANDROID_KEY) return;
     const unsubscribe = getFirebaseAuth().onAuthStateChanged((user: { uid: string } | null) => {
       if (!user) return;
-      Purchases.logIn(user.uid)
-        .then(({ customerInfo }: { customerInfo: CustomerInfo }) => applyCustomerInfo(customerInfo))
-        .catch(() => {});
+      fetchAndApply(Purchases.logIn(user.uid).then(({ customerInfo }: { customerInfo: CustomerInfo }) => customerInfo));
     });
     return unsubscribe;
-  }, [applyCustomerInfo]);
+  }, [fetchAndApply]);
 
   const refresh = useCallback(async () => {
     if (!REVENUECAT_ANDROID_KEY) return;
-    try {
-      applyCustomerInfo(await Purchases.getCustomerInfo());
-    } catch {}
-  }, [applyCustomerInfo]);
+    await fetchAndApply(Purchases.getCustomerInfo());
+  }, [fetchAndApply]);
 
   const value = useMemo<SubscriptionContextValue>(
     () => ({
