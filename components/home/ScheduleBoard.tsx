@@ -1,4 +1,4 @@
-import { MaterialIcons } from '@expo/vector-icons';
+import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
@@ -219,7 +219,7 @@ export default function ScheduleBoard({
           <View style={styles.zoomCard}>
             <View style={styles.zoomHeader}>
               <View style={styles.zoomHeaderLeft}>
-                <MaterialIcons name="image" size={16} color={colors.purple500} />
+                <Feather name="image" size={16} color={colors.purple500} />
                 <Text style={styles.zoomHeaderText}>스캔한 원본 사진</Text>
               </View>
               <Pressable onPress={() => setViewerPhotos(null)} style={styles.zoomCloseButton} hitSlop={6}>
@@ -292,7 +292,7 @@ function ScheduleCard({
           <View style={styles.cardHeaderRight}>
             {photoUris.length > 0 && (
               <Pressable onPress={() => onOpenPhotos(photoUris)} style={styles.photoBadgeOnDark} hitSlop={6}>
-                <MaterialIcons name="image" size={13} color="#FFFFFF" />
+                <Feather name="image" size={13} color="#FFFFFF" />
               </Pressable>
             )}
             <View style={styles.specialLabelPill}>
@@ -313,7 +313,7 @@ function ScheduleCard({
           <View style={styles.cardHeaderRight}>
             {photoUris.length > 0 && (
               <Pressable onPress={() => onOpenPhotos(photoUris)} style={styles.photoBadge} hitSlop={6}>
-                <MaterialIcons name="image" size={13} color={colors.purple500} />
+                <Feather name="image" size={13} color={colors.purple500} />
               </Pressable>
             )}
             {event.category && (
