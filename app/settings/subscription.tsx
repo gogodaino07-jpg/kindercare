@@ -35,7 +35,7 @@ const BENEFITS = [
 
 export default function SubscriptionScreen() {
   const router = useRouter();
-  const { isSubscribed, isBillingConfigured, managementURL, refresh } = useSubscription();
+  const { isSubscribed, isReady, isBillingConfigured, managementURL, refresh } = useSubscription();
   const { showAlert } = useAlert();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
@@ -143,7 +143,9 @@ export default function SubscriptionScreen() {
             </Text>
           </View>
 
-          {isSubscribed ? (
+          {!isReady ? (
+            <ActivityIndicator style={{ marginTop: 20 }} color={colors.purple500} />
+          ) : isSubscribed ? (
             <View style={styles.statusCard}>
               <MaterialIcons name="verified" size={22} color={colors.green500} />
               <Text style={styles.statusText}>프리미엄 구독 중이에요</Text>
@@ -193,7 +195,7 @@ export default function SubscriptionScreen() {
           )}
         </View>
 
-        {isBillingConfigured && (
+        {isBillingConfigured && isReady && (
           <View style={[styles.bottomBar, { paddingBottom: 12 + insets.bottom }]}>
             {!isSubscribed && !loadingOfferings && selectedPackage && (
               <Text style={styles.confirmNote}>
