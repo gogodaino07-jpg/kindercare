@@ -269,6 +269,7 @@ export default function CalendarScreen() {
           age={selectedChild?.age}
           className={selectedChild?.className}
           photoUri={selectedChild?.photoUri}
+          avatarEmoji={selectedChild?.avatarEmoji}
           percent={percent}
           selectedDateLabel={selectedDateLabel}
           onBack={() => router.back()}

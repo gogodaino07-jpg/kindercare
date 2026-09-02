@@ -9,6 +9,7 @@ interface CalendarHeaderProps {
   age?: number;
   className?: string;
   photoUri?: string;
+  avatarEmoji?: string;
   percent: number;
   selectedDateLabel: string;
   onBack: () => void;
@@ -33,6 +34,7 @@ export default function CalendarHeader({
   age,
   className,
   photoUri,
+  avatarEmoji,
   percent,
   selectedDateLabel,
   onBack,
@@ -56,7 +58,7 @@ export default function CalendarHeader({
           <Image source={{ uri: photoUri }} style={styles.avatar} />
         ) : (
           <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarPlaceholderIcon}>🧒</Text>
+            <Text style={styles.avatarPlaceholderIcon}>{avatarEmoji ?? '🧒'}</Text>
           </View>
         )}
         <View style={styles.onlineDot} />

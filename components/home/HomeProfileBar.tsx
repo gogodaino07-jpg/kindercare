@@ -135,7 +135,7 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
             <Image source={{ uri: photoUri }} style={styles.avatarSmall} />
           ) : (
             <View style={styles.avatarSmallPlaceholder}>
-              <Text style={styles.avatarSmallIcon}>🧒</Text>
+              <Text style={styles.avatarSmallIcon}>{selectedChild?.avatarEmoji ?? '🧒'}</Text>
             </View>
           )}
           <View style={styles.onlineDot} />

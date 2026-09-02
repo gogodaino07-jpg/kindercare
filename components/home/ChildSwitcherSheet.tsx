@@ -194,7 +194,7 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
                       <Image source={{ uri: child.photoUri }} style={[styles.avatar, locked && styles.avatarLocked]} />
                     ) : (
                       <View style={styles.avatarPlaceholder}>
-                        <Text style={styles.avatarIcon}>🧒</Text>
+                        <Text style={styles.avatarIcon}>{child.avatarEmoji ?? '🧒'}</Text>
                       </View>
                     )}
                     <Text style={[styles.cardLabel, locked && styles.cardLabelLocked]}>{label}</Text>
