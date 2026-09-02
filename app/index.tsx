@@ -216,6 +216,17 @@ export default function HomeScreen() {
   const pullGesture = Gesture.Pan()
     .activeOffsetY([-1000, 10])
     .failOffsetX([-20, 20])
+    // 리스트가 맨 위(scrollY<=0)가 아닐 때는 터치 시작 시점에 바로 제스처를
+    // 실패 처리해 이 Pan 인식기가 아예 활성화되지 않도록 막는다. 이 가드가
+    // 없으면 목록 중간 어디서든 손가락을 10px만 아래로 움직여도 매번 활성화돼
+    // 네이티브 스크롤과 동시에 경쟁하게 되고, 화면을 위아래로 빠르게 반복
+    // 스크롤할 때(손을 떼지 않고 방향을 계속 바꿀 때) 그 경쟁이 반복되면서
+    // 화면이 번쩍이는 렌더링 결함이 있었다.
+    .onTouchesDown((_e, state) => {
+      if (scrollYShared.value > 0.5) {
+        state.fail();
+      }
+    })
     .onChange((e) => {
       if (refreshingShared.value || scrollYShared.value > 0.5) return;
       pullY.value = Math.max(0, Math.min(pullY.value + e.changeY, PULL_TRIGGER * 1.3));
