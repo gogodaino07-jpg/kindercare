@@ -8,7 +8,7 @@ import { PoorStory_400Regular } from '@expo-google-fonts/poor-story';
 import { Sunflower_500Medium } from '@expo-google-fonts/sunflower';
 import { YeonSung_400Regular } from '@expo-google-fonts/yeon-sung';
 import { useFonts } from 'expo-font';
-import { Stack, usePathname, useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
@@ -52,7 +52,6 @@ function ThemedNavigation() {
   const { loaded: lockLoaded, isBooting } = useAppLock();
   const { onboardingLoaded } = useAppData();
   const router = useRouter();
-  const pathname = usePathname();
   const lastBackPressRef = useRef(0);
 
   const splashOpacity = useRef(new Animated.Value(1)).current;
@@ -87,27 +86,27 @@ function ThemedNavigation() {
   // Hardware back handling
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (pathname === '/') {
-        const now = Date.now();
-        if (now - lastBackPressRef.current < EXIT_CONFIRM_WINDOW_MS) {
-          BackHandler.exitApp();
-        } else {
-          lastBackPressRef.current = now;
-          ToastAndroid.show('뒤로 가기 버튼을 한 번 더 누르면 종료됩니다.', ToastAndroid.SHORT);
-        }
-        return true;
-      }
-
       if (router.canGoBack()) {
         router.back();
         return true;
       }
 
-      BackHandler.exitApp();
+      // 루트('/')뿐 아니라, 로그아웃 직후처럼 router.dismissAll() + replace()로
+      // 뒤로 갈 기록 자체가 없어진 화면에서도 여기로 떨어진다. 예전엔 이 경우
+      // 확인 없이 바로 앱을 꺼버려서, 로그아웃 후 재로그인 화면에서 뒤로가기를
+      // 누르면 앱이 그냥 종료되는 문제가 있었다 — 어디서 이 상태가 되든 항상
+      // "한 번 더 누르면 종료" 확인을 거치게 통일한다.
+      const now = Date.now();
+      if (now - lastBackPressRef.current < EXIT_CONFIRM_WINDOW_MS) {
+        BackHandler.exitApp();
+      } else {
+        lastBackPressRef.current = now;
+        ToastAndroid.show('뒤로 가기 버튼을 한 번 더 누르면 종료됩니다.', ToastAndroid.SHORT);
+      }
       return true;
     });
     return () => subscription.remove();
-  }, [router, pathname]);
+  }, [router]);
 
   // Determine status bar style:
   // During splash (always light bg #FEF9F0), we need dark icons.

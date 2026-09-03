@@ -423,9 +423,11 @@ export default function GoogleSignInScreen() {
   return (
     <OnboardingBackground style={{ backgroundColor: 'transparent' }}>
       <LinearGradient colors={BG_GRADIENT} style={StyleSheet.absoluteFill} />
-      <Pressable style={styles.backButton} hitSlop={8} onPress={() => router.back()}>
-        <Text style={styles.backText}>뒤로가기</Text>
-      </Pressable>
+      {router.canGoBack() && (
+        <Pressable style={styles.backButton} hitSlop={8} onPress={() => router.back()}>
+          <Text style={styles.backText}>뒤로가기</Text>
+        </Pressable>
+      )}
 
       <View style={styles.content}>
         <Animated.Image

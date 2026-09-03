@@ -1,7 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
 import Text from '../components/common/AppText';
-import { useThemeColors } from './ThemeContext';
 
 const VISIBLE_MS = 2000;
 const FADE_MS = 250;
@@ -13,7 +12,6 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const colors = useThemeColors();
   const [message, setMessage] = useState<string | null>(null);
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(12)).current;
@@ -48,12 +46,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {message ? (
         <Animated.View
           pointerEvents="none"
-          style={[
-            styles.container,
-            { backgroundColor: colors.textPrimary, opacity, transform: [{ translateY }] },
-          ]}
+          style={[styles.container, { opacity, transform: [{ translateY }] }]}
         >
-          <Text style={[styles.text, { color: colors.cardWhite }]}>{message}</Text>
+          <Text style={styles.text}>{message}</Text>
         </Animated.View>
       ) : null}
     </ToastContext.Provider>
@@ -72,6 +67,12 @@ const styles = StyleSheet.create({
     left: 24,
     right: 24,
     bottom: 110,
+    // 라이트/다크 어느 화면 위에 떠도 똑같이 잘 보여야 하는 스낵바라, 화면이
+    // 시스템 테마를 따르는지(홈 등) 라이트로 고정돼 있는지(온보딩/로그인 등)와
+    // 무관하게 항상 같은 톤을 쓴다. 예전엔 useThemeColors()를 따라갔는데,
+    // 라이트로 고정된 로그인 화면에서 다크모드 상태로 보면 토스트만 밝은 톤이
+    // 돼서 배경과 거의 구분이 안 되고 붕 떠 보였다.
+    backgroundColor: '#1F2937',
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 18,
