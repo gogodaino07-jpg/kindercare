@@ -27,7 +27,6 @@ export default function TermsScreen() {
       document.body.style.lineHeight = '1.6';
       document.body.style.padding = '20px';
       document.body.style.wordBreak = 'break-all';
-      document.body.style.backgroundColor = 'white';
 
       // Remove horizontal margins if any
       document.body.style.margin = '0';
@@ -79,10 +78,11 @@ function createStyles(colors: any) {
     },
     container: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.skyBackground,
     },
     webview: {
       flex: 1,
+      backgroundColor: 'transparent',
     },
     loadingContainer: {
       position: 'absolute',
@@ -92,7 +92,7 @@ function createStyles(colors: any) {
       bottom: 0,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.skyBackground,
     },
   });
 }
