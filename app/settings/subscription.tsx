@@ -128,7 +128,7 @@ export default function SubscriptionScreen() {
         }}
       />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <View style={styles.content}>
+        <View style={[styles.content, isSubscribed && styles.contentSubscribed]}>
           {!isReady ? (
             <ActivityIndicator color={colors.purple500} />
           ) : isSubscribed ? (
@@ -137,7 +137,7 @@ export default function SubscriptionScreen() {
                 colors={[colors.purple500, colors.purpleDeep]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={[styles.statusCardTop, styles.statusCardTopShift]}
+                style={styles.statusCardTop}
               >
                 <View style={styles.statusIconBadge}>
                   <MaterialCommunityIcons name="crown" size={26} color="#FCD34D" />
@@ -274,6 +274,7 @@ function createStyles(colors: ThemeColors) {
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { flex: 1, padding: 20, justifyContent: 'center' },
+    contentSubscribed: { justifyContent: 'flex-start', paddingTop: 8 },
     bottomBar: {
       paddingHorizontal: 20,
       paddingTop: 12,
@@ -323,7 +324,6 @@ function createStyles(colors: ThemeColors) {
       shadowOpacity: 0.25,
       elevation: 4,
     },
-    statusCardTopShift: { marginTop: -32 },
     statusIconBadge: {
       width: 56,
       height: 56,
