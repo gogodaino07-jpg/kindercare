@@ -2,7 +2,7 @@
   "expo": {
     "name": "kindercare",
     "slug": "kindercare",
-    "version": "1.3.7",
+    "version": "1.4.1",
     "orientation": "portrait",
     "icon": "./assets/logo_pure_chick_transparent.png",
     "scheme": "kindercare",
