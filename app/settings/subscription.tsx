@@ -19,16 +19,19 @@ const BENEFITS = [
   {
     icon: 'bolt' as const,
     text: `스캔 횟수 대폭 확대 (주 ${PREMIUM_WEEKLY_LIMIT}회 · 월 ${PREMIUM_MONTHLY_LIMIT}회)`,
+    shortText: '스캔 횟수 대폭 확대',
     badgeKey: 'purple' as const,
   },
   {
     icon: 'block' as const,
     text: '홈 화면 진입 시 뜨는 추천 팝업 광고 제거',
+    shortText: '추천 팝업 광고 제거',
     badgeKey: 'red' as const,
   },
   {
     icon: 'movie-filter' as const,
     text: '스캔할 때마다 뜨던 광고 시청 없이 바로 분석',
+    shortText: '광고 없이 바로 분석',
     badgeKey: 'blue' as const,
   },
 ];
@@ -122,87 +125,111 @@ export default function SubscriptionScreen() {
       />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <View style={styles.content}>
-          <View style={styles.headerCard}>
-            <Text style={styles.headerEmoji}>💎</Text>
-            <Text style={styles.headerTitle}>프리미엄 구독</Text>
-            <Text style={styles.headerTagline}>광고 없이, 제한 없이 편하게 이용하세요</Text>
-          </View>
-
-          <View style={styles.benefitsCard}>
-            {BENEFITS.map((b) => (
-              <View key={b.text} style={styles.benefitRow}>
-                <View style={[styles.benefitIconBadge, { backgroundColor: badgeColors[b.badgeKey].bg }]}>
-                  <MaterialIcons name={b.icon} size={18} color={badgeColors[b.badgeKey].fg} />
-                </View>
-                <Text style={styles.benefitText}>{b.text}</Text>
-                <MaterialIcons name="check-circle" size={18} color={colors.purple500} />
-              </View>
-            ))}
-            <Text style={styles.freeNote}>
-              무료 이용 시 스캔(알림장+급식표 합산)은 평생 최대 {FREE_LIFETIME_LIMIT}회까지예요.
-            </Text>
-          </View>
-
           {!isReady ? (
-            <ActivityIndicator style={{ marginTop: 20 }} color={colors.purple500} />
+            <ActivityIndicator color={colors.purple500} />
           ) : isSubscribed ? (
-            <View style={styles.statusCard}>
-              <MaterialIcons name="verified" size={22} color={colors.green500} />
-              <Text style={styles.statusText}>프리미엄 구독 중이에요</Text>
-              <Pressable style={styles.manageButton} onPress={handleManage}>
-                <Text style={styles.manageButtonText}>구독 관리 / 해지</Text>
-              </Pressable>
-            </View>
-          ) : !isBillingConfigured ? (
-            <Text style={styles.preparingText}>구독 결제 기능을 준비 중이에요. 곧 만나요!</Text>
-          ) : loadingOfferings ? (
-            <ActivityIndicator style={{ marginTop: 20 }} color={colors.purple500} />
-          ) : (
-            (monthlyPackage || annualPackage) && (
-              <View style={styles.planRow}>
-                {monthlyPackage && (
-                  <Pressable
-                    style={[styles.planCard, selectedPeriod === 'monthly' && styles.planCardSelected]}
-                    onPress={() => setSelectedPeriod('monthly')}
-                  >
-                    <Text style={styles.planLabel}>월간</Text>
-                    <Text style={styles.planPrice}>
-                      {monthlyPackage.product.priceString}
-                      <Text style={styles.planUnitInline}>/월</Text>
-                    </Text>
-                  </Pressable>
-                )}
-                {annualPackage && (
-                  <Pressable
-                    style={[styles.planCard, selectedPeriod === 'annual' && styles.planCardSelected]}
-                    onPress={() => setSelectedPeriod('annual')}
-                  >
-                    <View style={styles.recommendedBadge}>
-                      <Text style={styles.recommendedBadgeText}>추천</Text>
-                    </View>
-                    <Text style={styles.planLabel}>연간</Text>
-                    <Text style={styles.planPrice}>
-                      {annualPackage.product.priceString}
-                      <Text style={styles.planUnitInline}>/년</Text>
-                    </Text>
-                    {annualPackage.product.pricePerMonthString && (
-                      <Text style={styles.planSubNote}>월 {annualPackage.product.pricePerMonthString} 꼴</Text>
-                    )}
-                  </Pressable>
-                )}
+            <>
+              <View style={styles.statusCardTop}>
+                <MaterialIcons name="verified" size={28} color={colors.green500} />
+                <Text style={styles.statusTextTop}>프리미엄 구독 중이에요</Text>
+                <Pressable style={styles.manageButton} onPress={handleManage}>
+                  <Text style={styles.manageButtonText}>구독 관리 / 해지</Text>
+                </Pressable>
               </View>
-            )
+
+              <View style={styles.benefitsSummaryCard}>
+                <Text style={styles.benefitsSummaryTitle}>이용 중인 혜택</Text>
+                {BENEFITS.map((b) => (
+                  <View key={b.text} style={styles.benefitsSummaryRow}>
+                    <MaterialIcons name="check" size={16} color={colors.purple500} />
+                    <Text style={styles.benefitsSummaryText}>{b.shortText}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={styles.headerCard}>
+                <Text style={styles.headerEmoji}>💎</Text>
+                <Text style={styles.headerTitle}>프리미엄 구독</Text>
+                <Text style={styles.headerTagline}>광고 없이, 제한 없이 편하게 이용하세요</Text>
+              </View>
+
+              <View style={styles.benefitsCard}>
+                {BENEFITS.map((b) => (
+                  <View key={b.text} style={styles.benefitRow}>
+                    <View style={[styles.benefitIconBadge, { backgroundColor: badgeColors[b.badgeKey].bg }]}>
+                      <MaterialIcons name={b.icon} size={18} color={badgeColors[b.badgeKey].fg} />
+                    </View>
+                    <Text style={styles.benefitText}>{b.text}</Text>
+                    <MaterialIcons name="check-circle" size={18} color={colors.purple500} />
+                  </View>
+                ))}
+                <Text style={styles.freeNote}>
+                  무료 이용 시 스캔(알림장+급식표 합산)은 평생 최대 {FREE_LIFETIME_LIMIT}회까지예요.
+                </Text>
+              </View>
+
+              {!isBillingConfigured ? (
+                <Text style={styles.preparingText}>구독 결제 기능을 준비 중이에요. 곧 만나요!</Text>
+              ) : loadingOfferings ? (
+                <ActivityIndicator style={{ marginTop: 20 }} color={colors.purple500} />
+              ) : (
+                (monthlyPackage || annualPackage) && (
+                  <View style={styles.planRow}>
+                    {monthlyPackage && (
+                      <Pressable
+                        style={[styles.planCard, selectedPeriod === 'monthly' && styles.planCardSelected]}
+                        onPress={() => setSelectedPeriod('monthly')}
+                      >
+                        <Text style={styles.planLabel}>월간</Text>
+                        <Text style={styles.planPrice}>
+                          {monthlyPackage.product.priceString}
+                          <Text style={styles.planUnitInline}>/월</Text>
+                        </Text>
+                      </Pressable>
+                    )}
+                    {annualPackage && (
+                      <Pressable
+                        style={[styles.planCard, selectedPeriod === 'annual' && styles.planCardSelected]}
+                        onPress={() => setSelectedPeriod('annual')}
+                      >
+                        <View style={styles.recommendedBadge}>
+                          <Text style={styles.recommendedBadgeText}>추천</Text>
+                        </View>
+                        <Text style={styles.planLabel}>연간</Text>
+                        <Text style={styles.planPrice}>
+                          {annualPackage.product.priceString}
+                          <Text style={styles.planUnitInline}>/년</Text>
+                        </Text>
+                        {annualPackage.product.pricePerMonthString && (
+                          <Text style={styles.planSubNote}>월 {annualPackage.product.pricePerMonthString} 꼴</Text>
+                        )}
+                      </Pressable>
+                    )}
+                  </View>
+                )
+              )}
+            </>
           )}
         </View>
 
-        {isBillingConfigured && isReady && (
+        {isBillingConfigured && isReady && isSubscribed && (
+          <View style={[styles.bottomBarSubscribed, { paddingBottom: 12 + insets.bottom }]}>
+            <Pressable onPress={handleRestore} disabled={restoring} hitSlop={8}>
+              <Text style={styles.restoreLinkText}>{restoring ? '복원 중...' : '구매 복원하기'}</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {isBillingConfigured && isReady && !isSubscribed && (
           <View style={[styles.bottomBar, { paddingBottom: 12 + insets.bottom }]}>
-            {!isSubscribed && !loadingOfferings && selectedPackage && (
+            {!loadingOfferings && selectedPackage && (
               <Text style={styles.confirmNote}>
                 {selectedPeriod === 'annual' ? '매년' : '매월'} {selectedPackage.product.priceString}이 자동으로 결제돼요
               </Text>
             )}
-            {!isSubscribed && !loadingOfferings && (
+            {!loadingOfferings && (
               <Pressable style={styles.purchaseButton} onPress={handlePurchase} disabled={purchasing || !selectedPackage}>
                 {purchasing ? (
                   <ActivityIndicator color="#FFFFFF" />
@@ -267,19 +294,32 @@ function createStyles(colors: ThemeColors) {
     },
     benefitText: { flex: 1, fontSize: 13.5, fontWeight: '700', color: colors.gray900 },
     freeNote: { fontSize: 11.5, fontWeight: '600', color: colors.gray500, marginTop: 4 },
-    statusCard: {
+    statusCardTop: {
       alignItems: 'center',
       backgroundColor: colors.cardWhite,
+      borderRadius: 20,
+      paddingVertical: 28,
+      gap: 10,
+      marginBottom: 16,
+      ...SHADOW,
+      shadowOpacity: 0.05,
+      elevation: 2,
+    },
+    statusTextTop: { fontSize: 17, fontWeight: '900', color: colors.gray900 },
+    manageButton: { marginTop: 4, paddingVertical: 8, paddingHorizontal: 16 },
+    manageButtonText: { fontSize: 13, fontWeight: '700', color: colors.purple500 },
+    benefitsSummaryCard: {
+      backgroundColor: colors.cardWhite,
       borderRadius: 18,
-      padding: 20,
+      padding: 18,
       gap: 10,
       ...SHADOW,
       shadowOpacity: 0.05,
       elevation: 2,
     },
-    statusText: { fontSize: 14.5, fontWeight: '800', color: colors.gray900 },
-    manageButton: { marginTop: 4, paddingVertical: 8, paddingHorizontal: 16 },
-    manageButtonText: { fontSize: 13, fontWeight: '700', color: colors.purple500 },
+    benefitsSummaryTitle: { fontSize: 12.5, fontWeight: '700', color: colors.gray500, marginBottom: 2 },
+    benefitsSummaryRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    benefitsSummaryText: { fontSize: 13, fontWeight: '600', color: colors.gray900 },
     preparingText: {
       textAlign: 'center',
       fontSize: 13,
@@ -333,6 +373,12 @@ function createStyles(colors: ThemeColors) {
     },
     restoreButton: { marginTop: 12, alignItems: 'center', paddingVertical: 10 },
     restoreButtonText: { fontSize: 12.5, fontWeight: '700', color: colors.gray500 },
+    bottomBarSubscribed: {
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingTop: 10,
+    },
+    restoreLinkText: { fontSize: 11, fontWeight: '600', color: colors.gray400, textDecorationLine: 'underline' },
     footerNote: {
       textAlign: 'center',
       fontSize: 10.5,
