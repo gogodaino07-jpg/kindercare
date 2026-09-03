@@ -142,8 +142,10 @@ export default function ScheduleBoard({
     { key: 'dayAfterTomorrow', label: `모레 (${dayAfterTomorrowCount})` },
   ];
 
+  const soleCard = filtered.length === 1;
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, soleCard && styles.containerSole]}>
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
           <MaterialIcons name="calendar-today" size={17} color={colors.peachOrangeDeep} />
@@ -186,7 +188,7 @@ export default function ScheduleBoard({
           <Text style={styles.emptyTitle}>이 날은 특별한 일정이 없어요</Text>
         </View>
       ) : (
-        <View style={styles.list}>
+        <View style={[styles.list, soleCard && styles.listSole]}>
           {filtered.map(({ event, dateText }) => (
             <ScheduleCard
               key={event.id}
@@ -195,7 +197,7 @@ export default function ScheduleBoard({
               colors={colors}
               styles={styles}
               isDark={isDark}
-              isSoleCard={filtered.length === 1}
+              isSoleCard={soleCard}
               onPress={() => onEventPress(event)}
               onToggleItem={onToggleItem}
               onToggleAll={onToggleAll}
@@ -273,7 +275,7 @@ function ScheduleCard({
   const photoUris = event.photoUris ?? [];
 
   return (
-    <View style={[styles.card, isToday && styles.cardToday]}>
+    <View style={[styles.card, isToday && styles.cardToday, isSoleCard && styles.cardSole]}>
       {specialTheme ? (
         <LinearGradient
           colors={specialTheme.gradient}
@@ -434,6 +436,11 @@ function ScheduleCard({
 function createStyles(colors: ThemeColors, isDark: boolean) {
   return StyleSheet.create({
     container: { marginTop: 20, paddingHorizontal: 20 },
+    // 오늘/내일/모레 탭에 카드가 1건뿐일 때, 화면에 남는 세로 공간을 그 카드가 채우도록
+    // container→list→card까지 flex를 이어준다(부모 스크롤뷰의 contentContainerStyle에
+    // flexGrow:1이 있어야 동작함 — app/index.tsx의 scrollContainer 참고).
+    containerSole: { flex: 1 },
+    listSole: { flex: 1 },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     headerTitle: { fontSize: 16, fontWeight: '800', color: colors.gray900, letterSpacing: -0.4 },
@@ -474,6 +481,7 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
       elevation: 2,
     },
     cardToday: { borderColor: colors.pastelOrangeAccent, borderWidth: 1.5 },
+    cardSole: { flex: 1 },
     cardHeaderRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -526,7 +534,7 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
     specialIconEmoji: { fontSize: 22 },
     specialIconEmojiSole: { fontSize: 28 },
     cardBody: { padding: 14 },
-    cardBodySole: { padding: 22 },
+    cardBodySole: { padding: 22, flex: 1, justifyContent: 'center' },
     cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     iconCircle: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
     iconCircleSole: { width: 56, height: 56, borderRadius: 18 },

@@ -56,7 +56,10 @@ function createStyles(colors: ThemeColors) {
     mainContainer: {
       flex: 1,
     },
-    scrollContainer: {},
+    // flexGrow: 1이 있어야 콘텐츠가 화면보다 짧을 때 스크롤뷰 내부 요소(예: 오늘 일정
+    // 카드 1개뿐일 때)가 남는 세로 공간을 flex로 채울 수 있다. 콘텐츠가 화면보다 길면
+    // 평소처럼 스크롤됨.
+    scrollContainer: { flexGrow: 1 },
     pullIndicator: {
       alignItems: 'center',
       justifyContent: 'center',
