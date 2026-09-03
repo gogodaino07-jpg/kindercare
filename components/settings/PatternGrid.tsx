@@ -152,7 +152,7 @@ export default function PatternGrid({ colors, showTrail, onComplete, size = 240,
               {
                 left: c.x - 12,
                 top: c.y - 12,
-                borderColor: active ? colors.accent : colors.border,
+                borderColor: active ? colors.accent : colors.gray400,
                 backgroundColor: active ? colors.accent : 'transparent',
               },
               visited && !showTrail && { borderColor: colors.accent },
