@@ -426,7 +426,7 @@ export default function UploadScreen() {
               </View>
             ) : (
               <View style={styles.emptyStateFill}>
-                <DropzoneCard onPress={handlePickFile} />
+                <DropzoneCard />
                 <RoadmapCard />
                 <TipBox />
               </View>
@@ -492,19 +492,38 @@ export default function UploadScreen() {
   );
 }
 
-function DropzoneCard({ onPress }: { onPress: () => void }) {
+function DropzoneCard() {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
+  const bounce = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounce, { toValue: 1, duration: 550, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(bounce, { toValue: 0, duration: 550, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [bounce]);
+
+  const translateY = bounce.interpolate({ inputRange: [0, 1], outputRange: [0, 6] });
+
   return (
-    <Pressable style={styles.dropzoneCard} onPress={onPress}>
+    <View style={styles.dropzoneCard}>
       <View style={styles.dropzoneIconBox}>
-        <Feather name="upload-cloud" size={24} color={C.violet600} />
+        <Ionicons name="sparkles" size={24} color={C.violet600} />
       </View>
-      <Text style={styles.dropzoneTitle}>통신문 사진이나 문서를 터치하여 업로드</Text>
+      <Text style={styles.dropzoneTitle}>통신문 사진이나 문서를 준비해주세요</Text>
       <Text style={styles.dropzoneSubtitle}>
         가정통신문, 주간계획안, 식단표를 인식하여{'\n'}캘린더 일정과 준비물로 바꿔드려요 ✨
       </Text>
-    </Pressable>
+      <Animated.View style={{ transform: [{ translateY }] }}>
+        <Feather name="chevron-down" size={20} color={C.violet600} />
+      </Animated.View>
+      <Text style={styles.dropzoneHint}>아래 버튼으로 사진이나 문서를 선택하면 여기에 표시돼요</Text>
+    </View>
   );
 }
 
@@ -747,6 +766,7 @@ function createStyles(C: ScanColors) {
   },
   dropzoneTitle: { fontSize: 16, fontWeight: '900', color: C.slate900, textAlign: 'center' },
   dropzoneSubtitle: { fontSize: 13.5, color: C.slate400, textAlign: 'center', lineHeight: 19 },
+  dropzoneHint: { fontSize: 12.5, color: C.violet600, fontWeight: '700', textAlign: 'center', marginTop: -2 },
   tipBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
