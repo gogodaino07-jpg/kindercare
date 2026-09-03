@@ -107,8 +107,12 @@ export default function AppLockScreen({
       if (verifySecret(next)) {
         handleSuccess();
       } else {
-        setError(true);
-        setInput('');
+        // 4번째 점이 채워진 걸 보여준 다음에 틀렸다고 알려준다 — 바로 지워버리면
+        // 마지막 자리를 입력했는지도 모르게 3자리까지만 보이다 사라져 보였다.
+        setTimeout(() => {
+          setError(true);
+          setInput('');
+        }, 350);
       }
     } else if (method === 'password') {
       // Password uses system keyboard usually, but this keypad is for PIN/Gate.
