@@ -24,6 +24,7 @@ import { LockMethod, useAppLock } from '../../context/AppLockContext';
 import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { THEME_MODE_LABELS, useTheme } from '../../context/ThemeContext';
+import { FREE_LIFETIME_LIMIT } from '../../features/newsletter-analysis';
 import { resolveCoords } from '../../hooks/useWeeklyWeather';
 import { fetchWeatherPreview } from '../../utils/weatherPreviewFetch';
 
@@ -356,7 +357,7 @@ export default function SettingsScreen() {
                         style={[styles.rowSubtitleInline, isSubscribed && { color: colors.accent }]}
                         numberOfLines={1}
                       >
-                        {isSubscribed ? '구독 중' : '평생 5회 → 주 10회·월 50회'}
+                        {isSubscribed ? '구독 중' : `무료 ${FREE_LIFETIME_LIMIT}회, 이후 광고 시청 시 계속 이용`}
                       </Text>
                     </View>
                   </View>

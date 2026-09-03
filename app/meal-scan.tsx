@@ -23,7 +23,6 @@ import {
   PREMIUM_MEAL_MONTHLY_LIMIT,
   PREMIUM_MEAL_WEEKLY_LIMIT,
 } from '../features/newsletter-analysis';
-import { PremiumUpsellModal } from '../features/newsletter-analysis/components/PremiumUpsellModal';
 import { ZoomableImage } from '../features/newsletter-analysis/components/ZoomableImage';
 import { ScanColors, useScanColors } from '../features/newsletter-analysis/uiColors';
 import { useScanRewardedAd } from '../hooks/useScanRewardedAd';
@@ -50,7 +49,6 @@ export default function MealScanScreen() {
   const [doc, setDoc] = useState<UploadedDoc | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [starting, setStarting] = useState(false);
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showZoomModal, setShowZoomModal] = useState(false);
   const [remainingCount, setRemainingCount] = useState<number | null>(null);
   const maxMealCredits = isSubscribed ? PREMIUM_MEAL_WEEKLY_LIMIT : FREE_LIFETIME_LIMIT;
@@ -140,22 +138,21 @@ export default function MealScanScreen() {
     }
 
     const remaining = await AIUsageLimitService.getRemainingCount(googleAccount?.email, isSubscribed, 'meal');
-    if (remaining <= 0) {
-      if (isSubscribed) {
-        showAlert({
-          title: '이번 한도를 모두 사용했어요',
-          message: `프리미엄은 급식표 스캔을 1주일 최대 ${PREMIUM_MEAL_WEEKLY_LIMIT}회, 1달 최대 ${PREMIUM_MEAL_MONTHLY_LIMIT}회까지 할 수 있어요. 다음 기간에 다시 시도해주세요.`,
-          icon: '⏳',
-        });
-        return;
-      }
-      setShowPremiumModal(true);
+    if (isSubscribed && remaining <= 0) {
+      showAlert({
+        title: '이번 한도를 모두 사용했어요',
+        message: `프리미엄은 급식표 스캔을 1주일 최대 ${PREMIUM_MEAL_WEEKLY_LIMIT}회, 1달 최대 ${PREMIUM_MEAL_MONTHLY_LIMIT}회까지 할 수 있어요. 다음 기간에 다시 시도해주세요.`,
+        icon: '⏳',
+      });
       return;
     }
+    // 무료 사용자는 처음 FREE_LIFETIME_LIMIT회까지만 광고 없이 쓰고, 그 이후엔 구독하지
+    // 않는 한 스캔마다 광고 시청이 필요하다(막히지 않고 무제한 반복 가능).
+    const needsAd = !isSubscribed && !skipAd && remaining <= 0;
 
     setStarting(true);
     try {
-      if (!isSubscribed && !skipAd) {
+      if (needsAd) {
         const earnedReward = await requestAndShow();
         if (!earnedReward) {
           showAlert({ title: '광고 시청이 필요해요', message: '광고를 끝까지 시청해야 분석을 진행할 수 있어요. 다시 시도해주세요.' });
@@ -208,7 +205,9 @@ export default function MealScanScreen() {
             <Text style={styles.remainingCaption}>
               {isSubscribed
                 ? `이번 주 급식표 스캔 ${remainingCount} / ${maxMealCredits}회 남음`
-                : `무료 스캔 ${remainingCount} / ${maxMealCredits}회 남음 (알림장+급식표 합산, 평생)`}
+                : remainingCount > 0
+                  ? `광고 없이 무료 스캔 ${remainingCount} / ${maxMealCredits}회 남음 (알림장+급식표 합산, 평생)`
+                  : '무료 횟수를 모두 썼어요 · 광고 시청 후 계속 스캔할 수 있어요'}
             </Text>
           )}
 
@@ -287,23 +286,19 @@ export default function MealScanScreen() {
                 ) : (
                   <>
                     <Ionicons name="sparkles" size={18} color="#FFF3E0" />
-                    <Text style={styles.analyzeButtonText}>AI로 내용 분석하기</Text>
+                    <Text style={styles.analyzeButtonText}>
+                      {!isSubscribed && !skipAd && remainingCount === 0 ? '광고 보고 분석하기' : 'AI로 내용 분석하기'}
+                    </Text>
                   </>
                 )}
               </LinearGradient>
             </Pressable>
+            {!isSubscribed && !skipAd && remainingCount === 0 && (
+              <Text style={styles.analyzeAdCaption}>짧은 광고 시청 후 분석이 시작돼요</Text>
+            )}
           </View>
         </>
       )}
-
-      <PremiumUpsellModal
-        visible={showPremiumModal}
-        onClose={() => setShowPremiumModal(false)}
-        onSubscribe={() => {
-          setShowPremiumModal(false);
-          router.push('/settings/subscription');
-        }}
-      />
 
       {doc?.kind === 'image' && (
         <Modal visible={showZoomModal} transparent animationType="fade" onRequestClose={() => setShowZoomModal(false)}>
@@ -489,6 +484,7 @@ function createStyles(C: ScanColors) {
     gap: 8,
   },
   analyzeButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  analyzeAdCaption: { marginTop: 4, fontSize: 12, color: C.slate500, textAlign: 'center' },
   analyzingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 16 },
   analyzingTitle: { fontSize: 17, fontWeight: '800', color: C.slate900, textAlign: 'center' },
   analyzingSubtitle: { fontSize: 14, color: C.slate500, textAlign: 'center', lineHeight: 20 },

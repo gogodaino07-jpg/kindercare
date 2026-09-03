@@ -188,7 +188,8 @@ export default function SubscriptionScreen() {
                   </View>
                 ))}
                 <Text style={styles.freeNote}>
-                  무료 이용 시 스캔(알림장+급식표 합산)은 평생 최대 {FREE_LIFETIME_LIMIT}회까지예요.
+                  무료 이용 시 스캔(알림장+급식표 합산)은 처음 {FREE_LIFETIME_LIMIT}회까지 광고 없이 쓸 수 있고,
+                  이후엔 스캔마다 광고 시청이 필요해요.
                 </Text>
               </View>
 

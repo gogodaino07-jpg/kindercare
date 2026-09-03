@@ -24,7 +24,6 @@ import {
   PREMIUM_MONTHLY_LIMIT,
   PREMIUM_WEEKLY_LIMIT,
 } from '../features/newsletter-analysis';
-import { PremiumUpsellModal } from '../features/newsletter-analysis/components/PremiumUpsellModal';
 import { ScanColors, useScanColors } from '../features/newsletter-analysis/uiColors';
 import { useScanRewardedAd } from '../hooks/useScanRewardedAd';
 import { Event, MealPlan, UploadedDoc } from '../types/models';
@@ -84,10 +83,13 @@ export default function UploadScreen() {
   // 아니라(그건 실제 AI 분석이 시작될 때만 켜짐) 버튼에 아무 반응이 없어 보여서
   // 여러 번 누르게 되는 문제가 있었음 — 그 구간을 채우기 위한 별도 상태.
   const [starting, setStarting] = useState(false);
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   const maxCredits = isSubscribed ? PREMIUM_WEEKLY_LIMIT : FREE_LIFETIME_LIMIT;
   const skipAd = isAdTestAccount(googleAccount?.email);
+  // 무료 사용자는 처음 FREE_LIFETIME_LIMIT회까지만 광고 없이 쓰고, 그 이후엔 구독하지
+  // 않는 한 스캔마다 광고 시청이 필요하다(막히지 않고 무제한 반복 가능).
+  const hasFreeCredit = !isSubscribed && remainingAnalyses !== null && remainingAnalyses > 0;
+  const needsAdThisScan = !isSubscribed && !skipAd && !hasFreeCredit;
 
   // Prevent accidental navigation during analysis
   useEffect(() => {
@@ -316,16 +318,12 @@ export default function UploadScreen() {
       showAlert({ title: '알림', message: '먼저 사진이나 파일을 올려주세요' });
       return;
     }
-    if (remainingAnalyses !== null && remainingAnalyses <= 0) {
-      if (isSubscribed) {
-        showAlert({
-          title: '이번 한도를 모두 사용했어요',
-          message: `프리미엄은 1주일 최대 ${PREMIUM_WEEKLY_LIMIT}회, 1달 최대 ${PREMIUM_MONTHLY_LIMIT}회까지 스캔할 수 있어요. 다음 기간에 다시 시도해주세요.`,
-          icon: '⏳',
-        });
-        return;
-      }
-      setShowPremiumModal(true);
+    if (isSubscribed && remainingAnalyses !== null && remainingAnalyses <= 0) {
+      showAlert({
+        title: '이번 한도를 모두 사용했어요',
+        message: `프리미엄은 1주일 최대 ${PREMIUM_WEEKLY_LIMIT}회, 1달 최대 ${PREMIUM_MONTHLY_LIMIT}회까지 스캔할 수 있어요. 다음 기간에 다시 시도해주세요.`,
+        icon: '⏳',
+      });
       return;
     }
     if (!selectedChild) {
@@ -335,7 +333,7 @@ export default function UploadScreen() {
 
     setStarting(true);
     try {
-      if (!isSubscribed && !skipAd) {
+      if (needsAdThisScan) {
         const earnedReward = await requestAndShow();
         if (!earnedReward) {
           showAlert({ title: '광고 시청이 필요해요', message: '광고를 끝까지 시청해야 분석을 진행할 수 있어요. 다시 시도해주세요.' });
@@ -402,9 +400,11 @@ export default function UploadScreen() {
                 <Text style={styles.gaugeFootText}>
                   {isSubscribed
                     ? '1회 스캔 시 사진/문서 1건이 분석됩니다'
-                    : '평생 무료 횟수예요 (알림장+급식표 스캔 합산). 1회 스캔 시 사진/문서 1건이 분석됩니다'}
+                    : `광고 없이 평생 ${maxCredits}회예요 (알림장+급식표 합산). 이후엔 광고 시청 후 계속 스캔할 수 있어요`}
                 </Text>
-                {remainingAnalyses === 0 && <Text style={styles.gaugeExhaustedText}>모두 사용됨</Text>}
+                {!isSubscribed && remainingAnalyses === 0 && (
+                  <Text style={styles.gaugeExhaustedText}>광고 시청 후 이용</Text>
+                )}
               </View>
             </View>
 
@@ -472,13 +472,15 @@ export default function UploadScreen() {
                   ) : (
                     <>
                       <Ionicons name="sparkles" size={18} color="#FCD34D" />
-                      <Text style={styles.analyzeButtonText}>AI로 내용 분석하기 (1회 차감)</Text>
+                      <Text style={styles.analyzeButtonText}>
+                        {needsAdThisScan ? '광고 보고 분석하기' : 'AI로 내용 분석하기 (1회 차감)'}
+                      </Text>
                     </>
                   )}
                 </LinearGradient>
               </Pressable>
             )}
-            {docs.length > 0 && subscriptionReady && !isSubscribed && !skipAd && (
+            {docs.length > 0 && subscriptionReady && needsAdThisScan && (
               <Text style={styles.analyzeAdCaption}>짧은 광고 시청 후 분석이 시작돼요</Text>
             )}
           </View>
@@ -486,15 +488,6 @@ export default function UploadScreen() {
           {subscriptionReady && !isSubscribed && <CoupangBanner style={{ paddingBottom: insets.bottom }} />}
         </>
       )}
-
-      <PremiumUpsellModal
-        visible={showPremiumModal}
-        onClose={() => setShowPremiumModal(false)}
-        onSubscribe={() => {
-          setShowPremiumModal(false);
-          router.push('/settings/subscription');
-        }}
-      />
     </SafeAreaView>
   );
 }

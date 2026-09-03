@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDb } from '../../../utils/firebase';
 
-/** 무료 사용자의 평생 무료 스캔 횟수 — 알림장/급식표를 구분하지 않고 하나의 풀을 공유한다. */
-export const FREE_LIFETIME_LIMIT = 5;
+/** 무료 사용자가 광고 없이 바로 쓸 수 있는 평생 스캔 횟수 — 알림장/급식표를 구분하지 않고
+ *  하나의 풀을 공유한다. 이 횟수를 다 쓰면 완전히 막히는 게 아니라, 구독하지 않는 한
+ *  스캔마다 광고 시청이 필요해진다(무제한 반복 가능). */
+export const FREE_LIFETIME_LIMIT = 2;
 /** 프리미엄 구독자의 알림장 스캔 주간/월간 한도 — 두 한도를 동시에 지켜야 함(둘 중 먼저 차는 쪽이 기준). */
 export const PREMIUM_WEEKLY_LIMIT = 10;
 export const PREMIUM_MONTHLY_LIMIT = 50;
@@ -84,9 +86,10 @@ function remainingForPremium(usage: PremiumUsageRecord, type: AIUsageType): numb
  * 예전에는 기기 로컬(AsyncStorage)에만 저장해 재설치하면 횟수가 초기화되는 문제가 있었음 —
  * 이제 계정에 귀속시켜 재설치/기기 변경으로는 초기화되지 않게 한다.
  *
- * 무료 사용자는 알림장/급식표를 구분하지 않는 평생 공유 풀(FREE_LIFETIME_LIMIT)을 쓰고,
- * 이 풀을 모두 소진하면 프리미엄 구독이 필요하다. 프리미엄 구독자는 알림장/급식표를
- * 각각 독립된 주간/월간 한도로 관리한다(둘 중 먼저 소진되는 쪽이 기준).
+ * 무료 사용자는 알림장/급식표를 구분하지 않는 평생 공유 풀(FREE_LIFETIME_LIMIT)을 광고 없이
+ * 쓰고, 이 풀을 모두 소진하면 스캔마다 광고 시청이 필요해진다(화면단 로직, 광고 게이트 자체는
+ * 이 서비스가 관리하지 않음). 프리미엄 구독자는 알림장/급식표를 각각 독립된 주간/월간
+ * 한도로 관리한다(둘 중 먼저 소진되는 쪽이 기준).
  */
 export const AIUsageLimitService = {
   async getRemainingCount(userId?: string, isSubscribed = false, type: AIUsageType = 'newsletter'): Promise<number> {
