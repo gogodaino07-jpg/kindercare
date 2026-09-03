@@ -179,7 +179,7 @@ export default function SettingsScreen() {
     '날씨 지역 설정',
   ]);
   const showSecurity = sectionVisible(['보안', '잠금화면']);
-  const showEtc = sectionVisible(['고객센터', '문의', '의견', '개인정보 처리방침', '오픈소스 라이선스']);
+  const showEtc = sectionVisible(['고객센터', '문의', '의견', '개인정보 처리방침', '이용약관', '오픈소스 라이선스']);
   const noResults = !showProfile && !showQuickCards && !showMembership && !showDisplay && !showSecurity && !showEtc;
 
   const Row = ({
@@ -476,6 +476,11 @@ export default function SettingsScreen() {
                   <View style={styles.divider} />
                   <TouchableOpacity style={styles.plainRow} activeOpacity={0.7} onPress={() => router.push('/settings/privacy')}>
                     <Text style={styles.rowTitle}>개인정보 처리방침</Text>
+                    <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
+                  </TouchableOpacity>
+                  <View style={styles.divider} />
+                  <TouchableOpacity style={styles.plainRow} activeOpacity={0.7} onPress={() => router.push('/settings/terms')}>
+                    <Text style={styles.rowTitle}>이용약관</Text>
                     <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
                   </TouchableOpacity>
                   <View style={styles.divider} />

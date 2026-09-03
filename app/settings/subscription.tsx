@@ -114,9 +114,7 @@ export default function SubscriptionScreen() {
     Linking.openURL(url).catch(() => {});
   };
 
-  const handleTerms = () => {
-    showAlert({ title: '이용약관', message: '준비 중이에요. 곧 만나요!' });
-  };
+  const handleTerms = () => router.push('/settings/terms');
 
   return (
     <View style={styles.screenBg}>
