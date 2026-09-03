@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View, KeyboardAvo
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Text from '../../components/common/AppText';
 import PatternGrid from '../../components/settings/PatternGrid';
+import PinPad from '../../components/settings/PinPad';
 import { SHADOW } from '../../constants/theme';
 import { useAlert } from '../../context/AlertContext';
 import { LockMethod, serializePattern, useAppLock } from '../../context/AppLockContext';
@@ -161,31 +162,48 @@ export default function AppLockSettingsScreen() {
     else if (target === 'pattern') setStage({ kind: 'pattern-first' });
   };
 
-  const handleNext = () => {
-    if (stage.kind === 'pin-first' || stage.kind === 'pin-confirm') {
-      if (inputText.length < 4) {
-        showToast('4자리 이상 입력해주세요.');
-        return;
-      }
-      if (stage.kind === 'pin-first') {
-        setStage({ kind: 'pin-confirm', first: inputText });
+  // 실제 잠금 해제 화면(PinPad)과 똑같이, 마지막 자리를 누르면 자동으로 다음
+  // 단계로 넘어간다 — "다음" 버튼을 따로 누르지 않아도 되게 해서 설정할 때
+  // 연습한 동작이 실제로 잠금을 풀 때와 일치하도록 맞춘다.
+  const submitPin = (value: string) => {
+    if (stage.kind === 'pin-first') {
+      setStage({ kind: 'pin-confirm', first: value });
+      setInputText('');
+    } else if (stage.kind === 'pin-confirm') {
+      if (value === stage.first) {
+        setLockMethod('pin', value);
+        setStage({ kind: 'idle' });
         setInputText('');
+        showToast('잠금 설정이 완료되었습니다.');
       } else {
-        if (inputText === stage.first) {
-          setLockMethod('pin', inputText);
-          setStage({ kind: 'idle' });
+        setError(true);
+        setTimeout(() => {
+          setError(false);
           setInputText('');
-          showToast('잠금 설정이 완료되었습니다.');
-        } else {
-          setError(true);
-          setTimeout(() => {
-            setError(false);
-            setInputText('');
-            setStage({ kind: 'pin-first' });
-          }, 1500);
-        }
+          setStage({ kind: 'pin-first' });
+        }, 1500);
       }
-    } else if (stage.kind === 'password-first' || stage.kind === 'password-confirm') {
+    }
+  };
+
+  const handlePinKeyPress = (key: string) => {
+    if (error) return;
+    if (key === 'del') {
+      setInputText((prev) => prev.slice(0, -1));
+      return;
+    }
+    setInputText((prev) => {
+      if (prev.length >= PIN_MAX_LENGTH) return prev;
+      const next = prev + key;
+      if (next.length >= PIN_MAX_LENGTH) {
+        setTimeout(() => submitPin(next), 350);
+      }
+      return next;
+    });
+  };
+
+  const handleNext = () => {
+    if (stage.kind === 'password-first' || stage.kind === 'password-confirm') {
       if (inputText.length < 4) {
         showToast('4자 이상 입력해주세요.');
         return;
@@ -295,7 +313,26 @@ export default function AppLockSettingsScreen() {
                   : '패턴을 그려주세요'}
           </Text>
 
-          {(isPin || isPassword) && (
+          {isPin && (
+            <>
+              {/* 실제 잠금 해제 화면과 똑같은 키패드로 연습하게 해서, 설정할 때 본
+                  화면과 실제로 잠금을 풀 때 화면이 달라 보이지 않게 한다. */}
+              <PinPad
+                colors={colors}
+                value={inputText}
+                length={PIN_MAX_LENGTH}
+                error={error}
+                onKeyPress={handlePinKeyPress}
+              />
+              {inputText.length > 0 && !error && stage.kind.includes('first') && (
+                <Text style={[styles.strengthText, { color: strengthColor }]}>
+                  {getStrengthLabel(strength!)}
+                </Text>
+              )}
+            </>
+          )}
+
+          {isPassword && (
             <>
               <View style={styles.inputWrap}>
                 <TextInput
@@ -306,10 +343,10 @@ export default function AppLockSettingsScreen() {
                   value={inputText}
                   onChangeText={(text) => setInputText(stripInvalidCharacters(text))}
                   secureTextEntry={!secureVisible}
-                  placeholder={isPin ? 'PIN 입력' : '비밀번호 입력'}
+                  placeholder="비밀번호 입력"
                   placeholderTextColor={colors.textSecondary}
-                  keyboardType={isPin ? 'number-pad' : 'default'}
-                  maxLength={isPin ? PIN_MAX_LENGTH : PASSWORD_MAX_LENGTH}
+                  keyboardType="default"
+                  maxLength={PASSWORD_MAX_LENGTH}
                   autoFocus
                 />
                 <Pressable
@@ -325,7 +362,7 @@ export default function AppLockSettingsScreen() {
                 </Pressable>
               </View>
               <Text style={[styles.charCountText, { color: colors.textSecondary }]}>
-                {inputText.length} / {isPin ? PIN_MAX_LENGTH : PASSWORD_MAX_LENGTH}
+                {inputText.length} / {PASSWORD_MAX_LENGTH}
               </Text>
               {inputText.length > 0 && !error && stage.kind.includes('first') && (
                 <Text style={[styles.strengthText, { color: strengthColor }]}>
@@ -374,7 +411,7 @@ export default function AppLockSettingsScreen() {
                 <Text style={styles.nextBtnText}>{stage.kind.includes('first') ? '다음' : '완료'}</Text>
               </Pressable>
             )}
-            {(isPin || isPassword) && (
+            {isPassword && (
               <Pressable style={styles.nextBtn} onPress={handleNext}>
                 <Text style={styles.nextBtnText}>{stage.kind.includes('first') ? '다음' : '완료'}</Text>
               </Pressable>

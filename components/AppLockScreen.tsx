@@ -1,16 +1,16 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ScreenCapture from 'expo-screen-capture';
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import FingerprintIcon from './common/FingerprintIcon';
 import PatternGrid from './settings/PatternGrid';
+import PinPad from './settings/PinPad';
 import { serializePattern, useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import Text from './common/AppText';
 
-// Standard phone-keypad order: del sits bottom-left, 0 center, fingerprint
-// bottom-right — directly to the right of 0, within easy thumb reach.
-const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'bio', '0', 'del'];
+const PIN_LENGTH = 4;
 
 interface AppLockScreenProps {
   /** False while the boot splash is still covering the screen — the native
@@ -41,6 +41,8 @@ export default function AppLockScreen({
     showPatternEnabled,
   } = useAppLock();
   const [input, setInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [error, setError] = useState(false);
   const canUseBiometric = biometricEnabled && biometricAvailable;
 
@@ -71,6 +73,7 @@ export default function AppLockScreen({
   useEffect(() => {
     if (!effectiveLocked) {
       setInput('');
+      setPasswordInput('');
       setError(false);
     }
   }, [effectiveLocked]);
@@ -101,9 +104,7 @@ export default function AppLockScreen({
     setInput(next);
     setError(false);
 
-    // For 'password' method, we might want to use the handleNext instead of auto-submit
-    // but for PIN (4 digits) we keep auto-submit.
-    if (method === 'pin' && next.length >= 4) {
+    if (next.length >= PIN_LENGTH) {
       if (verifySecret(next)) {
         handleSuccess();
       } else {
@@ -114,12 +115,20 @@ export default function AppLockScreen({
           setInput('');
         }, 350);
       }
-    } else if (method === 'password') {
-      // Password uses system keyboard usually, but this keypad is for PIN/Gate.
-      // If method is password, verifySecret still works.
-      if (next.length >= 4 && verifySecret(next)) {
-        handleSuccess();
-      }
+    }
+  };
+
+  // 설정 화면(app-lock.tsx)에서는 비밀번호에 영문+숫자를 허용하는데, 예전엔 이
+  // 실제 잠금 해제 화면이 숫자 전용 키패드만 갖고 있어서 영문이 섞인 비밀번호는
+  // 아예 입력할 방법이 없어 스스로 잠기는 심각한 버그가 있었다 — 설정 화면과
+  // 똑같은 텍스트 입력창으로 바꿔서 해결한다.
+  const handlePasswordSubmit = () => {
+    if (!passwordInput) return;
+    if (verifySecret(passwordInput)) {
+      handleSuccess();
+    } else {
+      setError(true);
+      setPasswordInput('');
     }
   };
 
@@ -161,50 +170,50 @@ export default function AppLockScreen({
               </Pressable>
             ) : null}
           </>
-        ) : (
+        ) : method === 'password' ? (
           <>
-            <View style={styles.dotsRow}>
-              {Array.from({ length: 4 }, (_, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.pinDot,
-                    { borderColor: colors.accent },
-                    i < input.length && { backgroundColor: colors.accent },
-                  ]}
+            <View style={styles.passwordInputWrap}>
+              <TextInput
+                style={[styles.passwordInput, { borderColor: error ? colors.tomorrowRed : colors.border, color: colors.textPrimary }]}
+                value={passwordInput}
+                onChangeText={(text) => { setPasswordInput(text); setError(false); }}
+                secureTextEntry={!passwordVisible}
+                placeholder="비밀번호 입력"
+                placeholderTextColor={colors.textSecondary}
+                autoFocus
+                onSubmitEditing={handlePasswordSubmit}
+                returnKeyType="done"
+              />
+              <Pressable onPress={() => setPasswordVisible((v) => !v)} hitSlop={10} style={styles.eyeButton}>
+                <MaterialCommunityIcons
+                  name={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color={colors.textSecondary}
                 />
-              ))}
+              </Pressable>
             </View>
-
-            {/* Password method in AppLockScreen usually means a gate/pin for quick entry.
-                If it's full password, we might need a text input, but for quick entry PIN is better.
-                We'll keep the keypad for both pin/password in the gate screen. */}
-            <View style={styles.keypad}>
-              {KEYPAD_KEYS.map((key, idx) => {
-                if (key === 'bio') {
-                  return (
-                    <Pressable
-                      key={idx}
-                      style={styles.key}
-                      onPress={() => handlePress('bio')}
-                      disabled={!canUseBiometric}
-                    >
-                      {canUseBiometric ? (
-                        <FingerprintIcon size={30} color={colors.accent} />
-                      ) : null}
-                    </Pressable>
-                  );
-                }
-                return (
-                  <Pressable key={idx} style={styles.key} onPress={() => handlePress(key)}>
-                    <Text style={[styles.keyText, { color: colors.textPrimary }]}>
-                      {key === 'del' ? '⌫' : key}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <Pressable style={[styles.confirmButton, { backgroundColor: colors.accent }]} onPress={handlePasswordSubmit}>
+              <Text style={styles.confirmButtonText}>확인</Text>
+            </Pressable>
+            {canUseBiometric ? (
+              <Pressable style={styles.bioButton} onPress={() => authenticateWithBiometric().then(s => s && isEmbedded && onVerified?.())}>
+                <Text style={[styles.bioButtonText, { color: colors.accent }]}>지문으로 잠금 해제</Text>
+              </Pressable>
+            ) : null}
           </>
+        ) : (
+          <PinPad
+            colors={colors}
+            value={input}
+            length={PIN_LENGTH}
+            error={error}
+            onKeyPress={handlePress}
+            bottomLeftSlot={
+              <Pressable onPress={() => handlePress('bio')} disabled={!canUseBiometric}>
+                {canUseBiometric ? <FingerprintIcon size={30} color={colors.accent} /> : null}
+              </Pressable>
+            }
+          />
         )}
       </View>
     </View>
@@ -237,33 +246,40 @@ const styles = StyleSheet.create({
     height: 20,
     marginBottom: 12,
   },
-  dotsRow: {
-    flexDirection: 'row',
-    marginBottom: 44,
-  },
-  pinDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    marginHorizontal: 12,
-  },
-  keypad: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  passwordInputWrap: {
     width: '100%',
+    position: 'relative',
     justifyContent: 'center',
-    marginTop: 64,
+    marginTop: 12,
   },
-  key: {
-    width: '33.33%',
-    height: 76,
+  passwordInput: {
+    borderWidth: 1.5,
+    borderRadius: 999,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingRight: 48,
+    fontSize: 17,
+    textAlign: 'center',
+    letterSpacing: 2,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 16,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+  },
+  confirmButton: {
+    width: '100%',
+    marginTop: 16,
+    paddingVertical: 16,
+    borderRadius: 999,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  keyText: {
-    fontSize: 24,
-    fontWeight: '600',
+  confirmButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   bioButton: {
     marginTop: 24,
