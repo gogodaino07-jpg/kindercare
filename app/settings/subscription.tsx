@@ -152,8 +152,8 @@ export default function SubscriptionScreen() {
                 <Text style={styles.benefitsSummaryTitle}>현재 누리고 있는 혜택</Text>
                 {BENEFITS.map((b) => (
                   <View key={b.text} style={styles.benefitsSummaryRow}>
-                    <View style={[styles.benefitIconBadge, { backgroundColor: badgeColors[b.badgeKey].bg }]}>
-                      <MaterialIcons name={b.icon} size={18} color={badgeColors[b.badgeKey].fg} />
+                    <View style={[styles.benefitIconBadgeLarge, { backgroundColor: badgeColors[b.badgeKey].bg }]}>
+                      <MaterialIcons name={b.icon} size={26} color={badgeColors[b.badgeKey].fg} />
                     </View>
                     <View style={styles.benefitsSummaryTextWrap}>
                       <Text style={styles.benefitsSummaryTitleText}>{b.shortText}</Text>
@@ -162,6 +162,8 @@ export default function SubscriptionScreen() {
                   </View>
                 ))}
               </View>
+
+              <View style={{ flex: 1 }} />
 
               <Pressable style={styles.manageLinkWrap} onPress={handleManage} hitSlop={8}>
                 <Text style={styles.manageLinkText}>구독 관리 / 해지</Text>
@@ -350,18 +352,25 @@ function createStyles(colors: ThemeColors) {
     manageLinkText: { fontSize: 13, fontWeight: '700', color: colors.purple500, textDecorationLine: 'underline' },
     benefitsSummaryCard: {
       backgroundColor: colors.cardWhite,
-      borderRadius: 18,
-      padding: 18,
-      gap: 16,
+      borderRadius: 22,
+      padding: 24,
+      gap: 24,
       ...SHADOW,
       shadowOpacity: 0.05,
       elevation: 2,
     },
-    benefitsSummaryTitle: { fontSize: 12.5, fontWeight: '700', color: colors.gray500, marginBottom: 2 },
-    benefitsSummaryRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-    benefitsSummaryTextWrap: { flex: 1, gap: 2 },
-    benefitsSummaryTitleText: { fontSize: 14, fontWeight: '800', color: colors.gray900 },
-    benefitsSummaryDesc: { fontSize: 12, fontWeight: '500', color: colors.gray500 },
+    benefitsSummaryTitle: { fontSize: 13.5, fontWeight: '700', color: colors.gray500, marginBottom: 4 },
+    benefitsSummaryRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+    benefitIconBadgeLarge: {
+      width: 56,
+      height: 56,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    benefitsSummaryTextWrap: { flex: 1, gap: 3 },
+    benefitsSummaryTitleText: { fontSize: 16, fontWeight: '800', color: colors.gray900 },
+    benefitsSummaryDesc: { fontSize: 13, fontWeight: '500', color: colors.gray500 },
     preparingText: {
       textAlign: 'center',
       fontSize: 13,
