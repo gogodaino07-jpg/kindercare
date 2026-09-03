@@ -26,7 +26,7 @@ import { generateMockAIEvents, isSimilarEvent } from '../data/mockAIResult';
 import { AnalysisLogService, AnalysisResultStore } from '../features/newsletter-analysis';
 import { EventReviewCard } from '../features/newsletter-analysis/components/EventReviewCard';
 import { ZoomableImage } from '../features/newsletter-analysis/components/ZoomableImage';
-import { SCAN_COLORS as C } from '../features/newsletter-analysis/uiColors';
+import { ScanColors, useScanColors } from '../features/newsletter-analysis/uiColors';
 import { DraftEvent } from '../features/newsletter-analysis/types';
 import { Event } from '../types/models';
 import { parseISODate, startOfDay, toISODate } from '../utils/date';
@@ -67,6 +67,8 @@ export default function AIReviewScreen() {
   const { showAlert } = useAlert();
   const { addNotification } = useNotificationCenter();
   const insets = useSafeAreaInsets();
+  const C = useScanColors();
+  const styles = useMemo(() => createStyles(C), [C]);
 
   const session = useMemo(() => AnalysisResultStore.getSession(), []);
   const originalEvents = useMemo(() => session?.initialEvents ?? [], [session]);
@@ -525,11 +527,12 @@ export default function AIReviewScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(C: ScanColors) {
+  return StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: C.appBg },
   keyboardAvoider: { flex: 1 },
   header: {
-    backgroundColor: C.white,
+    backgroundColor: C.surface,
     paddingHorizontal: 16,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -585,7 +588,7 @@ const styles = StyleSheet.create({
   },
   pastNoticeReuploadButtonText: { fontSize: 12.5, fontWeight: '800', color: C.white },
   pastNoticeContinueButton: {
-    backgroundColor: C.white,
+    backgroundColor: C.surface,
     borderRadius: 999,
     borderWidth: 1.5,
     borderColor: C.amber200,
@@ -608,7 +611,7 @@ const styles = StyleSheet.create({
   rescanButton: { backgroundColor: C.slate100, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 7 },
   rescanButtonText: { fontSize: 11, fontWeight: '700', color: C.slate500 },
   originalWrap: {
-    backgroundColor: C.slate900,
+    backgroundColor: C.ink,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
@@ -659,12 +662,12 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 16,
     paddingTop: 12,
-    backgroundColor: C.white,
+    backgroundColor: C.surface,
     borderTopWidth: 1,
     borderTopColor: C.slate100,
   },
   saveButton: {
-    backgroundColor: C.slate900,
+    backgroundColor: C.ink,
     borderRadius: 18,
     paddingVertical: 16,
     flexDirection: 'row',
@@ -685,7 +688,7 @@ const styles = StyleSheet.create({
   zoomCard: {
     width: '100%',
     maxHeight: '85%',
-    backgroundColor: C.white,
+    backgroundColor: C.surface,
     borderRadius: 32,
     padding: 20,
     gap: 12,
@@ -708,7 +711,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  zoomCloseFooter: { backgroundColor: C.slate900, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  zoomCloseFooter: { backgroundColor: C.ink, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
   zoomCloseFooterText: { fontSize: 12, fontWeight: '700', color: C.white },
   duplicateOverlay: {
     flex: 1,
@@ -720,10 +723,10 @@ const styles = StyleSheet.create({
   duplicateCard: {
     width: '100%',
     maxWidth: 340,
-    backgroundColor: C.white,
+    backgroundColor: C.surface,
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.045)',
+    borderColor: C.border,
     padding: 26,
     alignItems: 'center',
     gap: 6,
@@ -762,4 +765,5 @@ const styles = StyleSheet.create({
     backgroundColor: C.slate100,
   },
   duplicateSecondaryButtonText: { fontSize: 13, fontWeight: '700', color: C.slate600 },
-});
+  });
+}

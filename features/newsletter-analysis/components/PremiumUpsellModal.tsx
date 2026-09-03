@@ -1,7 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import Text from '../../../components/common/AppText';
+import { ScanColors, useScanColors } from '../uiColors';
 
 interface PremiumUpsellModalProps {
   visible: boolean;
@@ -11,6 +12,8 @@ interface PremiumUpsellModalProps {
 
 /** 무료 스캔 소진 시 리워드 광고 대신 노출되는 프리미엄 유도 팝업. */
 export const PremiumUpsellModal = ({ visible, onClose, onSubscribe }: PremiumUpsellModalProps) => {
+  const C = useScanColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -25,7 +28,7 @@ export const PremiumUpsellModal = ({ visible, onClose, onSubscribe }: PremiumUps
 
           <Pressable onPress={onSubscribe} style={styles.subscribeButtonWrap}>
             <LinearGradient
-              colors={['#7C3AED', '#4F46E5']}
+              colors={[C.violet600, C.indigo600]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.subscribeButton}
@@ -43,7 +46,8 @@ export const PremiumUpsellModal = ({ visible, onClose, onSubscribe }: PremiumUps
   );
 };
 
-const styles = StyleSheet.create({
+function createStyles(C: ScanColors) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.55)',
@@ -53,7 +57,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: C.surface,
     borderRadius: 32,
     padding: 28,
     alignItems: 'center',
@@ -62,7 +66,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#EDE9FE',
+    backgroundColor: C.violet100,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
@@ -71,13 +75,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '900',
-    color: '#0F172A',
+    color: C.slate900,
     textAlign: 'center',
   },
   body: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#64748B',
+    color: C.slate500,
     textAlign: 'center',
     lineHeight: 20,
     marginTop: 8,
@@ -92,14 +96,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   subscribeButtonText: {
-    color: '#FFFFFF',
+    color: C.white,
     fontSize: 14,
     fontWeight: '900',
   },
   closeLink: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#94A3B8',
+    color: C.slate400,
     marginTop: 16,
   },
-});
+  });
+}

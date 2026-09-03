@@ -25,7 +25,7 @@ import {
   PREMIUM_WEEKLY_LIMIT,
 } from '../features/newsletter-analysis';
 import { PremiumUpsellModal } from '../features/newsletter-analysis/components/PremiumUpsellModal';
-import { SCAN_COLORS as C } from '../features/newsletter-analysis/uiColors';
+import { ScanColors, useScanColors } from '../features/newsletter-analysis/uiColors';
 import { useScanRewardedAd } from '../hooks/useScanRewardedAd';
 import { Event, MealPlan, UploadedDoc } from '../types/models';
 import { toISODate } from '../utils/date';
@@ -57,7 +57,7 @@ function docTagLabel(doc: UploadedDoc): string {
   return ext ? `${ext} 문서` : '문서 파일';
 }
 
-function fileIconColors(doc: UploadedDoc): [string, string] {
+function fileIconColors(doc: UploadedDoc, C: ScanColors): [string, string] {
   const lower = (doc.name ?? '').toLowerCase();
   if (lower.endsWith('.pdf')) return [C.rose600, '#F43F5E'];
   if (lower.endsWith('.hwp')) return [C.blue700, '#3B82F6'];
@@ -74,6 +74,8 @@ export default function UploadScreen() {
   const { showToast } = useToast();
   const { requestAndShow } = useScanRewardedAd();
   const insets = useSafeAreaInsets();
+  const C = useScanColors();
+  const styles = useMemo(() => createStyles(C), [C]);
 
   const [docs, setDocs] = useState<UploadedDoc[]>([]);
   const [remainingAnalyses, setRemainingAnalyses] = useState<number | null>(null);
@@ -498,6 +500,8 @@ export default function UploadScreen() {
 }
 
 function DropzoneCard({ onPress }: { onPress: () => void }) {
+  const C = useScanColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   return (
     <Pressable style={styles.dropzoneCard} onPress={onPress}>
       <View style={styles.dropzoneIconBox}>
@@ -512,6 +516,8 @@ function DropzoneCard({ onPress }: { onPress: () => void }) {
 }
 
 function TipBox() {
+  const C = useScanColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   return (
     <View style={styles.tipBox}>
       <Ionicons name="bulb" size={18} color={C.amber700} />
@@ -524,6 +530,8 @@ function TipBox() {
 }
 
 function RoadmapConnector() {
+  const C = useScanColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   return (
     <View style={styles.roadmapConnector}>
       <Feather name="chevron-down" size={16} color={C.slate300} />
@@ -532,6 +540,8 @@ function RoadmapConnector() {
 }
 
 function RoadmapCard() {
+  const C = useScanColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   return (
     <View style={styles.roadmapCard}>
       <View style={styles.roadmapRow}>
@@ -587,6 +597,8 @@ function RoadmapCard() {
 }
 
 function DocCard({ doc, onRemove }: { doc: UploadedDoc; onRemove: () => void }) {
+  const C = useScanColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   return (
     <View style={styles.docCard}>
       <View style={styles.docCardTopRow}>
@@ -602,7 +614,7 @@ function DocCard({ doc, onRemove }: { doc: UploadedDoc; onRemove: () => void }) 
         {doc.kind === 'image' ? (
           <Image source={{ uri: doc.uri }} style={styles.docCardThumb} />
         ) : (
-          <LinearGradient colors={fileIconColors(doc)} style={styles.docCardThumb}>
+          <LinearGradient colors={fileIconColors(doc, C)} style={styles.docCardThumb}>
             <Feather name="file-text" size={22} color="#FFFFFF" />
           </LinearGradient>
         )}
@@ -618,6 +630,7 @@ function DocCard({ doc, onRemove }: { doc: UploadedDoc; onRemove: () => void }) 
 }
 
 function SpinnerRing({ size }: { size: number }) {
+  const C = useScanColors();
   const spin = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     const loop = Animated.loop(
@@ -660,6 +673,8 @@ function SpinningIcon({ name, size, color }: { name: React.ComponentProps<typeof
 }
 
 function AnalyzingBody({ label }: { label: string }) {
+  const C = useScanColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   return (
     <View style={styles.analyzingContainer}>
       <View style={styles.analyzingSpinnerWrap}>
@@ -680,7 +695,8 @@ function AnalyzingBody({ label }: { label: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(C: ScanColors) {
+  return StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: C.appBg },
   header: {
     paddingHorizontal: 12,
@@ -698,11 +714,11 @@ const styles = StyleSheet.create({
   scrollContentFill: { flexGrow: 1 },
   emptyStateFill: { flex: 1, justifyContent: 'space-between', gap: 10 },
   gaugeCard: {
-    backgroundColor: C.white,
+    backgroundColor: C.surface,
     borderRadius: 20,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E5EAF0',
+    borderColor: C.slate200,
     gap: 8,
   },
   gaugeTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -751,7 +767,7 @@ const styles = StyleSheet.create({
   tipText: { flex: 1, fontSize: 13.5, color: C.slate700, lineHeight: 19 },
   tipBold: { fontWeight: '900', color: C.amber700 },
   roadmapCard: {
-    backgroundColor: C.white,
+    backgroundColor: C.surface,
     borderRadius: 32,
     padding: 14,
     borderWidth: 1,
@@ -785,7 +801,7 @@ const styles = StyleSheet.create({
   docsSection: { gap: 10 },
   docsCountLabel: { fontSize: 13, fontWeight: '700', color: C.slate400 },
   docCard: {
-    backgroundColor: C.white,
+    backgroundColor: C.surface,
     borderRadius: 24,
     padding: 14,
     borderWidth: 2,
@@ -828,7 +844,7 @@ const styles = StyleSheet.create({
   hintBox: {
     backgroundColor: C.slate50,
     borderWidth: 1,
-    borderColor: '#E5EAF0',
+    borderColor: C.slate200,
     borderRadius: 14,
     padding: 12,
     flexDirection: 'row',
@@ -838,7 +854,7 @@ const styles = StyleSheet.create({
   hintText: { flex: 1, fontSize: 13, color: C.slate600, lineHeight: 19 },
   hintBold: { fontWeight: '800', color: C.slate800 },
   dock: {
-    backgroundColor: 'rgba(255,255,255,0.97)',
+    backgroundColor: C.surface,
     borderTopWidth: 1,
     borderTopColor: C.slate100,
     paddingHorizontal: 16,
@@ -853,7 +869,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#E5EAF0',
+    borderColor: C.slate200,
     alignItems: 'center',
     gap: 4,
   },
@@ -883,10 +899,11 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: C.slate50,
     borderWidth: 1,
-    borderColor: '#E5EAF0',
+    borderColor: C.slate200,
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
   analyzingPillText: { fontSize: 13, fontWeight: '700', color: C.slate600 },
-});
+  });
+}

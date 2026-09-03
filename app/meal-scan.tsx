@@ -4,7 +4,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Dimensions, Image, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,7 +25,7 @@ import {
 } from '../features/newsletter-analysis';
 import { PremiumUpsellModal } from '../features/newsletter-analysis/components/PremiumUpsellModal';
 import { ZoomableImage } from '../features/newsletter-analysis/components/ZoomableImage';
-import { SCAN_COLORS as C } from '../features/newsletter-analysis/uiColors';
+import { ScanColors, useScanColors } from '../features/newsletter-analysis/uiColors';
 import { useScanRewardedAd } from '../hooks/useScanRewardedAd';
 import { UploadedDoc } from '../types/models';
 
@@ -45,6 +45,8 @@ export default function MealScanScreen() {
   const { showToast } = useToast();
   const { requestAndShow } = useScanRewardedAd();
   const insets = useSafeAreaInsets();
+  const C = useScanColors();
+  const styles = useMemo(() => createStyles(C), [C]);
 
   const [doc, setDoc] = useState<UploadedDoc | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -334,7 +336,8 @@ export default function MealScanScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(C: ScanColors) {
+  return StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: C.appBg },
   header: {
     flexDirection: 'row',
@@ -370,7 +373,7 @@ const styles = StyleSheet.create({
     maxWidth: 340,
     aspectRatio: 3 / 4,
     borderRadius: 24,
-    backgroundColor: C.slate900,
+    backgroundColor: C.ink,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -421,7 +424,7 @@ const styles = StyleSheet.create({
   zoomCard: {
     width: '100%',
     maxHeight: '85%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: C.surface,
     borderRadius: 32,
     padding: 20,
     gap: 12,
@@ -444,7 +447,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  zoomCloseFooter: { backgroundColor: C.slate900, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  zoomCloseFooter: { backgroundColor: C.ink, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
   zoomCloseFooterText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
   corner: {
     position: 'absolute',
@@ -457,7 +460,7 @@ const styles = StyleSheet.create({
   cornerBL: { bottom: 16, left: 16, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 10 },
   cornerBR: { bottom: 16, right: 16, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 10 },
   dock: {
-    backgroundColor: 'rgba(255,255,255,0.97)',
+    backgroundColor: C.surface,
     borderTopWidth: 1,
     borderTopColor: C.slate100,
     paddingHorizontal: 16,
@@ -471,11 +474,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#E5EAF0',
+    borderColor: C.slate200,
     alignItems: 'center',
     gap: 4,
   },
-  dockButtonAccent: { backgroundColor: C.slate800, borderColor: C.slate800 },
+  dockButtonAccent: { backgroundColor: C.ink, borderColor: C.ink },
   dockButtonText: { fontSize: 14, fontWeight: '800', color: C.slate800 },
   dockButtonTextAccent: { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
   analyzeButtonWrap: { borderRadius: 16, overflow: 'hidden' },
@@ -491,4 +494,5 @@ const styles = StyleSheet.create({
   analyzingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 16 },
   analyzingTitle: { fontSize: 17, fontWeight: '800', color: C.slate900, textAlign: 'center' },
   analyzingSubtitle: { fontSize: 14, color: C.slate500, textAlign: 'center', lineHeight: 20 },
-});
+  });
+}

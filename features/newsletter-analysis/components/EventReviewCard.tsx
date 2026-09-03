@@ -1,11 +1,11 @@
 import { Feather } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Text from '../../../components/common/AppText';
 import { getDisplayItems } from '../../../hooks/useLocalChecklist';
 import { EventItem } from '../../../types/models';
 import { stripInvalidCharacters } from '../../../utils/validation';
-import { SCAN_COLORS as C } from '../uiColors';
+import { ScanColors, useScanColors } from '../uiColors';
 import { DraftEvent } from '../types';
 import { ReviewBadgeAccordion } from './ReviewBadgeAccordion';
 
@@ -31,6 +31,8 @@ export const EventReviewCard = ({
   onDelete,
   onDatePress,
 }: EventReviewCardProps) => {
+  const C = useScanColors();
+  const styles = useMemo(() => createStyles(C), [C]);
   const [noticeText, setNoticeText] = useState(
     () => [event.noticeText, event.memo].filter(Boolean).join('\n')
   );
@@ -147,9 +149,10 @@ export const EventReviewCard = ({
   );
 };
 
-const styles = StyleSheet.create({
+function createStyles(C: ScanColors) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: C.white,
+    backgroundColor: C.surface,
     borderRadius: 24,
     padding: 16,
     borderWidth: 1,
@@ -202,4 +205,5 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
-});
+  });
+}
