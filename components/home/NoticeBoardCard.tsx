@@ -157,7 +157,7 @@ function createStyles(colors: ThemeColors) {
       color: colors.gray500,
     },
     list: {
-      backgroundColor: 'rgba(255,255,255,0.6)',
+      backgroundColor: colors.cardWhite,
       borderRadius: 14,
       overflow: 'hidden',
     },
@@ -170,7 +170,7 @@ function createStyles(colors: ThemeColors) {
     },
     rowDivider: {
       borderBottomWidth: 1,
-      borderBottomColor: 'rgba(0,0,0,0.06)',
+      borderBottomColor: colors.border,
     },
     rowDateBadge: {
       backgroundColor: colors.blue100,

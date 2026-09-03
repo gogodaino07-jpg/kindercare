@@ -132,7 +132,7 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.cardWhite,
       borderRadius: 30,
       borderWidth: 1,
-      borderColor: 'rgba(0,0,0,0.045)',
+      borderColor: colors.border,
       paddingHorizontal: 26,
       paddingTop: 26,
       paddingBottom: 22,
