@@ -10,7 +10,7 @@ import Text from './common/AppText';
 
 // Standard phone-keypad order: del sits bottom-left, 0 center, fingerprint
 // bottom-right — directly to the right of 0, within easy thumb reach.
-const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'bio'];
+const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'bio', '0', 'del'];
 
 interface AppLockScreenProps {
   /** False while the boot splash is still covering the screen — the native
