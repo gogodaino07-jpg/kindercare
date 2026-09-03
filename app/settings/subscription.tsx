@@ -318,7 +318,7 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 32,
       paddingHorizontal: 24,
       gap: 10,
-      marginBottom: 16,
+      marginBottom: 32,
       ...SHADOW,
       shadowColor: colors.purpleDeep,
       shadowOpacity: 0.25,
