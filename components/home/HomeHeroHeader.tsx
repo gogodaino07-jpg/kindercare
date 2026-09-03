@@ -1,4 +1,4 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -91,9 +91,12 @@ export default function HomeHeroHeader({
       {weatherExpanded && (
         <View style={styles.weatherMetaRow}>
           {locationLabel ? (
-            <Text style={styles.weatherMetaText} numberOfLines={1}>
-              📍{locationLabel} · {WEATHER_SOURCE_LABEL} 제공
-            </Text>
+            <View style={styles.weatherMetaLeft}>
+              <MaterialCommunityIcons name="map-marker" size={13} color="#EF4444" />
+              <Text style={styles.weatherMetaText} numberOfLines={1}>
+                {locationLabel} · {WEATHER_SOURCE_LABEL} 제공
+              </Text>
+            </View>
           ) : (
             <View />
           )}
@@ -580,6 +583,12 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'space-between',
       paddingHorizontal: 24,
       marginBottom: 6,
+    },
+    weatherMetaLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      flexShrink: 1,
     },
     weatherMetaText: {
       fontSize: 10.5,
