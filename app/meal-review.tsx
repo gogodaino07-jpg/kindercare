@@ -2,8 +2,8 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../components/common/AppText';
 import { useAppData } from '../context/AppDataContext';
 import { useToast } from '../context/ToastContext';
@@ -23,6 +23,7 @@ export default function MealReviewScreen() {
   const { showToast } = useToast();
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
+  const insets = useSafeAreaInsets();
 
   const session = useMemo(() => AnalysisResultStore.getSession(), []);
   const [plans, setPlans] = useState<DraftMealPlan[]>(() =>
@@ -107,40 +108,45 @@ export default function MealReviewScreen() {
         </View>
       )}
 
-      {sortedPlans.length === 0 ? (
-        <View style={styles.emptyWrap}>
-          <Text style={styles.emptyText}>확인할 급식표가 없어요</Text>
-        </View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          {sortedPlans.map((plan) => (
-            <MealPlanCard
-              key={plan.localId}
-              plan={plan}
-              styles={styles}
-              C={C}
-              onUpdate={(patch) => updatePlan(plan.localId, patch)}
-              onDelete={() => removePlan(plan.localId)}
-            />
-          ))}
-        </ScrollView>
-      )}
-
-      <View style={styles.footer}>
-        <Pressable onPress={handleSave} disabled={sortedPlans.length === 0} style={styles.saveButtonWrap}>
-          <LinearGradient
-            colors={sortedPlans.length === 0 ? [C.slate300, C.slate300] : [C.violet600, C.indigo600]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.saveButton}
+      <KeyboardAvoidingView style={styles.keyboardAvoider} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        {sortedPlans.length === 0 ? (
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyText}>확인할 급식표가 없어요</Text>
+          </View>
+        ) : (
+          <ScrollView
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: 96 + insets.bottom }]}
+            keyboardShouldPersistTaps="handled"
           >
-            <Ionicons name="checkmark-circle" size={18} color={C.white} />
-            <Text style={styles.saveButtonText}>
-              {sortedPlans.length > 0 ? `급식표 ${sortedPlans.length}일치 저장하기` : '저장할 급식표가 없어요'}
-            </Text>
-          </LinearGradient>
-        </Pressable>
-      </View>
+            {sortedPlans.map((plan) => (
+              <MealPlanCard
+                key={plan.localId}
+                plan={plan}
+                styles={styles}
+                C={C}
+                onUpdate={(patch) => updatePlan(plan.localId, patch)}
+                onDelete={() => removePlan(plan.localId)}
+              />
+            ))}
+          </ScrollView>
+        )}
+
+        <View style={[styles.footer, { paddingBottom: 16 + insets.bottom }]}>
+          <Pressable onPress={handleSave} disabled={sortedPlans.length === 0} style={styles.saveButtonWrap}>
+            <LinearGradient
+              colors={sortedPlans.length === 0 ? [C.slate300, C.slate300] : [C.violet600, C.indigo600]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.saveButton}
+            >
+              <Ionicons name="checkmark-circle" size={18} color={C.white} />
+              <Text style={styles.saveButtonText}>
+                {sortedPlans.length > 0 ? `급식표 ${sortedPlans.length}일치 저장하기` : '저장할 급식표가 없어요'}
+              </Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -203,6 +209,7 @@ function MealPlanCard({
 function createStyles(C: ScanColors) {
   return StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: C.appBg },
+    keyboardAvoider: { flex: 1 },
     header: {
       paddingHorizontal: 12,
       paddingVertical: 10,
