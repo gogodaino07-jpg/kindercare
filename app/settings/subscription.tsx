@@ -114,6 +114,10 @@ export default function SubscriptionScreen() {
     Linking.openURL(url).catch(() => {});
   };
 
+  const handleTerms = () => {
+    showAlert({ title: '이용약관', message: '준비 중이에요. 곧 만나요!' });
+  };
+
   return (
     <View style={styles.screenBg}>
       <Stack.Screen
@@ -144,9 +148,6 @@ export default function SubscriptionScreen() {
                 </View>
                 <Text style={styles.statusTextTop}>프리미엄 구독 중이에요 ✨</Text>
                 <Text style={styles.statusSubtitle}>모든 특별한 혜택을 누리고 있어요</Text>
-                <Pressable style={styles.manageButton} onPress={handleManage}>
-                  <Text style={styles.manageButtonText}>구독 관리 / 해지</Text>
-                </Pressable>
               </LinearGradient>
 
               <View style={styles.benefitsSummaryCard}>
@@ -163,6 +164,10 @@ export default function SubscriptionScreen() {
                   </View>
                 ))}
               </View>
+
+              <Pressable style={styles.manageLinkWrap} onPress={handleManage} hitSlop={8}>
+                <Text style={styles.manageLinkText}>구독 관리 / 해지</Text>
+              </Pressable>
             </>
           ) : (
             <>
@@ -235,6 +240,14 @@ export default function SubscriptionScreen() {
           <View style={[styles.bottomBarSubscribed, { paddingBottom: 12 + insets.bottom }]}>
             <Pressable onPress={handleRestore} disabled={restoring} hitSlop={8}>
               <Text style={styles.restoreLinkText}>{restoring ? '복원 중...' : '구매 복원하기'}</Text>
+            </Pressable>
+            <Text style={styles.restoreLinkDivider}>|</Text>
+            <Pressable onPress={() => router.push('/settings/support')} hitSlop={8}>
+              <Text style={styles.restoreLinkText}>고객센터</Text>
+            </Pressable>
+            <Text style={styles.restoreLinkDivider}>|</Text>
+            <Pressable onPress={handleTerms} hitSlop={8}>
+              <Text style={styles.restoreLinkText}>이용약관</Text>
             </Pressable>
           </View>
         )}
@@ -335,14 +348,8 @@ function createStyles(colors: ThemeColors) {
     },
     statusTextTop: { fontSize: 17, fontWeight: '900', color: '#FFFFFF' },
     statusSubtitle: { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.85)', marginTop: -4 },
-    manageButton: {
-      marginTop: 10,
-      paddingVertical: 10,
-      paddingHorizontal: 20,
-      borderRadius: 999,
-      backgroundColor: 'rgba(255,255,255,0.18)',
-    },
-    manageButtonText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
+    manageLinkWrap: { alignItems: 'center', marginTop: 16, paddingVertical: 4 },
+    manageLinkText: { fontSize: 13, fontWeight: '700', color: colors.purple500, textDecorationLine: 'underline' },
     benefitsSummaryCard: {
       backgroundColor: colors.cardWhite,
       borderRadius: 18,
@@ -411,11 +418,15 @@ function createStyles(colors: ThemeColors) {
     restoreButton: { marginTop: 12, alignItems: 'center', paddingVertical: 10 },
     restoreButtonText: { fontSize: 12.5, fontWeight: '700', color: colors.gray500 },
     bottomBarSubscribed: {
+      flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
       paddingHorizontal: 20,
       paddingTop: 10,
     },
     restoreLinkText: { fontSize: 11, fontWeight: '600', color: colors.gray400, textDecorationLine: 'underline' },
+    restoreLinkDivider: { fontSize: 11, fontWeight: '600', color: colors.gray400 },
     footerNote: {
       textAlign: 'center',
       fontSize: 10.5,
