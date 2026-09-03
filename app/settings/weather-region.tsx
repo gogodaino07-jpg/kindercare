@@ -43,8 +43,10 @@ export default function WeatherRegionSettingsScreen() {
   // 눌러야 실제로 적용된다).
   const [openProvinceIdx, setOpenProvinceIdx] = useState(0);
   const [openDistrictIdx, setOpenDistrictIdx] = useState<number | null>(0);
-  // 1단계(시/도) 칩 목록 접기/펼치기 — 이미 골랐으면 접어서 화면을 아낄 수 있게.
+  // 1·2단계(시/도, 시/군/구) 칩 목록 접기/펼치기 — 이미 고른 지역이 있으면 아래
+  // effect에서 접어서, 매번 들어올 때마다 칩이 잔뜩 펼쳐진 채로 보이지 않게 한다.
   const [provinceCollapsed, setProvinceCollapsed] = useState(false);
+  const [districtCollapsed, setDistrictCollapsed] = useState(false);
 
   // 화면 진입/지역 변경 시 상단 미리보기 카드를 갱신 — 자동(GPS) 모드면 실제 위치를 다시 구해온다.
   useEffect(() => {
@@ -88,6 +90,10 @@ export default function WeatherRegionSettingsScreen() {
       if (dIdx !== -1) {
         setOpenProvinceIdx(pIdx);
         setOpenDistrictIdx(dIdx);
+        // 이미 고른 지역이 트리에서 확인됐으니, 매번 들어올 때마다 칩이 다 펼쳐진
+        // 채로 안 보이게 두 단계 다 접어둔다 — 바꾸고 싶으면 눌러서 펼치면 됨.
+        setProvinceCollapsed(true);
+        setDistrictCollapsed(true);
         return;
       }
     }
@@ -95,6 +101,7 @@ export default function WeatherRegionSettingsScreen() {
     if (pIdx !== -1) {
       setOpenProvinceIdx(pIdx);
       setOpenDistrictIdx(null);
+      setProvinceCollapsed(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [region?.label]);
@@ -333,6 +340,8 @@ export default function WeatherRegionSettingsScreen() {
                         onPress={() => {
                           setOpenProvinceIdx(idx);
                           setOpenDistrictIdx(province.districts ? 0 : null);
+                          setProvinceCollapsed(true);
+                          setDistrictCollapsed(false);
                         }}
                       >
                         <Text style={[styles.provinceChipText, isOpen && styles.provinceChipTextActive]}>
@@ -348,23 +357,44 @@ export default function WeatherRegionSettingsScreen() {
             {openProvince.districts && (
               <>
                 <View style={styles.stepDivider} />
-                <Text style={styles.stepLabel}>2단계: 시/군/구</Text>
-                <View style={styles.districtWrap}>
-                  {openProvince.districts.map((dist, idx) => {
-                    const isOpen = idx === openDistrictIdx;
-                    return (
-                      <Pressable
-                        key={dist.name}
-                        style={[styles.districtChip, isOpen && styles.districtChipActive]}
-                        onPress={() => setOpenDistrictIdx(idx)}
-                      >
-                        <Text style={[styles.districtChipText, isOpen && styles.districtChipTextActive]}>
-                          {dist.name}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                <Pressable
+                  style={styles.stepLabelRow}
+                  onPress={() => setDistrictCollapsed((v) => !v)}
+                  hitSlop={6}
+                >
+                  <Text style={[styles.stepLabel, { marginBottom: 0 }]}>2단계: 시/군/구</Text>
+                  <View style={styles.stepCollapseHint}>
+                    {districtCollapsed && openDistrict && (
+                      <Text style={styles.stepCollapseHintText}>{openDistrict.name}</Text>
+                    )}
+                    <MaterialCommunityIcons
+                      name={districtCollapsed ? 'chevron-down' : 'chevron-up'}
+                      size={16}
+                      color={colors.textSecondary}
+                    />
+                  </View>
+                </Pressable>
+                {!districtCollapsed && (
+                  <View style={styles.districtWrap}>
+                    {openProvince.districts.map((dist, idx) => {
+                      const isOpen = idx === openDistrictIdx;
+                      return (
+                        <Pressable
+                          key={dist.name}
+                          style={[styles.districtChip, isOpen && styles.districtChipActive]}
+                          onPress={() => {
+                            setOpenDistrictIdx(idx);
+                            setDistrictCollapsed(true);
+                          }}
+                        >
+                          <Text style={[styles.districtChipText, isOpen && styles.districtChipTextActive]}>
+                            {dist.name}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                )}
               </>
             )}
 
