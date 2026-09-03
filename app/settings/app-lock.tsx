@@ -20,6 +20,9 @@ interface LockOption {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
 }
 
+const PIN_MAX_LENGTH = 4;
+const PASSWORD_MAX_LENGTH = 12;
+
 const LOCK_OPTIONS: LockOption[] = [
   { id: 'pin', title: 'PIN(숫자)', description: '보안강도 약간 높음', icon: 'dialpad' },
   { id: 'password', title: '비밀번호(영문+숫자)', description: '보안강도 높음', icon: 'lock-outline' },
@@ -283,7 +286,13 @@ export default function AppLockSettingsScreen() {
             styles.cardSubtitle,
             { color: error ? colors.tomorrowRed : colors.textSecondary }
           ]}>
-            {error ? '다시 시도해주세요' : (isPin ? '숫자 PIN 4자리를 입력해주세요' : isPassword ? '영문+숫자 조합으로 입력해주세요' : '패턴을 그려주세요')}
+            {error
+              ? '다시 시도해주세요'
+              : isPin
+                ? `숫자 PIN ${PIN_MAX_LENGTH}자리를 입력해주세요`
+                : isPassword
+                  ? `영문+숫자 조합으로 4~${PASSWORD_MAX_LENGTH}자 입력해주세요`
+                  : '패턴을 그려주세요'}
           </Text>
 
           {(isPin || isPassword) && (
@@ -300,7 +309,7 @@ export default function AppLockSettingsScreen() {
                   placeholder={isPin ? 'PIN 입력' : '비밀번호 입력'}
                   placeholderTextColor={colors.textSecondary}
                   keyboardType={isPin ? 'number-pad' : 'default'}
-                  maxLength={isPin ? 4 : 12}
+                  maxLength={isPin ? PIN_MAX_LENGTH : PASSWORD_MAX_LENGTH}
                   autoFocus
                 />
                 <Pressable
@@ -315,6 +324,9 @@ export default function AppLockSettingsScreen() {
                   />
                 </Pressable>
               </View>
+              <Text style={[styles.charCountText, { color: colors.textSecondary }]}>
+                {inputText.length} / {isPin ? PIN_MAX_LENGTH : PASSWORD_MAX_LENGTH}
+              </Text>
               {inputText.length > 0 && !error && stage.kind.includes('first') && (
                 <Text style={[styles.strengthText, { color: strengthColor }]}>
                   {getStrengthLabel(strength!)}
@@ -524,7 +536,8 @@ function createStyles(colors: any) {
     rowTitle: { fontSize: 15.5, fontWeight: '700' },
     rowDesc: { fontSize: 12, marginTop: 2 },
     divider: { height: 1, marginHorizontal: 20 },
-    inputWrap: { position: 'relative', justifyContent: 'center', marginBottom: 24 },
+    inputWrap: { position: 'relative', justifyContent: 'center', marginBottom: 6 },
+    charCountText: { alignSelf: 'flex-end', fontSize: 11, fontWeight: '600', marginBottom: 16 },
     input: {
       borderWidth: 1.5,
       borderRadius: 999,
@@ -546,7 +559,6 @@ function createStyles(colors: any) {
       fontSize: 12,
       fontWeight: '700',
       textAlign: 'center',
-      marginTop: -16,
       marginBottom: 20,
     },
     patternPanel: {
