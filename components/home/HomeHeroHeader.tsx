@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
-import { useThemeColors } from '../../context/ThemeContext';
+import { useTheme, useThemeColors } from '../../context/ThemeContext';
 import { WEATHER_SOURCE_LABEL, WeatherDay } from '../../hooks/useWeeklyWeather';
 import { Child, MealPlan } from '../../types/models';
 import { formatMD, toISODate } from '../../utils/date';
@@ -304,8 +304,18 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 /** 날씨별 미니 카드 배경/테두리 — 반투명(rgba)이 이모지와 겹치면 흰 얼룩처럼 보이는
- *  렌더링 문제가 있어, 알파 블렌딩 없이 완전 불투명한 색만 사용한다. */
-function getMiniCardTint(label: string | undefined): { bg: string; border: string } {
+ *  렌더링 문제가 있어, 알파 블렌딩 없이 완전 불투명한 색만 사용한다. 라이트 모드 팔레트를
+ *  그대로 다크모드에 쓰면 주변이 다 어두운데 이 카드만 하얗게 튀어서, 다크모드 전용
+ *  어두운 톤을 별도로 둔다. */
+function getMiniCardTint(label: string | undefined, isDark: boolean): { bg: string; border: string } {
+  if (isDark) {
+    if (label === '맑음' || label === '대체로 맑음') return { bg: '#1A2D42', border: '#4299E1' };
+    if (label === '흐림' || label === '안개') return { bg: '#2A3744', border: '#718096' };
+    if (label === '이슬비' || label === '비' || label === '소나기') return { bg: '#132A3D', border: '#4299E1' };
+    if (label === '눈' || label === '눈 소나기') return { bg: '#1A2D42', border: '#93C5FD' };
+    if (label === '뇌우') return { bg: '#2E1F45', border: '#A78BFA' };
+    return { bg: '#241F45', border: '#818CF8' };
+  }
   if (label === '맑음' || label === '대체로 맑음') return { bg: '#E0F2FE', border: '#7DD3FC' };
   if (label === '흐림' || label === '안개') return { bg: '#F1F5F9', border: '#CBD5E1' };
   if (label === '이슬비' || label === '비' || label === '소나기') return { bg: '#DBEAFE', border: '#93C5FD' };
@@ -326,8 +336,9 @@ function MiniWeatherCard({
   onPress: () => void;
 }) {
   const colors = useThemeColors();
+  const { resolvedScheme } = useTheme();
   const styles = useMemo(() => createMiniCardStyles(colors), [colors]);
-  const tint = useMemo(() => getMiniCardTint(day?.label), [day?.label]);
+  const tint = useMemo(() => getMiniCardTint(day?.label, resolvedScheme === 'dark'), [day?.label, resolvedScheme]);
 
   if (loading) {
     return <SkeletonBox style={[styles.container, styles.skeleton]} compact />;
