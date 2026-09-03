@@ -8,7 +8,7 @@ import { useSubscription } from '../context/SubscriptionContext';
 
 export default function StampBoardScreen() {
   const router = useRouter();
-  const { isSubscribed } = useSubscription();
+  const { isSubscribed, isReady } = useSubscription();
   const insets = useSafeAreaInsets();
 
   return (
@@ -23,7 +23,7 @@ export default function StampBoardScreen() {
 
         <View style={styles.content} />
 
-        {!isSubscribed && <CoupangBanner style={{ paddingBottom: insets.bottom }} />}
+        {isReady && !isSubscribed && <CoupangBanner style={{ paddingBottom: insets.bottom }} />}
       </SafeAreaView>
     </View>
   );

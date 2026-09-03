@@ -68,7 +68,7 @@ export default function UploadScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { selectedChild, googleAccount, addMealPlans, events } = useAppData();
-  const { isSubscribed } = useSubscription();
+  const { isSubscribed, isReady: subscriptionReady } = useSubscription();
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
   const { showToast } = useToast();
@@ -476,12 +476,12 @@ export default function UploadScreen() {
                 </LinearGradient>
               </Pressable>
             )}
-            {docs.length > 0 && !isSubscribed && !skipAd && (
+            {docs.length > 0 && subscriptionReady && !isSubscribed && !skipAd && (
               <Text style={styles.analyzeAdCaption}>짧은 광고 시청 후 분석이 시작돼요</Text>
             )}
           </View>
 
-          {!isSubscribed && <CoupangBanner style={{ paddingBottom: insets.bottom }} />}
+          {subscriptionReady && !isSubscribed && <CoupangBanner style={{ paddingBottom: insets.bottom }} />}
         </>
       )}
 

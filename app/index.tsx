@@ -98,7 +98,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { hasOnboarded, children, selectedChild, selectChild, events, googleAccount, onboardingLoaded, mealPlans, updateEvent, isFamilyOwner, canEditFamilyData } = useAppData();
   const { isLocked } = useAppLock();
-  const { isSubscribed } = useSubscription();
+  const { isSubscribed, isReady: subscriptionReady } = useSubscription();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(
@@ -284,7 +284,9 @@ export default function HomeScreen() {
   // → Home remounts mid-session don't retrigger it; it only resets on a
   // genuine cold start.
   useEffect(() => {
-    if (hasAttemptedAdThisSession || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked || isSubscribed) {
+    // subscriptionReady를 기다리지 않으면, 프리미엄 구독자도 콜드 스타트 직후 RevenueCat
+    // 조회가 끝나기 전엔 isSubscribed가 잠깐 false라 광고 팝업이 떠버린다.
+    if (hasAttemptedAdThisSession || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked || !subscriptionReady || isSubscribed) {
       return;
     }
 
@@ -295,7 +297,7 @@ export default function HomeScreen() {
     }, 1500); // 1.5s delay for better UX
 
     return () => clearTimeout(timeoutId);
-  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, isSubscribed]);
+  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, subscriptionReady, isSubscribed]);
 
   const handleEventPress = useCallback(
     (event: { date: string }) => router.push({ pathname: '/calendar', params: { date: event.date } }),
@@ -426,12 +428,12 @@ export default function HomeScreen() {
         {SHOW_FAMILY_SHARE_CARD && !upcoming.isEmpty && (
           <FamilyShareCard events={activeDayEvents} dayLabel={activeDayLabel} dateISO={activeDayISO} />
         )}
-        {!isSubscribed && <CoupangBanner />}
+        {subscriptionReady && !isSubscribed && <CoupangBanner />}
       </View>
 
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
       <MealPlanSheet visible={mealSheetOpen} onClose={() => setMealSheetOpen(false)} />
-      {!isLocked && !isSubscribed && <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />}
+      {!isLocked && subscriptionReady && !isSubscribed && <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />}
     </ScreenBackground>
   );
 }
