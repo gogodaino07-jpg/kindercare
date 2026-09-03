@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
@@ -9,6 +10,9 @@ const { getAuth } = require('firebase-admin/auth');
 initializeApp();
 
 const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
+const GMAIL_APP_PASSWORD = defineSecret('GMAIL_APP_PASSWORD');
+const SUPPORT_EMAIL = 'gogodaino07@gmail.com';
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GEMINI_MODEL = 'gemini-3.6-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
@@ -170,5 +174,80 @@ exports.kakaoSignIn = onCall(
       authAdmin.createCustomToken(userRecord.uid),
     ]);
     return { customToken, email };
+  }
+);
+
+/** 하루에 같은 사람이 너무 많이 보내는 걸 막는 최소한의 방어선(스팸/오남용 방지). */
+const SUPPORT_EMAIL_DAILY_LIMIT = 10;
+
+async function assertUnderSupportEmailLimit(uid) {
+  const todayKey = toISODateUTC(new Date());
+  const guardRef = getFirestore().collection('users').doc(uid).collection('serverGuard').doc('supportEmail');
+
+  await getFirestore().runTransaction(async (tx) => {
+    const snap = await tx.get(guardRef);
+    const data = snap.exists ? snap.data() : null;
+    const dayCount = data?.dayKey === todayKey ? (data.dayCount ?? 0) : 0;
+    if (dayCount >= SUPPORT_EMAIL_DAILY_LIMIT) {
+      throw new HttpsError('resource-exhausted', '오늘 문의 가능 횟수를 모두 사용했어요. 내일 다시 시도해주세요.');
+    }
+    tx.set(guardRef, { dayKey: todayKey, dayCount: dayCount + 1 });
+  });
+}
+
+function toISODateUTC(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * 고객센터 문의 메일 발송.
+ *
+ * 앱 안에 이메일 발송 백엔드가 없어서 예전엔 "문의 전송하기"를 눌러도 실제로는
+ * 아무것도 보내지지 않고 성공 토스트만 뜨는 미완성 상태였다. 별도 이메일 API를
+ * 새로 계약하는 대신, 이미 있는 Gmail 계정의 SMTP(앱 비밀번호)로 개발자 본인
+ * 메일함에 직접 발송한다 — 사용자가 입력한 답변받을 이메일은 replyTo로 넣어서,
+ * 그대로 "답장"만 눌러도 사용자에게 회신되게 한다.
+ */
+exports.sendSupportEmail = onCall(
+  {
+    secrets: [GMAIL_APP_PASSWORD],
+    region: 'asia-northeast3',
+    timeoutSeconds: 30,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', '로그인이 필요합니다.');
+    }
+
+    const replyEmail = request.data?.replyEmail;
+    const content = request.data?.content;
+    if (!replyEmail || typeof replyEmail !== 'string' || !EMAIL_PATTERN.test(replyEmail)) {
+      throw new HttpsError('invalid-argument', '올바른 이메일 형식이 아닙니다.');
+    }
+    if (!content || typeof content !== 'string' || !content.trim() || content.length > 1000) {
+      throw new HttpsError('invalid-argument', '문의 내용이 올바르지 않습니다.');
+    }
+
+    await assertUnderSupportEmailLimit(request.auth.uid);
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: SUPPORT_EMAIL, pass: GMAIL_APP_PASSWORD.value() },
+    });
+
+    try {
+      await transporter.sendMail({
+        from: `킨더케어 고객센터 <${SUPPORT_EMAIL}>`,
+        to: SUPPORT_EMAIL,
+        replyTo: replyEmail,
+        subject: '[킨더케어] 고객센터 문의',
+        text: `답변받을 이메일: ${replyEmail}\n\n${content.trim()}`,
+      });
+    } catch (err) {
+      logger.error('Support email send failed', err);
+      throw new HttpsError('internal', '메일 전송에 실패했어요. 잠시 후 다시 시도해주세요.');
+    }
+
+    return { success: true };
   }
 );

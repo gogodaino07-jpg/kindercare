@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import TextInput from '../../components/common/ClearableTextInput';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../../components/common/AppText';
@@ -9,6 +9,7 @@ import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
+import { getFunctions } from '../../utils/firebase';
 import { stripInvalidCharacters } from '../../utils/validation';
 
 const CONTENT_MAX_LENGTH = 500;
@@ -40,25 +41,48 @@ export default function SupportScreen() {
   const [customDomain, setCustomDomain] = useState(!matchedDomain ? (accountDomain ?? '') : '');
   const [domainMenuOpen, setDomainMenuOpen] = useState(false);
   const [content, setContent] = useState('');
+  const [sending, setSending] = useState(false);
 
   const domainValid = domainOption === 'custom' ? customDomain.trim().includes('.') : true;
   const emailValid = emailId.trim().length > 0 && domainValid;
   const contentValid = content.trim().length > 0;
-  const canSend = emailValid && contentValid;
+  const canSend = emailValid && contentValid && !sending;
 
-  // 이메일 발송 백엔드가 없어서, 문의 내용을 기기의 메일 앱으로 넘겨 사용자가
-  // 직접 보내게 한다 — 예전엔 여기서 아무것도 실제로 보내지 않고 성공 토스트만
-  // 띄우는 미완성 상태라, 문의를 넣어도 메일이 전혀 오지 않는 버그가 있었다.
-  const handleSend = () => {
-    if (!canSend) return;
-    const domain = domainOption === 'custom' ? customDomain.trim() : domainOption;
-    const replyEmail = `${emailId.trim()}@${domain}`;
+  const openMailFallback = (replyEmail: string) => {
     const subject = encodeURIComponent('[킨더케어] 고객센터 문의');
     const body = encodeURIComponent(`답변받을 이메일: ${replyEmail}\n\n${content.trim()}`);
     const url = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
     Linking.openURL(url).catch(() => {
       showToast('메일 앱을 열 수 없어요. 기기에 메일 앱이 설정돼 있는지 확인해주세요.');
     });
+  };
+
+  // 앱 안에서 바로 발송한다 — 예전엔 여기서 아무것도 실제로 보내지 않고 성공
+  // 토스트만 띄우는 미완성 상태라, 문의를 넣어도 메일이 전혀 오지 않는 버그가
+  // 있었다. 서버 함수 호출이 실패하는 드문 경우에만 기기 메일 앱으로 대신 보낼
+  // 수 있게 폴백한다.
+  const handleSend = async () => {
+    if (!canSend) return;
+    const domain = domainOption === 'custom' ? customDomain.trim() : domainOption;
+    const replyEmail = `${emailId.trim()}@${domain}`;
+
+    setSending(true);
+    try {
+      await getFunctions().httpsCallable('sendSupportEmail')({ replyEmail, content: content.trim() });
+      showToast('문의가 성공적으로 접수되었습니다.');
+      router.back();
+    } catch (err: any) {
+      console.error('[sendSupportEmail] failed:', err);
+      const code = String(err?.code ?? '');
+      if (code.includes('resource-exhausted')) {
+        showToast(err?.message || '오늘 문의 가능 횟수를 모두 사용했어요. 내일 다시 시도해주세요.');
+      } else {
+        showToast('전송에 실패해서 메일 앱으로 대신 보내드릴게요.');
+        openMailFallback(replyEmail);
+      }
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -120,7 +144,11 @@ export default function SupportScreen() {
             onPress={handleSend}
             disabled={!canSend}
           >
-            <Text style={styles.sendButtonText}>문의 전송하기</Text>
+            {sending ? (
+              <ActivityIndicator color={colors.cardWhite} />
+            ) : (
+              <Text style={styles.sendButtonText}>문의 전송하기</Text>
+            )}
           </Pressable>
         </View>
       </SafeAreaView>
