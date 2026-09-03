@@ -400,7 +400,7 @@ export default function UploadScreen() {
                 <Text style={styles.gaugeFootText}>
                   {isSubscribed
                     ? '1회 스캔 시 사진/문서 1건이 분석됩니다'
-                    : `광고 없이 평생 ${maxCredits}회예요 (알림장+급식표 합산). 이후엔 광고 시청 후 계속 스캔할 수 있어요`}
+                    : `처음 ${maxCredits}회는 광고 없이 무료예요 (알림장+급식표 합산). 이후엔 광고 시청 후 계속 스캔할 수 있어요`}
                 </Text>
                 {!isSubscribed && remainingAnalyses === 0 && (
                   <Text style={styles.gaugeExhaustedText}>광고 시청 후 이용</Text>

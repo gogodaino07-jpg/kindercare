@@ -206,7 +206,7 @@ export default function MealScanScreen() {
               {isSubscribed
                 ? `이번 주 급식표 스캔 ${remainingCount} / ${maxMealCredits}회 남음`
                 : remainingCount > 0
-                  ? `광고 없이 무료 스캔 ${remainingCount} / ${maxMealCredits}회 남음 (알림장+급식표 합산, 평생)`
+                  ? `광고 없이 무료 스캔 ${remainingCount} / ${maxMealCredits}회 남음 (알림장+급식표 합산)`
                   : '무료 횟수를 모두 썼어요 · 광고 시청 후 계속 스캔할 수 있어요'}
             </Text>
           )}
