@@ -14,9 +14,9 @@ import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
 import { useSubscription } from '../context/SubscriptionContext';
-import { useToast } from '../context/ToastContext';
 import {
   AIUsageLimitService,
+  AnalysisResultStore,
   FREE_LIFETIME_LIMIT,
   GeminiAnalysisError,
   GeminiAnalysisService,
@@ -38,11 +38,10 @@ const ZOOM_HEIGHT = 480;
 
 export default function MealScanScreen() {
   const router = useRouter();
-  const { selectedChild, googleAccount, addMealPlans } = useAppData();
+  const { selectedChild, googleAccount } = useAppData();
   const { isSubscribed } = useSubscription();
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
-  const { showToast } = useToast();
   const { requestAndShow } = useScanRewardedAd();
   const insets = useSafeAreaInsets();
   const C = useScanColors();
@@ -172,9 +171,8 @@ export default function MealScanScreen() {
           return;
         }
         await AIUsageLimitService.consume(googleAccount?.email, isSubscribed, 'meal');
-        addMealPlans(analysis.mealPlans);
-        showToast(`식단표 ${analysis.mealPlans.length}일치를 저장했어요 🍱`);
-        router.back();
+        AnalysisResultStore.setSession([doc], [], analysis.mealPlans);
+        router.push('/meal-review');
       } catch (err) {
         const message =
           err instanceof GeminiAnalysisError ? err.message : '문서 분석 중 문제가 발생했어요. 다시 시도해주세요.';
