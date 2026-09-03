@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
@@ -20,18 +21,21 @@ const BENEFITS = [
     icon: 'bolt' as const,
     text: `스캔 횟수 대폭 확대 (주 ${PREMIUM_WEEKLY_LIMIT}회 · 월 ${PREMIUM_MONTHLY_LIMIT}회)`,
     shortText: '스캔 횟수 대폭 확대',
+    desc: `주 ${PREMIUM_WEEKLY_LIMIT}회 · 월 ${PREMIUM_MONTHLY_LIMIT}회까지 여유롭게 스캔하세요`,
     badgeKey: 'purple' as const,
   },
   {
     icon: 'block' as const,
     text: '홈 화면 진입 시 뜨는 추천 팝업 광고 제거',
     shortText: '추천 팝업 광고 제거',
+    desc: '홈 화면 진입 시 뜨던 광고 없이 깔끔하게',
     badgeKey: 'red' as const,
   },
   {
     icon: 'movie-filter' as const,
     text: '스캔할 때마다 뜨던 광고 시청 없이 바로 분석',
     shortText: '광고 없이 바로 분석',
+    desc: '광고 시청 없이 바로 분석 결과를 확인하세요',
     badgeKey: 'blue' as const,
   },
 ];
@@ -129,20 +133,33 @@ export default function SubscriptionScreen() {
             <ActivityIndicator color={colors.purple500} />
           ) : isSubscribed ? (
             <>
-              <View style={styles.statusCardTop}>
-                <MaterialIcons name="verified" size={28} color={colors.green500} />
-                <Text style={styles.statusTextTop}>프리미엄 구독 중이에요</Text>
+              <LinearGradient
+                colors={[colors.purple500, colors.purpleDeep]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.statusCardTop}
+              >
+                <View style={styles.statusIconBadge}>
+                  <MaterialCommunityIcons name="crown" size={26} color="#FCD34D" />
+                </View>
+                <Text style={styles.statusTextTop}>프리미엄 구독 중이에요 ✨</Text>
+                <Text style={styles.statusSubtitle}>모든 특별한 혜택을 누리고 있어요</Text>
                 <Pressable style={styles.manageButton} onPress={handleManage}>
                   <Text style={styles.manageButtonText}>구독 관리 / 해지</Text>
                 </Pressable>
-              </View>
+              </LinearGradient>
 
               <View style={styles.benefitsSummaryCard}>
-                <Text style={styles.benefitsSummaryTitle}>이용 중인 혜택</Text>
+                <Text style={styles.benefitsSummaryTitle}>현재 누리고 있는 혜택</Text>
                 {BENEFITS.map((b) => (
                   <View key={b.text} style={styles.benefitsSummaryRow}>
-                    <MaterialIcons name="check" size={16} color={colors.purple500} />
-                    <Text style={styles.benefitsSummaryText}>{b.shortText}</Text>
+                    <View style={[styles.benefitIconBadge, { backgroundColor: badgeColors[b.badgeKey].bg }]}>
+                      <MaterialIcons name={b.icon} size={18} color={badgeColors[b.badgeKey].fg} />
+                    </View>
+                    <View style={styles.benefitsSummaryTextWrap}>
+                      <Text style={styles.benefitsSummaryTitleText}>{b.shortText}</Text>
+                      <Text style={styles.benefitsSummaryDesc}>{b.desc}</Text>
+                    </View>
                   </View>
                 ))}
               </View>
@@ -296,30 +313,49 @@ function createStyles(colors: ThemeColors) {
     freeNote: { fontSize: 11.5, fontWeight: '600', color: colors.gray500, marginTop: 4 },
     statusCardTop: {
       alignItems: 'center',
-      backgroundColor: colors.cardWhite,
-      borderRadius: 20,
-      paddingVertical: 28,
+      borderRadius: 24,
+      paddingVertical: 32,
+      paddingHorizontal: 24,
       gap: 10,
       marginBottom: 16,
       ...SHADOW,
-      shadowOpacity: 0.05,
-      elevation: 2,
+      shadowColor: colors.purpleDeep,
+      shadowOpacity: 0.25,
+      elevation: 4,
     },
-    statusTextTop: { fontSize: 17, fontWeight: '900', color: colors.gray900 },
-    manageButton: { marginTop: 4, paddingVertical: 8, paddingHorizontal: 16 },
-    manageButtonText: { fontSize: 13, fontWeight: '700', color: colors.purple500 },
+    statusIconBadge: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 2,
+    },
+    statusTextTop: { fontSize: 17, fontWeight: '900', color: '#FFFFFF' },
+    statusSubtitle: { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.85)', marginTop: -4 },
+    manageButton: {
+      marginTop: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 999,
+      backgroundColor: 'rgba(255,255,255,0.18)',
+    },
+    manageButtonText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
     benefitsSummaryCard: {
       backgroundColor: colors.cardWhite,
       borderRadius: 18,
       padding: 18,
-      gap: 10,
+      gap: 16,
       ...SHADOW,
       shadowOpacity: 0.05,
       elevation: 2,
     },
     benefitsSummaryTitle: { fontSize: 12.5, fontWeight: '700', color: colors.gray500, marginBottom: 2 },
-    benefitsSummaryRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    benefitsSummaryText: { fontSize: 13, fontWeight: '600', color: colors.gray900 },
+    benefitsSummaryRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+    benefitsSummaryTextWrap: { flex: 1, gap: 2 },
+    benefitsSummaryTitleText: { fontSize: 14, fontWeight: '800', color: colors.gray900 },
+    benefitsSummaryDesc: { fontSize: 12, fontWeight: '500', color: colors.gray500 },
     preparingText: {
       textAlign: 'center',
       fontSize: 13,
