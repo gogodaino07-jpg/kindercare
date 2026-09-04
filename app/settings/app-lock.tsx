@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Keyboard, Pressable, ScrollView, StyleSheet, Switch, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Text from '../../components/common/AppText';
 import PatternGrid from '../../components/settings/PatternGrid';
@@ -76,18 +76,6 @@ export default function AppLockSettingsScreen() {
   // 패턴은 손을 뗀 뒤에도 화면에 남아있다가, "다음"을 눌러야 다음 단계로 확정된다.
   const [drawnPattern, setDrawnPattern] = useState<string | null>(null);
   const [patternResetKey, setPatternResetKey] = useState(0);
-  const setupScrollRef = useRef<ScrollView>(null);
-
-  // 비밀번호 입력창은 autoFocus라 화면 진입과 거의 동시에 키보드가 올라오는데,
-  // 그때 컨테이너가 줄어들며 취소/다음 버튼이 화면 밖으로 넘어가는 경우가 있어
-  // (기기/키보드 높이에 따라 여백 계산이 딱 맞지 않을 수 있음) 키보드가 뜰 때마다
-  // 스크롤을 맨 아래로 강제로 내려서 항상 버튼이 눈에 보이게 한다.
-  useEffect(() => {
-    const sub = Keyboard.addListener('keyboardDidShow', () => {
-      setupScrollRef.current?.scrollToEnd({ animated: true });
-    });
-    return () => sub.remove();
-  }, []);
 
   type Strength = 'low' | 'medium' | 'high';
 
@@ -300,170 +288,167 @@ export default function AppLockSettingsScreen() {
     const strength = (isPin || isPassword) ? getStrength(inputText, isPin ? 'pin' : 'password') : null;
     const strengthColor = strength ? getStrengthColor(strength) : colors.textSecondary;
 
-    // AndroidManifest.xml에 windowSoftInputMode="adjustResize"가 있지만, 이
-    // 화면(에지-투-에지 렌더링)에서는 네이티브 창 리사이즈만으로는 하단 고정
-    // 레이아웃이 키보드를 피하지 못해 비밀번호 입력창이 키보드 뒤에 완전히
-    // 가려지는 게 실기기에서 확인됐다. behavior를 안 주면(undefined)
-    // KeyboardAvoidingView가 사실상 아무 것도 안 하는 것과 같아서, 안드로이드도
-    // 'height'로 명시해 JS 쪽에서 직접 키보드 높이만큼 줄여주게 한다.
+    // 취소/다음 버튼을 ScrollView 안(스크롤되는 내용)에 두면, 키보드가 떠서
+    // 공간이 부족할 때 그 버튼이 스크롤 콘텐츠 하단에 묻혀 화면 밖으로 밀려나는
+    // 문제를 계속 겪었다(flex-end/flexShrink 등 여러 방식으로도 안정적으로
+    // 안 고쳐짐). 대신 버튼 행을 ScrollView 밖으로 완전히 빼서 KeyboardAvoidingView
+    // 안에서 "항상 화면 하단에 고정된 별도 영역"으로 만든다 — 키보드가 뜨면
+    // KeyboardAvoidingView 전체 높이가 이미 줄어들어 있으므로(입력창이 가려지지
+    // 않는 걸로 이미 확인됨), 그 줄어든 영역의 맨 아래에 버튼을 두면 스크롤 여부와
+    // 상관없이 항상 키보드 바로 위에 보인다. 헤더/입력창처럼 넘칠 수 있는 내용만
+    // ScrollView로 감싸 필요할 때만 스크롤되게 한다.
     return (
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1, backgroundColor: colors.cardWhite }}
       >
-      <ScrollView
-        ref={setupScrollRef}
-        contentContainerStyle={[styles.setupContainer, { flexGrow: 1 }]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.setupHeader}>
-          <Text style={[
-            styles.cardTitle,
-            { color: error ? colors.tomorrowRed : colors.textPrimary }
-          ]}>
-            {error ? '입력한 정보가 일치하지 않습니다' : (stage.kind.includes('first') ? '새로운 잠금 설정' : '한 번 더 입력해주세요')}
-          </Text>
-          <Text style={[
-            styles.cardSubtitle,
-            { color: error ? colors.tomorrowRed : colors.textSecondary }
-          ]}>
-            {error
-              ? '다시 시도해주세요'
-              : isPin
-                ? `숫자 PIN ${PIN_MAX_LENGTH}자리를 입력해주세요`
-                : isPassword
-                  ? `영문+숫자 조합으로 4~${PASSWORD_MAX_LENGTH}자 입력해주세요`
-                  : '패턴을 그려주세요'}
-          </Text>
-        </View>
-
-        <View style={[styles.setupBottomGroup, { justifyContent: (isPattern || isPin) ? 'center' : 'flex-end' }]}>
-        <View style={styles.setupBody}>
-          {isPin && (
-            <>
-              {/* 실제 잠금 해제 화면과 똑같은 키패드로 연습하게 해서, 설정할 때 본
-                  화면과 실제로 잠금을 풀 때 화면이 달라 보이지 않게 한다. */}
-              <PinPad
-                colors={colors}
-                value={inputText}
-                length={PIN_MAX_LENGTH}
-                error={error}
-                onKeyPress={handlePinKeyPress}
-                bottomLeftSlot={
-                  <Pressable onPress={cancelSetup} hitSlop={12}>
-                    <Text style={[styles.setupCancelText, { color: colors.textSecondary }]}>취소</Text>
-                  </Pressable>
-                }
-              />
-              {inputText.length > 0 && !error && stage.kind.includes('first') && (
-                <Text style={[styles.strengthText, { color: strengthColor }]}>
-                  {getStrengthLabel(strength!)}
-                </Text>
-              )}
-            </>
-          )}
-
-          {isPassword && (
-            <>
-              <View style={styles.inputWrap}>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { borderColor: error ? colors.tomorrowRed : colors.border, color: colors.textPrimary }
-                  ]}
-                  value={inputText}
-                  onChangeText={(text) => setInputText(stripInvalidCharacters(text))}
-                  secureTextEntry={!secureVisible}
-                  placeholder="비밀번호 입력"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="default"
-                  maxLength={PASSWORD_MAX_LENGTH}
-                  autoFocus
-                  onFocus={() => {
-                    // keyboardDidShow 리스너만으로는 애니메이션/레이아웃 갱신 타이밍과
-                    // 경합해 스크롤이 안 먹는 경우가 있어, 포커스 시점에도 한 번 더
-                    // (약간의 지연을 두고) 강제로 맨 아래로 스크롤한다.
-                    setTimeout(() => setupScrollRef.current?.scrollToEnd({ animated: true }), 300);
-                  }}
-                />
-                <Pressable
-                  onPress={() => setSecureVisible((v) => !v)}
-                  hitSlop={10}
-                  style={styles.eyeButton}
-                >
-                  <MaterialCommunityIcons
-                    name={secureVisible ? 'eye-off-outline' : 'eye-outline'}
-                    size={20}
-                    color={colors.textSecondary}
-                  />
-                </Pressable>
-              </View>
-              <Text style={[styles.charCountText, { color: colors.textSecondary }]}>
-                {inputText.length} / {PASSWORD_MAX_LENGTH}
+        <View style={styles.setupScrollArea}>
+          <ScrollView
+            contentContainerStyle={styles.setupScrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.setupHeader}>
+              <Text style={[
+                styles.cardTitle,
+                { color: error ? colors.tomorrowRed : colors.textPrimary }
+              ]}>
+                {error ? '입력한 정보가 일치하지 않습니다' : (stage.kind.includes('first') ? '새로운 잠금 설정' : '한 번 더 입력해주세요')}
               </Text>
-              {inputText.length > 0 && !error && stage.kind.includes('first') && (
-                <Text style={[styles.strengthText, { color: strengthColor }]}>
-                  {getStrengthLabel(strength!)}
-                </Text>
-              )}
-            </>
-          )}
-
-          {isPattern && (
-            <View style={styles.patternPanel}>
-              <PatternGrid
-                key={patternResetKey}
-                colors={{...colors, accent: error ? colors.tomorrowRed : colors.accent}}
-                showTrail
-                keepTrailAfterComplete
-                onComplete={handlePatternComplete}
-              />
+              <Text style={[
+                styles.cardSubtitle,
+                { color: error ? colors.tomorrowRed : colors.textSecondary }
+              ]}>
+                {error
+                  ? '다시 시도해주세요'
+                  : isPin
+                    ? `숫자 PIN ${PIN_MAX_LENGTH}자리를 입력해주세요`
+                    : isPassword
+                      ? `영문+숫자 조합으로 4~${PASSWORD_MAX_LENGTH}자 입력해주세요`
+                      : '패턴을 그려주세요'}
+              </Text>
             </View>
-          )}
+
+            <View style={styles.setupBottomGroup}>
+              {isPin && (
+                <>
+                  {/* 실제 잠금 해제 화면과 똑같은 키패드로 연습하게 해서, 설정할 때 본
+                      화면과 실제로 잠금을 풀 때 화면이 달라 보이지 않게 한다. */}
+                  <PinPad
+                    colors={colors}
+                    value={inputText}
+                    length={PIN_MAX_LENGTH}
+                    error={error}
+                    onKeyPress={handlePinKeyPress}
+                    bottomLeftSlot={
+                      <Pressable onPress={cancelSetup} hitSlop={12}>
+                        <Text style={[styles.setupCancelText, { color: colors.textSecondary }]}>취소</Text>
+                      </Pressable>
+                    }
+                  />
+                  {inputText.length > 0 && !error && stage.kind.includes('first') && (
+                    <Text style={[styles.strengthText, { color: strengthColor }]}>
+                      {getStrengthLabel(strength!)}
+                    </Text>
+                  )}
+                </>
+              )}
+
+              {isPassword && (
+                <>
+                  <View style={styles.inputWrap}>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        { borderColor: error ? colors.tomorrowRed : colors.border, color: colors.textPrimary }
+                      ]}
+                      value={inputText}
+                      onChangeText={(text) => setInputText(stripInvalidCharacters(text))}
+                      secureTextEntry={!secureVisible}
+                      placeholder="비밀번호 입력"
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="default"
+                      maxLength={PASSWORD_MAX_LENGTH}
+                      autoFocus
+                    />
+                    <Pressable
+                      onPress={() => setSecureVisible((v) => !v)}
+                      hitSlop={10}
+                      style={styles.eyeButton}
+                    >
+                      <MaterialCommunityIcons
+                        name={secureVisible ? 'eye-off-outline' : 'eye-outline'}
+                        size={20}
+                        color={colors.textSecondary}
+                      />
+                    </Pressable>
+                  </View>
+                  <Text style={[styles.charCountText, { color: colors.textSecondary }]}>
+                    {inputText.length} / {PASSWORD_MAX_LENGTH}
+                  </Text>
+                  {inputText.length > 0 && !error && stage.kind.includes('first') && (
+                    <Text style={[styles.strengthText, { color: strengthColor }]}>
+                      {getStrengthLabel(strength!)}
+                    </Text>
+                  )}
+                </>
+              )}
+
+              {isPattern && (
+                <View style={styles.patternPanel}>
+                  <PatternGrid
+                    key={patternResetKey}
+                    colors={{...colors, accent: error ? colors.tomorrowRed : colors.accent}}
+                    showTrail
+                    keepTrailAfterComplete
+                    onComplete={handlePatternComplete}
+                  />
+                </View>
+              )}
+            </View>
+          </ScrollView>
         </View>
 
         {/* PIN 화면은 취소를 숫자 0 옆(bottomLeftSlot)에 넣어서 실제 잠금 해제
-            화면과 같은 위치가 되므로, 이 하단 버튼 행 자체가 필요 없다. */}
+            화면과 같은 위치가 되므로, 이 하단 버튼 행 자체가 필요 없다. ScrollView
+            밖에 둬서 키보드가 떠도 항상 화면 하단에 고정으로 보인다. */}
         {!isPin && (
-        <View style={styles.setupFooterRow}>
-          <Pressable onPress={cancelSetup} hitSlop={12}>
-            <Text style={[styles.setupCancelText, { color: colors.textSecondary }]}>취소</Text>
-          </Pressable>
-          <View style={styles.setupFooterRight}>
-            {isPattern && (
-              <Pressable
-                style={styles.retryBtn}
-                onPress={() => {
-                  setStage({ kind: 'pattern-first' });
-                  setDrawnPattern(null);
-                  setPatternResetKey((k) => k + 1);
-                  showToast('첫 번째 단계부터 다시 그려주세요.');
-                }}
-              >
-                <MaterialCommunityIcons name="refresh" size={14} color={colors.green500} />
-                <Text style={styles.retryBtnText}>다시 그리기</Text>
-              </Pressable>
-            )}
-            {isPattern && (
-              <Pressable
-                style={[styles.nextBtn, !drawnPattern && styles.nextBtnDisabled]}
-                onPress={confirmPattern}
-                disabled={!drawnPattern}
-              >
-                <Text style={styles.nextBtnText}>{stage.kind.includes('first') ? '다음' : '완료'}</Text>
-              </Pressable>
-            )}
-            {isPassword && (
-              <Pressable style={styles.nextBtn} onPress={handleNext}>
-                <Text style={styles.nextBtnText}>{stage.kind.includes('first') ? '다음' : '완료'}</Text>
-              </Pressable>
-            )}
+          <View style={styles.setupFooterRow}>
+            <Pressable onPress={cancelSetup} hitSlop={12}>
+              <Text style={[styles.setupCancelText, { color: colors.textSecondary }]}>취소</Text>
+            </Pressable>
+            <View style={styles.setupFooterRight}>
+              {isPattern && (
+                <Pressable
+                  style={styles.retryBtn}
+                  onPress={() => {
+                    setStage({ kind: 'pattern-first' });
+                    setDrawnPattern(null);
+                    setPatternResetKey((k) => k + 1);
+                    showToast('첫 번째 단계부터 다시 그려주세요.');
+                  }}
+                >
+                  <MaterialCommunityIcons name="refresh" size={14} color={colors.green500} />
+                  <Text style={styles.retryBtnText}>다시 그리기</Text>
+                </Pressable>
+              )}
+              {isPattern && (
+                <Pressable
+                  style={[styles.nextBtn, !drawnPattern && styles.nextBtnDisabled]}
+                  onPress={confirmPattern}
+                  disabled={!drawnPattern}
+                >
+                  <Text style={styles.nextBtnText}>{stage.kind.includes('first') ? '다음' : '완료'}</Text>
+                </Pressable>
+              )}
+              {isPassword && (
+                <Pressable style={styles.nextBtn} onPress={handleNext}>
+                  <Text style={styles.nextBtnText}>{stage.kind.includes('first') ? '다음' : '완료'}</Text>
+                </Pressable>
+              )}
+            </View>
           </View>
-        </View>
         )}
-        </View>
-      </ScrollView>
       </KeyboardAvoidingView>
     );
   };
@@ -583,22 +568,21 @@ function createStyles(colors: any) {
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20 },
-    // 카드 박스 없이 화면 가득 노출되는 전체화면 레이아웃 — ScrollView의
-    // contentContainerStyle로 쓰인다. flexGrow:1을 함께 줘서, 평소(키보드 없음)엔
-    // 내용이 화면보다 짧으니 스크롤 없이 setupBottomGroup(flex:1)이 남는 공간을
-    // 다 차지해 하단/가운데 정렬이 그대로 보이고, 키보드가 떠서 내용이 화면보다
-    // 커지는 순간에만 자동으로 스크롤 가능해져 취소/다음 버튼이 화면 밖으로
-    // 사라지지 않고 스크롤해서 닿을 수 있게 한다.
-    setupContainer: { paddingHorizontal: 28, paddingTop: 32, paddingBottom: 28 },
+    // 취소/다음 버튼(setupFooterRow)은 이제 이 ScrollView 밖, KeyboardAvoidingView
+    // 안에 별도 고정 영역으로 렌더링된다 — 헤더/입력창처럼 넘칠 수 있는 내용만
+    // 여기서 스크롤되고, 버튼은 항상 화면(키보드 위) 맨 아래에 보인다.
+    setupScrollArea: { flex: 1 },
+    setupScrollContent: { paddingHorizontal: 28, paddingTop: 32, flexGrow: 1 },
     setupHeader: { alignItems: 'center' },
-    // flexShrink:0을 명시 — flex:1(flexShrink:1 포함)이면 키보드가 떠서 공간이
-    // 모자랄 때 이 그룹 자체가 내용보다 작게 찌그러들어 버리고, 그러면 ScrollView는
-    // "넘치는 내용이 없다"고 판단해 스크롤이 아예 안 걸린다(취소/다음 버튼이 박스
-    // 밖으로 삐져나온 채 화면 밖에 가려짐). 아래로는 안 줄어들고 필요하면 실제
-    // 내용 크기만큼 넘치게 둬야 ScrollView가 그 넘치는 만큼을 스크롤 가능하게 잡는다.
-    setupBottomGroup: { flexGrow: 1, flexShrink: 0 },
-    setupBody: { alignItems: 'center' },
-    setupFooterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 },
+    setupBottomGroup: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
+    setupFooterRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 28,
+      paddingTop: 16,
+      paddingBottom: 28,
+    },
     setupFooterRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     setupCancelText: { fontSize: 15.5, fontWeight: '700' },
     card: {
