@@ -23,9 +23,7 @@ export default function GoogleSignInScreen() {
   const {
     completeOnboarding,
     signInWithGoogle,
-    signOutGoogle,
     signInWithKakao,
-    signOutKakao,
     children,
     dataOwnerEmail,
     resetAllData,
@@ -186,11 +184,11 @@ export default function GoogleSignInScreen() {
           return;
         }
 
-        // [Fix] 이미 계정이 있는 경로(relogin)로 들어왔으나, 데이터가 없는 신규 계정인 경우 차단
+        // 이미 계정이 있는 경로(relogin)로 들어왔는데 데이터가 없는 신규/탈퇴 계정이면,
+        // 그대로 튕겨내지 말고 신규 가입 흐름(가족 그룹 시작하기)으로 안내한다.
         if (!hasCloudData && !hasChild) {
-          showToast('가입 한 계정이 아닙니다');
-          await signOutGoogle();
           setLoading(false);
+          router.replace('/family-group-start');
           return;
         }
 
@@ -357,11 +355,11 @@ export default function GoogleSignInScreen() {
           return;
         }
 
-        // [Fix] 이미 계정이 있는 경로(relogin)이나 데이터가 없는 경우 차단
+        // 이미 계정이 있는 경로(relogin)로 들어왔는데 데이터가 없는 신규/탈퇴 계정이면,
+        // 그대로 튕겨내지 말고 신규 가입 흐름(가족 그룹 시작하기)으로 안내한다.
         if (!hasCloudData && !hasChild) {
-          showToast('가입 한 계정이 아닙니다');
-          await signOutKakao();
           setLoading(false);
+          router.replace('/family-group-start');
           return;
         }
 
