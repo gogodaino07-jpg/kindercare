@@ -7,6 +7,7 @@ import { Stack, useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, Image, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
 import CoupangBanner from '../components/common/CoupangBanner';
 import Text from '../components/common/AppText';
 import { isAdTestAccount } from '../constants/adTestAccounts';
@@ -90,6 +91,15 @@ export default function UploadScreen() {
   // 않는 한 스캔마다 광고 시청이 필요하다(막히지 않고 무제한 반복 가능).
   const hasFreeCredit = !isSubscribed && remainingAnalyses !== null && remainingAnalyses > 0;
   const needsAdThisScan = !isSubscribed && !skipAd && !hasFreeCredit;
+
+  const gaugeHeadline = isSubscribed
+    ? `이번 주 ${remainingAnalyses ?? 0}번 더 스캔할 수 있어요`
+    : hasFreeCredit
+      ? `${remainingAnalyses}번 더 무료로 스캔할 수 있어요`
+      : '광고 보면 계속 스캔할 수 있어요';
+  const gaugeSubtitle = !isSubscribed && !hasFreeCredit
+    ? `무료 ${maxCredits}회를 모두 사용했어요 · 광고 시청 후 계속 이용 가능`
+    : `총 ${maxCredits}회 중 ${remainingAnalyses ?? 0}회 남음 · 1건당 1회 차감`;
 
   // Prevent accidental navigation during analysis
   useEffect(() => {
@@ -374,38 +384,14 @@ export default function UploadScreen() {
             overScrollMode={docs.length > 0 ? 'auto' : 'never'}
           >
             <View style={styles.gaugeCard}>
-              <View style={styles.gaugeTopRow}>
-                <View style={styles.gaugeTopLeft}>
+              <View style={styles.gaugeTextBlock}>
+                <View style={styles.gaugeHeadlineRow}>
                   <View style={styles.gaugeDot} />
-                  <Text style={styles.gaugeLabel}>
-                    {isSubscribed ? '이번 주 스캔 잔여 횟수' : '무료 스캔 잔여 횟수'}
-                  </Text>
+                  <Text style={styles.gaugeHeadline}>{gaugeHeadline}</Text>
                 </View>
-                <Text style={styles.gaugeValue}>
-                  {remainingAnalyses ?? '-'} <Text style={styles.gaugeMax}>/ {maxCredits}회</Text>
-                </Text>
+                <Text style={styles.gaugeSubtitle}>{gaugeSubtitle}</Text>
               </View>
-              <View style={styles.gaugeTrack}>
-                {Array.from({ length: maxCredits }).map((_, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.gaugeSegment,
-                      remainingAnalyses !== null && i < remainingAnalyses && styles.gaugeSegmentFilled,
-                    ]}
-                  />
-                ))}
-              </View>
-              <View style={styles.gaugeFootRow}>
-                <Text style={styles.gaugeFootText}>
-                  {isSubscribed
-                    ? '1회 스캔 시 사진/문서 1건이 분석됩니다'
-                    : `처음 ${maxCredits}회는 광고 없이 무료예요 (알림장+급식표 합산). 이후엔 광고 시청 후 계속 스캔할 수 있어요`}
-                </Text>
-                {!isSubscribed && remainingAnalyses === 0 && (
-                  <Text style={styles.gaugeExhaustedText}>광고 시청 후 이용</Text>
-                )}
-              </View>
+              <CircularGauge value={remainingAnalyses ?? 0} max={maxCredits} />
             </View>
 
             {docs.length > 0 ? (
@@ -427,8 +413,8 @@ export default function UploadScreen() {
             ) : (
               <View style={styles.emptyStateFill}>
                 <DropzoneCard />
-                <RoadmapCard />
                 <TipBox />
+                <RoadmapCard />
               </View>
             )}
           </ScrollView>
@@ -492,37 +478,52 @@ export default function UploadScreen() {
   );
 }
 
+function CircularGauge({ value, max }: { value: number; max: number }) {
+  const C = useScanColors();
+  const size = 76;
+  const strokeWidth = 7;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = max > 0 ? Math.min(Math.max(value / max, 0), 1) : 0;
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size}>
+        <Circle cx={size / 2} cy={size / 2} r={radius} stroke={C.violet100} strokeWidth={strokeWidth} fill="none" />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={C.violet600}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={circumference * (1 - progress)}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </Svg>
+      <View style={{ position: 'absolute', alignItems: 'center' }}>
+        <Text style={{ fontSize: 15, fontWeight: '900', color: C.slate900 }}>
+          {value}
+          <Text style={{ fontSize: 11, fontWeight: '700', color: C.slate400 }}>/{max}</Text>
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 function DropzoneCard() {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
-  const bounce = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bounce, { toValue: 1, duration: 550, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.timing(bounce, { toValue: 0, duration: 550, easing: Easing.in(Easing.quad), useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [bounce]);
-
-  const translateY = bounce.interpolate({ inputRange: [0, 1], outputRange: [0, 6] });
-
   return (
     <View style={styles.dropzoneCard}>
       <View style={styles.dropzoneIconBox}>
         <Ionicons name="sparkles" size={24} color={C.violet600} />
       </View>
-      <Text style={styles.dropzoneTitle}>통신문 사진이나 문서를 준비해주세요</Text>
+      <Text style={styles.dropzoneTitle}>분석할 알림장을 추가해 주세요</Text>
       <Text style={styles.dropzoneSubtitle}>
-        가정통신문, 주간계획안, 식단표를 인식하여{'\n'}캘린더 일정과 준비물로 바꿔드려요 ✨
+        가정통신문, 주간계획안, 식단표를 추가하면{'\n'}AI가 일정을 쏙쏙 뽑아 캘린더에 정리해 드려요 ✨
       </Text>
-      <Animated.View style={{ transform: [{ translateY }] }}>
-        <Feather name="chevron-down" size={20} color={C.violet600} />
-      </Animated.View>
-      <Text style={styles.dropzoneHint}>아래 버튼으로 사진이나 문서를 선택하면 여기에 표시돼요</Text>
     </View>
   );
 }
@@ -534,8 +535,8 @@ function TipBox() {
     <View style={styles.tipBox}>
       <Ionicons name="bulb" size={18} color={C.amber700} />
       <Text style={styles.tipText}>
-        <Text style={styles.tipBold}>스마트 스캔 팁: </Text>
-        글자가 잘 보이도록 빛 반사 없이 찍어주시면 더 정확하게 추출됩니다!
+        <Text style={styles.tipBold}>스마트 스캔 팁! </Text>
+        글자가 잘 보이도록 빛 반사 없이 평평한 곳에서 찍어주시면 정확도가 올라가요.
       </Text>
     </View>
   );
@@ -562,12 +563,12 @@ function RoadmapCard() {
         </View>
         <View style={styles.roadmapTextBlock}>
           <View style={styles.roadmapTitleRow}>
-            <Text style={styles.roadmapTitle}>통신문 사진 또는 파일 올리기</Text>
+            <Text style={styles.roadmapTitle}>사진 또는 파일 올리기</Text>
             <View style={styles.roadmapTag}>
-              <Text style={styles.roadmapTagText}>촬영·PDF·HWP</Text>
+              <Text style={styles.roadmapTagText}>사진·PDF</Text>
             </View>
           </View>
-          <Text style={styles.roadmapDesc}>아래 버튼을 눌러 사진이나 문서를 선택하세요</Text>
+          <Text style={styles.roadmapDesc}>스마트폰으로 찍거나 저장된 문서를 선택하세요.</Text>
         </View>
       </View>
 
@@ -581,10 +582,10 @@ function RoadmapCard() {
           <View style={styles.roadmapTitleRow}>
             <Text style={[styles.roadmapTitle, styles.roadmapTitleAccent]}>AI가 날짜와 준비물 자동 추출</Text>
             <View style={[styles.roadmapTag, styles.roadmapTagAccent]}>
-              <Text style={[styles.roadmapTagText, styles.roadmapTagTextAccent]}>스마트 OCR</Text>
+              <Text style={[styles.roadmapTagText, styles.roadmapTagTextAccent]}>AI 엔진</Text>
             </View>
           </View>
-          <Text style={styles.roadmapDesc}>행사 일시, 챙길 물품, 선생님 메모를 알아서 분류</Text>
+          <Text style={styles.roadmapDesc}>행사 일시, 챙길 물품 등을 척척 분류해요.</Text>
         </View>
       </View>
 
@@ -601,7 +602,7 @@ function RoadmapCard() {
               <Text style={[styles.roadmapTagText, styles.roadmapTagTextDone]}>완료</Text>
             </View>
           </View>
-          <Text style={styles.roadmapDesc}>당일 준비물 체크리스트 & D-day 알림 자동 연동</Text>
+          <Text style={styles.roadmapDesc}>알림과 준비물 체크리스트가 자동 연동돼요.</Text>
         </View>
       </View>
     </View>
@@ -728,23 +729,19 @@ function createStyles(C: ScanColors) {
   gaugeCard: {
     backgroundColor: C.surface,
     borderRadius: 20,
-    padding: 14,
+    padding: 16,
     borderWidth: 1,
     borderColor: C.slate200,
-    gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  gaugeTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  gaugeTopLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  gaugeTextBlock: { flex: 1, gap: 4 },
+  gaugeHeadlineRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   gaugeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.violet600 },
-  gaugeLabel: { fontSize: 14, fontWeight: '900', color: C.slate800 },
-  gaugeValue: { fontSize: 14, fontWeight: '900', color: C.violet700 },
-  gaugeMax: { color: C.slate400, fontWeight: '400' },
-  gaugeTrack: { flexDirection: 'row', gap: 4, height: 8 },
-  gaugeSegment: { flex: 1, height: '100%', borderRadius: 999, backgroundColor: C.slate100 },
-  gaugeSegmentFilled: { backgroundColor: C.violet600 },
-  gaugeFootRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  gaugeFootText: { fontSize: 12, color: C.slate400, fontWeight: '500' },
-  gaugeExhaustedText: { fontSize: 12, color: C.rose600, fontWeight: '700' },
+  gaugeHeadline: { fontSize: 15, fontWeight: '900', color: C.slate900, flexShrink: 1 },
+  gaugeSubtitle: { fontSize: 12.5, color: C.slate400, fontWeight: '500', marginLeft: 16 },
   dropzoneCard: {
     borderWidth: 2,
     borderColor: C.violet200,
@@ -766,7 +763,6 @@ function createStyles(C: ScanColors) {
   },
   dropzoneTitle: { fontSize: 16, fontWeight: '900', color: C.slate900, textAlign: 'center' },
   dropzoneSubtitle: { fontSize: 13.5, color: C.slate400, textAlign: 'center', lineHeight: 19 },
-  dropzoneHint: { fontSize: 12.5, color: C.violet600, fontWeight: '700', textAlign: 'center', marginTop: -2 },
   tipBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
