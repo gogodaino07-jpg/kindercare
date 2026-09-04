@@ -473,13 +473,22 @@ export default function GoogleSignInScreen() {
           </Pressable>
 
           <TouchableOpacity
-            style={[styles.btn, styles.btnKakao]}
+            style={[
+              styles.btn,
+              styles.btnKakao,
+              (loading || toastActive) && styles.googleButtonDisabled
+            ]}
             onPress={handleKakaoSignIn}
+            disabled={loading || toastActive}
           >
-            <View style={styles.btnInner}>
-              <FontAwesome name="comment" size={20} color="#3C1E1E" style={styles.btnIcon} />
-              <Text style={styles.btnTextKakao}>카카오톡으로 시작하기</Text>
-            </View>
+            {loading ? (
+              <ActivityIndicator color="#3C1E1E" />
+            ) : (
+              <View style={styles.btnInner}>
+                <FontAwesome name="comment" size={20} color="#3C1E1E" style={styles.btnIcon} />
+                <Text style={styles.btnTextKakao}>카카오톡으로 시작하기</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
