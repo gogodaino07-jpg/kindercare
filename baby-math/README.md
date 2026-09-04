@@ -17,7 +17,7 @@ npm run android   # 또는 npm run ios
 
 | 경로 | 화면 | 내용 |
 | --- | --- | --- |
-| `app/index.tsx` | 홈 | 프로필 + 별/코인 카운터, 오늘의 모험 카드, 덧셈·뺄셈 놀이, 우측 사이드바 |
+| `app/index.tsx` | 홈 | 하늘 배경 위에 프로필 + 별/코인 카운터, 오늘의 모험 히어로 카드, 덧셈·뺄셈 놀이 타일, 우측 사이드바 |
 | `app/level-map.tsx` | 레벨맵 | 5단계 코스, 잠금/해제 상태와 스테이지 진행도 |
 | `app/quiz.tsx` | 문제 풀이 | 진행 바 + 그림 문제 + 카드형 보기, 정답/오답 연출 |
 | `app/stickers.tsx` | 스티커판 | 레벨 클리어로 모은 스티커 컬렉션 |
@@ -37,7 +37,7 @@ npm run android   # 또는 npm run ios
 
 ```
 app/                 expo-router 화면
-src/components/      버튼·카드·진행바 등 공용 UI
+src/components/      버튼·카드·진행바·하늘 배경 등 공용 UI
 src/constants/       디자인 토큰(theme), 레벨 정의(levels)
 src/context/         GameContext(진행/보상 저장), RewardFxContext(별 fly-to 연출)
 src/lib/             questions(문제 생성기), sound(효과음)
