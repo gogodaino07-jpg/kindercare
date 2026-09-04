@@ -288,16 +288,15 @@ export default function AppLockSettingsScreen() {
     const strength = (isPin || isPassword) ? getStrength(inputText, isPin ? 'pin' : 'password') : null;
     const strengthColor = strength ? getStrengthColor(strength) : colors.textSecondary;
 
-    // 안드로이드는 AndroidManifest.xml의 windowSoftInputMode="adjustResize"가
-    // 키보드가 뜰 때 창 자체를 줄여줘서 이미 알아서 재배치된다. 그 위에
-    // KeyboardAvoidingView(behavior 없음)까지 같이 씌우면, 하단 고정 레이아웃에서
-    // 오히려 예전(키보드 뜨기 전) 높이 기준으로 얼어붙어 입력창이 키보드에
-    // 가려지는 문제가 있었다 — iOS에서만 이 컴포넌트를 쓰고, 안드로이드는
-    // 그냥 View로 둔다.
-    const SetupWrapper = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
+    // AndroidManifest.xml에 windowSoftInputMode="adjustResize"가 있지만, 이
+    // 화면(에지-투-에지 렌더링)에서는 네이티브 창 리사이즈만으로는 하단 고정
+    // 레이아웃이 키보드를 피하지 못해 비밀번호 입력창이 키보드 뒤에 완전히
+    // 가려지는 게 실기기에서 확인됐다. behavior를 안 주면(undefined)
+    // KeyboardAvoidingView가 사실상 아무 것도 안 하는 것과 같아서, 안드로이드도
+    // 'height'로 명시해 JS 쪽에서 직접 키보드 높이만큼 줄여주게 한다.
     return (
-      <SetupWrapper
-        {...(Platform.OS === 'ios' ? { behavior: 'padding' as const } : {})}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={[styles.setupContainer, { backgroundColor: colors.cardWhite }]}
       >
         <View style={styles.setupHeader}>
@@ -440,7 +439,7 @@ export default function AppLockSettingsScreen() {
         </View>
         )}
         </View>
-      </SetupWrapper>
+      </KeyboardAvoidingView>
     );
   };
 
