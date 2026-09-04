@@ -59,6 +59,18 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     [applyCustomerInfo]
   );
 
+  // Firebase Auth 상태가 확정되기 전에 무조건 먼저 쏘는 익명 getCustomerInfo()는
+  // "익명" RevenueCat 사용자 기준으로 응답한다. 로그인된 사용자라면 이 익명 응답과
+  // 로그인(logIn) 이후의 실제 사용자 응답이 거의 동시에 도착하는데, 이 둘은 서로
+  // 다른 사용자의 응답이라 requestDate 비교(같은 사용자 응답끼리의 신선도 비교)로는
+  // 걸러지지 않는다 — 게다가 예전엔 이 익명 응답만 보고 isReady를 먼저 true로
+  // 켜버려서, 실제 로그인된(구독 중인) 사용자에게도 진짜 구독 상태가 확인되기 전
+  // 짧은 순간 "미구독"으로 보여 광고가 뜨거나 설정 화면에 구독중 표시가 안 되는
+  // 문제가 있었다. Firebase Auth 상태(로그인 여부)가 먼저 확정된 뒤, 그에 맞는
+  // 조회(로그인 사용자는 logIn, 비로그인 사용자는 익명 getCustomerInfo) 하나만
+  // 실행하고 그 응답이 도착한 뒤에야 isReady를 켠다.
+  const identityEpochRef = useRef(0);
+
   useEffect(() => {
     if (!REVENUECAT_ANDROID_KEY) return; // 아직 RevenueCat API 키가 없으면 비구독 상태로 동작
     if (!configured) {
@@ -66,29 +78,28 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       Purchases.configure({ apiKey: REVENUECAT_ANDROID_KEY });
     }
 
-    fetchAndApply(Purchases.getCustomerInfo()).finally(() => setIsReady(true));
+    // Firebase Auth 로그인이 확정되면 그 UID로 RevenueCat 사용자와 연결한다 — 기기를
+    // 바꾸거나 재설치해도 같은 구독으로 인식되게 함. 이메일 대신 UID를 쓰는 이유는,
+    // 이메일은 로그인 경로(구글/카카오)에 따라 검증 강도가 다를 수 있어 식별자로
+    // 쓰기엔 약하고, Firebase Auth가 발급하는 UID가 실제 인증된 사용자를 훨씬
+    // 신뢰성 있게 가리키기 때문이다.
+    const unsubscribe = getFirebaseAuth().onAuthStateChanged((user: { uid: string } | null) => {
+      identityEpochRef.current += 1;
+      const epochAtStart = identityEpochRef.current;
+      const infoPromise = user
+        ? Purchases.logIn(user.uid).then(({ customerInfo }: { customerInfo: CustomerInfo }) => customerInfo)
+        : Purchases.getCustomerInfo();
+      fetchAndApply(infoPromise).finally(() => {
+        if (identityEpochRef.current === epochAtStart) setIsReady(true);
+      });
+    });
 
     Purchases.addCustomerInfoUpdateListener(applyCustomerInfo);
     return () => {
+      unsubscribe();
       Purchases.removeCustomerInfoUpdateListener(applyCustomerInfo);
     };
   }, [fetchAndApply, applyCustomerInfo]);
-
-  // Firebase Auth 로그인이 확정되면 그 UID로 RevenueCat 사용자와 연결한다 — 기기를
-  // 바꾸거나 재설치해도 같은 구독으로 인식되게 함. 이메일 대신 UID를 쓰는 이유는,
-  // 이메일은 로그인 경로(구글/카카오)에 따라 검증 강도가 다를 수 있어 식별자로
-  // 쓰기엔 약하고, Firebase Auth가 발급하는 UID가 실제 인증된 사용자를 훨씬
-  // 신뢰성 있게 가리키기 때문이다. onAuthStateChanged를 쓰는 이유는, 앱을 껐다
-  // 켰을 때 AppDataContext의 googleAccount(AsyncStorage 복원)보다 Firebase Auth
-  // 세션 복원이 늦게 끝날 수 있어 그 상태 변화를 직접 구독해야 놓치지 않기 때문.
-  useEffect(() => {
-    if (!REVENUECAT_ANDROID_KEY) return;
-    const unsubscribe = getFirebaseAuth().onAuthStateChanged((user: { uid: string } | null) => {
-      if (!user) return;
-      fetchAndApply(Purchases.logIn(user.uid).then(({ customerInfo }: { customerInfo: CustomerInfo }) => customerInfo));
-    });
-    return unsubscribe;
-  }, [fetchAndApply]);
 
   const refresh = useCallback(async () => {
     if (!REVENUECAT_ANDROID_KEY) return;
