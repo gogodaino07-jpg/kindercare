@@ -144,63 +144,63 @@ export default function ScheduleBoard({
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <View style={styles.headerLeft}>
-          <MaterialIcons name="calendar-today" size={17} color={colors.peachOrangeDeep} />
-          <Text style={styles.headerTitle}>알림장 일정 & 준비물</Text>
-        </View>
-        <Pressable onPress={() => router.push('/upload')}>
-          <LinearGradient
-            colors={['#6366F1', '#9333EA']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.scanButton}
-          >
-            <Text style={styles.scanButtonIcon}>✨</Text>
-            <Text style={styles.scanButtonText}>AI 스캔</Text>
-          </LinearGradient>
-        </Pressable>
-      </View>
-
-      <View style={styles.tabRow}>
-        {TABS.map((tab) => (
-          <Pressable
-            key={tab.key}
-            style={[styles.tabButton, activeTab === tab.key && styles.tabButtonActive]}
-            onPress={() => onChangeTab(tab.key)}
-          >
-            <Text style={[styles.tabButtonText, activeTab === tab.key && styles.tabButtonTextActive]}>
-              {tab.label}
-            </Text>
+      <View style={styles.topBlock}>
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <MaterialIcons name="calendar-today" size={17} color={colors.peachOrangeDeep} />
+            <Text style={styles.headerTitle}>알림장 일정 & 준비물</Text>
+          </View>
+          <Pressable onPress={() => router.push('/upload')}>
+            <LinearGradient
+              colors={['#6366F1', '#9333EA']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.scanButton}
+            >
+              <Text style={styles.scanButtonIcon}>✨</Text>
+              <Text style={styles.scanButtonText}>AI 스캔</Text>
+            </LinearGradient>
           </Pressable>
-        ))}
-      </View>
-
-      {filtered.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyEmoji}>🏝️</Text>
-          <Text style={styles.emptyTitle}>이 날은 특별한 일정이 없어요</Text>
         </View>
-      ) : (
-        <View style={styles.list}>
-          {filtered.map(({ event, dateText }) => (
-            <ScheduleCard
-              key={event.id}
-              event={event}
-              dateText={dateText}
-              colors={colors}
-              styles={styles}
-              isDark={isDark}
-              onPress={() => onEventPress(event)}
-              onToggleItem={onToggleItem}
-              onToggleAll={onToggleAll}
-              onOpenPhotos={setViewerPhotos}
-            />
+
+        <View style={styles.tabRow}>
+          {TABS.map((tab) => (
+            <Pressable
+              key={tab.key}
+              style={[styles.tabButton, activeTab === tab.key && styles.tabButtonActive]}
+              onPress={() => onChangeTab(tab.key)}
+            >
+              <Text style={[styles.tabButtonText, activeTab === tab.key && styles.tabButtonTextActive]}>
+                {tab.label}
+              </Text>
+            </Pressable>
           ))}
         </View>
-      )}
 
-      <View style={styles.seeAllSpacer} />
+        {filtered.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyEmoji}>🏝️</Text>
+            <Text style={styles.emptyTitle}>이 날은 특별한 일정이 없어요</Text>
+          </View>
+        ) : (
+          <View style={styles.list}>
+            {filtered.map(({ event, dateText }) => (
+              <ScheduleCard
+                key={event.id}
+                event={event}
+                dateText={dateText}
+                colors={colors}
+                styles={styles}
+                isDark={isDark}
+                onPress={() => onEventPress(event)}
+                onToggleItem={onToggleItem}
+                onToggleAll={onToggleAll}
+                onOpenPhotos={setViewerPhotos}
+              />
+            ))}
+          </View>
+        )}
+      </View>
 
       <Pressable style={styles.seeAllRow} onPress={() => router.push('/calendar')}>
         <View style={styles.seeAllButton}>
@@ -274,7 +274,7 @@ function ScheduleCard({
   const photoUris = event.photoUris ?? [];
 
   return (
-    <View style={[styles.card, isToday && styles.cardToday, isToday && { borderColor: category.accent }]}>
+    <View style={[styles.card, isToday && styles.cardToday, isToday && { borderColor: tint(category.accent, 0.45, isDark) }]}>
       {specialTheme ? (
         <LinearGradient
           colors={specialTheme.gradient}
@@ -433,12 +433,12 @@ function ScheduleCard({
 
 function createStyles(colors: ThemeColors, isDark: boolean) {
   return StyleSheet.create({
-    // 일정이 화면을 다 채우지 못할 때, 남는 세로 공간을 카드가 아니라 seeAllSpacer가
-    // 흡수해서 "전체 일정 보기" 버튼이 화면 하단에 붙도록 한다(부모 스크롤뷰의
-    // contentContainerStyle에 flexGrow:1이 있어야 동작함 — app/index.tsx 참고).
-    // 일정이 많아 이미 화면을 넘치면 스페이서는 자연스럽게 0으로 줄어든다.
-    container: { marginTop: 20, paddingHorizontal: 20, flex: 1 },
-    seeAllSpacer: { flex: 1 },
+    // 일정이 화면을 다 채우지 못할 때, 남는 세로 공간이 topBlock과 "전체 일정 보기"
+    // 버튼 사이에 생기도록(justifyContent: space-between) 해서 버튼이 화면 하단에
+    // 붙게 한다(부모 스크롤뷰의 contentContainerStyle에 flexGrow:1이 있어야 동작함
+    // — app/index.tsx 참고). 일정이 많아 이미 화면을 넘치면 평소처럼 스크롤된다.
+    container: { marginTop: 20, paddingHorizontal: 20, flex: 1, justifyContent: 'space-between' },
+    topBlock: {},
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     headerTitle: { fontSize: 16, fontWeight: '800', color: colors.gray900, letterSpacing: -0.4 },
