@@ -1,9 +1,9 @@
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Dimensions, Image, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView, ScrollView } from 'react-native-gesture-handler';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { ZoomableImage } from '../../features/newsletter-analysis/components/ZoomableImage';
@@ -19,9 +19,12 @@ import EventIcon from '../common/EventIcon';
 
 export type ScheduleTab = 'today' | 'tomorrow' | 'dayAfterTomorrow';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PHOTO_ZOOM_WIDTH = SCREEN_WIDTH - 80;
-const PHOTO_ZOOM_HEIGHT = 380;
+// 사진마다 원본 비율이 달라 고정 박스에 억지로 맞추면(letterbox) 사진마다 남는
+// 여백 크기가 제각각이라 규격이 안 맞는 느낌을 준다 — PhotoPage가 이 최대 크기
+// 안에서 사진 실제 비율대로 크기를 계산해 여백을 최소화·일관되게 만든다.
+const PHOTO_ZOOM_HEIGHT = Math.min(SCREEN_HEIGHT * 0.6, 560);
 
 interface ScheduleBoardProps {
   mainEvents: Event[];
@@ -233,12 +236,50 @@ export default function ScheduleBoard({
 
             <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
               {(viewerPhotos ?? []).map((uri) => (
-                <ZoomableImage key={uri} uri={uri} width={PHOTO_ZOOM_WIDTH} height={PHOTO_ZOOM_HEIGHT} />
+                <PhotoPage key={uri} uri={uri} maxWidth={PHOTO_ZOOM_WIDTH} maxHeight={PHOTO_ZOOM_HEIGHT} />
               ))}
             </ScrollView>
           </View>
         </GestureHandlerRootView>
       </Modal>
+    </View>
+  );
+}
+
+/** 스와이프 페이지 한 장 — maxWidth/maxHeight 박스 안에서 사진 원본 비율대로
+ *  크기를 계산해, 사진마다 letterbox 여백 크기가 들쭉날쭉해 보이지 않게 한다.
+ *  가로 폭은 페이지 정렬을 위해 항상 maxWidth로 고정하고, 세로만 비율에 맞춘다. */
+function PhotoPage({ uri, maxWidth, maxHeight }: { uri: string; maxWidth: number; maxHeight: number }) {
+  const [ratio, setRatio] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRatio(null);
+    Image.getSize(
+      uri,
+      (w, h) => {
+        if (!cancelled && h > 0) setRatio(w / h);
+      },
+      () => {}
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [uri]);
+
+  let width = maxWidth;
+  let height = maxHeight;
+  if (ratio) {
+    height = maxWidth / ratio;
+    if (height > maxHeight) {
+      height = maxHeight;
+      width = maxHeight * ratio;
+    }
+  }
+
+  return (
+    <View style={{ width: maxWidth, height: maxHeight, alignItems: 'center', justifyContent: 'center' }}>
+      <ZoomableImage uri={uri} width={width} height={height} />
     </View>
   );
 }

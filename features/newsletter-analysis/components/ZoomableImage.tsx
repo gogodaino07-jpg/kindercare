@@ -101,7 +101,6 @@ export const ZoomableImage = ({ uri, width, height }: ZoomableImageProps) => {
 const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
-    backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
   },
