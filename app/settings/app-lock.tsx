@@ -314,6 +314,8 @@ export default function AppLockSettingsScreen() {
           </Text>
         </View>
 
+        <View style={styles.setupSpacer} />
+
         <View style={styles.setupBody}>
           {isPin && (
             <>
@@ -432,6 +434,10 @@ export default function AppLockSettingsScreen() {
         options={{
           headerStyle: { backgroundColor: colors.skyBackground },
           headerShadowVisible: false,
+          // 설정 화면(PIN/비밀번호/패턴 입력) 안에서는 그 화면 자체에 "새로운 잠금
+          // 설정" 등 제목이 이미 있어서, 상단 네비게이션 타이틀까지 "잠금화면
+          // 설정"으로 겹쳐 보일 필요가 없다 — 목록 화면일 때만 보여준다.
+          title: stage.kind === 'idle' ? '잠금화면 설정' : '',
           headerLeft: () => (
             <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
               <MaterialCommunityIcons name="chevron-left" size={28} color={colors.textPrimary} />
@@ -537,12 +543,15 @@ function createStyles(colors: any) {
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20 },
-    // 카드 박스 없이 화면 가득 노출되는 전체화면 레이아웃 — 헤더/본문/하단 버튼 행을
-    // space-between으로 배치해 취소·다음 버튼이 화면 맨 아래에 자연스럽게 붙는다.
-    setupContainer: { flex: 1, paddingHorizontal: 28, paddingTop: 56, paddingBottom: 28, justifyContent: 'space-between' },
+    // 카드 박스 없이 화면 가득 노출되는 전체화면 레이아웃 — 헤더는 위쪽에 자연스러운
+    // 크기로 두고, setupSpacer(flex:1)가 남는 세로 공간을 전부 흡수해서 숫자패드/
+    // 취소·다음 버튼이 화면 위아래로 흩어지지 않고 하단에 딱 붙어 보이게 한다
+    // (참고했던 기본 PIN 입력 화면들처럼 패드가 화면 하단부를 차지하는 형태).
+    setupContainer: { flex: 1, paddingHorizontal: 28, paddingTop: 56, paddingBottom: 28 },
     setupHeader: { alignItems: 'center' },
+    setupSpacer: { flex: 1, minHeight: 24 },
     setupBody: { alignItems: 'center' },
-    setupFooterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    setupFooterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 28 },
     setupFooterRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     setupCancelText: { fontSize: 15.5, fontWeight: '700' },
     card: {
