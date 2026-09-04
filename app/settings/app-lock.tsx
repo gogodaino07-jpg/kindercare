@@ -291,9 +291,9 @@ export default function AppLockSettingsScreen() {
     return (
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.setupContainer}
+        style={[styles.setupContainer, { backgroundColor: colors.cardWhite }]}
       >
-        <View style={[styles.card, { backgroundColor: colors.cardWhite, padding: 24 }]}>
+        <View style={styles.setupHeader}>
           <Text style={[
             styles.cardTitle,
             { color: error ? colors.tomorrowRed : colors.textPrimary }
@@ -312,7 +312,9 @@ export default function AppLockSettingsScreen() {
                   ? `영문+숫자 조합으로 4~${PASSWORD_MAX_LENGTH}자 입력해주세요`
                   : '패턴을 그려주세요'}
           </Text>
+        </View>
 
+        <View style={styles.setupBody}>
           {isPin && (
             <>
               {/* 실제 잠금 해제 화면과 똑같은 키패드로 연습하게 해서, 설정할 때 본
@@ -383,11 +385,13 @@ export default function AppLockSettingsScreen() {
               />
             </View>
           )}
+        </View>
 
-          <View style={styles.buttonRow}>
-            <Pressable style={styles.cancelBtn} onPress={cancelSetup}>
-              <Text style={styles.cancelBtnText}>취소</Text>
-            </Pressable>
+        <View style={styles.setupFooterRow}>
+          <Pressable onPress={cancelSetup} hitSlop={12}>
+            <Text style={[styles.setupCancelText, { color: colors.textSecondary }]}>취소</Text>
+          </Pressable>
+          <View style={styles.setupFooterRight}>
             {isPattern && (
               <Pressable
                 style={styles.retryBtn}
@@ -533,14 +537,21 @@ function createStyles(colors: any) {
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20 },
-    setupContainer: { flex: 1, padding: 20, justifyContent: 'center' },
+    // 카드 박스 없이 화면 가득 노출되는 전체화면 레이아웃 — 헤더/본문/하단 버튼 행을
+    // space-between으로 배치해 취소·다음 버튼이 화면 맨 아래에 자연스럽게 붙는다.
+    setupContainer: { flex: 1, paddingHorizontal: 28, paddingTop: 56, paddingBottom: 28, justifyContent: 'space-between' },
+    setupHeader: { alignItems: 'center' },
+    setupBody: { alignItems: 'center' },
+    setupFooterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    setupFooterRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    setupCancelText: { fontSize: 15.5, fontWeight: '700' },
     card: {
       borderRadius: 20,
       ...SHADOW,
       overflow: 'hidden',
     },
-    cardTitle: { fontSize: 18, fontWeight: '800', textAlign: 'center', marginBottom: 4 },
-    cardSubtitle: { fontSize: 13, textAlign: 'center', marginBottom: 24 },
+    cardTitle: { fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 8 },
+    cardSubtitle: { fontSize: 14, textAlign: 'center' },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -605,18 +616,9 @@ function createStyles(colors: any) {
       alignItems: 'center',
       marginVertical: 20,
     },
-    buttonRow: { flexDirection: 'row', gap: 10 },
-    cancelBtn: {
-      flex: 1,
-      paddingVertical: 14,
-      borderRadius: 999,
-      backgroundColor: colors.gray100,
-      alignItems: 'center',
-    },
-    cancelBtnText: { fontSize: 14.5, fontWeight: '700', color: colors.textSecondary },
     nextBtn: {
-      flex: 1,
-      paddingVertical: 14,
+      paddingVertical: 12,
+      paddingHorizontal: 26,
       borderRadius: 999,
       backgroundColor: colors.gray900,
       alignItems: 'center',
@@ -624,10 +626,10 @@ function createStyles(colors: any) {
     nextBtnDisabled: { opacity: 0.35 },
     nextBtnText: { fontSize: 14.5, fontWeight: '700', color: colors.cardWhite },
     retryBtn: {
-      flex: 1,
       flexDirection: 'row',
       gap: 5,
-      paddingVertical: 14,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
       borderRadius: 999,
       backgroundColor: colors.green50,
       alignItems: 'center',
