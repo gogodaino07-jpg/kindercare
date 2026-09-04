@@ -39,19 +39,26 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   // CustomerInfo에는 이 스냅샷이 실제로 언제 생성됐는지를 나타내는 requestDate가 들어있으므로,
   // 호출 순서 대신 이 값으로 신선도를 비교해 항상 실제로 더 최신인 데이터만 반영한다.
   const lastAppliedRequestTimeRef = useRef(0);
-  const applyCustomerInfo = useCallback((info: CustomerInfo) => {
+  // force가 true면 requestDate 신선도 비교를 건너뛰고 무조건 반영한다 — 로그아웃 후
+  // 같은/다른 계정으로 재로그인하는 경우, RevenueCat SDK가 새 신원(logIn)에 대해
+  // "이 기기에 로컬로 캐시돼 있던 예전 스냅샷"을 requestDate가 오래된 채로 즉시
+  // 돌려줄 수 있다. 이 값이 직전 신원(로그아웃 시 조회된 익명 응답 등)의
+  // requestDate보다 오래됐다는 이유로 신선도 검사에 걸려 버려지면, 방금 로그인한
+  // 계정이 실제로 구독 중이어도 화면엔 미구독으로 남는다 — 신원이 바뀌는 시점의
+  // 응답은 시간 순서가 아니라 "그 신원의 최신 상태"이므로 항상 반영해야 한다.
+  const applyCustomerInfo = useCallback((info: CustomerInfo, opts?: { force?: boolean }) => {
     const requestTime = new Date(info.requestDate).getTime();
-    if (requestTime < lastAppliedRequestTimeRef.current) return; // 이미 적용된 것보다 오래된 스냅샷 — 버림
+    if (!opts?.force && requestTime < lastAppliedRequestTimeRef.current) return; // 이미 적용된 것보다 오래된 스냅샷 — 버림
     lastAppliedRequestTimeRef.current = requestTime;
     setIsSubscribed(!!info.entitlements.active[PREMIUM_ENTITLEMENT_ID]);
     setManagementURL(info.managementURL);
   }, []);
 
   const fetchAndApply = useCallback(
-    async (promise: Promise<CustomerInfo>) => {
+    async (promise: Promise<CustomerInfo>, opts?: { force?: boolean }) => {
       try {
         const info = await promise;
-        applyCustomerInfo(info);
+        applyCustomerInfo(info, opts);
       } catch {
         // 무시 — 실패한 요청이 기존 상태를 덮어쓰지 않게 그대로 둔다
       }
@@ -89,7 +96,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       const infoPromise = user
         ? Purchases.logIn(user.uid).then(({ customerInfo }: { customerInfo: CustomerInfo }) => customerInfo)
         : Purchases.getCustomerInfo();
-      fetchAndApply(infoPromise).finally(() => {
+      fetchAndApply(infoPromise, { force: true }).finally(() => {
         if (identityEpochRef.current === epochAtStart) setIsReady(true);
       });
     });
