@@ -83,6 +83,7 @@ const RESPONSE_SCHEMA = {
         required: ['date', 'menu'],
       },
     },
+    noMatchingAgeContent: { type: 'boolean' },
   },
   required: ['events'],
 };
@@ -257,7 +258,11 @@ export const GeminiAnalysisService = {
       throw new GeminiAnalysisError('분석 결과를 읽지 못했어요. 다시 시도해주세요.');
     }
 
-    let parsed: { events?: GeminiExtractedEvent[]; mealPlan?: GeminiExtractedMealPlan[] };
+    let parsed: {
+      events?: GeminiExtractedEvent[];
+      mealPlan?: GeminiExtractedMealPlan[];
+      noMatchingAgeContent?: boolean;
+    };
     try {
       parsed = JSON.parse(rawText);
     } catch {
@@ -275,6 +280,10 @@ export const GeminiAnalysisService = {
     // 저장이 안 된다"는 문제로 이어진다. 급식표를 못 찾았을 때의 안내는
     // meal-scan.tsx가 mealPlans.length === 0로 따로 처리한다.
     if (extracted.length === 0 && usageType !== 'meal') {
+      if (parsed.noMatchingAgeContent) {
+        const classLabel = child.className?.trim() ? ` · ${child.className.trim()}` : '';
+        throw new GeminiAnalysisError(`이 통신문에는 ${child.age}세${classLabel} 관련 내용이 없어요. 대상 연령/반을 확인해주세요.`);
+      }
       throw new GeminiAnalysisError('문서에서 일정을 찾지 못했어요. 더 선명한 사진으로 다시 시도해주세요.');
     }
 
@@ -433,6 +442,10 @@ ${referenceEventsBlock}
    - 반드시 정해진 JSON 형식으로만 결괏값을 출력하세요. 불필요한 서술이나 설명은 절대 포함하지 마세요.
    - 확실하지 않은 날짜나 제목 등 이벤트 전체에 대한 의문이 있으면 해당 이벤트의 'needsReview: true'로 표시하고 이유를 'reviewReason'에 적으세요.
    - items 중 글씨가 흐릿하거나 표에서 일부가 잘려서 품명을 확신할 수 없는 항목이 있다면, 이벤트 전체가 아니라 그 항목 객체에만 'needsReview: true'와 구체적인 'reviewReason'(예: "글씨가 흐려 '수건'인지 '수영복'인지 확실하지 않아요")을 넣으세요. 확실한 항목에는 needsReview를 아예 넣지 마세요.
+
+[일치하는 일정이 하나도 없을 때]
+- 위 모든 규칙을 적용했는데도 [대상 아이 정보]의 연령·소속 반에 해당하는 일정이 통신문 안에 단 하나도 없다면(예: 통신문 전체가 다른 연령/반 전용 내용), events를 빈 배열로 두고 최상위 필드 noMatchingAgeContent를 true로 설정하세요.
+- 이 필드는 문서를 읽는 데는 문제가 없었지만 내용 자체가 이 아이 나이/반과 무관할 때만 true로 설정하세요. 사진이 흐리거나 글씨가 안 보여서 판단이 어려운 경우, 또는 통신문 자체에 애초에 캘린더에 등록할 일정이 없는 경우(공지뿐인 문서 등)에는 이 필드를 넣지 마세요(생략하거나 false).
 
 [급식 식단표 추출]
 - 가정통신문에 주간 또는 월간 식단표(요일별/날짜별 급식 메뉴가 나열된 표)가 포함되어 있다면, "mealPlan" 배열로 별도 추출하세요.
