@@ -97,7 +97,19 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         ? Purchases.logIn(user.uid).then(({ customerInfo }: { customerInfo: CustomerInfo }) => customerInfo)
         : Purchases.getCustomerInfo();
       fetchAndApply(infoPromise, { force: true }).finally(() => {
-        if (identityEpochRef.current === epochAtStart) setIsReady(true);
+        if (identityEpochRef.current !== epochAtStart) return;
+        setIsReady(true);
+        // logIn() 직후 SDK가 기기에 로컬로 캐시돼 있던 오래된 스냅샷을 즉시 돌려줄 때가
+        // 있다(실기기에서 확인: 실제로는 구독 중인데 로그인 직후엔 미구독으로 보였고,
+        // 단순 getCustomerInfo() 재조회로는 안 고쳐지다가 "구매 복원하기"
+        // (restorePurchases — Play 스토어와 강제로 다시 동기화)로만 정상으로 돌아옴).
+        // 같은 동작을 로그인 직후 한 번 자동으로 수행해, 사용자가 직접 복원 버튼을
+        // 누르지 않아도 서버 최신 상태로 보정되게 한다.
+        setTimeout(() => {
+          if (identityEpochRef.current === epochAtStart) {
+            fetchAndApply(Purchases.restorePurchases());
+          }
+        }, 1500);
       });
     });
 
