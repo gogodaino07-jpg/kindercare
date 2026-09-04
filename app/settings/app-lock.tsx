@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Keyboard, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Text from '../../components/common/AppText';
 import PatternGrid from '../../components/settings/PatternGrid';
@@ -76,6 +76,22 @@ export default function AppLockSettingsScreen() {
   // 패턴은 손을 뗀 뒤에도 화면에 남아있다가, "다음"을 눌러야 다음 단계로 확정된다.
   const [drawnPattern, setDrawnPattern] = useState<string | null>(null);
   const [patternResetKey, setPatternResetKey] = useState(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // KeyboardAvoidingView(behavior="height")로 여러 번 시도했지만 이 화면에서는
+  // 실제로 컨테이너 높이를 줄여주지 않는 것으로 확인됐다 — 입력창이 늘 보였던
+  // 건 키보드 회피가 작동해서가 아니라, 내용이 화면 가운데 정렬돼 있어 우연히
+  // 키보드 위쪽에 위치했을 뿐이었다(취소/다음 버튼처럼 화면 하단에 있는 요소는
+  // 어떤 방식으로 배치해도 키보드에 그대로 가려짐). 그래서 OS가 알려주는 실제
+  // 키보드 높이를 직접 받아 그만큼 paddingBottom으로 밀어내는 방식으로 대체한다.
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => setKeyboardHeight(e.endCoordinates.height));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   type Strength = 'low' | 'medium' | 'high';
 
@@ -288,20 +304,13 @@ export default function AppLockSettingsScreen() {
     const strength = (isPin || isPassword) ? getStrength(inputText, isPin ? 'pin' : 'password') : null;
     const strengthColor = strength ? getStrengthColor(strength) : colors.textSecondary;
 
-    // 취소/다음 버튼을 ScrollView 안(스크롤되는 내용)에 두면, 키보드가 떠서
-    // 공간이 부족할 때 그 버튼이 스크롤 콘텐츠 하단에 묻혀 화면 밖으로 밀려나는
-    // 문제를 계속 겪었다(flex-end/flexShrink 등 여러 방식으로도 안정적으로
-    // 안 고쳐짐). 대신 버튼 행을 ScrollView 밖으로 완전히 빼서 KeyboardAvoidingView
-    // 안에서 "항상 화면 하단에 고정된 별도 영역"으로 만든다 — 키보드가 뜨면
-    // KeyboardAvoidingView 전체 높이가 이미 줄어들어 있으므로(입력창이 가려지지
-    // 않는 걸로 이미 확인됨), 그 줄어든 영역의 맨 아래에 버튼을 두면 스크롤 여부와
-    // 상관없이 항상 키보드 바로 위에 보인다. 헤더/입력창처럼 넘칠 수 있는 내용만
-    // ScrollView로 감싸 필요할 때만 스크롤되게 한다.
+    // KeyboardAvoidingView는 이 화면에서 실제로 아무 효과가 없는 것으로 확인돼
+    // (컨테이너 높이를 줄여주지 않음), 대신 keyboardDidShow/Hide로 받은 실제
+    // 키보드 높이(keyboardHeight)만큼 paddingBottom을 직접 줘서 취소/다음 버튼을
+    // 포함한 전체 내용이 키보드 위로 밀려 올라오게 한다. 헤더/입력창처럼 넘칠 수
+    // 있는 내용만 ScrollView로 감싸 필요할 때만 스크롤되게 한다.
     return (
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1, backgroundColor: colors.cardWhite }}
-      >
+      <View style={{ flex: 1, backgroundColor: colors.cardWhite, paddingBottom: keyboardHeight }}>
         <View style={styles.setupScrollArea}>
           <ScrollView
             contentContainerStyle={styles.setupScrollContent}
@@ -449,7 +458,7 @@ export default function AppLockSettingsScreen() {
             </View>
           </View>
         )}
-      </KeyboardAvoidingView>
+      </View>
     );
   };
 
@@ -568,9 +577,9 @@ function createStyles(colors: any) {
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20 },
-    // 취소/다음 버튼(setupFooterRow)은 이제 이 ScrollView 밖, KeyboardAvoidingView
-    // 안에 별도 고정 영역으로 렌더링된다 — 헤더/입력창처럼 넘칠 수 있는 내용만
-    // 여기서 스크롤되고, 버튼은 항상 화면(키보드 위) 맨 아래에 보인다.
+    // 취소/다음 버튼(setupFooterRow)은 이 ScrollView 밖에 별도 고정 영역으로
+    // 렌더링된다 — 헤더/입력창처럼 넘칠 수 있는 내용만 여기서 스크롤되고,
+    // 버튼은 항상 화면(키보드 위, paddingBottom:keyboardHeight로 밀어냄) 맨 아래에 보인다.
     setupScrollArea: { flex: 1 },
     setupScrollContent: { paddingHorizontal: 28, paddingTop: 32, flexGrow: 1 },
     setupHeader: { alignItems: 'center' },
