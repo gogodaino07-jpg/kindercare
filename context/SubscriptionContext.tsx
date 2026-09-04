@@ -96,14 +96,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       const infoPromise = user
         ? Purchases.logIn(user.uid).then(({ customerInfo }: { customerInfo: CustomerInfo }) => customerInfo)
         : Purchases.getCustomerInfo();
-      // 주의: 로그인 직후 자동으로 restorePurchases()를 부르는 방식은 한때 시도했었지만
-      // 되돌렸다 — Google Play 구독은 앱 계정이 아니라 "그 기기에 로그인된 Play
-      // 스토어 계정"에 귀속되므로, 자동 복원을 걸면 기기를 공유하는 다른(미구독)
-      // 앱 계정에도 그 기기 Play 계정의 구독이 잘못 붙어버리는 실기기 확인된
-      // 부작용이 있었다. logIn()/getCustomerInfo() 응답을 신선도 검사 없이
-      // 그대로 반영하는 force만으로 충분하다 — 실제 데이터 자체가 틀렸을 때(기기
-      // 로컬 캐시가 오래된 경우)의 보정은 사용자가 직접 "구매 복원하기"를 누르는
-      // 경로로만 수행한다.
+      // 주의: 로그인 직후 자동 restorePurchases()는 시도했다가 되돌렸다 — Play 구독은
+      // 앱 계정이 아니라 "기기의 Play 스토어 계정"에 귀속되므로, 자동 복원을 걸면
+      // 한 기기에서 여러 앱 계정을 넘나들 때 다른(미구독) 계정에도 그 기기 Play
+      // 계정의 구독이 잘못 연결돼버리는 걸 실기기에서 확인했다. logIn()이 그 앱
+      // 계정에 정확히 연결된 구매만 돌려주는 게 정상 동작이며, 실제 신규 구매는
+      // 항상 로그인된 상태에서 이루어지므로 이 정상 경로에서는 문제가 없다.
       fetchAndApply(infoPromise, { force: true }).finally(() => {
         if (identityEpochRef.current === epochAtStart) setIsReady(true);
       });
