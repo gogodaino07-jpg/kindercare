@@ -102,15 +102,35 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       // 계정의 구독이 잘못 연결돼버리는 걸 실기기에서 확인했다. logIn()이 그 앱
       // 계정에 정확히 연결된 구매만 돌려주는 게 정상 동작이며, 실제 신규 구매는
       // 항상 로그인된 상태에서 이루어지므로 이 정상 경로에서는 문제가 없다.
-      // 주의: 로그인 직후 "안전장치"로 getCustomerInfo()를 한 번 더 재조회하는 것도
-      // 시도했다가 되돌렸다 — RevenueCat 서버가 최종 일관성(eventual consistency)
-      // 모델이라, 거의 동시에 두 번째로 보낸 조회가 아직 안 따라잡은 캐시/엣지에
-      // 걸리면 방금 정확히 반영된 구독 상태를 오히려 "미구독"으로 덮어써버리는
-      // 회귀가 실기기에서 확인됐다(로그인 직후 자동으로 잘 뜨던 게 다시 안 뜨게 됨).
-      // logIn() 응답 하나만 신뢰하는 게 가장 안정적이다.
       fetchAndApply(infoPromise, { force: true }).finally(() => {
         if (identityEpochRef.current === epochAtStart) setIsReady(true);
       });
+
+      // 실기기(특히 사이드로드로 설치한 직후)에서 로그인 직후 첫 logIn() 응답이
+      // "미구독"으로 오고, 실제로는 몇 초~2분 뒤에야 addCustomerInfoUpdateListener
+      // 푸시로 뒤늦게 "구독중"으로 정정되는 지연이 관찰됐다. 그동안 광고가 노출되는
+      // 등 사용자 경험이 나빠서, 로그인된 사용자에 한해 잠시 몇 차례 더 재조회한다.
+      // 예전에 "안전장치 재조회"를 즉시(거의 동시에) 한 번 더 보냈다가, 늦게
+      // 도착한 오래된 응답이 방금 정확히 반영된 상태를 도로 덮어써버리는 회귀를
+      // 겪은 적이 있다 — 그래서 이번엔 (1) 충분히 시차를 두고 재조회하고,
+      // (2) 구독 활성(entitlement active)으로 "격상"되는 경우에만 반영해서, 아직
+      // 서버가 못 따라잡은 오래된 "미구독" 응답이 이미 맞게 반영된 "구독중" 상태를
+      // 되돌리는 일이 없도록 한다. 신원이 그 사이 바뀌면(로그아웃 등) 즉시 중단.
+      if (user) {
+        [5000, 15000, 30000, 60000, 120000].forEach((delay) => {
+          setTimeout(async () => {
+            if (identityEpochRef.current !== epochAtStart) return;
+            try {
+              const info = await Purchases.getCustomerInfo();
+              if (info.entitlements.active[PREMIUM_ENTITLEMENT_ID]) {
+                applyCustomerInfo(info, { force: true });
+              }
+            } catch {
+              // 무시 — 다음 재시도에서 다시 확인
+            }
+          }, delay);
+        });
+      }
     });
 
     Purchases.addCustomerInfoUpdateListener(applyCustomerInfo);

@@ -224,6 +224,12 @@ export default function AppLockSettingsScreen() {
         showToast('4자 이상 입력해주세요.');
         return;
       }
+      // 화면 안내 문구가 "영문+숫자 조합"인데도 길이만 검사해서, 영문만 12자
+      // 입력해도 그대로 통과되던 버그 — 실제로 영문/숫자가 하나씩은 있는지 확인한다.
+      if (!/[a-zA-Z]/.test(inputText) || !/[0-9]/.test(inputText)) {
+        showToast('영문+숫자를 조합해서 입력해주세요.');
+        return;
+      }
       if (stage.kind === 'password-first') {
         setStage({ kind: 'password-confirm', first: inputText });
         setInputText('');
