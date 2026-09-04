@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Keyboard, Pressable, ScrollView, StyleSheet, Switch, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Text from '../../components/common/AppText';
 import PatternGrid from '../../components/settings/PatternGrid';
@@ -76,6 +76,18 @@ export default function AppLockSettingsScreen() {
   // 패턴은 손을 뗀 뒤에도 화면에 남아있다가, "다음"을 눌러야 다음 단계로 확정된다.
   const [drawnPattern, setDrawnPattern] = useState<string | null>(null);
   const [patternResetKey, setPatternResetKey] = useState(0);
+  const setupScrollRef = useRef<ScrollView>(null);
+
+  // 비밀번호 입력창은 autoFocus라 화면 진입과 거의 동시에 키보드가 올라오는데,
+  // 그때 컨테이너가 줄어들며 취소/다음 버튼이 화면 밖으로 넘어가는 경우가 있어
+  // (기기/키보드 높이에 따라 여백 계산이 딱 맞지 않을 수 있음) 키보드가 뜰 때마다
+  // 스크롤을 맨 아래로 강제로 내려서 항상 버튼이 눈에 보이게 한다.
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      setupScrollRef.current?.scrollToEnd({ animated: true });
+    });
+    return () => sub.remove();
+  }, []);
 
   type Strength = 'low' | 'medium' | 'high';
 
@@ -300,6 +312,7 @@ export default function AppLockSettingsScreen() {
         style={{ flex: 1, backgroundColor: colors.cardWhite }}
       >
       <ScrollView
+        ref={setupScrollRef}
         contentContainerStyle={[styles.setupContainer, { flexGrow: 1 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -325,7 +338,7 @@ export default function AppLockSettingsScreen() {
           </Text>
         </View>
 
-        <View style={[styles.setupBottomGroup, { justifyContent: isPattern ? 'center' : 'flex-end' }]}>
+        <View style={[styles.setupBottomGroup, { justifyContent: (isPattern || isPin) ? 'center' : 'flex-end' }]}>
         <View style={styles.setupBody}>
           {isPin && (
             <>
@@ -367,6 +380,12 @@ export default function AppLockSettingsScreen() {
                   keyboardType="default"
                   maxLength={PASSWORD_MAX_LENGTH}
                   autoFocus
+                  onFocus={() => {
+                    // keyboardDidShow 리스너만으로는 애니메이션/레이아웃 갱신 타이밍과
+                    // 경합해 스크롤이 안 먹는 경우가 있어, 포커스 시점에도 한 번 더
+                    // (약간의 지연을 두고) 강제로 맨 아래로 스크롤한다.
+                    setTimeout(() => setupScrollRef.current?.scrollToEnd({ animated: true }), 300);
+                  }}
                 />
                 <Pressable
                   onPress={() => setSecureVisible((v) => !v)}
@@ -570,11 +589,16 @@ function createStyles(colors: any) {
     // 다 차지해 하단/가운데 정렬이 그대로 보이고, 키보드가 떠서 내용이 화면보다
     // 커지는 순간에만 자동으로 스크롤 가능해져 취소/다음 버튼이 화면 밖으로
     // 사라지지 않고 스크롤해서 닿을 수 있게 한다.
-    setupContainer: { paddingHorizontal: 28, paddingTop: 56, paddingBottom: 28 },
+    setupContainer: { paddingHorizontal: 28, paddingTop: 32, paddingBottom: 28 },
     setupHeader: { alignItems: 'center' },
-    setupBottomGroup: { flex: 1 },
+    // flexShrink:0을 명시 — flex:1(flexShrink:1 포함)이면 키보드가 떠서 공간이
+    // 모자랄 때 이 그룹 자체가 내용보다 작게 찌그러들어 버리고, 그러면 ScrollView는
+    // "넘치는 내용이 없다"고 판단해 스크롤이 아예 안 걸린다(취소/다음 버튼이 박스
+    // 밖으로 삐져나온 채 화면 밖에 가려짐). 아래로는 안 줄어들고 필요하면 실제
+    // 내용 크기만큼 넘치게 둬야 ScrollView가 그 넘치는 만큼을 스크롤 가능하게 잡는다.
+    setupBottomGroup: { flexGrow: 1, flexShrink: 0 },
     setupBody: { alignItems: 'center' },
-    setupFooterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 28 },
+    setupFooterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 },
     setupFooterRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     setupCancelText: { fontSize: 15.5, fontWeight: '700' },
     card: {
@@ -617,7 +641,7 @@ function createStyles(colors: any) {
     rowDesc: { fontSize: 12, marginTop: 2 },
     divider: { height: 1, marginHorizontal: 20 },
     inputWrap: { position: 'relative', justifyContent: 'center', marginBottom: 6 },
-    charCountText: { alignSelf: 'flex-end', fontSize: 11, fontWeight: '600', marginBottom: 16 },
+    charCountText: { alignSelf: 'flex-end', fontSize: 11, fontWeight: '600', marginBottom: 8 },
     input: {
       borderWidth: 1.5,
       borderRadius: 999,
