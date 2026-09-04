@@ -297,7 +297,12 @@ export default function AppLockSettingsScreen() {
     return (
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={[styles.setupContainer, { backgroundColor: colors.cardWhite }]}
+        style={{ flex: 1, backgroundColor: colors.cardWhite }}
+      >
+      <ScrollView
+        contentContainerStyle={[styles.setupContainer, { flexGrow: 1 }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.setupHeader}>
           <Text style={[
@@ -320,7 +325,7 @@ export default function AppLockSettingsScreen() {
           </Text>
         </View>
 
-        <View style={styles.setupBottomGroup}>
+        <View style={[styles.setupBottomGroup, { justifyContent: isPattern ? 'center' : 'flex-end' }]}>
         <View style={styles.setupBody}>
           {isPin && (
             <>
@@ -439,6 +444,7 @@ export default function AppLockSettingsScreen() {
         </View>
         )}
         </View>
+      </ScrollView>
       </KeyboardAvoidingView>
     );
   };
@@ -558,16 +564,15 @@ function createStyles(colors: any) {
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20 },
-    // 카드 박스 없이 화면 가득 노출되는 전체화면 레이아웃 — 헤더는 위쪽에 자연스러운
-    // 크기로 두고, setupSpacer(flex:1)가 남는 세로 공간을 전부 흡수해서 숫자패드/
-    // 취소·다음 버튼이 화면 위아래로 흩어지지 않고 하단에 딱 붙어 보이게 한다
-    // (참고했던 기본 PIN 입력 화면들처럼 패드가 화면 하단부를 차지하는 형태).
-    // space-between으로 딱 두 그룹(헤더 / 본문+버튼)만 나눠서, 그 사이 남는 세로
-    // 공간이 통째로 한 곳에만 생기게 한다 — 본문+버튼 그룹은 항상 화면 하단에
-    // 붙어 보인다("전체 일정 보기" 버튼 하단 고정과 같은 검증된 방식).
-    setupContainer: { flex: 1, paddingHorizontal: 28, paddingTop: 56, paddingBottom: 28, justifyContent: 'space-between' },
+    // 카드 박스 없이 화면 가득 노출되는 전체화면 레이아웃 — ScrollView의
+    // contentContainerStyle로 쓰인다. flexGrow:1을 함께 줘서, 평소(키보드 없음)엔
+    // 내용이 화면보다 짧으니 스크롤 없이 setupBottomGroup(flex:1)이 남는 공간을
+    // 다 차지해 하단/가운데 정렬이 그대로 보이고, 키보드가 떠서 내용이 화면보다
+    // 커지는 순간에만 자동으로 스크롤 가능해져 취소/다음 버튼이 화면 밖으로
+    // 사라지지 않고 스크롤해서 닿을 수 있게 한다.
+    setupContainer: { paddingHorizontal: 28, paddingTop: 56, paddingBottom: 28 },
     setupHeader: { alignItems: 'center' },
-    setupBottomGroup: {},
+    setupBottomGroup: { flex: 1 },
     setupBody: { alignItems: 'center' },
     setupFooterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 28 },
     setupFooterRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
