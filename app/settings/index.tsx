@@ -107,7 +107,7 @@ export default function SettingsScreen() {
           onPress: async () => {
             await signOutGoogle();
             router.dismissAll();
-            router.replace({ pathname: '/google-signin', params: { flow: 'relogin' } });
+            router.replace('/family-group-start');
           },
         },
       ],
