@@ -385,20 +385,23 @@ function MealMenuCard({ todayMeal, onPressMeal }: { todayMeal?: MealPlan; onPres
   if (!todayMeal) {
     return (
       <Pressable style={styles.card} onPress={onPressMeal}>
-        <View style={styles.emptyRow}>
-          <View style={styles.emptyLeftCol}>
-            <View style={styles.emptyHeaderRow}>
-              <View style={styles.miniTag}>
-                <Text style={styles.miniTagText}>점심</Text>
+        <View style={styles.cardTopBar} />
+        <View style={styles.cardContent}>
+          <View style={styles.emptyRow}>
+            <View style={styles.emptyLeftCol}>
+              <View style={styles.emptyHeaderRow}>
+                <View style={styles.miniTag}>
+                  <Text style={styles.miniTagText}>점심</Text>
+                </View>
+                <Text style={styles.unregisteredText}>미등록</Text>
               </View>
-              <Text style={styles.unregisteredText}>미등록</Text>
+              <Text style={styles.emptyMainText}>오늘 등록된 급식 없음</Text>
             </View>
-            <Text style={styles.emptyMainText}>오늘 등록된 급식 없음</Text>
+            <Pressable style={styles.scanButton} onPress={() => router.push('/meal-scan')} hitSlop={4}>
+              <Ionicons name="camera-outline" size={18} color="#FFFFFF" />
+              <Text style={styles.scanButtonText}>스캔하기</Text>
+            </Pressable>
           </View>
-          <Pressable style={styles.scanButton} onPress={() => router.push('/meal-scan')} hitSlop={4}>
-            <Ionicons name="camera-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.scanButtonText}>스캔하기</Text>
-          </Pressable>
         </View>
       </Pressable>
     );
@@ -406,29 +409,32 @@ function MealMenuCard({ todayMeal, onPressMeal }: { todayMeal?: MealPlan; onPres
 
   return (
     <Pressable style={styles.card} onPress={onPressMeal}>
-      <View style={styles.headerRow}>
-        <View style={styles.tag}>
-          <Text style={styles.tagText}>오늘의 점심</Text>
+      <View style={styles.cardTopBar} />
+      <View style={styles.cardContent}>
+        <View style={styles.headerRow}>
+          <View style={styles.tag}>
+            <Text style={styles.tagText}>오늘의 점심</Text>
+          </View>
+          <View style={styles.linkRow}>
+            <Text style={styles.linkText}>전체 식단</Text>
+            <Feather name="chevron-right" size={14} color={colors.gray900} />
+          </View>
         </View>
-        <View style={styles.linkRow}>
-          <Text style={styles.linkText}>전체 식단</Text>
-          <Feather name="chevron-right" size={14} color={colors.gray900} />
-        </View>
-      </View>
 
-      <View style={styles.bodyRow}>
-        <View style={styles.thumbnail}>
-          <Text style={styles.thumbnailEmoji}>🍲</Text>
-        </View>
-        <View style={styles.textCol}>
-          <Text style={styles.mainMenuText} numberOfLines={1}>
-            {mainText}
-          </Text>
-          {sideItems.length > 0 && (
-            <Text style={styles.sideMenuText} numberOfLines={1}>
-              {sideItems.join(' · ')}
+        <View style={styles.bodyRow}>
+          <View style={styles.thumbnail}>
+            <Text style={styles.thumbnailEmoji}>🍲</Text>
+          </View>
+          <View style={styles.textCol}>
+            <Text style={styles.mainMenuText} numberOfLines={1}>
+              {mainText}
             </Text>
-          )}
+            {sideItems.length > 0 && (
+              <Text style={styles.sideMenuText} numberOfLines={2}>
+                {sideItems.join(' · ')}
+              </Text>
+            )}
+          </View>
         </View>
       </View>
     </Pressable>
@@ -438,18 +444,25 @@ function MealMenuCard({ todayMeal, onPressMeal }: { todayMeal?: MealPlan; onPres
 function createMealCardStyles(colors: ThemeColors) {
   return StyleSheet.create({
     card: {
-      backgroundColor: colors.orangeLight1,
+      backgroundColor: colors.cardWhite,
       marginHorizontal: 20,
       marginTop: 10,
       marginBottom: 14,
       borderRadius: 18,
       borderWidth: 1,
       borderColor: colors.pastelOrange,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
+      overflow: 'hidden',
       ...SHADOW,
       shadowOpacity: 0.06,
       elevation: 1,
+    },
+    cardTopBar: {
+      height: 8,
+      backgroundColor: colors.pastelOrangeAccent,
+    },
+    cardContent: {
+      paddingVertical: 12,
+      paddingHorizontal: 16,
     },
     headerRow: {
       flexDirection: 'row',

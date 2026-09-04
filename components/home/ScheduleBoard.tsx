@@ -142,10 +142,8 @@ export default function ScheduleBoard({
     { key: 'dayAfterTomorrow', label: `모레 (${dayAfterTomorrowCount})` },
   ];
 
-  const soleCard = filtered.length === 1;
-
   return (
-    <View style={[styles.container, soleCard && styles.containerSole]}>
+    <View style={styles.container}>
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
           <MaterialIcons name="calendar-today" size={17} color={colors.peachOrangeDeep} />
@@ -178,17 +176,13 @@ export default function ScheduleBoard({
         ))}
       </View>
 
-      <Pressable style={styles.seeAllRow} onPress={() => router.push('/calendar')}>
-        <Text style={styles.seeAllText}>전체 일정 보기 ›</Text>
-      </Pressable>
-
       {filtered.length === 0 ? (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyEmoji}>🏝️</Text>
           <Text style={styles.emptyTitle}>이 날은 특별한 일정이 없어요</Text>
         </View>
       ) : (
-        <View style={[styles.list, soleCard && styles.listSole]}>
+        <View style={styles.list}>
           {filtered.map(({ event, dateText }) => (
             <ScheduleCard
               key={event.id}
@@ -197,7 +191,6 @@ export default function ScheduleBoard({
               colors={colors}
               styles={styles}
               isDark={isDark}
-              isSoleCard={soleCard}
               onPress={() => onEventPress(event)}
               onToggleItem={onToggleItem}
               onToggleAll={onToggleAll}
@@ -206,6 +199,15 @@ export default function ScheduleBoard({
           ))}
         </View>
       )}
+
+      <View style={styles.seeAllSpacer} />
+
+      <Pressable style={styles.seeAllRow} onPress={() => router.push('/calendar')}>
+        <View style={styles.seeAllButton}>
+          <Text style={styles.seeAllText}>전체 일정 보기</Text>
+          <Feather name="chevron-right" size={16} color={colors.gray900} />
+        </View>
+      </Pressable>
 
       <Modal
         visible={!!viewerPhotos}
@@ -247,7 +249,6 @@ function ScheduleCard({
   colors,
   styles,
   isDark,
-  isSoleCard,
   onPress,
   onToggleItem,
   onToggleAll,
@@ -258,8 +259,6 @@ function ScheduleCard({
   colors: ThemeColors;
   styles: ReturnType<typeof createStyles>;
   isDark: boolean;
-  /** 현재 탭에 카드가 이 1건뿐일 때 — 아래 남는 여백을 활용해 메타 텍스트를 1줄에서 최대 3줄까지 늘려 보여준다. */
-  isSoleCard: boolean;
   onPress: () => void;
   onToggleItem: (event: Event, item: EventItem) => void;
   onToggleAll: (event: Event, items: EventItem[], value: boolean) => void;
@@ -275,7 +274,7 @@ function ScheduleCard({
   const photoUris = event.photoUris ?? [];
 
   return (
-    <View style={[styles.card, isToday && styles.cardToday, isSoleCard && styles.cardSole]}>
+    <View style={[styles.card, isToday && styles.cardToday, isToday && { borderColor: category.accent }]}>
       {specialTheme ? (
         <LinearGradient
           colors={specialTheme.gradient}
@@ -303,14 +302,14 @@ function ScheduleCard({
           </View>
         </LinearGradient>
       ) : (
-        <View style={[styles.cardHeaderRow, isToday && styles.cardHeaderRowToday]}>
+        <View style={[styles.cardHeaderRow, isToday && { backgroundColor: tint(category.accent, 0.9, isDark) }]}>
           <View style={styles.cardHeaderLeft}>
             {isToday && (
               <View style={styles.ddayBadge}>
                 <Text style={styles.ddayBadgeText}>D-DAY</Text>
               </View>
             )}
-            <Text style={[styles.dateText, isToday && styles.dateTextToday]}>{dateText}</Text>
+            <Text style={[styles.dateText, isToday && { color: category.accent }]}>{dateText}</Text>
           </View>
           <View style={styles.cardHeaderRight}>
             {photoUris.length > 0 && (
@@ -338,25 +337,24 @@ function ScheduleCard({
         </LinearGradient>
       )}
 
-      <Pressable onPress={onPress} style={[styles.cardBody, isSoleCard && styles.cardBodySole]}>
+      <Pressable onPress={onPress} style={styles.cardBody}>
         <View style={styles.cardTitleRow}>
           <View
             style={[
               styles.iconCircle,
-              isSoleCard && styles.iconCircleSole,
               { backgroundColor: tint(specialTheme ? specialTheme.gradient[0] : category.accent, 0.85, isDark) },
             ]}
           >
             {specialTheme ? (
-              <Text style={[styles.specialIconEmoji, isSoleCard && styles.specialIconEmojiSole]}>{specialTheme.emoji}</Text>
+              <Text style={styles.specialIconEmoji}>{specialTheme.emoji}</Text>
             ) : (
-              <EventIcon icon={event.icon} size={isSoleCard ? 28 : 22} />
+              <EventIcon icon={event.icon} size={22} />
             )}
           </View>
           <View style={styles.cardTitleTextBlock}>
-            <Text style={[styles.cardTitle, isSoleCard && styles.cardTitleSole]} numberOfLines={1}>{event.title}</Text>
+            <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
             {!!metaLine && (
-              <Text style={[styles.cardMeta, isSoleCard && styles.cardMetaSole]} numberOfLines={isSoleCard ? 3 : 1}>
+              <Text style={styles.cardMeta} numberOfLines={1}>
                 {metaLine}
               </Text>
             )}
@@ -380,9 +378,9 @@ function ScheduleCard({
         </View>
 
         {event.noticeText ? (
-          <View style={[styles.noticeBox, isSoleCard && styles.noticeBoxSole]}>
-            <MaterialIcons name="info-outline" size={isSoleCard ? 16 : 14} color={colors.gray500} style={styles.noticeIcon} />
-            <Text style={[styles.noticeText, isSoleCard && styles.noticeTextSole]}>{event.noticeText}</Text>
+          <View style={styles.noticeBox}>
+            <MaterialIcons name="info-outline" size={14} color={colors.gray500} style={styles.noticeIcon} />
+            <Text style={styles.noticeText}>{event.noticeText}</Text>
           </View>
         ) : null}
       </Pressable>
@@ -435,12 +433,12 @@ function ScheduleCard({
 
 function createStyles(colors: ThemeColors, isDark: boolean) {
   return StyleSheet.create({
-    container: { marginTop: 20, paddingHorizontal: 20 },
-    // 오늘/내일/모레 탭에 카드가 1건뿐일 때, 화면에 남는 세로 공간을 그 카드가 채우도록
-    // container→list→card까지 flex를 이어준다(부모 스크롤뷰의 contentContainerStyle에
-    // flexGrow:1이 있어야 동작함 — app/index.tsx의 scrollContainer 참고).
-    containerSole: { flex: 1 },
-    listSole: { flex: 1 },
+    // 일정이 화면을 다 채우지 못할 때, 남는 세로 공간을 카드가 아니라 seeAllSpacer가
+    // 흡수해서 "전체 일정 보기" 버튼이 화면 하단에 붙도록 한다(부모 스크롤뷰의
+    // contentContainerStyle에 flexGrow:1이 있어야 동작함 — app/index.tsx 참고).
+    // 일정이 많아 이미 화면을 넘치면 스페이서는 자연스럽게 0으로 줄어든다.
+    container: { marginTop: 20, paddingHorizontal: 20, flex: 1 },
+    seeAllSpacer: { flex: 1 },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     headerTitle: { fontSize: 16, fontWeight: '800', color: colors.gray900, letterSpacing: -0.4 },
@@ -455,8 +453,20 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
     scanButtonIcon: { fontSize: 13 },
     scanButtonText: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
     tabRow: { flexDirection: 'row', backgroundColor: colors.gray100, padding: 4, borderRadius: 14, marginBottom: 8, gap: 4 },
-    seeAllRow: { alignItems: 'flex-end', marginBottom: 12 },
-    seeAllText: { fontSize: 12.5, fontWeight: '700', color: colors.purple500 },
+    seeAllRow: { alignItems: 'center', marginTop: 16 },
+    seeAllButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+      backgroundColor: colors.cardWhite,
+      borderRadius: 999,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      ...SHADOW,
+      shadowOpacity: 0.08,
+      elevation: 2,
+    },
+    seeAllText: { fontSize: 14, fontWeight: '800', color: colors.gray900 },
     tabButton: {
       flex: 1,
       flexDirection: 'row',
@@ -480,8 +490,7 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
       shadowOpacity: 0.05,
       elevation: 2,
     },
-    cardToday: { borderColor: colors.pastelOrangeAccent, borderWidth: 1.5 },
-    cardSole: { flex: 1 },
+    cardToday: { borderWidth: 1.5 },
     cardHeaderRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -492,7 +501,6 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
-    cardHeaderRowToday: { backgroundColor: tint('#F97316', 0.9, isDark) },
     cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     cardHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     photoBadge: {
@@ -514,7 +522,6 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
     ddayBadge: { backgroundColor: colors.tomorrowRed, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
     ddayBadgeText: { fontSize: 10, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.3 },
     dateText: { fontSize: 12, fontWeight: '700', color: colors.gray600 },
-    dateTextToday: { color: colors.pastelOrangeAccent },
     categoryBadge: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
     categoryBadgeText: { fontSize: 11, fontWeight: '800' },
     specialHeader: {
@@ -532,17 +539,12 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
     specialMessageBlock: { paddingHorizontal: 14, paddingBottom: 12, paddingTop: 2 },
     specialMessageText: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
     specialIconEmoji: { fontSize: 22 },
-    specialIconEmojiSole: { fontSize: 28 },
     cardBody: { padding: 14 },
-    cardBodySole: { padding: 22, flex: 1, justifyContent: 'center' },
     cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     iconCircle: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-    iconCircleSole: { width: 56, height: 56, borderRadius: 18 },
     cardTitleTextBlock: { flex: 1, minWidth: 0 },
     cardTitle: { fontSize: 15, fontWeight: '800', color: colors.gray900 },
-    cardTitleSole: { fontSize: 18 },
     cardMeta: { fontSize: 12, color: colors.gray500, fontWeight: '600', marginTop: 2 },
-    cardMetaSole: { fontSize: 13, marginTop: 4, lineHeight: 19 },
     allDoneButton: {
       alignItems: 'center',
       justifyContent: 'center',
@@ -567,10 +569,8 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
       borderRadius: 10,
       padding: 10,
     },
-    noticeBoxSole: { marginTop: 16, padding: 14, borderRadius: 14 },
     noticeIcon: { marginTop: 1 },
     noticeText: { flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
-    noticeTextSole: { fontSize: 13.5, lineHeight: 20 },
     itemsBlock: { paddingHorizontal: 14, paddingBottom: 14, gap: 6 },
     itemsLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
     itemsLabelLeft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
