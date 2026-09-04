@@ -556,7 +556,9 @@ function RoadmapCard() {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
   return (
-    <View style={styles.roadmapCard}>
+    <View style={styles.roadmapSection}>
+      <Text style={styles.roadmapSectionLabel}>이렇게 작동해요</Text>
+      <View style={styles.roadmapCard}>
       <View style={styles.roadmapRow}>
         <View style={styles.roadmapStepCircle}>
           <Text style={styles.roadmapStepNumber}>01</Text>
@@ -604,6 +606,7 @@ function RoadmapCard() {
           </View>
           <Text style={styles.roadmapDesc}>알림과 준비물 체크리스트가 자동 연동돼요.</Text>
         </View>
+      </View>
       </View>
     </View>
   );
@@ -725,7 +728,7 @@ function createStyles(C: ScanColors) {
   scrollFlex: { flex: 1 },
   scrollContent: { padding: 14, gap: 10 },
   scrollContentFill: { flexGrow: 1 },
-  emptyStateFill: { flex: 1, justifyContent: 'space-between', gap: 10 },
+  emptyStateFill: { gap: 16 },
   gaugeCard: {
     backgroundColor: C.surface,
     borderRadius: 20,
@@ -775,14 +778,9 @@ function createStyles(C: ScanColors) {
   },
   tipText: { flex: 1, fontSize: 13.5, color: C.slate700, lineHeight: 19 },
   tipBold: { fontWeight: '900', color: C.amber700 },
-  roadmapCard: {
-    backgroundColor: C.surface,
-    borderRadius: 32,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: C.slate100,
-    gap: 4,
-  },
+  roadmapSection: { gap: 14 },
+  roadmapSectionLabel: { fontSize: 13, fontWeight: '800', color: C.slate400 },
+  roadmapCard: { gap: 4 },
   roadmapRow: { flexDirection: 'row', gap: 14 },
   roadmapConnector: { width: 32, alignItems: 'center' },
   roadmapStepCircle: {
