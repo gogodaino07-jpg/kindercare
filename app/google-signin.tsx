@@ -23,7 +23,9 @@ export default function GoogleSignInScreen() {
   const {
     completeOnboarding,
     signInWithGoogle,
+    signOutGoogle,
     signInWithKakao,
+    signOutKakao,
     children,
     dataOwnerEmail,
     resetAllData,
@@ -185,10 +187,13 @@ export default function GoogleSignInScreen() {
         }
 
         // 이미 계정이 있는 경로(relogin)로 들어왔는데 데이터가 없는 신규/탈퇴 계정이면,
-        // 그대로 튕겨내지 말고 신규 가입 흐름(가족 그룹 시작하기)으로 안내한다.
+        // "로그인하기"로 들어온 사람이 자기 계정이 아닌 걸 눌렀을 가능성이 커서
+        // 다른 화면으로 이동시키지 않고 에러만 띄운 뒤 로그인 화면에 그대로
+        // 머무르게 한다 — 다른 계정으로 다시 시도할 수 있도록.
         if (!hasCloudData && !hasChild) {
+          showToast('가입한 계정이 아니에요. 다른 계정으로 다시 시도해주세요.');
+          await signOutGoogle();
           setLoading(false);
-          router.replace('/family-group-start');
           return;
         }
 
@@ -356,10 +361,13 @@ export default function GoogleSignInScreen() {
         }
 
         // 이미 계정이 있는 경로(relogin)로 들어왔는데 데이터가 없는 신규/탈퇴 계정이면,
-        // 그대로 튕겨내지 말고 신규 가입 흐름(가족 그룹 시작하기)으로 안내한다.
+        // "로그인하기"로 들어온 사람이 자기 계정이 아닌 걸 눌렀을 가능성이 커서
+        // 다른 화면으로 이동시키지 않고 에러만 띄운 뒤 로그인 화면에 그대로
+        // 머무르게 한다 — 다른 계정으로 다시 시도할 수 있도록.
         if (!hasCloudData && !hasChild) {
+          showToast('가입한 계정이 아니에요. 다른 계정으로 다시 시도해주세요.');
+          await signOutKakao();
           setLoading(false);
-          router.replace('/family-group-start');
           return;
         }
 
