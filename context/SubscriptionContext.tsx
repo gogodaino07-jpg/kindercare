@@ -96,20 +96,16 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       const infoPromise = user
         ? Purchases.logIn(user.uid).then(({ customerInfo }: { customerInfo: CustomerInfo }) => customerInfo)
         : Purchases.getCustomerInfo();
+      // 주의: 로그인 직후 자동으로 restorePurchases()를 부르는 방식은 한때 시도했었지만
+      // 되돌렸다 — Google Play 구독은 앱 계정이 아니라 "그 기기에 로그인된 Play
+      // 스토어 계정"에 귀속되므로, 자동 복원을 걸면 기기를 공유하는 다른(미구독)
+      // 앱 계정에도 그 기기 Play 계정의 구독이 잘못 붙어버리는 실기기 확인된
+      // 부작용이 있었다. logIn()/getCustomerInfo() 응답을 신선도 검사 없이
+      // 그대로 반영하는 force만으로 충분하다 — 실제 데이터 자체가 틀렸을 때(기기
+      // 로컬 캐시가 오래된 경우)의 보정은 사용자가 직접 "구매 복원하기"를 누르는
+      // 경로로만 수행한다.
       fetchAndApply(infoPromise, { force: true }).finally(() => {
-        if (identityEpochRef.current !== epochAtStart) return;
-        setIsReady(true);
-        // logIn() 직후 SDK가 기기에 로컬로 캐시돼 있던 오래된 스냅샷을 즉시 돌려줄 때가
-        // 있다(실기기에서 확인: 실제로는 구독 중인데 로그인 직후엔 미구독으로 보였고,
-        // 단순 getCustomerInfo() 재조회로는 안 고쳐지다가 "구매 복원하기"
-        // (restorePurchases — Play 스토어와 강제로 다시 동기화)로만 정상으로 돌아옴).
-        // 같은 동작을 로그인 직후 한 번 자동으로 수행해, 사용자가 직접 복원 버튼을
-        // 누르지 않아도 서버 최신 상태로 보정되게 한다.
-        setTimeout(() => {
-          if (identityEpochRef.current === epochAtStart) {
-            fetchAndApply(Purchases.restorePurchases());
-          }
-        }, 1500);
+        if (identityEpochRef.current === epochAtStart) setIsReady(true);
       });
     });
 
