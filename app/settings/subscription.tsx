@@ -194,7 +194,7 @@ export default function SubscriptionScreen() {
               </View>
 
               {!isBillingConfigured ? (
-                <Text style={styles.preparingText}>구독 결제 기능을 준비 중이에요. 곧 만나요!</Text>
+                <Text style={styles.preparingText}>이 스토어 버전에서는 구독 결제를 지원하지 않아요.</Text>
               ) : loadingOfferings ? (
                 <ActivityIndicator style={{ marginTop: 20 }} color={colors.purple500} />
               ) : (
