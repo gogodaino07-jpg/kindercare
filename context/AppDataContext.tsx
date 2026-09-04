@@ -1396,14 +1396,24 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
         console.log('✅ Withdrawal (immediate) processed successfully');
 
         // Firestore 데이터를 지워도 Firebase Auth 계정 자체는 남아있어서 별도로 지워야
-        // 한다. 위에서 클라우드 데이터는 이미 영구 삭제됐으므로, 여기서 실패해도(예:
-        // 오래된 세션이라 requires-recent-login) 되돌릴 수 없다 — 로그만 남기고
-        // 탈퇴 자체는 성공으로 처리한다.
+        // 한다. 클라이언트에서 직접 currentUser.delete()를 부르면 세션이 "최근
+        // 로그인"이 아닐 때 requires-recent-login으로 실패하는데, 예전엔 이 실패를
+        // 로그만 남기고 삼켜서 Auth 계정이 살아남아 같은 소셜 로그인으로 재로그인이
+        // 가능한 문제가 있었다. 서버(deleteAccount, Admin SDK)에서 지우면 이 제약이
+        // 없어 항상 확실하게 삭제된다.
         try {
-          await getFirebaseAuth().currentUser?.delete();
+          await getFunctions().httpsCallable('deleteAccount')();
           console.log('✅ Firebase Auth account deleted');
         } catch (authError) {
           console.error('⚠️ Failed to delete Firebase Auth account:', authError);
+        }
+        // 클라이언트에서 currentUser.delete()를 부를 때와 달리, 서버(Admin SDK)에서
+        // 지우면 로컬 Firebase Auth 세션이 자동으로 정리되지 않는다 — 명시적으로
+        // 로그아웃해서 로컬 상태를 서버와 맞춘다.
+        try {
+          await getFirebaseAuth().signOut();
+        } catch {
+          // 이미 세션이 무효화됐다면 실패해도 무방 — 그대로 진행
         }
       } catch (error) {
         console.error('❌ Firestore Withdrawal Request Error:', error);

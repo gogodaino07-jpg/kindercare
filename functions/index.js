@@ -177,6 +177,31 @@ exports.kakaoSignIn = onCall(
   }
 );
 
+/**
+ * 회원탈퇴 시 Firebase Auth 계정 삭제 프록시.
+ *
+ * 클라이언트에서 직접 `currentUser.delete()`를 호출하면 Firebase가 "최근 로그인"이
+ * 아닌 세션에 대해 auth/requires-recent-login 에러로 거부한다. 예전엔 이 실패를
+ * 로그만 남기고 삼켜버려서, Firestore 데이터는 지워져도 Auth 계정은 살아남아 같은
+ * 소셜 로그인으로 재로그인이 가능한 문제가 있었다. Admin SDK로 서버에서 지우면 이
+ * "최근 로그인" 제약이 아예 없어 항상 확실하게 삭제된다.
+ */
+exports.deleteAccount = onCall(
+  { region: 'asia-northeast3', timeoutSeconds: 20 },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', '로그인이 필요합니다.');
+    }
+    try {
+      await getAuth().deleteUser(request.auth.uid);
+    } catch (err) {
+      logger.error('Failed to delete Firebase Auth account', err);
+      throw new HttpsError('internal', '계정 삭제 중 오류가 발생했어요.');
+    }
+    return { success: true };
+  }
+);
+
 /** 하루에 같은 사람이 너무 많이 보내는 걸 막는 최소한의 방어선(스팸/오남용 방지). */
 const SUPPORT_EMAIL_DAILY_LIMIT = 10;
 
