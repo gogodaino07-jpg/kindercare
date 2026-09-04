@@ -288,9 +288,16 @@ export default function AppLockSettingsScreen() {
     const strength = (isPin || isPassword) ? getStrength(inputText, isPin ? 'pin' : 'password') : null;
     const strengthColor = strength ? getStrengthColor(strength) : colors.textSecondary;
 
+    // 안드로이드는 AndroidManifest.xml의 windowSoftInputMode="adjustResize"가
+    // 키보드가 뜰 때 창 자체를 줄여줘서 이미 알아서 재배치된다. 그 위에
+    // KeyboardAvoidingView(behavior 없음)까지 같이 씌우면, 하단 고정 레이아웃에서
+    // 오히려 예전(키보드 뜨기 전) 높이 기준으로 얼어붙어 입력창이 키보드에
+    // 가려지는 문제가 있었다 — iOS에서만 이 컴포넌트를 쓰고, 안드로이드는
+    // 그냥 View로 둔다.
+    const SetupWrapper = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
     return (
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      <SetupWrapper
+        {...(Platform.OS === 'ios' ? { behavior: 'padding' as const } : {})}
         style={[styles.setupContainer, { backgroundColor: colors.cardWhite }]}
       >
         <View style={styles.setupHeader}>
@@ -326,6 +333,11 @@ export default function AppLockSettingsScreen() {
                 length={PIN_MAX_LENGTH}
                 error={error}
                 onKeyPress={handlePinKeyPress}
+                bottomLeftSlot={
+                  <Pressable onPress={cancelSetup} hitSlop={12}>
+                    <Text style={[styles.setupCancelText, { color: colors.textSecondary }]}>취소</Text>
+                  </Pressable>
+                }
               />
               {inputText.length > 0 && !error && stage.kind.includes('first') && (
                 <Text style={[styles.strengthText, { color: strengthColor }]}>
@@ -388,6 +400,9 @@ export default function AppLockSettingsScreen() {
           )}
         </View>
 
+        {/* PIN 화면은 취소를 숫자 0 옆(bottomLeftSlot)에 넣어서 실제 잠금 해제
+            화면과 같은 위치가 되므로, 이 하단 버튼 행 자체가 필요 없다. */}
+        {!isPin && (
         <View style={styles.setupFooterRow}>
           <Pressable onPress={cancelSetup} hitSlop={12}>
             <Text style={[styles.setupCancelText, { color: colors.textSecondary }]}>취소</Text>
@@ -423,8 +438,9 @@ export default function AppLockSettingsScreen() {
             )}
           </View>
         </View>
+        )}
         </View>
-      </KeyboardAvoidingView>
+      </SetupWrapper>
     );
   };
 
@@ -622,10 +638,9 @@ function createStyles(colors: any) {
       marginBottom: 20,
     },
     patternPanel: {
-      backgroundColor: colors.gray100,
-      borderRadius: 24,
-      paddingVertical: 24,
       alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'center',
       marginVertical: 20,
     },
     nextBtn: {

@@ -58,11 +58,11 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   pinDot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    marginHorizontal: 10,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2.5,
+    marginHorizontal: 12,
   },
   keypad: {
     flexDirection: 'row',
