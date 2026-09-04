@@ -1272,6 +1272,14 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       throw new Error('카카오 인증에 실패했습니다.');
     }
     await getFirebaseAuth().signInWithCustomToken(customToken);
+    // signInWithCustomToken() 직후엔 Firestore 요청에 실릴 ID 토큰이 아직 완전히
+    // 갱신되지 않은 짧은 순간이 있다 — 로그인 직후 바로 이어지는 Firestore 조회
+    // (checkCloudDataExists 등)가 이 타이밍에 걸리면 인증 안 된 것처럼 permission
+    // denied로 실패하는데, 그 실패를 "데이터 없음"으로 잘못 해석해 기존 사용자를
+    // 신규 가입 흐름으로 잘못 안내하는 문제로 이어졌다(카카오 로그인에서 재현됨).
+    // 토큰을 명시적으로 한 번 새로고침해서 이후 요청이 확실히 인증된 상태로
+    // 나가게 한다.
+    await getFirebaseAuth().currentUser?.getIdToken(true);
   };
 
   const signInWithKakao = async (): Promise<GoogleAccount> => {

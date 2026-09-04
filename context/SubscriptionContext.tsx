@@ -103,7 +103,16 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       // 계정에 정확히 연결된 구매만 돌려주는 게 정상 동작이며, 실제 신규 구매는
       // 항상 로그인된 상태에서 이루어지므로 이 정상 경로에서는 문제가 없다.
       fetchAndApply(infoPromise, { force: true }).finally(() => {
-        if (identityEpochRef.current === epochAtStart) setIsReady(true);
+        if (identityEpochRef.current !== epochAtStart) return;
+        setIsReady(true);
+        // logIn()의 응답이 기기에 로컬로 캐시돼 있던 오래된 스냅샷일 때가 있다
+        // (실기기 확인: 실제로는 구독 중인데 로그인 직후엔 미구독으로 보였다가
+        // 시간을 두고 다시 조회하면 정상으로 바뀜). restorePurchases()와 달리
+        // getCustomerInfo()는 기기의 Play 구매 내역을 다시 끌어오지 않고 RevenueCat
+        // 서버에 이 App User ID의 최신 상태만 재확인하는 것이라, 계정 간 구매가
+        // 잘못 옮겨붙는 위험 없이 안전하게 한 번 더 재확인할 수 있다. force 없이
+        // 일반 신선도 검사를 거치므로 이미 최신이면 아무 변화도 없다.
+        if (user) fetchAndApply(Purchases.getCustomerInfo());
       });
     });
 
