@@ -1,6 +1,7 @@
 import { Stack, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   SafeAreaView,
   ScrollView,
   View,
@@ -9,6 +10,7 @@ import {
   StyleSheet,
   Platform,
   Switch,
+  Linking,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -27,6 +29,9 @@ import { THEME_MODE_LABELS, useTheme } from '../../context/ThemeContext';
 import { FREE_LIFETIME_LIMIT } from '../../features/newsletter-analysis';
 import { resolveCoords } from '../../hooks/useWeeklyWeather';
 import { fetchWeatherPreview } from '../../utils/weatherPreviewFetch';
+
+// TODO: 쿠팡 파트너스 링크가 정해지면 여기에 채워넣기. 비어있는 동안은 버튼을 눌러도 아무 동작 안 함.
+const COUPANG_PARTNERS_URL = '';
 
 const LOCK_METHOD_LABELS: Record<LockMethod, string> = {
   none: '설정 안 함',
@@ -63,6 +68,24 @@ export default function SettingsScreen() {
   const [copied, setCopied] = useState(false);
   const [weatherLabel, setWeatherLabel] = useState('내 지역');
   const [weatherPreview, setWeatherPreview] = useState<{ emoji: string; tempC: number } | null>(null);
+
+  // 쿠팡 플로팅 배너를 위아래로 살짝 둥둥 떠다니게 하는 반복 애니메이션.
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, { toValue: -8, duration: 1200, useNativeDriver: true }),
+        Animated.timing(floatAnim, { toValue: 0, duration: 1200, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [floatAnim]);
+
+  const handleCoupangPress = () => {
+    if (!COUPANG_PARTNERS_URL) return;
+    Linking.openURL(COUPANG_PARTNERS_URL).catch(() => {});
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -511,6 +534,17 @@ export default function SettingsScreen() {
           </ScrollView>
         </View>
       </SafeAreaView>
+
+      <Animated.View
+        style={[
+          styles.coupangFloatWrap,
+          { bottom: 24 + insets.bottom, transform: [{ translateY: floatAnim }] },
+        ]}
+      >
+        <Pressable style={styles.coupangFloatButton} onPress={handleCoupangPress} hitSlop={8}>
+          <MaterialCommunityIcons name="shopping" size={26} color="#FFFFFF" />
+        </Pressable>
+      </Animated.View>
     </View>
   );
 }
@@ -671,5 +705,18 @@ function createStyles(colors: any) {
     footerLinkText: { fontSize: 13, color: colors.textSecondary, fontWeight: '700' },
     footerLinkTextMuted: { fontSize: 12, color: colors.gray400, fontWeight: '500' },
     footerLinkDivider: { fontSize: 13, color: colors.border, fontWeight: '400' },
+    coupangFloatWrap: { position: 'absolute', right: 20 },
+    coupangFloatButton: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: '#111827',
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...Platform.select({
+        ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8 },
+        android: { elevation: 6 },
+      }),
+    },
   });
 }
