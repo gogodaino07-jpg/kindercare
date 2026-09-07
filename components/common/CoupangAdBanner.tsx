@@ -18,7 +18,7 @@ interface CoupangAdBannerProps {
 export default function CoupangAdBanner({
   link,
   imageUrl,
-  aspectRatio = 728 / 90,
+  aspectRatio = 728 / 115,
   ctaText = '구경하기',
 }: CoupangAdBannerProps) {
   const colors = useThemeColors();
@@ -165,14 +165,14 @@ function createStyles(colors: ReturnType<typeof useThemeColors>) {
     bannerImage: { width: '100%', height: '100%' },
     shimmerBand: { position: 'absolute', top: '-30%', height: '160%' },
     ctaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    ctaHint: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, flex: 1, marginRight: 8 },
+    ctaHint: { fontSize: 11.5, fontWeight: '600', color: colors.textSecondary, flex: 1, marginRight: 8 },
     ctaButton: {
       backgroundColor: colors.orange500,
-      borderRadius: 12,
-      paddingHorizontal: 16,
-      paddingVertical: 9,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
     },
-    ctaButtonText: { fontSize: 12.5, fontWeight: '800', color: '#FFFFFF' },
+    ctaButtonText: { fontSize: 11.5, fontWeight: '800', color: '#FFFFFF' },
     disclosure: {
       fontSize: 9,
       color: colors.textSecondary,
