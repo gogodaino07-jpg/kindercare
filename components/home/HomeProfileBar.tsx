@@ -1,4 +1,4 @@
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, Easing, Image, Modal, Pressable, StyleSheet, View } from 'react-native';
@@ -6,6 +6,7 @@ import { ThemeColors } from '../../constants/theme';
 import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Child } from '../../types/models';
+import { parseISODate } from '../../utils/date';
 import Text from '../common/AppText';
 import CalendarIcon from '../common/CalendarIcon';
 import SettingsIcon from '../common/SettingsIcon';
@@ -30,6 +31,16 @@ function formatClassName(className?: string): string | undefined {
   const trimmed = className?.trim();
   if (!trimmed) return undefined;
   return trimmed.endsWith('반') ? trimmed : `${trimmed}반`;
+}
+
+/** 생일 당일을 "생후 1일째"로 세는 방식(자정 기준 날짜 차이 + 1). */
+function daysSinceBirth(birthdate?: string): number | undefined {
+  if (!birthdate) return undefined;
+  const birth = parseISODate(birthdate);
+  birth.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.floor((today.getTime() - birth.getTime()) / 86400000) + 1;
 }
 
 const AVATAR_SMALL_SIZE = 56;
@@ -122,6 +133,7 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
   const [notifVisible, setNotifVisible] = useState(false);
   const [photoPreviewVisible, setPhotoPreviewVisible] = useState(false);
   const photoUri = selectedChild?.photoUri;
+  const daysOld = daysSinceBirth(selectedChild?.birthdate);
 
   return (
     <View style={styles.topRow}>
@@ -160,6 +172,12 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
               <MaterialIcons name="expand-more" size={18} color={colors.gray600} />
             </Pressable>
           </View>
+          {daysOld !== undefined && (
+            <View style={styles.daysOldRow}>
+              <MaterialCommunityIcons name="clock-outline" size={13} color={colors.gray400} />
+              <Text style={styles.daysOldText}>생후 {daysOld}일째</Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -286,6 +304,17 @@ function createStyles(colors: ThemeColors) {
       fontSize: 13,
       fontWeight: '800',
       color: '#5C4A1E',
+    },
+    daysOldRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginTop: 3,
+    },
+    daysOldText: {
+      fontSize: 12.5,
+      fontWeight: '600',
+      color: colors.gray400,
     },
     topIconsRow: {
       flexDirection: 'row',
