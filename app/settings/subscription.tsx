@@ -197,7 +197,15 @@ export default function SubscriptionScreen() {
               </View>
 
               {!SUBSCRIPTION_PURCHASE_VISIBLE && (
-                <Text style={styles.preparingText}>현재 준비 중인 상품이에요. 곧 만나보실 수 있어요.</Text>
+                <View style={styles.preparingWrap}>
+                  <View style={styles.preparingBadge}>
+                    <View style={styles.preparingIconWrap}>
+                      <MaterialCommunityIcons name="clock-outline" size={30} color={colors.purple500} />
+                    </View>
+                    <Text style={styles.preparingTitle}>현재 준비 중인 상품이에요</Text>
+                    <Text style={styles.preparingSubtitle}>곧 만나보실 수 있어요</Text>
+                  </View>
+                </View>
               )}
 
               {SUBSCRIPTION_PURCHASE_VISIBLE &&
@@ -303,13 +311,13 @@ function createStyles(colors: ThemeColors) {
     headerCard: {
       alignItems: 'center',
       backgroundColor: colors.purpleBg,
-      borderRadius: 20,
-      paddingVertical: 28,
+      borderRadius: 24,
+      paddingVertical: 44,
       marginBottom: 16,
     },
-    headerEmoji: { fontSize: 36, marginBottom: 8 },
-    headerTitle: { fontSize: 18, fontWeight: '900', color: colors.gray900 },
-    headerTagline: { fontSize: 12.5, fontWeight: '600', color: colors.gray500, marginTop: 6 },
+    headerEmoji: { fontSize: 48, marginBottom: 10 },
+    headerTitle: { fontSize: 22, fontWeight: '900', color: colors.gray900 },
+    headerTagline: { fontSize: 13, fontWeight: '600', color: colors.gray500, marginTop: 8 },
     benefitsCard: {
       backgroundColor: colors.cardWhite,
       borderRadius: 18,
@@ -383,6 +391,29 @@ function createStyles(colors: ThemeColors) {
       color: colors.gray500,
       marginTop: 12,
     },
+    preparingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    preparingBadge: {
+      alignItems: 'center',
+      backgroundColor: colors.cardWhite,
+      borderRadius: 22,
+      paddingVertical: 28,
+      paddingHorizontal: 32,
+      gap: 6,
+      ...SHADOW,
+      shadowOpacity: 0.05,
+      elevation: 2,
+    },
+    preparingIconWrap: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.purpleBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 6,
+    },
+    preparingTitle: { fontSize: 15.5, fontWeight: '800', color: colors.gray900 },
+    preparingSubtitle: { fontSize: 12.5, fontWeight: '600', color: colors.gray500 },
     planRow: { flexDirection: 'row', gap: 12, marginBottom: 14 },
     planCard: {
       flex: 1,
