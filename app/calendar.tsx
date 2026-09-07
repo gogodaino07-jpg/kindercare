@@ -16,7 +16,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import AddEventModal from '../components/calendar/AddEventModal';
 import BuyModal from '../components/calendar/BuyModal';
 import CalendarAccordion from '../components/calendar/CalendarAccordion';
-import CalendarNativeAdPopup from '../components/calendar/CalendarNativeAdPopup';
 import { useCalendarTheme } from '../components/calendar/useCalendarTheme';
 import CalendarHeader from '../components/calendar/CalendarHeader';
 import DayDetailSection from '../components/calendar/DayDetailSection';
@@ -26,10 +25,6 @@ import { useAppData } from '../context/AppDataContext';
 import { getDisplayItems } from '../hooks/useLocalChecklist';
 import { Event, EventItem } from '../types/models';
 import { parseISODate, toISODate } from '../utils/date';
-
-// 캘린더 진입 광고 팝업을 세션당 한 번만 띄우기 위한 모듈 스코프 플래그(홈 화면의
-// hasAttemptedAdThisSession과 동일한 패턴) — 콜드 스타트마다만 초기화된다.
-let hasShownCalendarAdThisSession = false;
 
 export default function CalendarScreen() {
   const router = useRouter();
@@ -55,19 +50,6 @@ export default function CalendarScreen() {
   const [addEventVisible, setAddEventVisible] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [buyState, setBuyState] = useState<{ event: Event; item: EventItem } | null>(null);
-
-  // 캘린더 화면 진입 시 세션당 한 번만 광고 팝업을 띄운다 — 일정 리스트 맨 밑에
-  // 두면 일정이 많은 날엔 스크롤해야만 보이는 문제가 있어서 진입 시점 팝업으로 변경.
-  const [adPopupVisible, setAdPopupVisible] = useState(false);
-  useEffect(() => {
-    if (hasShownCalendarAdThisSession) return;
-    const timeoutId = setTimeout(() => {
-      if (hasShownCalendarAdThisSession) return;
-      setAdPopupVisible(true);
-      hasShownCalendarAdThisSession = true;
-    }, 800);
-    return () => clearTimeout(timeoutId);
-  }, []);
 
   // 달력 축소/확대 진행도(0=주간 1줄, 1=월간). 카드 드래그·리스트 드래그·아래로
   // 당겨 펼치기가 모두 이 값을 실시간으로 갱신하고, 손을 떼면 가까운 상태로
@@ -353,7 +335,6 @@ export default function CalendarScreen() {
         onClose={() => setBuyState(null)}
         onMarkOrdered={handleMarkOrdered}
       />
-      <CalendarNativeAdPopup visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />
       <AddEventModal
         visible={addEventVisible}
         initialDateISO={selectedDate}
