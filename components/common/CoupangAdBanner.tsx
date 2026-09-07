@@ -11,16 +11,9 @@ interface CoupangAdBannerProps {
   imageUrl: string;
   /** 원본 배너 이미지의 가로/세로 비율. 기본값은 쿠팡이 자주 주는 728x90 사이즈 기준. */
   aspectRatio?: number;
-  /** 이미지 아래 CTA 버튼 문구. */
-  ctaText?: string;
 }
 
-export default function CoupangAdBanner({
-  link,
-  imageUrl,
-  aspectRatio = 728 / 115,
-  ctaText = '구경하기',
-}: CoupangAdBannerProps) {
+export default function CoupangAdBanner({ link, imageUrl, aspectRatio = 728 / 115 }: CoupangAdBannerProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -65,32 +58,6 @@ export default function CoupangAdBanner({
     outputRange: [-shimmerWidth - 40, adWidth + 40],
   });
 
-  // CTA 버튼이 아주 살짝 커졌다 작아지길 반복하는 은은한 펄스 — 시선을
-  // 자연스럽게 끌되 튀지 않도록 폭을 작게(1 ~ 1.05) 잡았다.
-  const ctaPulseAnim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(ctaPulseAnim, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(ctaPulseAnim, {
-          toValue: 0,
-          duration: 900,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.delay(1400),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [ctaPulseAnim]);
-  const ctaScale = ctaPulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.05] });
-
   const handlePress = () => {
     Linking.openURL(link).catch((err) => console.error('Failed to open Coupang link:', err));
   };
@@ -129,15 +96,6 @@ export default function CoupangAdBanner({
             </Animated.View>
           )}
         </Pressable>
-
-        <View style={styles.ctaRow}>
-          <Text style={styles.ctaHint}>쿠팡에서 바로 확인하기</Text>
-          <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
-            <Pressable style={styles.ctaButton} onPress={handlePress}>
-              <Text style={styles.ctaButtonText}>{ctaText}</Text>
-            </Pressable>
-          </Animated.View>
-        </View>
       </View>
 
       <Text style={styles.disclosure}>
@@ -164,15 +122,6 @@ function createStyles(colors: ReturnType<typeof useThemeColors>) {
     },
     bannerImage: { width: '100%', height: '100%' },
     shimmerBand: { position: 'absolute', top: '-30%', height: '160%' },
-    ctaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    ctaHint: { fontSize: 11.5, fontWeight: '600', color: colors.textSecondary, flex: 1, marginRight: 8 },
-    ctaButton: {
-      backgroundColor: colors.orange500,
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-    },
-    ctaButtonText: { fontSize: 11.5, fontWeight: '800', color: '#FFFFFF' },
     disclosure: {
       fontSize: 9,
       color: colors.textSecondary,
