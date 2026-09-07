@@ -1,4 +1,3 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Image, Linking, Pressable, StyleSheet, View } from 'react-native';
@@ -12,8 +11,6 @@ interface CoupangAdBannerProps {
   imageUrl: string;
   /** 원본 배너 이미지의 가로/세로 비율. 기본값은 쿠팡이 자주 주는 728x90 사이즈 기준. */
   aspectRatio?: number;
-  /** 배너 위에 붙는 작은 타이틀. */
-  title?: string;
   /** 이미지 아래 CTA 버튼 문구. */
   ctaText?: string;
 }
@@ -22,7 +19,6 @@ export default function CoupangAdBanner({
   link,
   imageUrl,
   aspectRatio = 728 / 90,
-  title = '오늘의 쇼핑 찬스',
   ctaText = '구경하기',
 }: CoupangAdBannerProps) {
   const colors = useThemeColors();
@@ -109,16 +105,6 @@ export default function CoupangAdBanner({
         },
       ]}
     >
-      <View style={styles.header}>
-        <View style={styles.iconBadge}>
-          <MaterialCommunityIcons name="currency-usd" size={22} color={colors.orange500} />
-        </View>
-        <Text style={styles.headerTitle}>{title}</Text>
-        <View style={styles.adPill}>
-          <Text style={styles.adPillText}>AD</Text>
-        </View>
-      </View>
-
       <View style={styles.innerBox}>
         <Pressable
           onPress={handlePress}
@@ -164,23 +150,6 @@ export default function CoupangAdBanner({
 function createStyles(colors: ReturnType<typeof useThemeColors>) {
   return StyleSheet.create({
     container: { width: '100%' },
-    header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
-    iconBadge: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: colors.orangeLight1,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    headerTitle: { flex: 1, fontSize: 16, fontWeight: '800', color: colors.textPrimary },
-    adPill: {
-      backgroundColor: colors.gray100,
-      borderRadius: 999,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-    },
-    adPillText: { fontSize: 10, fontWeight: '800', color: colors.gray400, letterSpacing: 0.3 },
     innerBox: {
       backgroundColor: colors.gray50,
       borderRadius: 18,
@@ -199,7 +168,7 @@ function createStyles(colors: ReturnType<typeof useThemeColors>) {
     ctaHint: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, flex: 1, marginRight: 8 },
     ctaButton: {
       backgroundColor: colors.orange500,
-      borderRadius: 999,
+      borderRadius: 12,
       paddingHorizontal: 16,
       paddingVertical: 9,
     },
