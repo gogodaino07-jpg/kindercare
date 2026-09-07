@@ -198,13 +198,8 @@ export default function SubscriptionScreen() {
 
               {!SUBSCRIPTION_PURCHASE_VISIBLE && (
                 <View style={styles.preparingWrap}>
-                  <View style={styles.preparingBadge}>
-                    <View style={styles.preparingIconWrap}>
-                      <MaterialCommunityIcons name="clock-outline" size={30} color={colors.purple500} />
-                    </View>
-                    <Text style={styles.preparingTitle}>현재 준비 중인 상품이에요</Text>
-                    <Text style={styles.preparingSubtitle}>곧 만나보실 수 있어요</Text>
-                  </View>
+                  <Text style={styles.preparingTitle}>현재 준비 중인 상품이에요</Text>
+                  <Text style={styles.preparingSubtitle}>곧 만나보실 수 있어요</Text>
                 </View>
               )}
 
@@ -391,29 +386,9 @@ function createStyles(colors: ThemeColors) {
       color: colors.gray500,
       marginTop: 12,
     },
-    preparingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    preparingBadge: {
-      alignItems: 'center',
-      backgroundColor: colors.cardWhite,
-      borderRadius: 22,
-      paddingVertical: 28,
-      paddingHorizontal: 32,
-      gap: 6,
-      ...SHADOW,
-      shadowOpacity: 0.05,
-      elevation: 2,
-    },
-    preparingIconWrap: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: colors.purpleBg,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 6,
-    },
-    preparingTitle: { fontSize: 15.5, fontWeight: '800', color: colors.gray900 },
-    preparingSubtitle: { fontSize: 12.5, fontWeight: '600', color: colors.gray500 },
+    preparingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%', gap: 8 },
+    preparingTitle: { fontSize: 20, fontWeight: '900', color: colors.gray900, textAlign: 'center' },
+    preparingSubtitle: { fontSize: 14.5, fontWeight: '600', color: colors.gray500, textAlign: 'center' },
     planRow: { flexDirection: 'row', gap: 12, marginBottom: 14 },
     planCard: {
       flex: 1,
