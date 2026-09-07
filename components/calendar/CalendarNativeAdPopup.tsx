@@ -11,6 +11,9 @@ import Text from '../common/AppText';
 import { useCalendarTheme } from './useCalendarTheme';
 
 const AD_UNIT_ID = process.env.EXPO_PUBLIC_AD_CALENDAR_NATIVE_ID || null;
+// 닫기 버튼이 이 시간(초) 동안 비활성 상태로 카운트다운되다가 활성화된다.
+// 완전히 못 닫게 막는 건 정책 위반 소지가 있어서, 잠깐 붙잡아두는 정도로만 둔다.
+const CLOSE_DELAY_SECONDS = 4;
 
 interface CalendarNativeAdPopupProps {
   visible: boolean;
@@ -28,6 +31,22 @@ export default function CalendarNativeAdPopup({ visible, onClose }: CalendarNati
   const styles = useMemo(() => createStyles(t), [t]);
   const [nativeAd, setNativeAd] = useState<NativeAd | null>(null);
   const nativeAdRef = useRef<NativeAd | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(CLOSE_DELAY_SECONDS);
+  const canClose = secondsLeft <= 0;
+
+  useEffect(() => {
+    if (!visible) return;
+    setSecondsLeft(CLOSE_DELAY_SECONDS);
+    const intervalId = setInterval(() => {
+      setSecondsLeft((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(intervalId);
+  }, [visible]);
+
+  const handleClose = () => {
+    if (!canClose) return;
+    onClose();
+  };
 
   useEffect(() => {
     if (!AD_UNIT_ID) return;
@@ -52,9 +71,9 @@ export default function CalendarNativeAdPopup({ visible, onClose }: CalendarNati
   if (!AD_UNIT_ID || !nativeAd) return null;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <View style={styles.overlay}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
         <View style={styles.card}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>🎁 오늘의 추천</Text>
@@ -94,8 +113,10 @@ export default function CalendarNativeAdPopup({ visible, onClose }: CalendarNati
             </NativeAsset>
           </NativeAdView>
 
-          <Pressable style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>닫기</Text>
+          <Pressable style={styles.closeButton} onPress={handleClose} disabled={!canClose}>
+            <Text style={[styles.closeButtonText, !canClose && styles.closeButtonTextDisabled]}>
+              {canClose ? '닫기' : `${secondsLeft}초 후 닫기`}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -143,5 +164,6 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
     ctaButtonText: { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
     closeButton: { marginTop: 10, alignItems: 'center', paddingVertical: 6 },
     closeButtonText: { fontSize: 12.5, fontWeight: '700', color: t.textSecondary },
+    closeButtonTextDisabled: { color: t.textMuted },
   });
 }
