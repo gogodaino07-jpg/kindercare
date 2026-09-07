@@ -69,6 +69,32 @@ export default function CoupangAdBanner({
     outputRange: [-shimmerWidth - 40, adWidth + 40],
   });
 
+  // CTA 버튼이 아주 살짝 커졌다 작아지길 반복하는 은은한 펄스 — 시선을
+  // 자연스럽게 끌되 튀지 않도록 폭을 작게(1 ~ 1.05) 잡았다.
+  const ctaPulseAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(ctaPulseAnim, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(ctaPulseAnim, {
+          toValue: 0,
+          duration: 900,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.delay(1400),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [ctaPulseAnim]);
+  const ctaScale = ctaPulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.05] });
+
   const handlePress = () => {
     Linking.openURL(link).catch((err) => console.error('Failed to open Coupang link:', err));
   };
@@ -120,9 +146,11 @@ export default function CoupangAdBanner({
 
         <View style={styles.ctaRow}>
           <Text style={styles.ctaHint}>쿠팡에서 바로 확인하기</Text>
-          <Pressable style={styles.ctaButton} onPress={handlePress}>
-            <Text style={styles.ctaButtonText}>{ctaText}</Text>
-          </Pressable>
+          <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
+            <Pressable style={styles.ctaButton} onPress={handlePress}>
+              <Text style={styles.ctaButtonText}>{ctaText}</Text>
+            </Pressable>
+          </Animated.View>
         </View>
       </View>
 
