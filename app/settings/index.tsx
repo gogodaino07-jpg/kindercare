@@ -1,7 +1,6 @@
 import { Stack, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Animated,
   SafeAreaView,
   ScrollView,
   View,
@@ -10,7 +9,6 @@ import {
   StyleSheet,
   Platform,
   Switch,
-  Linking,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -19,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatTimeOfDay } from '../../components/settings/TimeWheelPicker';
 import Text from '../../components/common/AppText';
 import ClearableTextInput from '../../components/common/ClearableTextInput';
+import CoupangBanner from '../../components/common/CoupangBanner';
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
@@ -30,8 +29,9 @@ import { FREE_LIFETIME_LIMIT } from '../../features/newsletter-analysis';
 import { resolveCoords } from '../../hooks/useWeeklyWeather';
 import { fetchWeatherPreview } from '../../utils/weatherPreviewFetch';
 
-// TODO: 쿠팡 파트너스 링크가 정해지면 여기에 채워넣기. 비어있는 동안은 버튼을 눌러도 아무 동작 안 함.
-const COUPANG_PARTNERS_URL = '';
+// TODO: 쿠팡 파트너스 대시보드에서 다른 카테고리로 위젯을 새로 만들면 그 ID로 교체.
+// 지금은 홈 화면과 같은 위젯(1010655)을 임시로 쓰고 있음.
+const SETTINGS_COUPANG_BANNER_ID = 1010655;
 
 const LOCK_METHOD_LABELS: Record<LockMethod, string> = {
   none: '설정 안 함',
@@ -68,24 +68,6 @@ export default function SettingsScreen() {
   const [copied, setCopied] = useState(false);
   const [weatherLabel, setWeatherLabel] = useState('내 지역');
   const [weatherPreview, setWeatherPreview] = useState<{ emoji: string; tempC: number } | null>(null);
-
-  // 쿠팡 플로팅 배너를 위아래로 살짝 둥둥 떠다니게 하는 반복 애니메이션.
-  const floatAnim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatAnim, { toValue: -8, duration: 1200, useNativeDriver: true }),
-        Animated.timing(floatAnim, { toValue: 0, duration: 1200, useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [floatAnim]);
-
-  const handleCoupangPress = () => {
-    if (!COUPANG_PARTNERS_URL) return;
-    Linking.openURL(COUPANG_PARTNERS_URL).catch(() => {});
-  };
 
   useEffect(() => {
     let mounted = true;
@@ -362,6 +344,13 @@ export default function SettingsScreen() {
               </View>
             )}
 
+            {/* 쿠팡 파트너스 배너 — 다른 화면들과 같은 컴포넌트를 재사용하되 카테고리 위젯 ID만 다르게 줌 */}
+            {!isSubscribed && (
+              <View style={[styles.card, styles.coupangCard]}>
+                <CoupangBanner bannerId={SETTINGS_COUPANG_BANNER_ID} style={styles.coupangBannerInner} />
+              </View>
+            )}
+
             {/* 멤버십 + 가족 계정 */}
             {showMembership && (
               <View style={styles.card}>
@@ -534,17 +523,6 @@ export default function SettingsScreen() {
           </ScrollView>
         </View>
       </SafeAreaView>
-
-      <Animated.View
-        style={[
-          styles.coupangFloatWrap,
-          { bottom: 24 + insets.bottom, transform: [{ translateY: floatAnim }] },
-        ]}
-      >
-        <Pressable style={styles.coupangFloatButton} onPress={handleCoupangPress} hitSlop={8}>
-          <MaterialCommunityIcons name="shopping" size={34} color="#FFFFFF" />
-        </Pressable>
-      </Animated.View>
     </View>
   );
 }
@@ -705,18 +683,7 @@ function createStyles(colors: any) {
     footerLinkText: { fontSize: 13, color: colors.textSecondary, fontWeight: '700' },
     footerLinkTextMuted: { fontSize: 12, color: colors.gray400, fontWeight: '500' },
     footerLinkDivider: { fontSize: 13, color: colors.border, fontWeight: '400' },
-    coupangFloatWrap: { position: 'absolute', right: 20 },
-    coupangFloatButton: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
-      backgroundColor: '#111827',
-      alignItems: 'center',
-      justifyContent: 'center',
-      ...Platform.select({
-        ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8 },
-        android: { elevation: 6 },
-      }),
-    },
+    coupangCard: { padding: 0, overflow: 'hidden' },
+    coupangBannerInner: { paddingBottom: 4 },
   });
 }

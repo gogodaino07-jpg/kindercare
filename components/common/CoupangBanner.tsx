@@ -6,6 +6,8 @@ import Text from './AppText';
 
 interface CoupangBannerProps {
   style?: ViewStyle;
+  /** 쿠팡 파트너스 대시보드에서 만든 위젯 ID. 위젯마다 노출 카테고리가 다르므로 화면별로 다르게 줄 수 있음. */
+  bannerId?: number;
 }
 
 /**
@@ -13,7 +15,7 @@ interface CoupangBannerProps {
  * Uses official Coupang Partners script via WebView for maximum stability and correct tracking.
  * 다크모드와 무관하게 항상 라이트 톤으로 고정한다.
  */
-export default function CoupangBanner({ style }: CoupangBannerProps) {
+export default function CoupangBanner({ style, bannerId = 1010655 }: CoupangBannerProps) {
   const { width: windowWidth } = useWindowDimensions();
   const { googleAccount } = useAppData();
   const [isReady, setIsReady] = useState(false);
@@ -63,7 +65,7 @@ export default function CoupangBanner({ style }: CoupangBannerProps) {
           <script src="https://ads-partners.coupang.com/g.js"></script>
           <script>
             new PartnersCoupang.G({
-              "id": 1010655,
+              "id": ${bannerId},
               "template": "carousel",
               "trackingCode": "AF5391104",
               "width": "${scaledWidth}",
