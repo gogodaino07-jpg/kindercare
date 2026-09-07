@@ -542,7 +542,7 @@ export default function SettingsScreen() {
         ]}
       >
         <Pressable style={styles.coupangFloatButton} onPress={handleCoupangPress} hitSlop={8}>
-          <MaterialCommunityIcons name="shopping" size={26} color="#FFFFFF" />
+          <MaterialCommunityIcons name="shopping" size={34} color="#FFFFFF" />
         </Pressable>
       </Animated.View>
     </View>
@@ -707,9 +707,9 @@ function createStyles(colors: any) {
     footerLinkDivider: { fontSize: 13, color: colors.border, fontWeight: '400' },
     coupangFloatWrap: { position: 'absolute', right: 20 },
     coupangFloatButton: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
+      width: 64,
+      height: 64,
+      borderRadius: 32,
       backgroundColor: '#111827',
       alignItems: 'center',
       justifyContent: 'center',
