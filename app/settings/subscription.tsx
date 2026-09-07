@@ -239,10 +239,6 @@ export default function SubscriptionScreen() {
 
         {isBillingConfigured && isReady && isSubscribed && (
           <View style={[styles.bottomBarSubscribed, { paddingBottom: 12 + insets.bottom }]}>
-            <Pressable onPress={handleRestore} disabled={restoring} hitSlop={8}>
-              <Text style={styles.restoreLinkText}>{restoring ? '복원 중...' : '구매 복원하기'}</Text>
-            </Pressable>
-            <Text style={styles.restoreLinkDivider}>|</Text>
             <Pressable onPress={() => router.push('/settings/support')} hitSlop={8}>
               <Text style={styles.restoreLinkText}>고객센터</Text>
             </Pressable>
