@@ -14,13 +14,16 @@ interface CoupangAdBannerProps {
   aspectRatio?: number;
   /** 배너 위에 붙는 작은 타이틀. */
   title?: string;
+  /** 이미지 아래 CTA 버튼 문구. */
+  ctaText?: string;
 }
 
 export default function CoupangAdBanner({
   link,
   imageUrl,
   aspectRatio = 728 / 90,
-  title = '오늘의 특가',
+  title = '오늘의 쇼핑 찬스',
+  ctaText = '구경하기',
 }: CoupangAdBannerProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -82,7 +85,7 @@ export default function CoupangAdBanner({
     >
       <View style={styles.header}>
         <View style={styles.iconBadge}>
-          <MaterialCommunityIcons name="tag-outline" size={14} color={colors.orange500} />
+          <MaterialCommunityIcons name="currency-usd" size={22} color={colors.orange500} />
         </View>
         <Text style={styles.headerTitle}>{title}</Text>
         <View style={styles.adPill}>
@@ -90,29 +93,38 @@ export default function CoupangAdBanner({
         </View>
       </View>
 
-      <Pressable
-        onPress={handlePress}
-        style={[styles.adArea, { aspectRatio }]}
-        onLayout={(e) => setAdWidth(e.nativeEvent.layout.width)}
-      >
-        <Image source={{ uri: imageUrl }} style={styles.bannerImage} resizeMode="cover" />
-        {adWidth > 0 && (
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.shimmerBand,
-              { width: shimmerWidth, transform: [{ translateX: shimmerTranslateX }, { rotate: '20deg' }] },
-            ]}
-          >
-            <LinearGradient
-              colors={['transparent', 'rgba(255,255,255,0.55)', 'transparent']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={StyleSheet.absoluteFill}
-            />
-          </Animated.View>
-        )}
-      </Pressable>
+      <View style={styles.innerBox}>
+        <Pressable
+          onPress={handlePress}
+          style={[styles.adArea, { aspectRatio }]}
+          onLayout={(e) => setAdWidth(e.nativeEvent.layout.width)}
+        >
+          <Image source={{ uri: imageUrl }} style={styles.bannerImage} resizeMode="cover" />
+          {adWidth > 0 && (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.shimmerBand,
+                { width: shimmerWidth, transform: [{ translateX: shimmerTranslateX }, { rotate: '20deg' }] },
+              ]}
+            >
+              <LinearGradient
+                colors={['transparent', 'rgba(255,255,255,0.55)', 'transparent']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+            </Animated.View>
+          )}
+        </Pressable>
+
+        <View style={styles.ctaRow}>
+          <Text style={styles.ctaHint}>쿠팡에서 바로 확인하기</Text>
+          <Pressable style={styles.ctaButton} onPress={handlePress}>
+            <Text style={styles.ctaButtonText}>{ctaText}</Text>
+          </Pressable>
+        </View>
+      </View>
 
       <Text style={styles.disclosure}>
         이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
@@ -124,37 +136,50 @@ export default function CoupangAdBanner({
 function createStyles(colors: ReturnType<typeof useThemeColors>) {
   return StyleSheet.create({
     container: { width: '100%' },
-    header: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+    header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
     iconBadge: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       backgroundColor: colors.orangeLight1,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    headerTitle: { flex: 1, fontSize: 13.5, fontWeight: '800', color: colors.textPrimary },
+    headerTitle: { flex: 1, fontSize: 16, fontWeight: '800', color: colors.textPrimary },
     adPill: {
       backgroundColor: colors.gray100,
-      borderRadius: 6,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
     },
-    adPillText: { fontSize: 9.5, fontWeight: '800', color: colors.gray400, letterSpacing: 0.3 },
+    adPillText: { fontSize: 10, fontWeight: '800', color: colors.gray400, letterSpacing: 0.3 },
+    innerBox: {
+      backgroundColor: colors.gray50,
+      borderRadius: 18,
+      padding: 12,
+      gap: 10,
+    },
     adArea: {
       width: '100%',
-      borderRadius: 16,
+      borderRadius: 14,
       overflow: 'hidden',
       backgroundColor: colors.gray100,
-      borderWidth: 1,
-      borderColor: colors.border,
     },
     bannerImage: { width: '100%', height: '100%' },
     shimmerBand: { position: 'absolute', top: '-30%', height: '160%' },
+    ctaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    ctaHint: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, flex: 1, marginRight: 8 },
+    ctaButton: {
+      backgroundColor: colors.orange500,
+      borderRadius: 999,
+      paddingHorizontal: 16,
+      paddingVertical: 9,
+    },
+    ctaButtonText: { fontSize: 12.5, fontWeight: '800', color: '#FFFFFF' },
     disclosure: {
       fontSize: 9,
       color: colors.textSecondary,
-      marginTop: 8,
+      marginTop: 10,
       textAlign: 'center',
       paddingHorizontal: 8,
     },
