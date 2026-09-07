@@ -196,6 +196,10 @@ export default function SubscriptionScreen() {
                 </Text>
               </View>
 
+              {!SUBSCRIPTION_PURCHASE_VISIBLE && (
+                <Text style={styles.preparingText}>현재 준비 중인 상품이에요. 곧 만나보실 수 있어요.</Text>
+              )}
+
               {SUBSCRIPTION_PURCHASE_VISIBLE &&
                 (!isBillingConfigured ? (
                   <Text style={styles.preparingText}>이 스토어 버전에서는 구독 결제를 지원하지 않아요.</Text>
