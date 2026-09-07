@@ -49,12 +49,16 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
   }, [visible, initialDateISO]);
 
   const handleSave = () => {
+    // 이 모달이 열려있는 동안 안드로이드에서는 Modal이 앱 루트와 별도의
+    // 네이티브 창에 그려져서, 루트에 뜨는 토스트가 이 모달 뒤로 가려져
+    // 안 보인다(모달을 닫지 않고 검증 실패로 여기서 멈추는 경우). 모달과
+    // 같은 방식(별도 Modal)으로 뜨는 alert를 대신 써서 항상 위에 보이게 한다.
     if (!title.trim()) {
-      showToast('일정 제목을 입력해 주세요.');
+      showAlert({ title: '알림', message: '일정 제목을 입력해 주세요.' });
       return;
     }
     if (!selectedChild) {
-      showToast('등록된 아이 정보가 없습니다.');
+      showAlert({ title: '알림', message: '등록된 아이 정보가 없습니다.' });
       return;
     }
 

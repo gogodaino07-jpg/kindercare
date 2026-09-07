@@ -50,8 +50,11 @@ export default function EditEventModal({ visible, event, onClose }: EditEventMod
   if (!event) return null;
 
   const handleSave = () => {
+    // AddEventModal과 동일한 이유(안드로이드에서 Modal이 별도 네이티브 창에
+    // 그려져 루트 토스트가 가려짐)로, 모달이 안 닫히고 멈추는 검증 실패
+    // 케이스는 토스트 대신 alert를 쓴다.
     if (!title.trim()) {
-      showToast('일정 제목을 입력해 주세요.');
+      showAlert({ title: '알림', message: '일정 제목을 입력해 주세요.' });
       return;
     }
 
