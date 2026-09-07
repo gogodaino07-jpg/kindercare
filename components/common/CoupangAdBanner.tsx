@@ -1,68 +1,53 @@
 import React, { useMemo } from 'react';
 import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../context/ThemeContext';
 import Text from './AppText';
 
-const COUPANG_LINK = 'https://link.coupang.com/a/fHdMU98clE';
-const COUPANG_BANNER_IMAGE =
-  'https://ads-partners.coupang.com/banners/1010650?trackingCode=AF5391104&subId=&traceId=V0-301-5f4982b43e2b4522-I1010650&w=728&h=90';
+interface CoupangAdBannerProps {
+  /** 쿠팡 파트너스에서 발급한 딥링크 (예: https://link.coupang.com/a/xxxxxxxx) */
+  link: string;
+  /** 배너 이미지 URL (쿠팡 파트너스 "HTML 태그" 코드에 들어있는 img src) */
+  imageUrl: string;
+  /** 원본 배너 이미지의 가로/세로 비율. 기본값은 쿠팡이 자주 주는 728x90 사이즈 기준. */
+  aspectRatio?: number;
+}
 
-export default function CoupangAdBanner() {
-  const insets = useSafeAreaInsets();
+export default function CoupangAdBanner({ link, imageUrl, aspectRatio = 728 / 90 }: CoupangAdBannerProps) {
   const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const handlePress = () => {
-    Linking.openURL(COUPANG_LINK).catch((err) => console.error('Failed to open Coupang link:', err));
+    Linking.openURL(link).catch((err) => console.error('Failed to open Coupang link:', err));
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.disclosure}>
-        이 앱은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
-      </Text>
-      <Pressable onPress={handlePress} style={styles.adArea}>
-        <Image
-          source={{ uri: COUPANG_BANNER_IMAGE }}
-          style={styles.bannerImage}
-          resizeMode="contain"
-        />
+      <Pressable onPress={handlePress} style={[styles.adArea, { aspectRatio }]}>
+        <Image source={{ uri: imageUrl }} style={styles.bannerImage} resizeMode="cover" />
       </Pressable>
+      <Text style={styles.disclosure}>
+        이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
+      </Text>
     </View>
   );
 }
 
-function createStyles(colors: ReturnType<typeof useThemeColors>, bottomInset: number) {
+function createStyles(colors: ReturnType<typeof useThemeColors>) {
   return StyleSheet.create({
-    container: {
+    container: { width: '100%', alignItems: 'center' },
+    adArea: {
       width: '100%',
-      alignItems: 'center',
-      backgroundColor: colors.skyBackground,
-      paddingTop: 4,
-      paddingBottom: Math.max(bottomInset, 12) + 4,
+      borderRadius: 16,
+      overflow: 'hidden',
+      backgroundColor: colors.gray100,
     },
+    bannerImage: { width: '100%', height: '100%' },
     disclosure: {
       fontSize: 9,
       color: colors.textSecondary,
-      marginBottom: 2,
+      marginTop: 6,
       textAlign: 'center',
-      paddingHorizontal: 20,
-    },
-    adArea: {
-      width: '100%',
-      height: 52, // 높이를 배너 비율에 맞춰 조정
-      backgroundColor: colors.cardWhite,
-      borderTopWidth: 1,
-      borderBottomWidth: 1,
-      borderColor: colors.border,
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden',
-    },
-    bannerImage: {
-      width: '100%',
-      height: '100%',
+      paddingHorizontal: 8,
     },
   });
 }

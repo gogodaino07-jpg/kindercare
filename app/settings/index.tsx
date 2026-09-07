@@ -16,7 +16,7 @@ import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatTimeOfDay } from '../../components/settings/TimeWheelPicker';
 import Text from '../../components/common/AppText';
-import CoupangBanner from '../../components/common/CoupangBanner';
+import CoupangAdBanner from '../../components/common/CoupangAdBanner';
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
@@ -28,9 +28,10 @@ import { FREE_LIFETIME_LIMIT } from '../../features/newsletter-analysis';
 import { resolveCoords } from '../../hooks/useWeeklyWeather';
 import { fetchWeatherPreview } from '../../utils/weatherPreviewFetch';
 
-// TODO: 쿠팡 파트너스 대시보드에서 다른 카테고리로 위젯을 새로 만들면 그 ID로 교체.
-// 지금은 홈 화면과 같은 위젯(1010655)을 임시로 쓰고 있음.
-const SETTINGS_COUPANG_BANNER_ID = 1010655;
+// 쿠팡 파트너스 "카테고리 배너 > 로켓 프레시"에서 발급받은 배너(2026-09-07).
+const COUPANG_SETTINGS_LINK = 'https://link.coupang.com/a/gQDoS3MeQe';
+const COUPANG_SETTINGS_BANNER_IMAGE =
+  'https://ads-partners.coupang.com/banners/1026775?trackingCode=AF5391104&subId=&traceId=V0-301-371ae01f4226dec2-I1026775&w=728&h=90';
 
 const LOCK_METHOD_LABELS: Record<LockMethod, string> = {
   none: '설정 안 함',
@@ -298,10 +299,10 @@ export default function SettingsScreen() {
                 </TouchableOpacity>
               </View>
 
-            {/* 쿠팡 파트너스 배너 — 다른 화면들과 같은 컴포넌트를 재사용하되 카테고리 위젯 ID만 다르게 줌 */}
+            {/* 쿠팡 파트너스 카테고리 배너 (로켓 프레시) */}
             {!isSubscribed && (
               <View style={[styles.card, styles.coupangCard]}>
-                <CoupangBanner bannerId={SETTINGS_COUPANG_BANNER_ID} style={styles.coupangBannerInner} />
+                <CoupangAdBanner link={COUPANG_SETTINGS_LINK} imageUrl={COUPANG_SETTINGS_BANNER_IMAGE} />
               </View>
             )}
 
@@ -612,7 +613,6 @@ function createStyles(colors: any) {
     footerLinkText: { fontSize: 13, color: colors.textSecondary, fontWeight: '700' },
     footerLinkTextMuted: { fontSize: 12, color: colors.gray400, fontWeight: '500' },
     footerLinkDivider: { fontSize: 13, color: colors.border, fontWeight: '400' },
-    coupangCard: { padding: 0, overflow: 'hidden' },
-    coupangBannerInner: { paddingBottom: 4 },
+    coupangCard: { padding: 14 },
   });
 }
