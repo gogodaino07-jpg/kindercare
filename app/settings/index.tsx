@@ -16,7 +16,6 @@ import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatTimeOfDay } from '../../components/settings/TimeWheelPicker';
 import Text from '../../components/common/AppText';
-import ClearableTextInput from '../../components/common/ClearableTextInput';
 import CoupangBanner from '../../components/common/CoupangBanner';
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
 import { useAlert } from '../../context/AlertContext';
@@ -64,7 +63,6 @@ export default function SettingsScreen() {
 
   const appVersion = Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.0';
 
-  const [query, setQuery] = useState('');
   const [copied, setCopied] = useState(false);
   const [weatherLabel, setWeatherLabel] = useState('내 지역');
   const [weatherPreview, setWeatherPreview] = useState<{ emoji: string; tempC: number } | null>(null);
@@ -167,27 +165,6 @@ export default function SettingsScreen() {
     });
   };
 
-  const q = query.trim().toLowerCase();
-  const sectionVisible = (keywords: string[]) =>
-    q === '' || keywords.some((k) => k.toLowerCase().includes(q));
-
-  const showProfile = sectionVisible(['내 계정', '로그아웃', googleAccount?.name ?? '', googleAccount?.email ?? '']);
-  const showQuickCards = sectionVisible(['알림 설정', '가족 키 공유', '키 공유', '키 재발급']);
-  const showMembership = sectionVisible(['프리미엄 구독', '구독', '구성원 관리', '가족 계정']);
-  const showDisplay = sectionVisible([
-    '디스플레이 설정',
-    '테마',
-    '시스템',
-    '라이트',
-    '다크',
-    '글씨체 설정',
-    '글자 크기 설정',
-    '날씨 지역 설정',
-  ]);
-  const showSecurity = sectionVisible(['보안', '잠금화면']);
-  const showEtc = sectionVisible(['고객센터', '문의', '의견', '개인정보 처리방침', '이용약관', '오픈소스 라이선스']);
-  const noResults = !showProfile && !showQuickCards && !showMembership && !showDisplay && !showSecurity && !showEtc;
-
   const Row = ({
     icon,
     iconBg,
@@ -247,28 +224,8 @@ export default function SettingsScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* 검색 */}
-            <View style={styles.searchBar}>
-              <MaterialCommunityIcons name="magnify" size={18} color={colors.gray400} />
-              <ClearableTextInput
-                style={styles.searchInput}
-                value={query}
-                onChangeText={setQuery}
-                placeholder="설정 항목 검색 (예: 고객센터, 잠금화면, 글자 크기)"
-                placeholderTextColor={colors.gray400}
-              />
-            </View>
-
-            {noResults && (
-              <View style={styles.emptyState}>
-                <MaterialCommunityIcons name="text-search" size={22} color={colors.gray400} />
-                <Text style={styles.emptyStateText}>검색 결과가 없어요</Text>
-              </View>
-            )}
-
             {/* 계정 카드 */}
-            {showProfile && (
-              <View style={[styles.card, styles.profileCard]}>
+            <View style={[styles.card, styles.profileCard]}>
                 <View style={styles.avatarCircle}>
                   <Text style={styles.avatarInitial}>
                     {(googleAccount?.name ?? '?').trim().charAt(0) || '?'}
@@ -293,10 +250,8 @@ export default function SettingsScreen() {
                   )}
                 </View>
               </View>
-            )}
 
             {/* 알림 설정 / 가족 키 공유 위젯 카드 */}
-            {showQuickCards && (
               <View style={styles.quickRow}>
                 <TouchableOpacity
                   style={[styles.card, styles.quickCard]}
@@ -342,7 +297,6 @@ export default function SettingsScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
-            )}
 
             {/* 쿠팡 파트너스 배너 — 다른 화면들과 같은 컴포넌트를 재사용하되 카테고리 위젯 ID만 다르게 줌 */}
             {!isSubscribed && (
@@ -352,7 +306,6 @@ export default function SettingsScreen() {
             )}
 
             {/* 멤버십 + 가족 계정 */}
-            {showMembership && (
               <View style={styles.card}>
                 <TouchableOpacity
                   style={[styles.row, styles.rowSpaceBetween]}
@@ -395,10 +348,8 @@ export default function SettingsScreen() {
                   </View>
                 </TouchableOpacity>
               </View>
-            )}
 
             {/* 디스플레이 설정 */}
-            {showDisplay && (
               <View style={styles.card}>
                 <View style={styles.cardHeaderRow}>
                   <Text style={styles.cardHeaderTitle}>디스플레이 설정</Text>
@@ -457,10 +408,8 @@ export default function SettingsScreen() {
                   <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
                 </TouchableOpacity>
               </View>
-            )}
 
             {/* 보안 */}
-            {showSecurity && (
               <View style={styles.sectionBlock}>
                 <Text style={styles.sectionLabel}>보안</Text>
                 <View style={styles.card}>
@@ -475,10 +424,8 @@ export default function SettingsScreen() {
                   />
                 </View>
               </View>
-            )}
 
             {/* 기타 */}
-            {showEtc && (
               <View style={styles.sectionBlock}>
                 <Text style={styles.sectionLabel}>기타</Text>
                 <View style={styles.card}>
@@ -503,13 +450,11 @@ export default function SettingsScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-            )}
 
             <View style={styles.versionContainer}>
               <Text style={styles.versionText}>버전 정보 v{appVersion}</Text>
             </View>
 
-            {!noResults && (
             <View style={styles.footerLinkRow}>
               <TouchableOpacity onPress={handleLogout}>
                 <Text style={styles.footerLinkText}>로그아웃</Text>
@@ -519,7 +464,6 @@ export default function SettingsScreen() {
                 <Text style={styles.footerLinkTextMuted}>회원탈퇴</Text>
               </TouchableOpacity>
             </View>
-            )}
           </ScrollView>
         </View>
       </SafeAreaView>
@@ -545,21 +489,6 @@ function createStyles(colors: any) {
       marginRight: 4,
     },
     securePillText: { fontSize: 11.5, fontWeight: '700', color: colors.accent },
-    searchBar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      backgroundColor: colors.cardWhite,
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: colors.border,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      marginBottom: 16,
-    },
-    searchInput: { flex: 1, fontSize: 13, color: colors.textPrimary, padding: 0, minHeight: 26 },
-    emptyState: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 32, gap: 8 },
-    emptyStateText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600', textAlign: 'center' },
     card: {
       backgroundColor: colors.cardWhite,
       borderRadius: 24,
