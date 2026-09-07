@@ -31,6 +31,7 @@ import { useAppLock } from '../context/AppLockContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { useChildSaveInterstitialAd } from '../hooks/useChildSaveInterstitialAd';
+import { useAddChildRewardedAd } from '../hooks/useAddChildRewardedAd';
 import { ChildAge } from '../types/models';
 import { stripInvalidCharacters } from '../utils/validation';
 import { ageFromBirthdate, toISODate, parseISODate } from '../utils/date';
@@ -52,6 +53,7 @@ export default function ChildProfileScreen() {
   const { setPickerActive } = useAppLock();
   const { showToast } = useToast();
   const { showIfEligible: showChildSaveAd } = useChildSaveInterstitialAd();
+  const { requestAndShow: requestAddChildAd } = useAddChildRewardedAd();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
@@ -257,12 +259,25 @@ export default function ChildProfileScreen() {
     setShowSuccessModal(true);
   };
 
-  const handleConfirmCreate = () => {
+  // 2번째 아이부터는 등록 전에 리워드 광고를 끝까지 봐야 한다 — 첫 아이는 무료.
+  const handleConfirmCreate = async () => {
+    const isAdditionalChild = children.length >= 1;
+    if (isAdditionalChild) {
+      const earnedReward = await requestAddChildAd();
+      if (!earnedReward) {
+        showAlert({
+          title: '광고 시청이 필요해요',
+          message: '광고를 끝까지 시청해야 아이를 추가할 수 있어요. 다시 시도해주세요.',
+        });
+        return;
+      }
+    }
     addChild(buildInput());
     justSavedRef.current = true;
     setShowSuccessModal(false);
     showToast('저장이 완료되었습니다.');
-    showChildSaveAd();
+    // 방금 리워드 광고를 이미 봤으면 저장 완료 전면광고까지 연달아 띄우지 않는다.
+    if (!isAdditionalChild) showChildSaveAd();
     router.back();
   };
 
