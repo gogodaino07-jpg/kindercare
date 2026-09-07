@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ZoomableImage } from '../../features/newsletter-analysis/components/ZoomableImage';
 import Text from '../common/AppText';
 import EventIcon from '../common/EventIcon';
+import CalendarNativeAd from './CalendarNativeAd';
 import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { Event, EventItem } from '../../types/models';
 import { isValidCoupangKeyword } from '../../utils/validation';
@@ -68,6 +69,8 @@ export default function DayDetailSection({
           onOpenPhotos={setViewerPhotos}
         />
       ))}
+
+      <CalendarNativeAd />
 
       <Modal
         visible={!!viewerPhotos}
