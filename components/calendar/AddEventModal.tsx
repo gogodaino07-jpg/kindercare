@@ -7,6 +7,7 @@ import TextInput from '../common/ClearableTextInput';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
 import { useToast } from '../../context/ToastContext';
+import { useCalendarAddEventInterstitialAd } from '../../hooks/useCalendarAddEventInterstitialAd';
 import { EventItem } from '../../types/models';
 import { parseISODate, toISODate, WEEKDAY_KO } from '../../utils/date';
 import { stripInvalidCharacters } from '../../utils/validation';
@@ -27,6 +28,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
   const { selectedChild, addEvent } = useAppData();
   const { showToast } = useToast();
   const { showAlert } = useAlert();
+  const { showIfEligible: showAddEventAd } = useCalendarAddEventInterstitialAd();
   const t = useCalendarTheme();
   const styles = useMemo(() => createStyles(t), [t]);
 
@@ -75,6 +77,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
       icon: '📌',
     });
     showToast('일정을 등록했어요.');
+    showAddEventAd();
     onClose();
   };
 
