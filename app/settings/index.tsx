@@ -28,10 +28,10 @@ import { FREE_LIFETIME_LIMIT } from '../../features/newsletter-analysis';
 import { resolveCoords } from '../../hooks/useWeeklyWeather';
 import { fetchWeatherPreview } from '../../utils/weatherPreviewFetch';
 
-// 쿠팡 파트너스 "카테고리 배너 > 로켓 프레시"에서 발급받은 배너(2026-09-07).
-const COUPANG_SETTINGS_LINK = 'https://link.coupang.com/a/gQDoS3MeQe';
+// 쿠팡 파트너스 "카테고리 배너 > 골드박스"에서 발급받은 배너(2026-09-07).
+const COUPANG_SETTINGS_LINK = 'https://link.coupang.com/a/gQ4wAzVJeK';
 const COUPANG_SETTINGS_BANNER_IMAGE =
-  'https://ads-partners.coupang.com/banners/1026775?trackingCode=AF5391104&subId=&traceId=V0-301-371ae01f4226dec2-I1026775&w=728&h=90';
+  'https://ads-partners.coupang.com/banners/1026962?trackingCode=AF5391104&subId=&traceId=V0-301-969b06e95b87326d-I1026962&w=728&h=90';
 
 const LOCK_METHOD_LABELS: Record<LockMethod, string> = {
   none: '설정 안 함',
