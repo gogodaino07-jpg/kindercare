@@ -16,6 +16,9 @@ import {
   PREMIUM_WEEKLY_LIMIT,
 } from '../../features/newsletter-analysis';
 
+// 구독 결제 기능을 잠시 꺼둔 상태 — 나중에 구독을 다시 열 때 이 플래그만 true로 바꾸면 됨.
+const SUBSCRIPTION_PURCHASE_VISIBLE = false;
+
 const BENEFITS = [
   {
     icon: 'bolt' as const,
@@ -193,46 +196,47 @@ export default function SubscriptionScreen() {
                 </Text>
               </View>
 
-              {!isBillingConfigured ? (
-                <Text style={styles.preparingText}>이 스토어 버전에서는 구독 결제를 지원하지 않아요.</Text>
-              ) : loadingOfferings ? (
-                <ActivityIndicator style={{ marginTop: 20 }} color={colors.purple500} />
-              ) : (
-                (monthlyPackage || annualPackage) && (
-                  <View style={styles.planRow}>
-                    {monthlyPackage && (
-                      <Pressable
-                        style={[styles.planCard, selectedPeriod === 'monthly' && styles.planCardSelected]}
-                        onPress={() => setSelectedPeriod('monthly')}
-                      >
-                        <Text style={styles.planLabel}>월간</Text>
-                        <Text style={styles.planPrice}>
-                          {monthlyPackage.product.priceString}
-                          <Text style={styles.planUnitInline}>/월</Text>
-                        </Text>
-                      </Pressable>
-                    )}
-                    {annualPackage && (
-                      <Pressable
-                        style={[styles.planCard, selectedPeriod === 'annual' && styles.planCardSelected]}
-                        onPress={() => setSelectedPeriod('annual')}
-                      >
-                        <View style={styles.recommendedBadge}>
-                          <Text style={styles.recommendedBadgeText}>추천</Text>
-                        </View>
-                        <Text style={styles.planLabel}>연간</Text>
-                        <Text style={styles.planPrice}>
-                          {annualPackage.product.priceString}
-                          <Text style={styles.planUnitInline}>/년</Text>
-                        </Text>
-                        {annualPackage.product.pricePerMonthString && (
-                          <Text style={styles.planSubNote}>월 {annualPackage.product.pricePerMonthString} 꼴</Text>
-                        )}
-                      </Pressable>
-                    )}
-                  </View>
-                )
-              )}
+              {SUBSCRIPTION_PURCHASE_VISIBLE &&
+                (!isBillingConfigured ? (
+                  <Text style={styles.preparingText}>이 스토어 버전에서는 구독 결제를 지원하지 않아요.</Text>
+                ) : loadingOfferings ? (
+                  <ActivityIndicator style={{ marginTop: 20 }} color={colors.purple500} />
+                ) : (
+                  (monthlyPackage || annualPackage) && (
+                    <View style={styles.planRow}>
+                      {monthlyPackage && (
+                        <Pressable
+                          style={[styles.planCard, selectedPeriod === 'monthly' && styles.planCardSelected]}
+                          onPress={() => setSelectedPeriod('monthly')}
+                        >
+                          <Text style={styles.planLabel}>월간</Text>
+                          <Text style={styles.planPrice}>
+                            {monthlyPackage.product.priceString}
+                            <Text style={styles.planUnitInline}>/월</Text>
+                          </Text>
+                        </Pressable>
+                      )}
+                      {annualPackage && (
+                        <Pressable
+                          style={[styles.planCard, selectedPeriod === 'annual' && styles.planCardSelected]}
+                          onPress={() => setSelectedPeriod('annual')}
+                        >
+                          <View style={styles.recommendedBadge}>
+                            <Text style={styles.recommendedBadgeText}>추천</Text>
+                          </View>
+                          <Text style={styles.planLabel}>연간</Text>
+                          <Text style={styles.planPrice}>
+                            {annualPackage.product.priceString}
+                            <Text style={styles.planUnitInline}>/년</Text>
+                          </Text>
+                          {annualPackage.product.pricePerMonthString && (
+                            <Text style={styles.planSubNote}>월 {annualPackage.product.pricePerMonthString} 꼴</Text>
+                          )}
+                        </Pressable>
+                      )}
+                    </View>
+                  )
+                ))}
             </>
           )}
         </View>
@@ -249,7 +253,7 @@ export default function SubscriptionScreen() {
           </View>
         )}
 
-        {isBillingConfigured && isReady && !isSubscribed && (
+        {SUBSCRIPTION_PURCHASE_VISIBLE && isBillingConfigured && isReady && !isSubscribed && (
           <View style={[styles.bottomBar, { paddingBottom: 12 + insets.bottom }]}>
             {!loadingOfferings && selectedPackage && (
               <Text style={styles.confirmNote}>
