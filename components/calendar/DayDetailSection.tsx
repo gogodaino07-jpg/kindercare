@@ -58,19 +58,21 @@ export default function DayDetailSection({
 
   return (
     <View style={styles.container}>
-      {events.map((event) => (
-        <EventDetailCard
-          key={event.id}
-          event={event}
-          todayISO={todayISO}
-          onPressEvent={onPressEvent}
-          onToggleItem={onToggleItem}
-          onOpenBuy={onOpenBuy}
-          onOpenPhotos={setViewerPhotos}
-        />
+      {events.map((event, index) => (
+        <React.Fragment key={event.id}>
+          <EventDetailCard
+            event={event}
+            todayISO={todayISO}
+            onPressEvent={onPressEvent}
+            onToggleItem={onToggleItem}
+            onOpenBuy={onOpenBuy}
+            onOpenPhotos={setViewerPhotos}
+          />
+          {/* 맨 밑에 두면 일정이 많은 날엔 스크롤 끝까지 가야만 보여서, 첫 일정
+              카드 바로 뒤에 붙여 스크롤 없이도 바로 눈에 띄게 한다. */}
+          {index === 0 && <CalendarNativeAd />}
+        </React.Fragment>
       ))}
-
-      <CalendarNativeAd />
 
       <Modal
         visible={!!viewerPhotos}
