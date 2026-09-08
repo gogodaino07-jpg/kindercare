@@ -61,8 +61,8 @@ export default function ChildProfileScreen() {
 
   const scrollViewRef = useRef<ScrollView>(null);
   const classNameInputRef = useRef<TextInput>(null);
-  const scrollToClassNameInput = () => {
-    // 반 이름 입력란은 폼의 마지막 필드라, 정확한 좌표를 재는 것보다
+  const scrollToEndOnFocus = () => {
+    // 반 이름/알레르기 입력란은 폼 아래쪽 필드라, 정확한 좌표를 재는 것보다
     // 스크롤 끝으로 이동시키는 편이 New Architecture에서 더 안정적으로 동작함.
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -485,7 +485,7 @@ export default function ChildProfileScreen() {
             editable={!hasNoClass}
             value={className}
             onChangeText={(text) => setClassName(stripInvalidCharacters(text))}
-            onFocus={scrollToClassNameInput}
+            onFocus={scrollToEndOnFocus}
             placeholder={hasNoClass ? '반 구분이 없습니다' : '예: 병아리반, 7세반'}
             placeholderTextColor={colors.textSecondary}
           />
@@ -501,6 +501,7 @@ export default function ChildProfileScreen() {
             style={styles.input}
             value={allergiesText}
             onChangeText={setAllergiesText}
+            onFocus={scrollToEndOnFocus}
             placeholder="예: 새우, 계란, 우유"
             placeholderTextColor={colors.textSecondary}
           />
