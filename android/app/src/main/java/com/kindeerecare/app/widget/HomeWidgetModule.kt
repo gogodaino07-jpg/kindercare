@@ -3,7 +3,6 @@ package com.kindeerecare.app.widget
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
-import android.util.Log
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
@@ -17,14 +16,12 @@ class HomeWidgetModule(reactContext: ReactApplicationContext) :
 
   @ReactMethod
   fun updateWidgetData(json: String) {
-    Log.d("TodaySummaryWidget", "JS pushed widget data: $json")
     val context = reactApplicationContext
     val prefs = context.getSharedPreferences(TodaySummaryWidgetProvider.PREFS_NAME, Context.MODE_PRIVATE)
     prefs.edit().putString(TodaySummaryWidgetProvider.KEY_SUMMARY_JSON, json).apply()
 
     val manager = AppWidgetManager.getInstance(context)
     val ids = manager.getAppWidgetIds(ComponentName(context, TodaySummaryWidgetProvider::class.java))
-    Log.d("TodaySummaryWidget", "bound widget ids: ${ids.joinToString()}")
     if (ids.isNotEmpty()) {
       TodaySummaryWidgetProvider.updateWidgets(context, manager, ids)
     }
