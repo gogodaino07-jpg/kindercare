@@ -49,7 +49,7 @@ export default function SettingsScreen() {
   // scrollContent(좌우 16*2) + coupangCard(좌우 8*2) + card 테두리(좌우 1*2)를 뺀
   // 실제 배너가 그려질 너비. 골드박스 배너 원본 비율(728:90)로 높이를 맞춘다.
   const { width: windowWidth } = useWindowDimensions();
-  const coupangBannerWidth = windowWidth - 16 * 2 - 8 * 2 - 1 * 2;
+  const coupangBannerWidth = windowWidth - 16 * 2;
   const coupangBannerHeight = Math.round((coupangBannerWidth * 90) / 728);
   const {
     resetAllData,
@@ -304,18 +304,17 @@ export default function SettingsScreen() {
                 </TouchableOpacity>
               </View>
 
-            {/* 쿠팡 파트너스 카테고리 배너 (로켓 프레시) */}
+            {/* 쿠팡 파트너스 카테고리 배너 (골드박스) — 흰 테두리 카드로 감싸지 않고,
+                배너 자체가 하나의 둥근 사각형으로 이미지 영역을 꽉 채우게 함 */}
             {!isSubscribed && (
-              <View style={[styles.card, styles.coupangCard]}>
-                <CoupangBanner
-                  bannerId={COUPANG_GOLDBOX_BANNER_ID}
-                  template="banner"
-                  containerWidth={coupangBannerWidth}
-                  height={coupangBannerHeight}
-                  hideDividers
-                  style={styles.coupangBannerInner}
-                />
-              </View>
+              <CoupangBanner
+                bannerId={COUPANG_GOLDBOX_BANNER_ID}
+                template="banner"
+                containerWidth={coupangBannerWidth}
+                height={coupangBannerHeight}
+                hideDividers
+                style={styles.coupangBannerCard}
+              />
             )}
 
             {/* 멤버십 + 가족 계정 */}
@@ -625,7 +624,14 @@ function createStyles(colors: any) {
     footerLinkText: { fontSize: 13, color: colors.textSecondary, fontWeight: '700' },
     footerLinkTextMuted: { fontSize: 12, color: colors.gray400, fontWeight: '500' },
     footerLinkDivider: { fontSize: 13, color: colors.border, fontWeight: '400' },
-    coupangCard: { padding: 8 },
-    coupangBannerInner: { borderRadius: 12, overflow: 'hidden' },
+    coupangBannerCard: {
+      borderRadius: 24,
+      overflow: 'hidden',
+      marginBottom: 16,
+      ...Platform.select({
+        ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 8 },
+        android: { elevation: 1.5 },
+      }),
+    },
   });
 }
