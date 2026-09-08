@@ -9,6 +9,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import Text from '../common/AppText';
+import { SHADOW } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
 import { Event } from '../../types/models';
 import { toISODate } from '../../utils/date';
@@ -167,7 +168,7 @@ export default function CalendarAccordion({
 
             {canEditFamilyData && (
               <Pressable style={styles.addEventBadge} onPress={onOpenAddEvent}>
-                <MaterialCommunityIcons name="plus" size={14} color={t.textPrimary} />
+                <MaterialCommunityIcons name="plus" size={16} color="#FFFFFF" />
                 <Text style={styles.addEventBadgeText}>일정 추가</Text>
               </Pressable>
             )}
@@ -364,16 +365,20 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
   addEventBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
-    backgroundColor: t.amberBg,
+    gap: 4,
+    backgroundColor: t.amber,
     borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    ...SHADOW,
+    shadowOpacity: 0.18,
+    shadowColor: t.amberDeep,
+    elevation: 2,
   },
   addEventBadgeText: {
-    fontSize: 10.5,
+    fontSize: 12.5,
     fontWeight: '900',
-    color: t.textPrimary,
+    color: '#FFFFFF',
   },
   weekdayRow: {
     flexDirection: 'row',

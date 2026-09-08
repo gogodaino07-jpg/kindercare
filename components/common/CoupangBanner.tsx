@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   contentWrapper: {
-    paddingVertical: 4,
+    paddingBottom: 6,
     position: 'relative',
     alignItems: 'center',
   },
