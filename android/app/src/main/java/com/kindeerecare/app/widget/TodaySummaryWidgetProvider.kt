@@ -17,7 +17,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** 홈 화면 위젯 — JS 쪽(utils/homeWidget.ts)이 HomeWidgetModule을 통해 써준
- *  SharedPreferences의 요약 데이터를 읽어 오늘 일정별 준비물 + 내일 미리보기를 보여준다. */
+ *  SharedPreferences의 요약 데이터를 읽어 오늘 대표 일정 + 그 준비물 + 내일 미리보기를 보여준다.
+ *  위젯 높이 제한(2행) 때문에 오늘 일정은 1건만 카드에 담고, 더 있으면 제목 뒤에 "(+N건 더)"를 붙인다. */
 class TodaySummaryWidgetProvider : AppWidgetProvider() {
 
   override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
@@ -29,13 +30,7 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
     const val KEY_SUMMARY_JSON = "summary_json"
 
     private const val CHECK_COLOR = "#F97362"
-
-    private val TITLE_IDS = intArrayOf(R.id.widget_event_1_title, R.id.widget_event_2_title)
-    private val CHIPS_ROW_IDS = intArrayOf(R.id.widget_event_1_chips, R.id.widget_event_2_chips)
-    private val CHIP_IDS = arrayOf(
-      intArrayOf(R.id.widget_event_1_chip_1, R.id.widget_event_1_chip_2),
-      intArrayOf(R.id.widget_event_2_chip_1, R.id.widget_event_2_chip_2)
-    )
+    private val CHIP_IDS = intArrayOf(R.id.widget_event_1_chip_1, R.id.widget_event_1_chip_2)
 
     /** "✓ 저금통장"처럼 체크 표시만 코랄색으로, 이름은 기본색으로 칠한 칩 문구를 만든다. */
     private fun checkedChipText(label: String): SpannableString {
@@ -45,33 +40,27 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
       }
     }
 
-    private fun renderChips(views: RemoteViews, eventIndex: Int, itemNames: JSONArray?) {
-      val chipIds = CHIP_IDS[eventIndex]
+    private fun renderChips(views: RemoteViews, itemNames: JSONArray?) {
       val count = itemNames?.length() ?: 0
       if (count == 0) {
-        views.setViewVisibility(CHIPS_ROW_IDS[eventIndex], View.GONE)
+        views.setViewVisibility(R.id.widget_event_1_chips, View.GONE)
         return
       }
-      views.setViewVisibility(CHIPS_ROW_IDS[eventIndex], View.VISIBLE)
-      for (i in chipIds.indices) {
+      views.setViewVisibility(R.id.widget_event_1_chips, View.VISIBLE)
+      for (i in CHIP_IDS.indices) {
         if (i >= count) {
-          views.setViewVisibility(chipIds[i], View.GONE)
+          views.setViewVisibility(CHIP_IDS[i], View.GONE)
           continue
         }
-        views.setViewVisibility(chipIds[i], View.VISIBLE)
-        val isLastVisibleSlot = i == chipIds.size - 1
-        val label = if (isLastVisibleSlot && count > chipIds.size) {
-          "${itemNames!!.optString(i)} 외 ${count - chipIds.size}건"
+        views.setViewVisibility(CHIP_IDS[i], View.VISIBLE)
+        val isLastVisibleSlot = i == CHIP_IDS.size - 1
+        val label = if (isLastVisibleSlot && count > CHIP_IDS.size) {
+          "${itemNames!!.optString(i)} 외 ${count - CHIP_IDS.size}건"
         } else {
           itemNames!!.optString(i)
         }
-        views.setTextViewText(chipIds[i], checkedChipText(label))
+        views.setTextViewText(CHIP_IDS[i], checkedChipText(label))
       }
-    }
-
-    private fun clearEventSlot(views: RemoteViews, eventIndex: Int) {
-      views.setViewVisibility(TITLE_IDS[eventIndex], View.GONE)
-      views.setViewVisibility(CHIPS_ROW_IDS[eventIndex], View.GONE)
     }
 
     fun updateWidgets(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
@@ -92,28 +81,15 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
 
             if (eventCount == 0) {
               views.setViewVisibility(R.id.widget_badge, View.GONE)
-              views.setViewVisibility(TITLE_IDS[0], View.VISIBLE)
-              views.setTextViewText(TITLE_IDS[0], "오늘 등록된 일정이 없어요")
-              views.setViewVisibility(CHIPS_ROW_IDS[0], View.GONE)
-              clearEventSlot(views, 1)
-              views.setViewVisibility(R.id.widget_divider, View.GONE)
+              views.setTextViewText(R.id.widget_event_1_title, "오늘 등록된 일정이 없어요")
+              views.setViewVisibility(R.id.widget_event_1_chips, View.GONE)
             } else {
               views.setViewVisibility(R.id.widget_badge, View.VISIBLE)
-              // 카드 안에는 최대 2개 일정까지만 — 그 이상이면 2번째 일정 제목에
-              // "(+N건 더)"를 붙여 칸을 늘리지 않고도 더 있음을 알려준다.
-              val shownCount = minOf(eventCount, TITLE_IDS.size)
-              for (i in 0 until shownCount) {
-                val event = events!!.optJSONObject(i)
-                var title = event?.optString("title") ?: ""
-                if (i == shownCount - 1 && eventCount > shownCount) {
-                  title = "$title (+${eventCount - shownCount}건 더)"
-                }
-                views.setViewVisibility(TITLE_IDS[i], View.VISIBLE)
-                views.setTextViewText(TITLE_IDS[i], title)
-                renderChips(views, i, event?.optJSONArray("itemNames"))
-              }
-              for (i in shownCount until TITLE_IDS.size) clearEventSlot(views, i)
-              views.setViewVisibility(R.id.widget_divider, if (shownCount > 1) View.VISIBLE else View.GONE)
+              val first = events!!.optJSONObject(0)
+              var title = first?.optString("title") ?: ""
+              if (eventCount > 1) title = "$title (+${eventCount - 1}건 더)"
+              views.setTextViewText(R.id.widget_event_1_title, title)
+              renderChips(views, first?.optJSONArray("itemNames"))
             }
 
             val tomorrow = json.optJSONObject("tomorrow")
@@ -138,11 +114,8 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
         if (!handled) {
           views.setTextViewText(R.id.widget_date, "")
           views.setViewVisibility(R.id.widget_badge, View.GONE)
-          views.setViewVisibility(TITLE_IDS[0], View.VISIBLE)
-          views.setTextViewText(TITLE_IDS[0], "킨더케어를 열어 확인해주세요")
-          views.setViewVisibility(CHIPS_ROW_IDS[0], View.GONE)
-          clearEventSlot(views, 1)
-          views.setViewVisibility(R.id.widget_divider, View.GONE)
+          views.setTextViewText(R.id.widget_event_1_title, "킨더케어를 열어 확인해주세요")
+          views.setViewVisibility(R.id.widget_event_1_chips, View.GONE)
           views.setViewVisibility(R.id.widget_tomorrow_row, View.GONE)
         }
 
