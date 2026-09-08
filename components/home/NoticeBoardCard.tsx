@@ -49,12 +49,18 @@ export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardC
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [showAll, setShowAll] = useState(false);
+  const [detailNotice, setDetailNotice] = useState<Event | null>(null);
 
   const featured = notices[0];
 
-  const handlePressFeatured = () => onPressNotice(featured);
-  const handlePressInModal = (event: Event) => {
+  const handleOpenDetail = (event: Event) => {
     setShowAll(false);
+    setDetailNotice(event);
+  };
+  const handleGoToCalendar = () => {
+    if (!detailNotice) return;
+    const event = detailNotice;
+    setDetailNotice(null);
     onPressNotice(event);
   };
 
@@ -77,7 +83,7 @@ export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardC
       </View>
 
       <View style={styles.list}>
-        <NoticeRow event={featured} onPress={handlePressFeatured} styles={styles} colors={colors} />
+        <NoticeRow event={featured} onPress={() => handleOpenDetail(featured)} styles={styles} colors={colors} />
       </View>
 
       <Modal visible={showAll} transparent animationType="fade" onRequestClose={() => setShowAll(false)}>
@@ -97,13 +103,47 @@ export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardC
                 <NoticeRow
                   key={event.id}
                   event={event}
-                  onPress={() => handlePressInModal(event)}
+                  onPress={() => handleOpenDetail(event)}
                   styles={styles}
                   colors={colors}
                   showDivider={i < notices.length - 1}
                 />
               ))}
             </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={!!detailNotice}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDetailNotice(null)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setDetailNotice(null)}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderLeft}>
+                <View style={styles.detailDateBadge}>
+                  <Text style={styles.rowDate}>{detailNotice ? formatMD(detailNotice.date).split('(')[0] : ''}</Text>
+                </View>
+                <Text style={styles.modalHeaderText} numberOfLines={1}>
+                  {detailNotice?.title || '공지사항'}
+                </Text>
+              </View>
+              <Pressable onPress={() => setDetailNotice(null)} style={styles.modalCloseButton} hitSlop={6}>
+                <MaterialCommunityIcons name="close" size={16} color={colors.gray400} />
+              </Pressable>
+            </View>
+            <ScrollView style={styles.detailBody}>
+              <Pressable onPress={handleGoToCalendar}>
+                <Text style={styles.detailText}>{detailNotice?.noticeText || detailNotice?.title}</Text>
+              </Pressable>
+            </ScrollView>
+            <Pressable style={styles.detailCta} onPress={handleGoToCalendar}>
+              <Text style={styles.detailCtaText}>캘린더에서 보기</Text>
+              <MaterialCommunityIcons name="chevron-right" size={16} color={colors.blue500} />
+            </Pressable>
           </Pressable>
         </Pressable>
       </Modal>
@@ -213,8 +253,8 @@ function createStyles(colors: ThemeColors) {
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
-    modalHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    modalHeaderText: { fontSize: 14, fontWeight: '900', color: colors.gray900 },
+    modalHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, marginRight: 8 },
+    modalHeaderText: { fontSize: 14, fontWeight: '900', color: colors.gray900, flexShrink: 1 },
     modalCloseButton: {
       width: 28,
       height: 28,
@@ -226,6 +266,38 @@ function createStyles(colors: ThemeColors) {
     modalList: {
       backgroundColor: colors.gray50,
       borderRadius: 14,
+    },
+    detailDateBadge: {
+      backgroundColor: colors.blue100,
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    detailBody: {
+      backgroundColor: colors.gray50,
+      borderRadius: 14,
+      padding: 14,
+      maxHeight: 320,
+    },
+    detailText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.gray900,
+      lineHeight: 21,
+    },
+    detailCta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      backgroundColor: colors.blue100,
+      borderRadius: 14,
+      paddingVertical: 12,
+    },
+    detailCtaText: {
+      fontSize: 13.5,
+      fontWeight: '800',
+      color: colors.blue500,
     },
   });
 }
