@@ -24,9 +24,12 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
     const val PREFS_NAME = "widget_data"
     const val KEY_SUMMARY_JSON = "summary_json"
 
-    private fun joinTitles(arr: JSONArray?): String {
-      if (arr == null || arr.length() == 0) return ""
-      return (0 until arr.length()).joinToString(", ") { arr.optString(it) }
+    /** 일정이 2건 이상이면 쉼표로 뭉치지 않고 " · "로 구분하고 앞에 건수를 붙여, 여러 일정이
+     *  하나로 뭉쳐 보이지 않게 한다(예: "오늘 일정 2건: 저축의 날 · 발달검사 신청 마감"). */
+    private fun buildTodayLine(arr: JSONArray?): String {
+      if (arr == null || arr.length() == 0) return "오늘 등록된 일정이 없어요"
+      val titles = (0 until arr.length()).joinToString(" · ") { arr.optString(it) }
+      return if (arr.length() == 1) "오늘: $titles" else "오늘 일정 ${arr.length()}건: $titles"
     }
 
     fun updateWidgets(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
@@ -45,11 +48,7 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
             val itemNames = json.optJSONArray("todayItemNames")
             val remaining = itemNames?.length() ?: 0
 
-            val todayTitles = joinTitles(json.optJSONArray("todayTitles"))
-            views.setTextViewText(
-              R.id.widget_today_line,
-              if (todayTitles.isNotEmpty()) "오늘: $todayTitles" else "오늘 등록된 일정이 없어요"
-            )
+            views.setTextViewText(R.id.widget_today_line, buildTodayLine(json.optJSONArray("todayTitles")))
 
             views.setTextViewText(
               R.id.widget_prep_summary,
