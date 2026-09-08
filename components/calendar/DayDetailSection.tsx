@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
-import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Dimensions, Modal, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ZoomableImage } from '../../features/newsletter-analysis/components/ZoomableImage';
 import Text from '../common/AppText';
@@ -127,6 +127,17 @@ function EventDetailCard({
   const completedItems = items.filter((i) => i.completed);
   const dotDate = event.date.replace(/-/g, '.');
 
+  const handleShare = () => {
+    const lines = [`[${dotDate}] ${event.title}`];
+    if (items.length > 0) {
+      lines.push('', '준비물', ...items.map((i) => `• ${i.name}`));
+    }
+    if (event.noticeText) {
+      lines.push('', event.noticeText);
+    }
+    Share.share({ message: lines.join('\n') }).catch(() => {});
+  };
+
   return (
     <View style={styles.card}>
       <Pressable onPress={() => onPressEvent(event)}>
@@ -140,6 +151,9 @@ function EventDetailCard({
             <Text style={styles.cardDate}>{dotDate}</Text>
           </View>
           <View style={styles.cardTopRight}>
+            <Pressable onPress={handleShare} style={styles.shareBadge} hitSlop={6}>
+              <MaterialCommunityIcons name="share-variant" size={13} color={t.textSecondary} />
+            </Pressable>
             {photoUris.length > 0 && (
               <Pressable onPress={() => onOpenPhotos(photoUris)} style={styles.photoBadge} hitSlop={6}>
                 <MaterialCommunityIcons name="image-outline" size={13} color={t.violetDeep} />
@@ -325,6 +339,14 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
     height: 22,
     borderRadius: 11,
     backgroundColor: t.violetBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: t.gray50,
     alignItems: 'center',
     justifyContent: 'center',
   },
