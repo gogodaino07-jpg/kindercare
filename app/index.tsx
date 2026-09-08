@@ -36,10 +36,11 @@ import { useAppLock } from '../context/AppLockContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { getDisplayItems } from '../hooks/useLocalChecklist';
+import { useTodayISO } from '../hooks/useTodayISO';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
 import { Event, EventItem } from '../types/models';
-import { isBirthdayToday, toISODate } from '../utils/date';
+import { isBirthdayToday, parseISODate, toISODate } from '../utils/date';
 import { updateHomeWidget } from '../utils/homeWidget';
 
 // 앱 프로세스가 살아있는 동안 전면 광고는 한 번만 시도한다. 컴포넌트 스코프
@@ -112,18 +113,17 @@ export default function HomeScreen() {
   );
   const upcoming = useUpcomingEvents();
   const weather = useWeeklyWeather();
+  const todayISO = useTodayISO();
   const noticeEvents = useMemo(() => {
     // 과거 공지가 홈 화면에 계속 노출되지 않도록 오늘 이후의 공지만 보여준다.
     // 단, 오늘 날짜인 공지는 "오늘 일정"(D-DAY 배지)에 이미 노출되므로 중복을 피하기 위해 내일 이후만 보여준다.
-    const todayISO = toISODate(new Date());
     return events
       .filter((e) => e.category === '공지' && e.childId === selectedChild?.id && e.date > todayISO)
       .sort((a, b) => a.date.localeCompare(b.date));
-  }, [events, selectedChild]);
+  }, [events, selectedChild, todayISO]);
   const todayMeal = useMemo(() => {
-    const todayISO = toISODate(new Date());
     return mealPlans.find((m) => m.childId === selectedChild?.id && m.date === todayISO);
-  }, [mealPlans, selectedChild]);
+  }, [mealPlans, selectedChild, todayISO]);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [mealSheetOpen, setMealSheetOpen] = useState(false);
   const [adPopupVisible, setAdPopupVisible] = useState(false);
@@ -286,10 +286,16 @@ export default function HomeScreen() {
   }, []);
 
   // 가족 공유 카드는 지금 보고 있는 탭(오늘/내일/모레) 기준으로 내용을 만든다.
-  const dayAfterTomorrowISO = useMemo(
-    () => toISODate(new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)),
-    []
-  );
+  const tomorrowISO = useMemo(() => {
+    const d = parseISODate(todayISO);
+    d.setDate(d.getDate() + 1);
+    return toISODate(d);
+  }, [todayISO]);
+  const dayAfterTomorrowISO = useMemo(() => {
+    const d = parseISODate(todayISO);
+    d.setDate(d.getDate() + 2);
+    return toISODate(d);
+  }, [todayISO]);
   const activeDayEvents = useMemo(() => {
     if (activeTab === 'today') return upcoming.mainEvents;
     if (activeTab === 'tomorrow') return upcoming.secondaryEvents;
@@ -297,10 +303,10 @@ export default function HomeScreen() {
   }, [activeTab, upcoming, dayAfterTomorrowISO]);
   const activeDayLabel = activeTab === 'today' ? '오늘' : activeTab === 'tomorrow' ? '내일' : '모레';
   const activeDayISO = useMemo(() => {
-    if (activeTab === 'today') return toISODate(new Date());
-    if (activeTab === 'tomorrow') return toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+    if (activeTab === 'today') return todayISO;
+    if (activeTab === 'tomorrow') return tomorrowISO;
     return dayAfterTomorrowISO;
-  }, [activeTab, dayAfterTomorrowISO]);
+  }, [activeTab, todayISO, tomorrowISO, dayAfterTomorrowISO]);
 
   // Show ad popup once per app session when app is ready — never while the
   // app-lock screen is still up, since a native Modal always renders above it

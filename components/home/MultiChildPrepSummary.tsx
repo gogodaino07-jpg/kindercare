@@ -3,8 +3,8 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import { getDisplayItems } from '../../hooks/useLocalChecklist';
+import { useTodayISO } from '../../hooks/useTodayISO';
 import { Child, Event } from '../../types/models';
-import { toISODate } from '../../utils/date';
 import Text from '../common/AppText';
 
 interface MultiChildPrepSummaryProps {
@@ -25,7 +25,7 @@ export default function MultiChildPrepSummary({
 }: MultiChildPrepSummaryProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const todayISO = useMemo(() => toISODate(new Date()), []);
+  const todayISO = useTodayISO();
 
   const summaries = useMemo(
     () =>

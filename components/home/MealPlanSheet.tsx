@@ -1,10 +1,11 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
+import { useTodayISO } from '../../hooks/useTodayISO';
 import { isAllergyMatch } from '../../utils/allergy';
 import { formatMD, parseISODate, startOfDay, toISODate, WEEKDAY_KO } from '../../utils/date';
 import Text from '../common/AppText';
@@ -33,73 +34,12 @@ const AMBER_SOFT = '#FEF3C7';
 const AMBER_SOFT_BORDER = '#FDE68A';
 const AMBER_DEEP = '#B45309';
 
-const SPARKLE_COUNT = 8;
-
-/** A little "뿅" of sparkles that burst outward from the center once when `trigger` changes — kept subtle, not confetti-levels of busy. */
-function SparkleBurst({ trigger }: { trigger: number }) {
-  const anims = useRef(Array.from({ length: SPARKLE_COUNT }, () => new Animated.Value(0))).current;
-
-  useEffect(() => {
-    if (trigger === 0) return;
-    anims.forEach((a) => a.setValue(0));
-    Animated.stagger(
-      35,
-      anims.map((a) =>
-        Animated.timing(a, {
-          toValue: 1,
-          duration: 700,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        })
-      )
-    ).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trigger]);
-
-  return (
-    <View style={sparkleStyles.container} pointerEvents="none">
-      {anims.map((a, i) => {
-        const angle = (i / SPARKLE_COUNT) * Math.PI * 2;
-        const distance = 110;
-        const translateX = a.interpolate({ inputRange: [0, 1], outputRange: [0, Math.cos(angle) * distance] });
-        const translateY = a.interpolate({ inputRange: [0, 1], outputRange: [0, Math.sin(angle) * distance] });
-        const opacity = a.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0, 1, 0] });
-        const scale = a.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, 1.5, 0.6] });
-        return (
-          <Animated.Text
-            key={i}
-            style={[sparkleStyles.sparkle, { opacity, transform: [{ translateX }, { translateY }, { scale }] }]}
-          >
-            ✨
-          </Animated.Text>
-        );
-      })}
-    </View>
-  );
-}
-
-const sparkleStyles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 36,
-    left: 0,
-    right: 0,
-    height: 0,
-    alignItems: 'center',
-  },
-  sparkle: {
-    position: 'absolute',
-    fontSize: 32,
-  },
-});
-
 export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) {
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { mealPlans, selectedChild } = useAppData();
   const [expanded, setExpanded] = useState(false);
-  const [sparkleTrigger, setSparkleTrigger] = useState(0);
   // 0 = 이번주, +1 = 다음주 ... 유치원이 다음주 식단표를 며칠 전에 미리 공지하는
   // 경우가 흔해서, "이번주"에는 저장된 식단이 하나도 없는데 "다음주"에는 있으면
   // 스캔한 급식표가 안 보인다는 오해를 사기 쉽다 — 시트를 열 때 자동으로 데이터가
@@ -125,7 +65,6 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
         setExpanded(false);
       }
 
-      setSparkleTrigger((t) => t + 1);
       Animated.parallel([
         Animated.spring(scaleAnim, { toValue: 1, friction: 6, tension: 80, useNativeDriver: true }),
         Animated.timing(opacityAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
@@ -137,7 +76,7 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, scaleAnim, opacityAnim]);
 
-  const todayISO = useMemo(() => toISODate(new Date()), []);
+  const todayISO = useTodayISO();
   const todayMenu = useMemo(
     () => mealPlans.find((m) => m.childId === selectedChild?.id && m.date === todayISO),
     [mealPlans, selectedChild, todayISO]
@@ -189,8 +128,6 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
         <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
 
         <Animated.View style={[styles.sheet, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]}>
-          <SparkleBurst trigger={sparkleTrigger} />
-
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
               <View style={styles.headerIconCircle}>

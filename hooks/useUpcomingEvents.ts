@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { useAppData } from '../context/AppDataContext';
 import { Event } from '../types/models';
-import { isPast, isTomorrow, toISODate } from '../utils/date';
+import { isPast, isTomorrow, parseISODate, toISODate } from '../utils/date';
+import { useTodayISO } from './useTodayISO';
 
 export interface EventDateGroup {
   date: string;
@@ -21,10 +22,10 @@ export interface UpcomingEvents {
 
 export function useUpcomingEvents(): UpcomingEvents {
   const { events, selectedChild } = useAppData();
+  const todayISO = useTodayISO();
 
   return useMemo(() => {
-    const now = new Date();
-    const todayISO = toISODate(now);
+    const now = parseISODate(todayISO);
 
     const tomorrowDate = new Date(now);
     tomorrowDate.setDate(now.getDate() + 1);
@@ -69,5 +70,5 @@ export function useUpcomingEvents(): UpcomingEvents {
       laterGroups,
       isEmpty: !hasVisibleContent,
     };
-  }, [events, selectedChild]);
+  }, [events, selectedChild, todayISO]);
 }
