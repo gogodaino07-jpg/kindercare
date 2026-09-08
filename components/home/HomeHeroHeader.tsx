@@ -485,14 +485,14 @@ function createMealCardStyles(colors: ThemeColors) {
       backgroundColor: colors.pastelOrangeAccent,
     },
     cardContent: {
-      paddingVertical: 12,
+      paddingVertical: 9,
       paddingHorizontal: 16,
     },
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 10,
+      marginBottom: 8,
     },
     tag: {
       backgroundColor: colors.pastelOrangeAccent,
