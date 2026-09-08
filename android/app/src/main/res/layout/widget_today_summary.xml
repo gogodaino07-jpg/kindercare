@@ -44,15 +44,14 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- 오늘 일정 카드 -->
+    <!-- 오늘 일정 카드 — 내용만큼만 높이를 차지하게(wrap_content) 해서, 준비물이
+         적을 때 카드 아래쪽에 빈 여백이 크게 남지 않게 한다. -->
     <LinearLayout
         android:id="@+id/widget_card"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
         android:orientation="vertical"
-        android:gravity="top"
         android:background="@drawable/widget_card_bg"
         android:paddingHorizontal="12dp"
         android:paddingVertical="8dp">
@@ -80,38 +79,30 @@
             android:maxLines="1"
             android:ellipsize="end" />
 
-        <LinearLayout
-            android:id="@+id/widget_event_1_chips"
-            android:layout_width="match_parent"
+        <!-- 준비물 칩 2개를 한 줄에 나란히 두려던 중첩 LinearLayout이 렌더링 실패의
+             원인 중 하나로 의심되어, 각 칩을 카드의 직계 자식으로 세로로 쌓는
+             단순한 구조로 바꿈(이전에 검증된 방식과 동일). -->
+        <TextView
+            android:id="@+id/widget_event_1_chip_1"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
-            android:orientation="horizontal">
+            android:background="@drawable/widget_chip_bg"
+            android:paddingHorizontal="9dp"
+            android:paddingVertical="4dp"
+            android:textColor="#334155"
+            android:textSize="11sp" />
 
-            <TextView
-                android:id="@+id/widget_event_1_chip_1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="6dp"
-                android:background="@drawable/widget_chip_bg"
-                android:paddingHorizontal="9dp"
-                android:paddingVertical="4dp"
-                android:textColor="#334155"
-                android:textSize="11sp"
-                android:maxLines="1"
-                android:ellipsize="end" />
-
-            <TextView
-                android:id="@+id/widget_event_1_chip_2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/widget_chip_bg"
-                android:paddingHorizontal="9dp"
-                android:paddingVertical="4dp"
-                android:textColor="#334155"
-                android:textSize="11sp"
-                android:maxLines="1"
-                android:ellipsize="end" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/widget_event_1_chip_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/widget_chip_bg"
+            android:paddingHorizontal="9dp"
+            android:paddingVertical="4dp"
+            android:textColor="#334155"
+            android:textSize="11sp" />
     </LinearLayout>
 
     <!-- 내일 요약 (내일 일정 없으면 전체 숨김) -->

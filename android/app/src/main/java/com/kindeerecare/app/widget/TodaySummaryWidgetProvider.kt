@@ -29,11 +29,6 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
 
     private fun renderChips(views: RemoteViews, itemNames: JSONArray?) {
       val count = itemNames?.length() ?: 0
-      if (count == 0) {
-        views.setViewVisibility(R.id.widget_event_1_chips, View.GONE)
-        return
-      }
-      views.setViewVisibility(R.id.widget_event_1_chips, View.VISIBLE)
       for (i in CHIP_IDS.indices) {
         if (i >= count) {
           views.setViewVisibility(CHIP_IDS[i], View.GONE)
@@ -69,7 +64,7 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
             if (eventCount == 0) {
               views.setViewVisibility(R.id.widget_badge, View.GONE)
               views.setTextViewText(R.id.widget_event_1_title, "오늘 등록된 일정이 없어요")
-              views.setViewVisibility(R.id.widget_event_1_chips, View.GONE)
+              renderChips(views, null)
             } else {
               views.setViewVisibility(R.id.widget_badge, View.VISIBLE)
               val first = events!!.optJSONObject(0)
@@ -102,7 +97,7 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
           views.setTextViewText(R.id.widget_date, "")
           views.setViewVisibility(R.id.widget_badge, View.GONE)
           views.setTextViewText(R.id.widget_event_1_title, "킨더케어를 열어 확인해주세요")
-          views.setViewVisibility(R.id.widget_event_1_chips, View.GONE)
+          renderChips(views, null)
           views.setViewVisibility(R.id.widget_tomorrow_row, View.GONE)
         }
 
