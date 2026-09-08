@@ -40,6 +40,7 @@ import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
 import { Event, EventItem } from '../types/models';
 import { isBirthdayToday, toISODate } from '../utils/date';
+import { updateHomeWidget } from '../utils/homeWidget';
 
 // 앱 프로세스가 살아있는 동안 전면 광고는 한 번만 시도한다. 컴포넌트 스코프
 // ref로 관리하면 AI 스캔 후 홈으로 돌아오면서 화면이 다시 마운트될 때마다
@@ -155,8 +156,25 @@ export default function HomeScreen() {
   const todayProgress = useMemo(() => {
     const items = upcoming.mainEvents.flatMap((e) => getDisplayItems(e));
     const checked = items.filter((i) => i.completed).length;
-    return { total: items.length, checked, percent: items.length === 0 ? 0 : Math.round((checked / items.length) * 100) };
+    const incompleteNames = items.filter((i) => !i.completed).map((i) => i.name);
+    return {
+      total: items.length,
+      checked,
+      percent: items.length === 0 ? 0 : Math.round((checked / items.length) * 100),
+      incompleteNames,
+    };
   }, [upcoming.mainEvents]);
+
+  // 홈 화면 위젯(안드로이드)에 오늘 일정 제목 + 준비물 현황을 밀어준다.
+  // 앱을 켜거나, 준비물을 체크하거나, 날짜가 바뀌어 일정이 갱신될 때마다 최신 상태로 맞춘다.
+  useEffect(() => {
+    updateHomeWidget({
+      totalItems: todayProgress.total,
+      checkedItems: todayProgress.checked,
+      todayTitles: upcoming.mainEvents.map((e) => e.title),
+      todayItemNames: todayProgress.incompleteNames,
+    });
+  }, [todayProgress, upcoming.mainEvents]);
 
   // 준비물 체크 여부를 캘린더 화면과 같은 곳(event.items[].completed)에 저장해서,
   // 홈에서 체크해도 캘린더에 바로 반영되도록 한다.

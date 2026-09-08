@@ -52,5 +52,11 @@
         <data android:host="oauth" android:scheme="kakao023ef0c004f81af8742c2cecfc27299f"/>
       </intent-filter>
     </activity>
+    <receiver android:name=".widget.TodaySummaryWidgetProvider" android:exported="true">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+      </intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/today_summary_widget_info"/>
+    </receiver>
   </application>
 </manifest>
