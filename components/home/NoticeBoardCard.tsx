@@ -73,7 +73,7 @@ export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardC
           end={{ x: 1, y: 1 }}
           style={styles.iconBadge}
         >
-          <MaterialCommunityIcons name="bullhorn" size={20} color="#FFFFFF" />
+          <MaterialCommunityIcons name="bullhorn" size={15} color="#FFFFFF" />
         </LinearGradient>
         <Text style={styles.title}>공지사항</Text>
         {notices.length > 1 && (
@@ -156,7 +156,8 @@ function createStyles(colors: ThemeColors) {
       marginHorizontal: 20,
       borderRadius: 20,
       backgroundColor: colors.lightBlueBg,
-      padding: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 11,
       ...SHADOW,
       shadowOpacity: 0.08,
       elevation: 2,
@@ -165,12 +166,12 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
-      marginBottom: 12,
+      marginBottom: 10,
     },
     iconBadge: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 28,
+      height: 28,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
       ...SHADOW,

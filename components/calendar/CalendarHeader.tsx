@@ -1,8 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useMemo } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Dimensions, Image, Modal, Pressable, StyleSheet, View } from 'react-native';
 import Text from '../common/AppText';
 import { useCalendarTheme } from './useCalendarTheme';
+
+const PHOTO_PREVIEW_SIZE = Math.min(Dimensions.get('window').width * 0.7, 320);
 
 interface CalendarHeaderProps {
   childName: string;
@@ -46,6 +48,7 @@ export default function CalendarHeader({
     () => [age !== undefined ? `${age}세` : undefined, formatClassName(className)].filter(Boolean).join(' '),
     [age, className]
   );
+  const [photoPreviewVisible, setPhotoPreviewVisible] = useState(false);
 
   return (
     <View style={styles.row}>
@@ -53,7 +56,11 @@ export default function CalendarHeader({
         <MaterialCommunityIcons name="chevron-left" size={28} color={t.textPrimary} />
       </Pressable>
 
-      <View style={styles.avatarWrap}>
+      <Pressable
+        style={styles.avatarWrap}
+        onPress={photoUri ? () => setPhotoPreviewVisible(true) : undefined}
+        accessibilityLabel={photoUri ? '프로필 사진 크게 보기' : undefined}
+      >
         {photoUri ? (
           <Image source={{ uri: photoUri }} style={styles.avatar} />
         ) : (
@@ -62,7 +69,7 @@ export default function CalendarHeader({
           </View>
         )}
         <View style={styles.onlineDot} />
-      </View>
+      </Pressable>
 
       <View style={styles.textBlock}>
         <View style={styles.titleRow}>
@@ -79,6 +86,19 @@ export default function CalendarHeader({
           {selectedDateLabel} 등원 준비율 <Text style={styles.subtitlePercent}>{percent}%</Text>
         </Text>
       </View>
+
+      {photoUri && (
+        <Modal
+          visible={photoPreviewVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setPhotoPreviewVisible(false)}
+        >
+          <Pressable style={styles.photoPreviewBackdrop} onPress={() => setPhotoPreviewVisible(false)}>
+            <Image source={{ uri: photoUri }} style={styles.photoPreviewImage} />
+          </Pressable>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -174,6 +194,19 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
   subtitlePercent: {
     color: t.amberDeep,
     fontWeight: '800',
+  },
+  photoPreviewBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoPreviewImage: {
+    width: PHOTO_PREVIEW_SIZE,
+    height: PHOTO_PREVIEW_SIZE,
+    borderRadius: PHOTO_PREVIEW_SIZE / 2,
+    borderWidth: 3,
+    borderColor: t.cardWhite,
   },
   });
 }
