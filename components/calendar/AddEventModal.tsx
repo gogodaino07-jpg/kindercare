@@ -182,7 +182,11 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
             </View>
           </ScrollView>
 
-          <Pressable style={styles.saveButton} onPress={handleSave}>
+          <Pressable
+            style={[styles.saveButton, !title.trim() && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={!title.trim()}
+          >
             <Text style={styles.saveButtonText}>등록하기</Text>
           </Pressable>
         </View>
@@ -264,6 +268,9 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
     borderRadius: 16,
     paddingVertical: 15,
     alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    backgroundColor: t.gray200,
   },
   saveButtonText: {
     fontSize: 15,
