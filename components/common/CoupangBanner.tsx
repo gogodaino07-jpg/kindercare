@@ -8,6 +8,14 @@ interface CoupangBannerProps {
   style?: ViewStyle;
   /** 쿠팡 파트너스 대시보드에서 만든 위젯 ID. 위젯마다 노출 카테고리가 다르므로 화면별로 다르게 줄 수 있음. */
   bannerId?: number;
+  /** 위젯 템플릿. 홈 화면 캐러셀은 'carousel', 골드박스처럼 카운트다운 있는 단일 배너는 'banner'. */
+  template?: 'carousel' | 'banner';
+  /** 위젯을 렌더링할 실제 너비(px). 지정 안 하면 화면 전체 너비를 그대로 씀(기존 홈 화면 동작 그대로). */
+  containerWidth?: number;
+  /** 위젯 높이(px, CSS 논리 픽셀). 기본값 50은 기존 홈 캐러셀 기준. */
+  height?: number;
+  /** 카드 안에 넣을 때 등, 상하 구분선이 필요 없으면 true. */
+  hideDividers?: boolean;
 }
 
 /**
@@ -15,8 +23,16 @@ interface CoupangBannerProps {
  * Uses official Coupang Partners script via WebView for maximum stability and correct tracking.
  * 다크모드와 무관하게 항상 라이트 톤으로 고정한다.
  */
-export default function CoupangBanner({ style, bannerId = 1010655 }: CoupangBannerProps) {
+export default function CoupangBanner({
+  style,
+  bannerId = 1010655,
+  template = 'carousel',
+  containerWidth,
+  height = 50,
+  hideDividers = false,
+}: CoupangBannerProps) {
   const { width: windowWidth } = useWindowDimensions();
+  const effectiveWidth = containerWidth ?? windowWidth;
   const { googleAccount } = useAppData();
   const [isReady, setIsReady] = useState(false);
 
@@ -28,14 +44,14 @@ export default function CoupangBanner({ style, bannerId = 1010655 }: CoupangBann
   }, [googleAccount?.email]);
 
   // Adjusting dimensions for the WebView container
-  const bannerHeight = 50;
+  const bannerHeight = height;
 
   // Coupang's widget serves thumbnail images sized to the width/height we request.
   // Requesting at native pixel density (then scaling the DOM back down with CSS)
   // makes the browser rasterize the images at full resolution instead of stretching
   // low-res assets across a high-density screen — fixing the blurry thumbnail.
   const dpr = Math.min(PixelRatio.get(), 3);
-  const scaledWidth = Math.round(windowWidth * dpr);
+  const scaledWidth = Math.round(effectiveWidth * dpr);
   const scaledHeight = Math.round(bannerHeight * dpr);
 
   const htmlContent = `
@@ -66,7 +82,7 @@ export default function CoupangBanner({ style, bannerId = 1010655 }: CoupangBann
           <script>
             new PartnersCoupang.G({
               "id": ${bannerId},
-              "template": "carousel",
+              "template": "${template}",
               "trackingCode": "AF5391104",
               "width": "${scaledWidth}",
               "height": "${scaledHeight}"
@@ -80,13 +96,13 @@ export default function CoupangBanner({ style, bannerId = 1010655 }: CoupangBann
   return (
     <View style={[styles.container, style]}>
       {/* Top Border Line */}
-      <View style={styles.topLine} />
+      {!hideDividers && <View style={styles.topLine} />}
 
       <View style={styles.contentWrapper}>
         <View style={[styles.webviewContainer, { height: bannerHeight }]}>
           {isReady ? (
             <WebView
-              key={`coupang-banner-${windowWidth}-${googleAccount?.email || 'guest'}`}
+              key={`coupang-banner-${effectiveWidth}-${googleAccount?.email || 'guest'}`}
               originWhitelist={['*']}
               source={{ html: htmlContent, baseUrl: 'https://ads-partners.coupang.com' }}
               style={styles.webview}
@@ -130,7 +146,7 @@ export default function CoupangBanner({ style, bannerId = 1010655 }: CoupangBann
         </Text>
       </View>
 
-      <View style={styles.bottomLine} />
+      {!hideDividers && <View style={styles.bottomLine} />}
     </View>
   );
 }

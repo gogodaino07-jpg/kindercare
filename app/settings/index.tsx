@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Platform,
   Switch,
+  useWindowDimensions,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -16,7 +17,7 @@ import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatTimeOfDay } from '../../components/settings/TimeWheelPicker';
 import Text from '../../components/common/AppText';
-import CoupangAdBanner from '../../components/common/CoupangAdBanner';
+import CoupangBanner from '../../components/common/CoupangBanner';
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
@@ -28,10 +29,9 @@ import { FREE_LIFETIME_LIMIT } from '../../features/newsletter-analysis';
 import { resolveCoords } from '../../hooks/useWeeklyWeather';
 import { fetchWeatherPreview } from '../../utils/weatherPreviewFetch';
 
-// 쿠팡 파트너스 "카테고리 배너 > 골드박스"에서 발급받은 배너(2026-09-07).
-const COUPANG_SETTINGS_LINK = 'https://link.coupang.com/a/gQ4wAzVJeK';
-const COUPANG_SETTINGS_BANNER_IMAGE =
-  'https://ads-partners.coupang.com/banners/1026962?trackingCode=AF5391104&subId=&traceId=V0-301-969b06e95b87326d-I1026962&w=728&h=90';
+// 쿠팡 파트너스 "카테고리 배너 > 골드박스"의 자바스크립트 태그에서 받은 위젯 ID.
+// 정적 이미지가 아니라 실시간 위젯이라 카운트다운/상품 갱신이 그대로 따라온다.
+const COUPANG_GOLDBOX_BANNER_ID = 1026962;
 
 const LOCK_METHOD_LABELS: Record<LockMethod, string> = {
   none: '설정 안 함',
@@ -46,6 +46,11 @@ export default function SettingsScreen() {
   const { mode, setMode, colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { showAlert } = useAlert();
+  // scrollContent(좌우 16*2) + coupangCard(좌우 8*2) + card 테두리(좌우 1*2)를 뺀
+  // 실제 배너가 그려질 너비. 골드박스 배너 원본 비율(728:90)로 높이를 맞춘다.
+  const { width: windowWidth } = useWindowDimensions();
+  const coupangBannerWidth = windowWidth - 16 * 2 - 8 * 2 - 1 * 2;
+  const coupangBannerHeight = Math.round((coupangBannerWidth * 90) / 728);
   const {
     resetAllData,
     requestWithdrawal,
@@ -302,7 +307,14 @@ export default function SettingsScreen() {
             {/* 쿠팡 파트너스 카테고리 배너 (로켓 프레시) */}
             {!isSubscribed && (
               <View style={[styles.card, styles.coupangCard]}>
-                <CoupangAdBanner link={COUPANG_SETTINGS_LINK} imageUrl={COUPANG_SETTINGS_BANNER_IMAGE} />
+                <CoupangBanner
+                  bannerId={COUPANG_GOLDBOX_BANNER_ID}
+                  template="banner"
+                  containerWidth={coupangBannerWidth}
+                  height={coupangBannerHeight}
+                  hideDividers
+                  style={styles.coupangBannerInner}
+                />
               </View>
             )}
 
@@ -614,5 +626,6 @@ function createStyles(colors: any) {
     footerLinkTextMuted: { fontSize: 12, color: colors.gray400, fontWeight: '500' },
     footerLinkDivider: { fontSize: 13, color: colors.border, fontWeight: '400' },
     coupangCard: { padding: 8 },
+    coupangBannerInner: { borderRadius: 12, overflow: 'hidden' },
   });
 }
