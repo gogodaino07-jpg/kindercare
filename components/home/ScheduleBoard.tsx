@@ -145,9 +145,11 @@ export default function ScheduleBoard({
     { key: 'dayAfterTomorrow', label: `모레 (${dayAfterTomorrowCount})` },
   ];
 
+  const isEmpty = filtered.length === 0;
+
   return (
     <View style={styles.container}>
-      <View style={styles.topBlock}>
+      <View style={[styles.topBlock, isEmpty && styles.topBlockEmpty]}>
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
             <MaterialIcons name="calendar-today" size={17} color={colors.peachOrangeDeep} />
@@ -180,10 +182,24 @@ export default function ScheduleBoard({
           ))}
         </View>
 
-        {filtered.length === 0 ? (
+        {isEmpty ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyEmoji}>🏝️</Text>
             <Text style={styles.emptyTitle}>이 날은 특별한 일정이 없어요</Text>
+            <Text style={styles.emptySubtitle}>
+              선생님이 보내주신 알림장이 있다면{'\n'}스캔해서 일정을 바로 등록해보세요
+            </Text>
+            <Pressable onPress={() => router.push('/upload')}>
+              <LinearGradient
+                colors={['#6366F1', '#9333EA']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.emptyScanButton}
+              >
+                <Text style={styles.emptyScanButtonIcon}>✨</Text>
+                <Text style={styles.emptyScanButtonText}>AI로 알림장 스캔하기</Text>
+              </LinearGradient>
+            </Pressable>
           </View>
         ) : (
           <View style={styles.list}>
@@ -480,6 +496,9 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
     // — app/index.tsx 참고). 일정이 많아 이미 화면을 넘치면 평소처럼 스크롤된다.
     container: { marginTop: 20, paddingHorizontal: 20, flex: 1, justifyContent: 'space-between' },
     topBlock: {},
+    // 일정이 없는 날엔 topBlock을 남는 세로 공간까지 늘려서, 그 안의 emptyCard도
+    // 같이 커지게 한다 — 점선 카드가 작게 뜨고 그 밑에 빈 공간만 남는 걸 방지.
+    topBlockEmpty: { flex: 1 },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     headerTitle: { fontSize: 16, fontWeight: '800', color: colors.gray900, letterSpacing: -0.4 },
@@ -644,16 +663,42 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
     itemStatusPillTextTodo: { color: colors.pastelOrangeAccent },
     itemStatusPillTextDone: { color: colors.green500 },
     emptyCard: {
+      flex: 1,
       backgroundColor: colors.gray50,
       borderRadius: 20,
       borderWidth: 1.5,
       borderColor: colors.border,
       borderStyle: 'dashed',
       paddingVertical: 28,
+      paddingHorizontal: 24,
       alignItems: 'center',
+      justifyContent: 'center',
     },
-    emptyEmoji: { fontSize: 28, marginBottom: 8 },
-    emptyTitle: { fontSize: 13, fontWeight: '700', color: colors.gray600 },
+    emptyEmoji: { fontSize: 40, marginBottom: 12 },
+    emptyTitle: { fontSize: 15, fontWeight: '800', color: colors.gray600 },
+    emptySubtitle: {
+      fontSize: 12.5,
+      fontWeight: '600',
+      color: colors.gray500,
+      textAlign: 'center',
+      lineHeight: 18,
+      marginTop: 8,
+      marginBottom: 20,
+    },
+    emptyScanButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 999,
+      ...SHADOW,
+      shadowOpacity: 0.15,
+      shadowColor: '#6366F1',
+      elevation: 3,
+    },
+    emptyScanButtonIcon: { fontSize: 14 },
+    emptyScanButtonText: { fontSize: 13.5, fontWeight: '800', color: '#FFFFFF' },
     zoomOverlay: {
       flex: 1,
       backgroundColor: 'rgba(2, 6, 23, 0.8)',
