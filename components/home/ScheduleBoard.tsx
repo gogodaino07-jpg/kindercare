@@ -155,17 +155,19 @@ export default function ScheduleBoard({
             <MaterialIcons name="calendar-today" size={17} color={colors.peachOrangeDeep} />
             <Text style={styles.headerTitle}>알림장 일정 & 준비물</Text>
           </View>
-          <Pressable onPress={() => router.push('/upload')}>
-            <LinearGradient
-              colors={['#6366F1', '#9333EA']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.scanButton}
-            >
-              <Text style={styles.scanButtonIcon}>✨</Text>
-              <Text style={styles.scanButtonText}>AI 스캔</Text>
-            </LinearGradient>
-          </Pressable>
+          {!isEmpty && (
+            <Pressable onPress={() => router.push('/upload')}>
+              <LinearGradient
+                colors={['#6366F1', '#9333EA']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.scanButton}
+              >
+                <Text style={styles.scanButtonIcon}>✨</Text>
+                <Text style={styles.scanButtonText}>AI 스캔</Text>
+              </LinearGradient>
+            </Pressable>
+          )}
         </View>
 
         <View style={styles.tabRow}>
