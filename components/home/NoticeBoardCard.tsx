@@ -76,10 +76,12 @@ export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardC
           <MaterialCommunityIcons name="bullhorn" size={20} color="#FFFFFF" />
         </LinearGradient>
         <Text style={styles.title}>공지사항</Text>
-        <Pressable onPress={() => setShowAll(true)} style={styles.moreButton} hitSlop={6}>
-          <Text style={styles.moreButtonText}>전체보기</Text>
-          <MaterialCommunityIcons name="chevron-right" size={14} color={colors.gray500} />
-        </Pressable>
+        {notices.length > 1 && (
+          <Pressable onPress={() => setShowAll(true)} style={styles.moreButton} hitSlop={6}>
+            <Text style={styles.moreButtonText}>전체보기</Text>
+            <MaterialCommunityIcons name="chevron-right" size={14} color={colors.gray500} />
+          </Pressable>
+        )}
       </View>
 
       <View style={styles.list}>
@@ -140,10 +142,6 @@ export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardC
                 <Text style={styles.detailText}>{detailNotice?.noticeText || detailNotice?.title}</Text>
               </Pressable>
             </ScrollView>
-            <Pressable style={styles.detailCta} onPress={handleGoToCalendar}>
-              <Text style={styles.detailCtaText}>캘린더에서 보기</Text>
-              <MaterialCommunityIcons name="chevron-right" size={16} color={colors.blue500} />
-            </Pressable>
           </Pressable>
         </Pressable>
       </Modal>
@@ -284,20 +282,6 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '600',
       color: colors.gray900,
       lineHeight: 21,
-    },
-    detailCta: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 4,
-      backgroundColor: colors.blue100,
-      borderRadius: 14,
-      paddingVertical: 12,
-    },
-    detailCtaText: {
-      fontSize: 13.5,
-      fontWeight: '800',
-      color: colors.blue500,
     },
   });
 }
