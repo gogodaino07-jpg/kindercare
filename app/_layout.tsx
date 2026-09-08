@@ -8,6 +8,7 @@ import { PoorStory_400Regular } from '@expo-google-fonts/poor-story';
 import { Sunflower_500Medium } from '@expo-google-fonts/sunflower';
 import { YeonSung_400Regular } from '@expo-google-fonts/yeon-sung';
 import { useFonts } from 'expo-font';
+import * as Notifications from 'expo-notifications';
 import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -107,6 +108,24 @@ function ThemedNavigation() {
     });
     return () => subscription.remove();
   }, [router]);
+
+  // 푸시 알림을 탭했을 때 홈 화면이 아니라 그 알림이 알려준 일정 날짜의 캘린더로 바로 이동.
+  // 앱이 이미 떠 있을 때(response listener)와, 완전히 종료된 상태에서 알림 탭으로 막 켜졌을 때
+  // (getLastNotificationResponseAsync, cold start) 둘 다 처리해야 한다.
+  useEffect(() => {
+    if (!isReady) return;
+
+    const navigateToDate = (response: Notifications.NotificationResponse | null) => {
+      const date = response?.notification.request.content.data?.date;
+      if (typeof date === 'string') {
+        router.push({ pathname: '/calendar', params: { date } });
+      }
+    };
+
+    Notifications.getLastNotificationResponseAsync().then(navigateToDate);
+    const subscription = Notifications.addNotificationResponseReceivedListener(navigateToDate);
+    return () => subscription.remove();
+  }, [isReady, router]);
 
   // Determine status bar style:
   // During splash (always light bg #FEF9F0), we need dark icons.

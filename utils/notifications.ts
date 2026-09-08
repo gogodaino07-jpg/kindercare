@@ -48,13 +48,18 @@ function summaryLine(event: Event): string {
 }
 
 /** 같은 날짜에 일정이 여러 건이면 하나로 묶어서 알려준다 — 1건이면 그 일정 내용 그대로, 여러 건이면 건수+목록으로. */
-function buildNotificationContent(label: string, dateEvents: Event[]): { title: string; body: string } {
+function buildNotificationContent(
+  label: string,
+  dateEvents: Event[]
+): { title: string; body: string; data: { date: string } } {
+  const data = { date: dateEvents[0].date };
   if (dateEvents.length === 1) {
-    return { title: `[${label}] ${dateEvents[0].title}`, body: summaryLine(dateEvents[0]) };
+    return { title: `[${label}] ${dateEvents[0].title}`, body: summaryLine(dateEvents[0]), data };
   }
   return {
     title: `[${label}] 일정 ${dateEvents.length}건`,
     body: dateEvents.map((e) => `• ${e.title}`).join('\n'),
+    data,
   };
 }
 
