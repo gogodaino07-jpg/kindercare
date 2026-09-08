@@ -31,44 +31,44 @@
     </LinearLayout>
 
     <TextView
-        android:id="@+id/widget_today_line"
+        android:id="@+id/widget_event_1_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="9dp"
         android:textColor="#1E293B"
-        android:textSize="15.5sp"
-        android:textStyle="bold"
-        android:maxLines="1"
-        android:ellipsize="end" />
-
-    <TextView
-        android:id="@+id/widget_prep_summary"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="7dp"
-        android:textColor="#16A34A"
         android:textSize="14.5sp"
         android:textStyle="bold"
         android:maxLines="1"
         android:ellipsize="end" />
 
     <TextView
-        android:id="@+id/widget_item_1"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:textColor="#475569"
-        android:textSize="14sp"
-        android:maxLines="1"
-        android:ellipsize="end" />
-
-    <TextView
-        android:id="@+id/widget_item_2"
+        android:id="@+id/widget_event_1_items"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         android:textColor="#475569"
-        android:textSize="14sp"
+        android:textSize="13sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/widget_event_2_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:textColor="#1E293B"
+        android:textSize="14.5sp"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/widget_event_2_items"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="#475569"
+        android:textSize="13sp"
         android:maxLines="1"
         android:ellipsize="end" />
 </LinearLayout>

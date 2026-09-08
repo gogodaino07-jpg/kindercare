@@ -13,7 +13,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** 홈 화면 위젯 — JS 쪽(utils/homeWidget.ts)이 HomeWidgetModule을 통해 써준
- *  SharedPreferences의 요약 데이터를 읽어 오늘 일정 제목 + 준비물 현황을 보여준다. */
+ *  SharedPreferences의 요약 데이터를 읽어 오늘 일정별로 제목 + 그 일정의 준비물을 보여준다. */
 class TodaySummaryWidgetProvider : AppWidgetProvider() {
 
   override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
@@ -24,12 +24,19 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
     const val PREFS_NAME = "widget_data"
     const val KEY_SUMMARY_JSON = "summary_json"
 
-    /** 일정이 2건 이상이면 전부 나열하지 않고 첫 일정만 보여준 뒤 "외 N건"으로 요약한다
-     *  (예: "오늘: 저축의 날 외 1건"). */
-    private fun buildTodayLine(arr: JSONArray?): String {
-      if (arr == null || arr.length() == 0) return "오늘 등록된 일정이 없어요"
-      val first = arr.optString(0)
-      return if (arr.length() == 1) "오늘: $first" else "오늘: $first 외 ${arr.length() - 1}건"
+    private val TITLE_IDS = intArrayOf(R.id.widget_event_1_title, R.id.widget_event_2_title)
+    private val ITEMS_IDS = intArrayOf(R.id.widget_event_1_items, R.id.widget_event_2_items)
+
+    /** 한 일정의 남은 준비물 목록 — 1개면 그대로, 2개 이상이면 "첫 항목 외 N건"으로 요약. */
+    private fun buildItemsLine(itemNames: JSONArray?): String? {
+      if (itemNames == null || itemNames.length() == 0) return null
+      val first = itemNames.optString(0)
+      return if (itemNames.length() == 1) "• $first" else "• $first 외 ${itemNames.length() - 1}건"
+    }
+
+    private fun clearSlot(views: RemoteViews, index: Int) {
+      views.setViewVisibility(TITLE_IDS[index], View.GONE)
+      views.setViewVisibility(ITEMS_IDS[index], View.GONE)
     }
 
     fun updateWidgets(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
@@ -43,37 +50,32 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
         if (jsonString != null) {
           try {
             val json = JSONObject(jsonString)
-            val total = json.optInt("totalItems", 0)
-            val checked = json.optInt("checkedItems", 0)
-            val itemNames = json.optJSONArray("todayItemNames")
-            val remaining = itemNames?.length() ?: 0
+            val events = json.optJSONArray("todayEvents")
 
-            views.setTextViewText(R.id.widget_today_line, buildTodayLine(json.optJSONArray("todayTitles")))
-
-            views.setTextViewText(
-              R.id.widget_prep_summary,
-              if (total > 0) "준비물 ${checked}/${total}개 완료" else "오늘 챙길 준비물 없어요"
-            )
-
-            // 남은 준비물은 최대 2줄까지만 — 1번째 줄엔 항목 이름, 남은 게 3개 이상이면
-            // 2번째 줄은 실제 항목 대신 "+N개 더"로 요약해서 위젯 높이가 늘어나지 않게 한다.
-            if (remaining == 0) {
-              views.setViewVisibility(R.id.widget_item_1, View.GONE)
-              views.setViewVisibility(R.id.widget_item_2, View.GONE)
+            if (events == null || events.length() == 0) {
+              views.setViewVisibility(TITLE_IDS[0], View.VISIBLE)
+              views.setTextViewText(TITLE_IDS[0], "오늘 등록된 일정이 없어요")
+              views.setViewVisibility(ITEMS_IDS[0], View.GONE)
+              clearSlot(views, 1)
             } else {
-              views.setViewVisibility(R.id.widget_item_1, View.VISIBLE)
-              views.setTextViewText(R.id.widget_item_1, "• ${itemNames!!.optString(0)}")
-              when {
-                remaining == 1 -> views.setViewVisibility(R.id.widget_item_2, View.GONE)
-                remaining == 2 -> {
-                  views.setViewVisibility(R.id.widget_item_2, View.VISIBLE)
-                  views.setTextViewText(R.id.widget_item_2, "• ${itemNames.optString(1)}")
+              // 위젯 높이가 늘어나지 않도록 최대 2개 일정까지만 보여준다. 2번째
+              // 자리에 못 담은 일정이 더 있으면 2번째 일정 제목 뒤에 "(+N건 더)"를
+              // 붙여서 슬롯을 추가로 늘리지 않고도 더 있다는 것만 알려준다.
+              val shownCount = minOf(events.length(), TITLE_IDS.size)
+              for (i in 0 until shownCount) {
+                val event = events.optJSONObject(i)
+                var title = event?.optString("title") ?: ""
+                if (i == shownCount - 1 && events.length() > shownCount) {
+                  title = "$title (+${events.length() - shownCount}건 더)"
                 }
-                else -> {
-                  views.setViewVisibility(R.id.widget_item_2, View.VISIBLE)
-                  views.setTextViewText(R.id.widget_item_2, "+ ${remaining - 1}개 더")
-                }
+                views.setViewVisibility(TITLE_IDS[i], View.VISIBLE)
+                views.setTextViewText(TITLE_IDS[i], title)
+
+                val itemsLine = buildItemsLine(event?.optJSONArray("itemNames"))
+                views.setViewVisibility(ITEMS_IDS[i], if (itemsLine == null) View.GONE else View.VISIBLE)
+                if (itemsLine != null) views.setTextViewText(ITEMS_IDS[i], itemsLine)
               }
+              for (i in shownCount until TITLE_IDS.size) clearSlot(views, i)
             }
 
             handled = true
@@ -83,10 +85,10 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
         }
 
         if (!handled) {
-          views.setTextViewText(R.id.widget_today_line, "킨더케어를 열어 확인해주세요")
-          views.setTextViewText(R.id.widget_prep_summary, "")
-          views.setViewVisibility(R.id.widget_item_1, View.GONE)
-          views.setViewVisibility(R.id.widget_item_2, View.GONE)
+          views.setViewVisibility(TITLE_IDS[0], View.VISIBLE)
+          views.setTextViewText(TITLE_IDS[0], "킨더케어를 열어 확인해주세요")
+          views.setViewVisibility(ITEMS_IDS[0], View.GONE)
+          clearSlot(views, 1)
         }
 
         val intent = Intent(context, MainActivity::class.java)
