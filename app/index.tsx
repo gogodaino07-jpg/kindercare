@@ -22,6 +22,7 @@ import HomeEmptyContent from '../components/home/HomeEmptyContent';
 import HomeHeroHeader from '../components/home/HomeHeroHeader';
 import HomeProfileBar from '../components/home/HomeProfileBar';
 import MealPlanSheet from '../components/home/MealPlanSheet';
+import MultiChildPrepSummary from '../components/home/MultiChildPrepSummary';
 import NoticeBoardCard from '../components/home/NoticeBoardCard';
 import ScheduleBoard, { ScheduleTab } from '../components/home/ScheduleBoard';
 import StickyPrepBar from '../components/home/StickyPrepBar';
@@ -144,6 +145,12 @@ export default function HomeScreen() {
     const firstUnlocked = children.find((c) => !isChildLocked(children, c.id, isSubscribed));
     if (firstUnlocked) selectChild(firstUnlocked.id);
   }, [children, selectedChild, isSubscribed, selectChild]);
+
+  // 다자녀 요약 바에는 무료 한도로 잠긴 아이는 뺀다 — 어차피 전환해도 그 아이 데이터는 볼 수 없다.
+  const unlockedChildren = useMemo(
+    () => children.filter((c) => !isChildLocked(children, c.id, isSubscribed)),
+    [children, isSubscribed]
+  );
 
   const todayProgress = useMemo(() => {
     const items = upcoming.mainEvents.flatMap((e) => getDisplayItems(e));
@@ -391,6 +398,14 @@ export default function HomeScreen() {
               />
               {noticeEvents.length > 0 && (
                 <NoticeBoardCard notices={noticeEvents} onPressNotice={handleEventPress} />
+              )}
+              {unlockedChildren.length > 1 && (
+                <MultiChildPrepSummary
+                  children={unlockedChildren}
+                  events={events}
+                  selectedChildId={selectedChild?.id}
+                  onSelectChild={selectChild}
+                />
               )}
               <View
                 onLayout={(e) => {
