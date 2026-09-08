@@ -1471,12 +1471,17 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     // familyOwnerEmail도 함께 지워야 한다 — 안 지우면 재로그인 시 예전에 합류했던
     // 가족의 구성원으로 계속 인식돼(google-signin.tsx의 relogin 분기), 탈퇴 후
     // 재가입해도 신규 가입이 아니라 그 가족으로 바로 복귀해버리는 문제가 있었다.
+    // withdrawnAt: 같은 이메일로 재가입 시 무료 스캔 횟수를 언제 리셋해줄지 판단하는
+    // 기준 시각. 탈퇴 직후 바로 리셋해주면 탈퇴+재가입을 반복해 무료 스캔을 무한정
+    // 받아가는 어뷰징이 가능해서, AIUsageLimitService 쪽에서 이 값 기준 7일이 지난
+    // 뒤에만 리셋을 적용한다(자세한 내용은 그쪽 주석 참고).
     const userReset = getDb().collection('users').doc(email).set({
       email,
       lastLogin: new Date().toISOString(),
       hasOnboarded: false,
       withdrawalRequestedAt: firestore.FieldValue.delete(),
       familyOwnerEmail: firestore.FieldValue.delete(),
+      withdrawnAt: new Date().toISOString(),
     }, { merge: true });
 
     await Promise.all([...childDeletes, ...eventDeletes, ...mealPlanDeletes, ...memberDeletes, userReset]);

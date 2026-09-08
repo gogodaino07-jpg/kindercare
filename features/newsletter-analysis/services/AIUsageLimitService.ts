@@ -5,6 +5,10 @@ import { getDb } from '../../../utils/firebase';
  *  하나의 풀을 공유한다. 이 횟수를 다 쓰면 완전히 막히는 게 아니라, 구독하지 않는 한
  *  스캔마다 광고 시청이 필요해진다(무제한 반복 가능). */
 export const FREE_LIFETIME_LIMIT = 2;
+/** 탈퇴 후 같은 이메일로 재가입했을 때, 무료 스캔 횟수를 다시 2회로 리셋해주기까지
+ *  기다리는 기간. 탈퇴 즉시 리셋해주면 탈퇴+재가입을 반복해 무료 스캔을 무한정
+ *  받아가는 어뷰징이 가능해서 텀을 둔다. */
+const WITHDRAWAL_RESET_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 /** 프리미엄 구독자의 알림장 스캔 주간/월간 한도 — 두 한도를 동시에 지켜야 함(둘 중 먼저 차는 쪽이 기준). */
 export const PREMIUM_WEEKLY_LIMIT = 10;
 export const PREMIUM_MONTHLY_LIMIT = 50;
@@ -94,6 +98,7 @@ function remainingForPremium(usage: PremiumUsageRecord, type: AIUsageType): numb
 export const AIUsageLimitService = {
   async getRemainingCount(userId?: string, isSubscribed = false, type: AIUsageType = 'newsletter'): Promise<number> {
     if (!isSubscribed) {
+      if (userId) await this.applyWithdrawalCooldownResetIfEligible(userId);
       const usage = await this.readFreeLifetimeUsage(userId);
       return Math.max(0, FREE_LIFETIME_LIMIT - usage.totalCount);
     }
@@ -122,6 +127,28 @@ export const AIUsageLimitService = {
   async resetUsage(userId: string, type: AIUsageType = 'newsletter'): Promise<void> {
     await this.writeFreeLifetimeUsage(userId, { totalCount: 0 });
     await this.writePremiumUsage(userId, normalizePremiumUsage(null), type);
+  },
+
+  /**
+   * 탈퇴 후 같은 이메일로 재가입한 사용자가 무료 스캔을 확인하려 할 때마다 호출된다.
+   * users/{email} 문서의 withdrawnAt(탈퇴 시각)을 확인해서, 그로부터 쿨다운
+   * (WITHDRAWAL_RESET_COOLDOWN_MS)이 지났으면 그때 처음으로 무료 스캔 2회를 다시
+   * 채워주고 withdrawnAt을 지운다(그래야 다음 호출부터 또 리셋해버리지 않음).
+   * withdrawnAt이 없거나(탈퇴 이력 없음) 쿨다운이 아직 안 지났으면 아무 일도 안 한다.
+   */
+  async applyWithdrawalCooldownResetIfEligible(userId: string): Promise<void> {
+    try {
+      const doc = await getDb().collection('users').doc(userId).get();
+      const withdrawnAt = doc.exists ? (doc.data()?.withdrawnAt as string | undefined) : undefined;
+      if (!withdrawnAt) return;
+      const elapsedMs = Date.now() - new Date(withdrawnAt).getTime();
+      if (elapsedMs < WITHDRAWAL_RESET_COOLDOWN_MS) return;
+      await this.resetUsage(userId);
+      await this.resetUsage(userId, 'meal');
+      await getDb().collection('users').doc(userId).update({ withdrawnAt: null });
+    } catch {
+      // 확인에 실패하면 이번엔 그냥 넘어감 — 다음 조회 때 다시 시도됨
+    }
   },
 
   async readFreeLifetimeUsage(userId?: string): Promise<FreeLifetimeRecord> {
