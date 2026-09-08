@@ -52,7 +52,7 @@
         android:layout_weight="1"
         android:layout_marginTop="6dp"
         android:orientation="vertical"
-        android:gravity="center_vertical"
+        android:gravity="top"
         android:background="@drawable/widget_card_bg"
         android:paddingHorizontal="12dp"
         android:paddingVertical="8dp">

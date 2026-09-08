@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
 import com.kindeerecare.app.MainActivity
@@ -50,11 +51,16 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
       }
     }
 
+    private const val TAG = "TodaySummaryWidget"
+
     fun updateWidgets(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
       val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
       val jsonString = prefs.getString(KEY_SUMMARY_JSON, null)
+      Log.d(TAG, "updateWidgets called, widgetIds=${appWidgetIds.joinToString()}, jsonString=$jsonString")
 
       for (widgetId in appWidgetIds) {
+        val options = appWidgetManager.getAppWidgetOptions(widgetId)
+        Log.d(TAG, "widget $widgetId options: $options")
         val views = RemoteViews(context.packageName, R.layout.widget_today_summary)
 
         var handled = false
@@ -94,6 +100,7 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
 
             handled = true
           } catch (e: Exception) {
+            Log.e(TAG, "failed to build widget content", e)
             handled = false
           }
         }
@@ -115,7 +122,12 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
         )
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
 
-        appWidgetManager.updateAppWidget(widgetId, views)
+        try {
+          appWidgetManager.updateAppWidget(widgetId, views)
+          Log.d(TAG, "updateAppWidget($widgetId) succeeded, handled=$handled")
+        } catch (e: Exception) {
+          Log.e(TAG, "updateAppWidget($widgetId) threw", e)
+        }
       }
     }
   }
