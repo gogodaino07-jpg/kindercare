@@ -40,7 +40,7 @@ import { useTodayISO } from '../hooks/useTodayISO';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
 import { Event, EventItem } from '../types/models';
-import { isBirthdayToday, parseISODate, toISODate } from '../utils/date';
+import { isBirthdayToday, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
 import { updateHomeWidget } from '../utils/homeWidget';
 
 // 앱 프로세스가 살아있는 동안 전면 광고는 한 번만 시도한다. 컴포넌트 스코프
@@ -114,6 +114,11 @@ export default function HomeScreen() {
   const upcoming = useUpcomingEvents();
   const weather = useWeeklyWeather();
   const todayISO = useTodayISO();
+  const tomorrowISO = useMemo(() => {
+    const d = parseISODate(todayISO);
+    d.setDate(d.getDate() + 1);
+    return toISODate(d);
+  }, [todayISO]);
   const noticeEvents = useMemo(() => {
     // 과거 공지가 홈 화면에 계속 노출되지 않도록 오늘 이후의 공지만 보여준다.
     // 단, 오늘 날짜인 공지는 "오늘 일정"(D-DAY 배지)에 이미 노출되므로 중복을 피하기 위해 내일 이후만 보여준다.
@@ -163,18 +168,32 @@ export default function HomeScreen() {
     };
   }, [upcoming.mainEvents]);
 
-  // 홈 화면 위젯(안드로이드)에 오늘 일정을 일정별 준비물과 함께 밀어준다.
+  // 홈 화면 위젯(안드로이드)에 오늘 일정을 일정별 준비물과 함께, 내일 일정도 미리보기로 밀어준다.
   // 앱을 켜거나, 준비물을 체크하거나, 날짜가 바뀌어 일정이 갱신될 때마다 최신 상태로 맞춘다.
   useEffect(() => {
+    const widgetDateLabel = (iso: string) => {
+      const d = parseISODate(iso);
+      return `${d.getMonth() + 1}.${d.getDate()} (${WEEKDAY_KO[d.getDay()]})`;
+    };
+    const tomorrowEvent = upcoming.secondaryEvents[0];
+
     updateHomeWidget({
+      dateLabel: widgetDateLabel(todayISO),
       todayEvents: upcoming.mainEvents.map((e) => ({
         title: e.title,
         itemNames: getDisplayItems(e)
           .filter((i) => !i.completed)
           .map((i) => i.name),
       })),
+      tomorrow: tomorrowEvent
+        ? {
+            dateLabel: widgetDateLabel(tomorrowISO),
+            title: tomorrowEvent.title,
+            itemCount: getDisplayItems(tomorrowEvent).filter((i) => !i.completed).length,
+          }
+        : null,
     });
-  }, [upcoming.mainEvents]);
+  }, [upcoming.mainEvents, upcoming.secondaryEvents, todayISO, tomorrowISO]);
 
   // 준비물 체크 여부를 캘린더 화면과 같은 곳(event.items[].completed)에 저장해서,
   // 홈에서 체크해도 캘린더에 바로 반영되도록 한다.
@@ -286,11 +305,6 @@ export default function HomeScreen() {
   }, []);
 
   // 가족 공유 카드는 지금 보고 있는 탭(오늘/내일/모레) 기준으로 내용을 만든다.
-  const tomorrowISO = useMemo(() => {
-    const d = parseISODate(todayISO);
-    d.setDate(d.getDate() + 1);
-    return toISODate(d);
-  }, [todayISO]);
   const dayAfterTomorrowISO = useMemo(() => {
     const d = parseISODate(todayISO);
     d.setDate(d.getDate() + 2);
