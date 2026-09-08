@@ -5,6 +5,7 @@ import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, View } from
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
+import { isAllergyMatch } from '../../utils/allergy';
 import { formatMD, parseISODate, startOfDay, toISODate, WEEKDAY_KO } from '../../utils/date';
 import Text from '../common/AppText';
 
@@ -216,7 +217,17 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
               <View style={styles.mealCardTag}>
                 <Text style={styles.mealCardTagText}>점심 식단</Text>
               </View>
-              <Text style={styles.mealCardText}>{todayMenu.menu.join(', ')}</Text>
+              <Text style={styles.mealCardText}>
+                {todayMenu.menu.map((item, i) => {
+                  const hasAllergy = isAllergyMatch(item, selectedChild?.allergies);
+                  return (
+                    <Text key={item} style={hasAllergy ? styles.allergyText : undefined}>
+                      {hasAllergy ? `⚠️${item}` : item}
+                      {i < todayMenu.menu.length - 1 ? ', ' : ''}
+                    </Text>
+                  );
+                })}
+              </Text>
             </View>
           ) : (
             <Text style={styles.emptyText}>오늘은 등록된 식단이 없어요</Text>
@@ -255,11 +266,17 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
                       </Text>
                     </View>
                     {d.plan ? (
-                      d.plan.menu.map((item, i) => (
-                        <Text key={i} style={styles.weekCardMenuItem}>
-                          {item}
-                        </Text>
-                      ))
+                      d.plan.menu.map((item, i) => {
+                        const hasAllergy = isAllergyMatch(item, selectedChild?.allergies);
+                        return (
+                          <Text
+                            key={i}
+                            style={[styles.weekCardMenuItem, hasAllergy && styles.allergyText]}
+                          >
+                            {hasAllergy ? `⚠️${item}` : item}
+                          </Text>
+                        );
+                      })
                     ) : (
                       <Text style={styles.weekCardEmpty}>식단 없음</Text>
                     )}
@@ -468,6 +485,10 @@ function createStyles(colors: ThemeColors) {
       color: colors.gray400,
       fontStyle: 'italic',
       textAlign: 'center',
+    },
+    allergyText: {
+      color: colors.tomorrowRed,
+      fontWeight: '800',
     },
     closeButton: {
       marginTop: 16,

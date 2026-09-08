@@ -7,6 +7,7 @@ import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useTheme, useThemeColors } from '../../context/ThemeContext';
 import { WEATHER_SOURCE_LABEL, WeatherDay } from '../../hooks/useWeeklyWeather';
 import { Child, MealPlan } from '../../types/models';
+import { isAllergyMatch } from '../../utils/allergy';
 import { formatMD, toISODate } from '../../utils/date';
 import { describeGuideTip, describeMiniTip } from '../../utils/weatherCode';
 import Text from '../common/AppText';
@@ -86,7 +87,7 @@ export default function HomeHeroHeader({
         </LinearGradient>
       )}
 
-      <MealMenuCard todayMeal={todayMeal} onPressMeal={onPressMeal} />
+      <MealMenuCard todayMeal={todayMeal} onPressMeal={onPressMeal} allergies={selectedChild?.allergies} />
 
       {weatherExpanded && (
         <View style={styles.weatherMetaRow}>
@@ -371,7 +372,15 @@ function MiniWeatherCard({
 }
 
 /** 오늘의 급식 카드 — 오렌지 태그 + "전체 식단" 링크(급식 시트를 그대로 엶) + 대표 메뉴 + 나머지 반찬 목록. */
-function MealMenuCard({ todayMeal, onPressMeal }: { todayMeal?: MealPlan; onPressMeal: () => void }) {
+function MealMenuCard({
+  todayMeal,
+  onPressMeal,
+  allergies,
+}: {
+  todayMeal?: MealPlan;
+  onPressMeal: () => void;
+  allergies?: string[];
+}) {
   const colors = useThemeColors();
   const styles = useMemo(() => createMealCardStyles(colors), [colors]);
   const router = useRouter();
@@ -381,6 +390,7 @@ function MealMenuCard({ todayMeal, onPressMeal }: { todayMeal?: MealPlan; onPres
     () => (todayMeal ? todayMeal.menu.filter((item) => item !== mainText) : []),
     [todayMeal, mainText]
   );
+  const mainHasAllergy = !!mainText && isAllergyMatch(mainText, allergies);
 
   if (!todayMeal) {
     return (
@@ -426,12 +436,26 @@ function MealMenuCard({ todayMeal, onPressMeal }: { todayMeal?: MealPlan; onPres
             <Text style={styles.thumbnailEmoji}>🍲</Text>
           </View>
           <View style={styles.textCol}>
-            <Text style={styles.mainMenuText} numberOfLines={1}>
-              {mainText}
-            </Text>
+            <View style={styles.mainMenuRow}>
+              {mainHasAllergy && <Text style={styles.allergyDot}>⚠️</Text>}
+              <Text
+                style={[styles.mainMenuText, mainHasAllergy && styles.allergyText]}
+                numberOfLines={1}
+              >
+                {mainText}
+              </Text>
+            </View>
             {sideItems.length > 0 && (
               <Text style={styles.sideMenuText} numberOfLines={2}>
-                {sideItems.join(' · ')}
+                {sideItems.map((item, i) => {
+                  const hasAllergy = isAllergyMatch(item, allergies);
+                  return (
+                    <Text key={item} style={hasAllergy ? styles.allergyText : undefined}>
+                      {hasAllergy ? `⚠️${item}` : item}
+                      {i < sideItems.length - 1 ? ' · ' : ''}
+                    </Text>
+                  );
+                })}
               </Text>
             )}
           </View>
@@ -512,16 +536,29 @@ function createMealCardStyles(colors: ThemeColors) {
       flex: 1,
       minWidth: 0,
     },
+    mainMenuRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      marginBottom: 3,
+    },
     mainMenuText: {
       fontSize: 15,
       fontWeight: '800',
       color: colors.gray900,
-      marginBottom: 3,
+      flexShrink: 1,
     },
     sideMenuText: {
       fontSize: 12,
       fontWeight: '600',
       color: colors.gray500,
+    },
+    allergyDot: {
+      fontSize: 12,
+    },
+    allergyText: {
+      color: colors.tomorrowRed,
+      fontWeight: '800',
     },
     emptyRow: {
       flexDirection: 'row',

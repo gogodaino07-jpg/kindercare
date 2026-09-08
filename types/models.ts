@@ -16,6 +16,8 @@ export interface Child {
   photoUri?: string;
   /** 실제 사진(photoUri)이 없을 때 아바타로 보여줄 기본 캐릭터 이모지. */
   avatarEmoji?: string;
+  /** 알레르기 유발 식재료 키워드 목록 — 급식 메뉴에 이 키워드가 포함되면 강조 표시한다. */
+  allergies?: string[];
 }
 
 export interface EventItem {

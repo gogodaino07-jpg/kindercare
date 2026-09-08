@@ -114,6 +114,7 @@ export default function ChildProfileScreen() {
     editingChild ? editingChild.className ?? '없음' : ''
   );
   const [hasNoClass, setHasNoClass] = useState(editingChild ? !editingChild.className : false);
+  const [allergiesText, setAllergiesText] = useState(editingChild?.allergies?.join(', ') ?? '');
   const [attemptedSave, setAttemptedSave] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -125,6 +126,7 @@ export default function ChildProfileScreen() {
     age: editingChild?.age ?? null,
     birthdate: editingChild?.birthdate ?? null,
     photoUri: editingChild?.photoUri ?? null,
+    allergiesText: editingChild?.allergies?.join(', ') ?? '',
   }).current;
   const justSavedRef = useRef(false);
 
@@ -134,7 +136,8 @@ export default function ChildProfileScreen() {
     className !== initialSnapshot.className ||
     age !== initialSnapshot.age ||
     (birthdate ? toISODate(birthdate) : null) !== initialSnapshot.birthdate ||
-    photoUri !== initialSnapshot.photoUri;
+    photoUri !== initialSnapshot.photoUri ||
+    allergiesText !== initialSnapshot.allergiesText;
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
@@ -230,15 +233,22 @@ export default function ChildProfileScreen() {
     }
   };
 
-  const buildInput = () => ({
-    name: name.trim(),
-    givenName: givenName.trim() || undefined,
-    age: age as ChildAge,
-    className: className.trim() === '없음' ? undefined : className.trim(),
-    photoUri: photoUri ?? undefined,
-    birthdate: birthdate ? toISODate(birthdate) : undefined,
-    avatarEmoji: photoUri ? undefined : selectedAvatar.emoji,
-  });
+  const buildInput = () => {
+    const allergies = allergiesText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return {
+      name: name.trim(),
+      givenName: givenName.trim() || undefined,
+      age: age as ChildAge,
+      className: className.trim() === '없음' ? undefined : className.trim(),
+      photoUri: photoUri ?? undefined,
+      birthdate: birthdate ? toISODate(birthdate) : undefined,
+      avatarEmoji: photoUri ? undefined : selectedAvatar.emoji,
+      allergies: allergies.length > 0 ? allergies : undefined,
+    };
+  };
 
   // 기존 아이 수정은 바로 저장하고, 신규 추가는 축하 모달에서 "확인"을
   // 눌러야 실제로 저장되도록 한다(다시 작성으로 취소 가능).
@@ -289,6 +299,7 @@ export default function ChildProfileScreen() {
     setAge(null);
     setClassName('');
     setHasNoClass(false);
+    setAllergiesText('');
     setPhotoUri(null);
     setSelectedAvatarId(DEFAULT_AVATARS[0].id);
     setShowSuccessModal(false);
@@ -479,6 +490,21 @@ export default function ChildProfileScreen() {
             placeholderTextColor={colors.textSecondary}
           />
           <Text style={styles.fieldHint}>반 구분이 없으면 '반 없음'을 눌러주세요</Text>
+        </View>
+
+        <View style={styles.field}>
+          <View style={styles.labelRow}>
+            <Feather name="alert-triangle" size={13} color={colors.tomorrowRed} />
+            <Text style={styles.label}>알레르기 정보 (선택)</Text>
+          </View>
+          <ClearableTextInput
+            style={styles.input}
+            value={allergiesText}
+            onChangeText={setAllergiesText}
+            placeholder="예: 새우, 계란, 우유"
+            placeholderTextColor={colors.textSecondary}
+          />
+          <Text style={styles.fieldHint}>쉼표(,)로 구분해서 입력하면 급식 메뉴에 있을 때 강조해서 알려드려요</Text>
         </View>
 
         {showErrors && <Text style={styles.summaryErrorText}>이름, 나이, 반 이름을 모두 입력해주세요</Text>}
