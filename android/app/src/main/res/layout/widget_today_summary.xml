@@ -84,25 +84,29 @@
              단순한 구조로 바꿈(이전에 검증된 방식과 동일). -->
         <TextView
             android:id="@+id/widget_event_1_chip_1"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
             android:background="@drawable/widget_chip_bg"
             android:paddingHorizontal="9dp"
             android:paddingVertical="4dp"
             android:textColor="#334155"
-            android:textSize="11sp" />
+            android:textSize="11sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
         <TextView
             android:id="@+id/widget_event_1_chip_2"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:background="@drawable/widget_chip_bg"
             android:paddingHorizontal="9dp"
             android:paddingVertical="4dp"
             android:textColor="#334155"
-            android:textSize="11sp" />
+            android:textSize="11sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
     </LinearLayout>
 
     <!-- 내일 요약 (내일 일정 없으면 전체 숨김) -->
