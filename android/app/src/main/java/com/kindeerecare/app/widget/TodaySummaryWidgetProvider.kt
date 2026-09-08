@@ -5,10 +5,6 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
-import android.text.SpannableString
-import android.text.Spanned
-import android.text.style.ForegroundColorSpan
 import android.view.View
 import android.widget.RemoteViews
 import com.kindeerecare.app.MainActivity
@@ -29,16 +25,7 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
     const val PREFS_NAME = "widget_data"
     const val KEY_SUMMARY_JSON = "summary_json"
 
-    private const val CHECK_COLOR = "#F97362"
     private val CHIP_IDS = intArrayOf(R.id.widget_event_1_chip_1, R.id.widget_event_1_chip_2)
-
-    /** "✓ 저금통장"처럼 체크 표시만 코랄색으로, 이름은 기본색으로 칠한 칩 문구를 만든다. */
-    private fun checkedChipText(label: String): SpannableString {
-      val text = "✓ $label"
-      return SpannableString(text).apply {
-        setSpan(ForegroundColorSpan(Color.parseColor(CHECK_COLOR)), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-      }
-    }
 
     private fun renderChips(views: RemoteViews, itemNames: JSONArray?) {
       val count = itemNames?.length() ?: 0
@@ -59,7 +46,7 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
         } else {
           itemNames!!.optString(i)
         }
-        views.setTextViewText(CHIP_IDS[i], checkedChipText(label))
+        views.setTextViewText(CHIP_IDS[i], "✓ $label")
       }
     }
 
