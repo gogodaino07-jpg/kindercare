@@ -36,15 +36,30 @@ export function useIntervalInterstitialAd(adUnitId: string | null, storageKey: s
     return () => clearInterval(retryId);
   }, [adUnitId, isLoaded, load]);
 
+  // showIfEligible()가 "광고가 실제로 닫힐 때"까지 기다릴 수 있도록, 닫힘을
+  // 기다리는 콜백들을 쌓아뒀다가 isClosed가 뜨는 순간 한 번에 풀어준다.
+  const closeResolversRef = useRef<Array<() => void>>([]);
+
   useEffect(() => {
     // 방금 본 광고는 소진됐으니, 다음 노출을 위해 새 광고를 다시 미리 로드해둔다.
-    if (isClosed && adUnitId) load();
+    if (isClosed && adUnitId) {
+      load();
+      const resolvers = closeResolversRef.current;
+      closeResolversRef.current = [];
+      resolvers.forEach((resolve) => resolve());
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClosed]);
 
-  /** 동작 완료 직후 호출. 광고 단위 미설정/로드 실패(대기 후에도)/간격 이내 재노출이면 조용히 아무 일도 안 함. */
-  const showIfEligible = useCallback(async () => {
-    if (!adUnitId) return;
+  /**
+   * 동작 완료 직후 호출. 광고 단위 미설정/로드 실패(대기 후에도)/간격 이내
+   * 재노출이면 조용히 아무 일도 안 하고 false를 반환한다. 실제로 광고를
+   * 띄운 경우에는 사용자가 그 광고를 닫을 때까지 기다렸다가 true를 반환한다
+   * — 호출부에서 "광고를 실제로 보여줬는지"에 따라 이후 동작(예: 저장 확정을
+   * 한 번 더 확인받을지)을 분기할 수 있게 하기 위함.
+   */
+  const showIfEligible = useCallback(async (): Promise<boolean> => {
+    if (!adUnitId) return false;
 
     if (!isLoadedRef.current) {
       let waited = 0;
@@ -53,18 +68,24 @@ export function useIntervalInterstitialAd(adUnitId: string | null, storageKey: s
         waited += LOAD_POLL_INTERVAL_MS;
       }
     }
-    if (!isLoadedRef.current) return;
+    if (!isLoadedRef.current) return false;
 
     const now = Date.now();
     try {
       const lastShownRaw = await AsyncStorage.getItem(storageKey);
       const lastShownAt = lastShownRaw ? Number(lastShownRaw) : 0;
-      if (now - lastShownAt < minIntervalMs) return;
+      if (now - lastShownAt < minIntervalMs) return false;
       await AsyncStorage.setItem(storageKey, String(now));
     } catch {
-      return; // 간격 제한을 확인할 수 없으면 과다 노출을 피하기 위해 이번엔 건너뜀
+      return false; // 간격 제한을 확인할 수 없으면 과다 노출을 피하기 위해 이번엔 건너뜀
     }
+
+    const closed = new Promise<void>((resolve) => {
+      closeResolversRef.current.push(resolve);
+    });
     show();
+    await closed;
+    return true;
   }, [adUnitId, show, storageKey, minIntervalMs]);
 
   return { showIfEligible };

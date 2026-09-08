@@ -37,6 +37,9 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
   const [title, setTitle] = useState('');
   const [noticeText, setNoticeText] = useState('');
   const [itemsText, setItemsText] = useState('');
+  // 저장 광고가 실제로 뜬 경우엔 광고를 다 보고 돌아왔을 때 바로 등록하지 않고
+  // 입력한 내용을 그대로 남겨둔 채 "저장"을 한 번 더 눌러야 진짜 등록되게 한다.
+  const [pendingAdReview, setPendingAdReview] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -45,10 +48,11 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
       setNoticeText('');
       setItemsText('');
       setShowPicker(false);
+      setPendingAdReview(false);
     }
   }, [visible, initialDateISO]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // 이 모달이 열려있는 동안 안드로이드에서는 Modal이 앱 루트와 별도의
     // 네이티브 창에 그려져서, 루트에 뜨는 토스트가 이 모달 뒤로 가려져
     // 안 보인다(모달을 닫지 않고 검증 실패로 여기서 멈추는 경우). 모달과
@@ -60,6 +64,15 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
     if (!selectedChild) {
       showAlert({ title: '알림', message: '등록된 아이 정보가 없습니다.' });
       return;
+    }
+
+    if (!pendingAdReview) {
+      const adShown = await showAddEventAd();
+      if (adShown) {
+        setPendingAdReview(true);
+        showToast('내용을 확인하고 저장을 한 번 더 눌러주세요.');
+        return;
+      }
     }
 
     const items: EventItem[] = itemsText
@@ -81,7 +94,6 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
       icon: '📌',
     });
     showToast('일정을 등록했어요.');
-    showAddEventAd();
     onClose();
   };
 

@@ -117,6 +117,10 @@ export default function ChildProfileScreen() {
   const [allergiesText, setAllergiesText] = useState(editingChild?.allergies?.join(', ') ?? '');
   const [attemptedSave, setAttemptedSave] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  // 저장 광고를 실제로 보여준 뒤엔 곧장 저장하지 않고, 사용자가 내용을 확인하고
+  // "저장하기"를 한 번 더 눌러야 진짜로 저장되게 한다 — 광고가 끝나자마자
+  // 본인이 누르지도 않았는데 화면이 훅 넘어가 버리는 게 불편하다는 피드백 반영.
+  const [pendingAdReview, setPendingAdReview] = useState(false);
 
   // 진입 시점 값 스냅샷 — 저장 없이 뒤로가기 시도할 때 변경 여부를 판단하는 기준.
   const initialSnapshot = useRef({
@@ -250,18 +254,27 @@ export default function ChildProfileScreen() {
     };
   };
 
-  // 기존 아이 수정은 바로 저장하고, 신규 추가는 축하 모달에서 "확인"을
-  // 눌러야 실제로 저장되도록 한다(다시 작성으로 취소 가능).
-  const handleSave = () => {
+  // 기존 아이 수정은, 저장 광고가 실제로 뜬 경우엔 광고를 다 보고 돌아왔을 때
+  // 바로 저장/이동하지 않고 폼에 입력한 내용을 그대로 남겨둔 채 "저장하기"를
+  // 한 번 더 눌러야 진짜 저장되게 한다(광고 노출이 없었으면 예전처럼 바로 저장).
+  // 신규 추가는 축하 모달에서 "확인"을 눌러야 실제로 저장되도록 한다(다시 작성으로 취소 가능).
+  const handleSave = async () => {
     if (!canSave || !age) {
       setAttemptedSave(true);
       return;
     }
     if (editingChild) {
+      if (!pendingAdReview) {
+        const adShown = await showChildSaveAd();
+        if (adShown) {
+          setPendingAdReview(true);
+          showToast('내용을 확인하고 저장하기를 한 번 더 눌러주세요.');
+          return;
+        }
+      }
       updateChild(editingChild.id, buildInput());
       justSavedRef.current = true;
       showToast('저장이 완료되었습니다.');
-      showChildSaveAd();
       router.back();
       return;
     }
@@ -270,6 +283,8 @@ export default function ChildProfileScreen() {
   };
 
   // 2번째 아이부터는 등록 전에 리워드 광고를 끝까지 봐야 한다 — 첫 아이는 무료.
+  // 두 경우 모두 광고를 먼저 다 보여준 뒤에야 실제로 등록하도록 순서를 맞춘다
+  // (저장부터 해놓고 광고를 나중에 띄우면, 광고가 끝났을 때 이미 화면이 넘어가 있어 어색하다).
   const handleConfirmCreate = async () => {
     const isAdditionalChild = children.length >= 1;
     if (isAdditionalChild) {
@@ -281,13 +296,13 @@ export default function ChildProfileScreen() {
         });
         return;
       }
+    } else {
+      await showChildSaveAd();
     }
     addChild(buildInput());
     justSavedRef.current = true;
     setShowSuccessModal(false);
     showToast('저장이 완료되었습니다.');
-    // 방금 리워드 광고를 이미 봤으면 저장 완료 전면광고까지 연달아 띄우지 않는다.
-    if (!isAdditionalChild) showChildSaveAd();
     router.back();
   };
 
