@@ -72,31 +72,29 @@ export default function CoupangAdBanner({ link, imageUrl, aspectRatio = 728 / 11
         },
       ]}
     >
-      <View style={styles.innerBox}>
-        <Pressable
-          onPress={handlePress}
-          style={[styles.adArea, { aspectRatio }]}
-          onLayout={(e) => setAdWidth(e.nativeEvent.layout.width)}
-        >
-          <Image source={{ uri: imageUrl }} style={styles.bannerImage} resizeMode="cover" />
-          {adWidth > 0 && (
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.shimmerBand,
-                { width: shimmerWidth, transform: [{ translateX: shimmerTranslateX }, { rotate: '20deg' }] },
-              ]}
-            >
-              <LinearGradient
-                colors={['transparent', 'rgba(255,255,255,0.55)', 'transparent']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={StyleSheet.absoluteFill}
-              />
-            </Animated.View>
-          )}
-        </Pressable>
-      </View>
+      <Pressable
+        onPress={handlePress}
+        style={[styles.adArea, { aspectRatio }]}
+        onLayout={(e) => setAdWidth(e.nativeEvent.layout.width)}
+      >
+        <Image source={{ uri: imageUrl }} style={styles.bannerImage} resizeMode="cover" />
+        {adWidth > 0 && (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.shimmerBand,
+              { width: shimmerWidth, transform: [{ translateX: shimmerTranslateX }, { rotate: '20deg' }] },
+            ]}
+          >
+            <LinearGradient
+              colors={['transparent', 'rgba(255,255,255,0.55)', 'transparent']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFill}
+            />
+          </Animated.View>
+        )}
+      </Pressable>
 
       <Text style={styles.disclosure}>
         이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
@@ -108,15 +106,9 @@ export default function CoupangAdBanner({ link, imageUrl, aspectRatio = 728 / 11
 function createStyles(colors: ReturnType<typeof useThemeColors>) {
   return StyleSheet.create({
     container: { width: '100%' },
-    innerBox: {
-      backgroundColor: colors.gray50,
-      borderRadius: 18,
-      padding: 12,
-      gap: 10,
-    },
     adArea: {
       width: '100%',
-      borderRadius: 14,
+      borderRadius: 16,
       overflow: 'hidden',
       backgroundColor: colors.gray100,
     },
