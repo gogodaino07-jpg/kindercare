@@ -24,12 +24,12 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
     const val PREFS_NAME = "widget_data"
     const val KEY_SUMMARY_JSON = "summary_json"
 
-    /** 일정이 2건 이상이면 쉼표로 뭉치지 않고 " · "로 구분하고 앞에 건수를 붙여, 여러 일정이
-     *  하나로 뭉쳐 보이지 않게 한다(예: "오늘 일정 2건: 저축의 날 · 발달검사 신청 마감"). */
+    /** 일정이 2건 이상이면 전부 나열하지 않고 첫 일정만 보여준 뒤 "외 N건"으로 요약한다
+     *  (예: "오늘: 저축의 날 외 1건"). */
     private fun buildTodayLine(arr: JSONArray?): String {
       if (arr == null || arr.length() == 0) return "오늘 등록된 일정이 없어요"
-      val titles = (0 until arr.length()).joinToString(" · ") { arr.optString(it) }
-      return if (arr.length() == 1) "오늘: $titles" else "오늘 일정 ${arr.length()}건: $titles"
+      val first = arr.optString(0)
+      return if (arr.length() == 1) "오늘: $first" else "오늘: $first 외 ${arr.length() - 1}건"
     }
 
     fun updateWidgets(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
