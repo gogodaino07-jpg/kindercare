@@ -4,6 +4,9 @@ import { WebView } from 'react-native-webview';
 import { useAppData } from '../../context/AppDataContext';
 import Text from './AppText';
 
+export const COUPANG_LEGAL_DISCLOSURE_TEXT =
+  '이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.';
+
 interface CoupangBannerProps {
   style?: ViewStyle;
   /** 쿠팡 파트너스 대시보드에서 만든 위젯 ID. 위젯마다 노출 카테고리가 다르므로 화면별로 다르게 줄 수 있음. */
@@ -16,6 +19,9 @@ interface CoupangBannerProps {
   height?: number;
   /** 카드 안에 넣을 때 등, 상하 구분선이 필요 없으면 true. */
   hideDividers?: boolean;
+  /** 배너를 둥근 사각형 카드로 감싸 이미지가 카드 전체를 꽉 채우게 할 때, 카드 안에 문구가
+   *  섞이지 않도록 내부 법적 고지 문구를 숨긴다. 이 경우 호출부에서 카드 바깥에 별도로 렌더링해야 한다. */
+  hideLegalDisclosure?: boolean;
 }
 
 /**
@@ -30,6 +36,7 @@ export default function CoupangBanner({
   containerWidth,
   height = 50,
   hideDividers = false,
+  hideLegalDisclosure = false,
 }: CoupangBannerProps) {
   const { width: windowWidth } = useWindowDimensions();
   const effectiveWidth = containerWidth ?? windowWidth;
@@ -98,7 +105,7 @@ export default function CoupangBanner({
       {/* Top Border Line */}
       {!hideDividers && <View style={styles.topLine} />}
 
-      <View style={styles.contentWrapper}>
+      <View style={[styles.contentWrapper, hideLegalDisclosure && styles.contentWrapperNoDisclosure]}>
         <View style={[styles.webviewContainer, { height: bannerHeight }]}>
           {isReady ? (
             <WebView
@@ -141,9 +148,9 @@ export default function CoupangBanner({
           )}
         </View>
 
-        <Text style={styles.legalDisclosure}>
-          이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
-        </Text>
+        {!hideLegalDisclosure && (
+          <Text style={styles.legalDisclosure}>{COUPANG_LEGAL_DISCLOSURE_TEXT}</Text>
+        )}
       </View>
 
       {!hideDividers && <View style={styles.bottomLine} />}
@@ -166,6 +173,9 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
     position: 'relative',
     alignItems: 'center',
+  },
+  contentWrapperNoDisclosure: {
+    paddingBottom: 0,
   },
   bottomLine: {
     height: 1,

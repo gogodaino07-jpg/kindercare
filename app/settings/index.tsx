@@ -17,7 +17,7 @@ import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatTimeOfDay } from '../../components/settings/TimeWheelPicker';
 import Text from '../../components/common/AppText';
-import CoupangBanner from '../../components/common/CoupangBanner';
+import CoupangBanner, { COUPANG_LEGAL_DISCLOSURE_TEXT } from '../../components/common/CoupangBanner';
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
@@ -305,16 +305,22 @@ export default function SettingsScreen() {
               </View>
 
             {/* 쿠팡 파트너스 카테고리 배너 (골드박스) — 흰 테두리 카드로 감싸지 않고,
-                배너 자체가 하나의 둥근 사각형으로 이미지 영역을 꽉 채우게 함 */}
+                배너 자체가 하나의 둥근 사각형으로 이미지 영역을 꽉 채우게 함.
+                법적 고지 문구는 카드 안에 넣지 않고 카드 바깥에 별도로 둔다(안 그러면
+                주황색 이미지가 카드 하단까지 못 채우고 그 밑에 흰 여백이 남아 보임). */}
             {!isSubscribed && (
-              <CoupangBanner
-                bannerId={COUPANG_GOLDBOX_BANNER_ID}
-                template="banner"
-                containerWidth={coupangBannerWidth}
-                height={coupangBannerHeight}
-                hideDividers
-                style={styles.coupangBannerCard}
-              />
+              <>
+                <CoupangBanner
+                  bannerId={COUPANG_GOLDBOX_BANNER_ID}
+                  template="banner"
+                  containerWidth={coupangBannerWidth}
+                  height={coupangBannerHeight}
+                  hideDividers
+                  hideLegalDisclosure
+                  style={styles.coupangBannerCard}
+                />
+                <Text style={styles.coupangLegalDisclosure}>{COUPANG_LEGAL_DISCLOSURE_TEXT}</Text>
+              </>
             )}
 
             {/* 멤버십 + 가족 계정 */}
@@ -627,11 +633,18 @@ function createStyles(colors: any) {
     coupangBannerCard: {
       borderRadius: 24,
       overflow: 'hidden',
-      marginBottom: 16,
       ...Platform.select({
         ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 8 },
         android: { elevation: 1.5 },
       }),
+    },
+    coupangLegalDisclosure: {
+      fontSize: 8,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginTop: 4,
+      marginBottom: 16,
+      paddingHorizontal: 20,
     },
   });
 }
