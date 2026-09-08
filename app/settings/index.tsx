@@ -50,7 +50,7 @@ export default function SettingsScreen() {
   // 실제 배너가 그려질 너비. 골드박스 배너 원본 비율(728:90)로 높이를 맞춘다.
   const { width: windowWidth } = useWindowDimensions();
   const coupangBannerWidth = windowWidth - 16 * 2;
-  const coupangBannerHeight = Math.round((coupangBannerWidth * 120) / 728);
+  const coupangBannerHeight = Math.round((coupangBannerWidth * 90) / 728);
   const {
     resetAllData,
     requestWithdrawal,
