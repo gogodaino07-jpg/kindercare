@@ -13,7 +13,7 @@ interface CoupangAdBannerProps {
   aspectRatio?: number;
 }
 
-export default function CoupangAdBanner({ link, imageUrl, aspectRatio = 728 / 115 }: CoupangAdBannerProps) {
+export default function CoupangAdBanner({ link, imageUrl, aspectRatio = 728 / 90 }: CoupangAdBannerProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
