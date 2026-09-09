@@ -158,10 +158,13 @@ export default function AppLockScreen({
         isPinMethod && { paddingTop: insets.top + 140, paddingBottom: insets.bottom + 12 }
       ]}>
         <Text style={[styles.title, isPinMethod && styles.titlePin, { color: colors.textPrimary }]}>
-          {isEmbedded ? '현재 잠금을 해제해주세요' :
-            (method === 'pattern' ? '패턴을 그려주세요' : isPinMethod ? 'PIN을 입력해주세요' : '비밀번호를 입력해주세요')}
+          {isPinMethod
+            ? 'PIN을 입력해주세요'
+            : isEmbedded
+              ? '현재 잠금을 해제해주세요'
+              : (method === 'pattern' ? '패턴을 그려주세요' : '비밀번호를 입력해주세요')}
         </Text>
-        {isPinMethod && !isEmbedded && (
+        {isPinMethod && (
           <Text style={[styles.subtitlePin, { color: colors.textSecondary }]}>
             PIN {PIN_LENGTH}자리를 입력해주세요.
           </Text>
