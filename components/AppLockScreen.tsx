@@ -49,9 +49,23 @@ export default function AppLockScreen({
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [error, setError] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const canUseBiometric = biometricEnabled && biometricAvailable;
 
   const effectiveLocked = isEmbedded || isLocked;
+
+  // 비밀번호 입력창이 autoFocus라 화면에 들어오자마자 키보드가 뜨는데, 이
+  // 화면은 KeyboardAvoidingView가 효과가 없는 절대 위치 오버레이라(다른
+  // 화면에서도 같은 이유로 직접 높이를 받아 처리함) 확인 버튼이 키보드에
+  // 가려졌다. 실제 키보드 높이만큼 아래쪽으로 붙여서 항상 키보드 위에 보이게 한다.
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => setKeyboardHeight(e.endCoordinates.height));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (effectiveLocked) {
@@ -157,7 +171,8 @@ export default function AppLockScreen({
     <View style={[
       styles.overlay,
       { backgroundColor: colors.skyBackground },
-      isEmbedded && { position: 'relative', flex: 1, zIndex: 1 }
+      isEmbedded && { position: 'relative', flex: 1, zIndex: 1 },
+      method === 'password' && keyboardHeight > 0 && { justifyContent: 'flex-end', paddingBottom: keyboardHeight + 24 }
     ]}>
       <View style={[
         styles.content,
