@@ -344,7 +344,7 @@ export default function AppLockSettingsScreen() {
               </Text>
             </View>
 
-            <View style={styles.setupBottomGroup}>
+            <View style={[styles.setupBottomGroup, isPin && styles.setupBottomGroupPin]}>
               {isPin && (
                 <>
                   {/* 실제 잠금 해제 화면과 똑같은 키패드로 연습하게 해서, 설정할 때 본
@@ -590,6 +590,9 @@ function createStyles(colors: any) {
     setupScrollContent: { paddingHorizontal: 28, paddingTop: 32, flexGrow: 1 },
     setupHeader: { alignItems: 'center' },
     setupBottomGroup: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
+    // 숫자 키패드는 한 손 입력이 많아서, 가운데 정렬 대신 화면 아래쪽에
+    // 가깝게 둬서 엄지로 누르기 편하게 한다.
+    setupBottomGroupPin: { justifyContent: 'flex-end', paddingBottom: 12 },
     setupFooterRow: {
       flexDirection: 'row',
       alignItems: 'center',
