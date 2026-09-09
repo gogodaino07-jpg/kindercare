@@ -2,8 +2,10 @@ import { NativeModules, Platform } from 'react-native';
 
 interface WidgetTodayEvent {
   title: string;
-  /** 이 일정의 아직 안 챙긴 준비물 이름 — 위젯엔 최대 2개까지 칩으로 보여주고, 더 있으면 "외 N건"으로 요약한다. */
+  /** 이 일정의 아직 안 챙긴 준비물 이름. */
   itemNames: string[];
+  /** 준비물이 원래 있었는데(1개 이상) 전부 체크 완료된 상태 — 위젯에 "(준비물 완료)"로 표시한다. */
+  allItemsDone: boolean;
 }
 
 interface WidgetTomorrowPreview {

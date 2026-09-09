@@ -179,12 +179,14 @@ export default function HomeScreen() {
 
     updateHomeWidget({
       dateLabel: widgetDateLabel(todayISO),
-      todayEvents: upcoming.mainEvents.map((e) => ({
-        title: e.title,
-        itemNames: getDisplayItems(e)
-          .filter((i) => !i.completed)
-          .map((i) => i.name),
-      })),
+      todayEvents: upcoming.mainEvents.map((e) => {
+        const displayItems = getDisplayItems(e);
+        return {
+          title: e.title,
+          itemNames: displayItems.filter((i) => !i.completed).map((i) => i.name),
+          allItemsDone: displayItems.length > 0 && displayItems.every((i) => i.completed),
+        };
+      }),
       tomorrow: tomorrowEvent
         ? {
             dateLabel: widgetDateLabel(tomorrowISO),

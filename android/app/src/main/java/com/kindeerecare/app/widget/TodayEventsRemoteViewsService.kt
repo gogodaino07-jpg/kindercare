@@ -49,14 +49,20 @@ private class TodayEventsRemoteViewsFactory(private val context: Context) : Remo
   override fun getViewAt(position: Int): RemoteViews {
     val views = RemoteViews(context.packageName, R.layout.widget_event_item)
     val event = events.optJSONObject(position)
-    views.setTextViewText(R.id.widget_item_title, event?.optString("title") ?: "")
+    val title = event?.optString("title") ?: ""
 
-    val itemsText = WidgetFormatting.itemNamesText(event)
-    if (itemsText.isEmpty()) {
+    if (event?.optBoolean("allItemsDone", false) == true) {
+      views.setTextViewText(R.id.widget_item_title, WidgetFormatting.buildEventLine(title, "(준비물 완료)"))
       views.setViewVisibility(R.id.widget_item_prep, View.GONE)
     } else {
-      views.setViewVisibility(R.id.widget_item_prep, View.VISIBLE)
-      views.setTextViewText(R.id.widget_item_prep, "준비물: $itemsText")
+      views.setTextViewText(R.id.widget_item_title, title)
+      val itemsText = WidgetFormatting.itemNamesText(event)
+      if (itemsText.isEmpty()) {
+        views.setViewVisibility(R.id.widget_item_prep, View.GONE)
+      } else {
+        views.setViewVisibility(R.id.widget_item_prep, View.VISIBLE)
+        views.setTextViewText(R.id.widget_item_prep, "준비물: $itemsText")
+      }
     }
     views.setOnClickFillInIntent(R.id.widget_item_row, Intent())
     return views
