@@ -482,7 +482,7 @@ export default function AppLockSettingsScreen() {
     <View style={styles.screenBg}>
       <Stack.Screen
         options={{
-          headerStyle: { backgroundColor: colors.skyBackground },
+          headerStyle: { backgroundColor: colors.skyBackground, elevation: 0, shadowOpacity: 0 },
           headerShadowVisible: false,
           // 설정 화면(PIN/비밀번호/패턴 입력) 안에서는 그 화면 자체에 "새로운 잠금
           // 설정" 등 제목이 이미 있어서, 상단 네비게이션 타이틀까지 "잠금화면
