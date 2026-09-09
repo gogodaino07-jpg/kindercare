@@ -89,6 +89,7 @@ const ClearableTextInput = forwardRef<TextInput, TextInputProps>(
           value={value}
           onChangeText={onChangeText}
           multiline={multiline}
+          underlineColorAndroid="transparent"
           {...rest}
         />
         {showClear && (
@@ -115,6 +116,7 @@ const styles = StyleSheet.create({
   },
   input: {
     width: '100%',
+    backgroundColor: 'transparent',
   },
   paddingForClear: {
     paddingRight: 34,
