@@ -117,10 +117,6 @@ export default function ChildProfileScreen() {
   const [allergiesText, setAllergiesText] = useState(editingChild?.allergies?.join(', ') ?? '');
   const [attemptedSave, setAttemptedSave] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  // 저장 광고를 실제로 보여준 뒤엔 곧장 저장하지 않고, 사용자가 내용을 확인하고
-  // "저장하기"를 한 번 더 눌러야 진짜로 저장되게 한다 — 광고가 끝나자마자
-  // 본인이 누르지도 않았는데 화면이 훅 넘어가 버리는 게 불편하다는 피드백 반영.
-  const [pendingAdReview, setPendingAdReview] = useState(false);
 
   // 진입 시점 값 스냅샷 — 저장 없이 뒤로가기 시도할 때 변경 여부를 판단하는 기준.
   const initialSnapshot = useRef({
@@ -254,9 +250,11 @@ export default function ChildProfileScreen() {
     };
   };
 
-  // 기존 아이 수정은, 저장 광고가 실제로 뜬 경우엔 광고를 다 보고 돌아왔을 때
-  // 바로 저장/이동하지 않고 폼에 입력한 내용을 그대로 남겨둔 채 "저장하기"를
-  // 한 번 더 눌러야 진짜 저장되게 한다(광고 노출이 없었으면 예전처럼 바로 저장).
+  // 기존 아이 수정은 저장 버튼을 누르면 바로 저장한다. 저장 광고가 실제로 뜬
+  // 경우에는, 광고를 닫고 돌아왔을 때 본인이 누르지도 않았는데 화면이 훅
+  // 넘어가 버리면 불편하다는 예전 피드백이 있어서 화면 이동 없이 토스트로만
+  // 저장 완료를 알린다(뒤로가기는 사용자가 직접). 광고가 안 뜬 경우엔 그
+  // 우려가 없으니 예전처럼 바로 뒤로 이동한다.
   // 신규 추가는 축하 모달에서 "확인"을 눌러야 실제로 저장되도록 한다(다시 작성으로 취소 가능).
   const handleSave = async () => {
     if (!canSave || !age) {
@@ -264,18 +262,15 @@ export default function ChildProfileScreen() {
       return;
     }
     if (editingChild) {
-      if (!pendingAdReview) {
-        const adShown = await showChildSaveAd();
-        if (adShown) {
-          setPendingAdReview(true);
-          showToast('내용을 확인하고 저장하기를 한 번 더 눌러주세요.');
-          return;
-        }
-      }
+      const adShown = await showChildSaveAd();
       updateChild(editingChild.id, buildInput());
       justSavedRef.current = true;
-      showToast('저장이 완료되었습니다.');
-      router.back();
+      if (adShown) {
+        showToast('✓ 프로필을 저장했어요.');
+      } else {
+        showToast('저장이 완료되었습니다.');
+        router.back();
+      }
       return;
     }
     Keyboard.dismiss();

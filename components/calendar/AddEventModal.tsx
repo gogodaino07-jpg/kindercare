@@ -37,9 +37,6 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
   const [title, setTitle] = useState('');
   const [noticeText, setNoticeText] = useState('');
   const [itemsText, setItemsText] = useState('');
-  // 저장 광고가 실제로 뜬 경우엔 광고를 다 보고 돌아왔을 때 바로 등록하지 않고
-  // 입력한 내용을 그대로 남겨둔 채 "저장"을 한 번 더 눌러야 진짜 등록되게 한다.
-  const [pendingAdReview, setPendingAdReview] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -48,10 +45,13 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
       setNoticeText('');
       setItemsText('');
       setShowPicker(false);
-      setPendingAdReview(false);
     }
   }, [visible, initialDateISO]);
 
+  // 저장 버튼을 누르면 바로 등록한다. 저장 광고가 실제로 뜬 경우, 광고를 닫고
+  // 돌아왔을 때 본인이 누르지도 않았는데 모달이 훅 닫혀버리면 불편하다는 예전
+  // 피드백이 있어서 모달은 안 닫고 토스트로만 등록 완료를 알린다(닫기는
+  // 사용자가 직접). 광고가 안 뜬 경우엔 그 우려가 없으니 예전처럼 바로 닫는다.
   const handleSave = async () => {
     // 이 모달이 열려있는 동안 안드로이드에서는 Modal이 앱 루트와 별도의
     // 네이티브 창에 그려져서, 루트에 뜨는 토스트가 이 모달 뒤로 가려져
@@ -66,14 +66,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
       return;
     }
 
-    if (!pendingAdReview) {
-      const adShown = await showAddEventAd();
-      if (adShown) {
-        setPendingAdReview(true);
-        showToast('내용을 확인하고 저장을 한 번 더 눌러주세요.');
-        return;
-      }
-    }
+    const adShown = await showAddEventAd();
 
     const items: EventItem[] = itemsText
       .split('\n')
@@ -93,8 +86,13 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
       source: 'manual',
       icon: '📌',
     });
-    showToast('일정을 등록했어요.');
-    onClose();
+
+    if (adShown) {
+      showToast('✓ 일정을 등록했어요.');
+    } else {
+      showToast('일정을 등록했어요.');
+      onClose();
+    }
   };
 
   const isDirty =
