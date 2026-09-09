@@ -19,8 +19,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** 홈 화면 위젯 — JS 쪽(utils/homeWidget.ts)이 HomeWidgetModule을 통해 써준
- *  SharedPreferences의 요약 데이터를 읽어 오늘 일정(최대 3건)마다 "제목 (준비물 N개)"
- *  한 줄씩 + 내일 미리보기를 보여준다. */
+ *  SharedPreferences의 요약 데이터를 읽어 오늘 일정(최대 6건)마다 "제목" 줄 +
+ *  준비물 이름을 나열한 줄 + 내일 미리보기를 보여준다. */
 class TodaySummaryWidgetProvider : AppWidgetProvider() {
 
   override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
@@ -34,13 +34,24 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
     private val EVENT_LINE_IDS = intArrayOf(
       R.id.widget_event_line_1,
       R.id.widget_event_line_2,
-      R.id.widget_event_line_3
+      R.id.widget_event_line_3,
+      R.id.widget_event_line_4,
+      R.id.widget_event_line_5,
+      R.id.widget_event_line_6
+    )
+    private val EVENT_ITEMS_IDS = intArrayOf(
+      R.id.widget_event_items_1,
+      R.id.widget_event_items_2,
+      R.id.widget_event_items_3,
+      R.id.widget_event_items_4,
+      R.id.widget_event_items_5,
+      R.id.widget_event_items_6
     )
 
     private const val SUFFIX_COLOR = "#94A3B8"
 
-    /** "제목" 뒤에 붙는 "(준비물 N개)"/"(+N건 더)" 부분만 제목보다 연한 색+
-     *  일반 굵기로 표시해서, 제목과 부가정보가 시각적으로 구분되게 한다. */
+    /** "제목" 뒤에 붙는 부분만 제목보다 연한 색+일반 굵기로 표시해서, 제목과
+     *  부가정보가 시각적으로 구분되게 한다(내일 미리보기 줄에서 사용). */
     private fun buildEventLine(title: String, suffix: String): CharSequence {
       val full = "$title $suffix"
       val span = SpannableString(full)
@@ -50,13 +61,25 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
       return span
     }
 
-    /** 일정 최대 3건까지 "제목 (준비물 N개)" 한 줄씩 채우고, 넘치는 만큼은
-     *  마지막 줄에 "(+N건 더)"로 요약한다(준비물 개수 대신). */
+    private fun itemNamesText(event: JSONObject?): String {
+      val arr = event?.optJSONArray("itemNames") ?: return ""
+      val names = mutableListOf<String>()
+      for (j in 0 until arr.length()) {
+        val name = arr.optString(j)
+        if (name.isNotBlank()) names.add(name)
+      }
+      return names.joinToString(", ")
+    }
+
+    /** 일정마다 "제목" 줄 + 준비물 이름을 나열한 줄을 채운다. 최대 6건까지
+     *  슬롯이 있고, 그보다 많으면 마지막 슬롯 제목에 "(+N건 더)"만 붙이고
+     *  그 슬롯의 준비물 줄은 숨긴다. */
     private fun renderEventLines(views: RemoteViews, events: JSONArray?) {
       val count = events?.length() ?: 0
       for (i in EVENT_LINE_IDS.indices) {
         if (i >= count) {
           views.setViewVisibility(EVENT_LINE_IDS[i], View.GONE)
+          views.setViewVisibility(EVENT_ITEMS_IDS[i], View.GONE)
           continue
         }
         views.setViewVisibility(EVENT_LINE_IDS[i], View.VISIBLE)
@@ -64,13 +87,31 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
         val title = event?.optString("title") ?: ""
         val isLastVisibleSlot = i == EVENT_LINE_IDS.size - 1
 
-        val suffix = if (isLastVisibleSlot && count > EVENT_LINE_IDS.size) {
-          "(+${count - EVENT_LINE_IDS.size}건 더)"
+        if (isLastVisibleSlot && count > EVENT_LINE_IDS.size) {
+          views.setTextViewText(EVENT_LINE_IDS[i], "$title (+${count - EVENT_LINE_IDS.size}건 더)")
+          views.setViewVisibility(EVENT_ITEMS_IDS[i], View.GONE)
         } else {
-          val itemCount = event?.optJSONArray("itemNames")?.length() ?: 0
-          "(준비물 ${itemCount}개)"
+          views.setTextViewText(EVENT_LINE_IDS[i], title)
+          val itemsText = itemNamesText(event)
+          if (itemsText.isEmpty()) {
+            views.setViewVisibility(EVENT_ITEMS_IDS[i], View.GONE)
+          } else {
+            views.setViewVisibility(EVENT_ITEMS_IDS[i], View.VISIBLE)
+            views.setTextViewText(EVENT_ITEMS_IDS[i], "준비물 $itemsText")
+          }
         }
-        views.setTextViewText(EVENT_LINE_IDS[i], buildEventLine(title, suffix))
+      }
+    }
+
+    /** 일정 슬롯 1개만 안내 문구로 채우고 나머지 슬롯(준비물 줄 포함)은 모두
+     *  숨긴다 — "오늘 일정 없음"/"오류" 같은 단일 메시지 상태에서 사용. */
+    private fun showSingleMessage(views: RemoteViews, message: String) {
+      views.setTextViewText(EVENT_LINE_IDS[0], message)
+      views.setViewVisibility(EVENT_LINE_IDS[0], View.VISIBLE)
+      views.setViewVisibility(EVENT_ITEMS_IDS[0], View.GONE)
+      for (i in 1 until EVENT_LINE_IDS.size) {
+        views.setViewVisibility(EVENT_LINE_IDS[i], View.GONE)
+        views.setViewVisibility(EVENT_ITEMS_IDS[i], View.GONE)
       }
     }
 
@@ -92,10 +133,7 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
 
             if (eventCount == 0) {
               views.setViewVisibility(R.id.widget_badge, View.GONE)
-              views.setViewVisibility(R.id.widget_event_line_1, View.VISIBLE)
-              views.setTextViewText(R.id.widget_event_line_1, "오늘 등록된 일정이 없어요")
-              views.setViewVisibility(R.id.widget_event_line_2, View.GONE)
-              views.setViewVisibility(R.id.widget_event_line_3, View.GONE)
+              showSingleMessage(views, "오늘 등록된 일정이 없어요")
             } else {
               views.setViewVisibility(R.id.widget_badge, View.VISIBLE)
               renderEventLines(views, events)
@@ -122,10 +160,7 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
         if (!handled) {
           views.setTextViewText(R.id.widget_date, "")
           views.setViewVisibility(R.id.widget_badge, View.GONE)
-          views.setViewVisibility(R.id.widget_event_line_1, View.VISIBLE)
-          views.setTextViewText(R.id.widget_event_line_1, "킨더케어를 열어 확인해주세요")
-          views.setViewVisibility(R.id.widget_event_line_2, View.GONE)
-          views.setViewVisibility(R.id.widget_event_line_3, View.GONE)
+          showSingleMessage(views, "킨더케어를 열어 확인해주세요")
           views.setViewVisibility(R.id.widget_tomorrow_row, View.GONE)
         }
 

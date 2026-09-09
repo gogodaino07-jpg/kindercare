@@ -68,9 +68,12 @@
             android:paddingHorizontal="9dp"
             android:paddingVertical="3dp" />
 
-        <!-- 일정마다 "제목 (준비물 N개)" 한 줄씩 — 최대 3건, 넘치면 마지막 줄에
-             "(+N건 더)"만 붙인다. 칩(배경 있는 wrap_content 뷰)이 실기기에서
-             렌더링에 실패해서, 배경 없는 단순 텍스트 줄로 바꿈. -->
+        <!-- 일정마다 "제목" 줄 + 그 아래 "준비물: ..." 줄 — 최대 6건까지 슬롯을
+             만들어두고 실제 일정 수만큼만 보여준다. 위젯을 기본 크기보다 키우면
+             화면에 가려져 있던 슬롯이 그만큼 더 드러나 보이는 방식(스크롤 대신).
+             6건도 넘치면 마지막 슬롯 제목 줄에 "(+N건 더)"만 붙이고 준비물
+             줄은 숨긴다. 칩(배경 있는 wrap_content 뷰)이 실기기에서 렌더링에
+             실패해서, 배경 없는 단순 텍스트 줄로 구성함. -->
         <TextView
             android:id="@+id/widget_event_line_1"
             android:layout_width="match_parent"
@@ -83,10 +86,20 @@
             android:ellipsize="end" />
 
         <TextView
+            android:id="@+id/widget_event_items_1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:textColor="#94A3B8"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
             android:id="@+id/widget_event_line_2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="6dp"
             android:textColor="#1E293B"
             android:textSize="14.5sp"
             android:textStyle="bold"
@@ -94,13 +107,96 @@
             android:ellipsize="end" />
 
         <TextView
+            android:id="@+id/widget_event_items_2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:textColor="#94A3B8"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
             android:id="@+id/widget_event_line_3"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="6dp"
             android:textColor="#1E293B"
             android:textSize="14.5sp"
             android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/widget_event_items_3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:textColor="#94A3B8"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/widget_event_line_4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="#1E293B"
+            android:textSize="14.5sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/widget_event_items_4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:textColor="#94A3B8"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/widget_event_line_5"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="#1E293B"
+            android:textSize="14.5sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/widget_event_items_5"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:textColor="#94A3B8"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/widget_event_line_6"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="#1E293B"
+            android:textSize="14.5sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/widget_event_items_6"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:textColor="#94A3B8"
+            android:textSize="12sp"
             android:maxLines="1"
             android:ellipsize="end" />
     </LinearLayout>
