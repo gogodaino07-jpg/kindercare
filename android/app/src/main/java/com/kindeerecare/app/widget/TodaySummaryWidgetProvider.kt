@@ -97,7 +97,7 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
             views.setViewVisibility(EVENT_ITEMS_IDS[i], View.GONE)
           } else {
             views.setViewVisibility(EVENT_ITEMS_IDS[i], View.VISIBLE)
-            views.setTextViewText(EVENT_ITEMS_IDS[i], "준비물 $itemsText")
+            views.setTextViewText(EVENT_ITEMS_IDS[i], "준비물: $itemsText")
           }
         }
       }
