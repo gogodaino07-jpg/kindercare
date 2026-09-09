@@ -3,7 +3,7 @@ import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { login as kakaoLogin, logout as kakaoLogout, getProfile as getKakaoProfile } from '@react-native-seoul/kakao-login';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_CHALKBOARD_THEME_ID } from '../constants/chalkboardThemes';
 import {
   DEFAULT_FONT_ID,
@@ -21,6 +21,7 @@ import { Child, Event, FamilyInvite, FamilyMember, FamilyMembership, GoogleAccou
 import { toISODate } from '../utils/date';
 import { withExternalAction } from '../utils/externalAction';
 import { getDb, getFirebaseAuth, getFunctions } from '../utils/firebase';
+import { deleteChildProfilePhoto, downloadChildProfilePhoto, uploadChildProfilePhoto } from '../utils/childProfilePhoto';
 import { scheduleEventNotifications } from '../utils/notifications';
 import { sanitizeData } from '../utils/validation';
 import { AIUsageLimitService } from '../features/newsletter-analysis';
@@ -531,6 +532,24 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     };
   }, [effectiveFamilyOwnerEmail, googleAccount?.email, onboardingLoaded, syncChecked]);
 
+  // [프로필 사진 복원] 재설치/새 기기라 로컬 캐시(photoUri)는 없는데 클라우드에
+  // photoUrl(Storage 다운로드 URL)이 있는 아이가 있으면 백그라운드로 내려받아 채운다.
+  const photoDownloadInFlightRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    childProfiles.forEach((child) => {
+      if (child.photoUri || !child.photoUrl || photoDownloadInFlightRef.current.has(child.id)) return;
+      photoDownloadInFlightRef.current.add(child.id);
+      downloadChildProfilePhoto(child.photoUrl, child.id)
+        .then((localUri) => {
+          setChildProfiles((prev) =>
+            prev.map((c) => (c.id === child.id && !c.photoUri ? { ...c, photoUri: localUri } : c))
+          );
+        })
+        .catch((err) => console.error('❌ Profile Photo Download Error:', err))
+        .finally(() => photoDownloadInFlightRef.current.delete(child.id));
+    });
+  }, [childProfiles]);
+
   // [Family Members Synchronization]
   // Listens to users/{ownerEmail}/members so the owner sees new joiners in
   // real time, and a joined member sees the same shared roster. The owner's
@@ -669,12 +688,30 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
-  const pushChildToCloud = async (email: string, child: Child) => {
+  // previousLocalPhotoUri: 이 아이의 직전 photoUri. 사진이 실제로 바뀐 경우에만 Storage에
+  // 다시 올린다 — 안 그러면 사진과 무관한 필드(이름 등)만 고쳐도 저장할 때마다 같은 사진을
+  // 매번 재업로드하게 되어 스토리지 쓰기/대역폭이 쓸데없이 낭비된다.
+  const pushChildToCloud = async (email: string, child: Child, previousLocalPhotoUri?: string) => {
     try {
       console.log('📡 Pushing child to cloud:', child.id);
-      // Exclude local photoUri from cloud backup as it won't work on other devices.
+      let photoUrl = child.photoUrl;
+      if (child.photoUri !== previousLocalPhotoUri) {
+        if (child.photoUri) {
+          try {
+            photoUrl = await uploadChildProfilePhoto(email, child.id, child.photoUri);
+          } catch (err) {
+            console.error('❌ Profile Photo Upload Error:', err);
+          }
+        } else {
+          photoUrl = undefined;
+          deleteChildProfilePhoto(email, child.id).catch(() => {});
+        }
+      }
+      // Exclude local photoUri from cloud backup as it won't work on other devices;
+      // photoUrl(Storage 다운로드 URL)은 재설치해도 유지되도록 대신 저장한다.
       const { photoUri, ...childData } = child;
-      await getDb().collection('users').doc(email).collection('children').doc(child.id).set(sanitizeData(childData));
+      await getDb().collection('users').doc(email).collection('children').doc(child.id)
+        .set(sanitizeData({ ...childData, photoUrl }));
       console.log('✅ Child push success');
     } catch (error) {
       console.error('❌ Firestore Push Child Error:', error);
@@ -707,6 +744,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     try {
       console.log('📡 Deleting child from cloud:', childId);
       await getDb().collection('users').doc(email).collection('children').doc(childId).delete();
+      deleteChildProfilePhoto(email, childId).catch(() => {});
       console.log('✅ Child delete success');
     } catch (error) {
       console.error('❌ Firestore Delete Child Error:', error);
@@ -982,15 +1020,18 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setChildProfiles((prev) => [...prev, newChild]);
     setSelectedChildId(newChild.id);
     if (effectiveFamilyOwnerEmail) {
-      pushChildToCloud(effectiveFamilyOwnerEmail, newChild);
+      pushChildToCloud(effectiveFamilyOwnerEmail, newChild, undefined);
     }
   };
 
   const updateChild = (id: string, input: Omit<Child, 'id'>) => {
-    const updatedChild = { ...input, id };
+    const previousChild = childProfiles.find((c) => c.id === id);
+    // photoUrl은 아이 편집 폼이 다루는 필드가 아니라 input에 아예 없는 키이므로, 이렇게
+    // previousChild를 먼저 펼쳐두면 사진과 무관한 수정 시에도 기존 photoUrl이 보존된다.
+    const updatedChild = { ...previousChild, ...input, id };
     setChildProfiles((prev) => prev.map((c) => (c.id === id ? updatedChild : c)));
     if (effectiveFamilyOwnerEmail) {
-      pushChildToCloud(effectiveFamilyOwnerEmail, updatedChild);
+      pushChildToCloud(effectiveFamilyOwnerEmail, updatedChild, previousChild?.photoUri);
     }
   };
 

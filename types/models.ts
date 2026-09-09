@@ -13,7 +13,10 @@ export interface Child {
   age: ChildAge;
   birthdate?: string; // ISO date string: "YYYY-MM-DD"
   className?: string;
+  /** 기기 로컬 캐시 경로. 재설치/새 기기에서는 비어있다가, photoUrl이 있으면 자동으로 내려받아 채워진다. */
   photoUri?: string;
+  /** Firebase Storage에 올려둔 프로필 사진 다운로드 URL — 재설치해도 유지되도록 클라우드에 저장되는 값. */
+  photoUrl?: string;
   /** 실제 사진(photoUri)이 없을 때 아바타로 보여줄 기본 캐릭터 이모지. */
   avatarEmoji?: string;
   /** 알레르기 유발 식재료 키워드 목록 — 급식 메뉴에 이 키워드가 포함되면 강조 표시한다. */

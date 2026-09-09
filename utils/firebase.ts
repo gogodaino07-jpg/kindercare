@@ -1,6 +1,7 @@
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { getFunctions as getFunctionsModular } from '@react-native-firebase/functions';
+import storage from '@react-native-firebase/storage';
 
 /**
  * Firebase Auth instance
@@ -29,6 +30,15 @@ let _functions: any = null;
 export const getFunctions = () => {
   if (!_functions) _functions = getFunctionsModular(undefined, 'asia-northeast3');
   return _functions;
+};
+
+/**
+ * Firebase Storage instance
+ */
+let _storage: any = null;
+export const getStorage = () => {
+  if (!_storage) _storage = storage();
+  return _storage;
 };
 
 /**

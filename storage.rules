@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// 아이 프로필 사진(Firebase Storage). 경로는 profilePhotos/{소유자 이메일}/{childId}.jpg
+// 고정이라 사진을 바꿔도 같은 오브젝트를 덮어쓴다 — firestore.rules의 children 컬렉션
+// 쓰기 권한(소유자 본인 또는 canEdit 구성원)과 반드시 동일하게 유지할 것.
+//
+// 다운로드는 getDownloadURL()로 얻은 토큰 URL을 Firestore(children.photoUrl)에 저장해
+// 가족 구성원 모두가 그 URL로 그냥 열람하므로, Storage 자체의 읽기 권한은 업로드 당사자
+// (그 순간 getDownloadURL을 호출하는 사람)만 통과하면 충분하다 — 굳이 모든 구성원에게
+// 읽기 권한을 열어줄 필요가 없다.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /profilePhotos/{userEmail}/{childId} {
+      function isOwnerOrEditor() {
+        return request.auth != null && (
+          request.auth.token.email == userEmail ||
+          firestore.get(/databases/(default)/documents/users/$(userEmail)/members/$(request.auth.token.email)).data.canEdit == true
+        );
+      }
+
+      allow read: if isOwnerOrEditor();
+      allow write: if isOwnerOrEditor()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+  }
+}
