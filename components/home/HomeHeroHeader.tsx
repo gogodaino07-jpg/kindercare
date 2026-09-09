@@ -410,7 +410,7 @@ function MealMenuCard({
         <View style={styles.cardTopBar} />
         <View style={styles.cardContent}>
           <View style={styles.emptyRow}>
-            <View style={styles.emptyLeftCol}>
+            <View style={[styles.emptyLeftCol, hasEverRegisteredMeal === false && styles.emptyLeftColCentered]}>
               <View style={styles.emptyHeaderRow}>
                 <View style={styles.miniTag}>
                   <Text style={styles.miniTagText}>점심</Text>
@@ -583,6 +583,12 @@ function createMealCardStyles(colors: ThemeColors) {
     emptyLeftCol: {
       flex: 1,
       minWidth: 0,
+    },
+    // 급식 스캔 버튼이 없을 때(신규 프로필)는 왼쪽에 붙어있던 내용이 카드 안에서
+    // 붕 떠 보여서, 배너 가운데로 오도록 정렬한다.
+    emptyLeftColCentered: {
+      alignItems: 'center',
+      paddingVertical: 6,
     },
     emptyHeaderRow: {
       flexDirection: 'row',
