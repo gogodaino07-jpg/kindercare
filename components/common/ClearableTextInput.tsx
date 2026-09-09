@@ -49,6 +49,14 @@ const BOX_APPEARANCE_KEYS = [
   'borderBottomWidth',
   'borderLeftWidth',
   'borderRightWidth',
+  // 그림자(SHADOW 상수)도 같은 이유로 옮겨야 한다 — 안드로이드 elevation이 TextInput에
+  // 남아있으면, 둥근 컨테이너 안쪽에서 각진 사각형 그림자가 따로 떠 보이는 이중 테두리
+  // 현상이 그대로 재현된다(실기기로 재확인함).
+  'elevation',
+  'shadowColor',
+  'shadowOffset',
+  'shadowOpacity',
+  'shadowRadius',
 ] as const;
 
 function splitStyle(style: StyleProp<TextStyle>) {
