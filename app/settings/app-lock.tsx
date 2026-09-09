@@ -133,18 +133,37 @@ export default function AppLockSettingsScreen() {
   // Requirement 4: Verify existing lock before entering settings
   if (!isVerified) {
     return (
-      <AppLockScreen
-        autoBiometricEnabled={true}
-        onVerified={() => {
-          setIsVerified(true);
-          if (pendingAction === 'none') {
-            setLockMethod('none');
-            setPendingAction(null);
-            showToast('잠금이 해제되었습니다.');
-          }
-        }}
-        isEmbedded={true}
-      />
+      <>
+        {/* 이 이른 return이 아래 본문의 <Stack.Screen> 커스터마이징보다 먼저
+            끝나버려서, 잠금이 걸려있어 재인증이 필요한 상태에서는 이 화면의
+            헤더 설정(체크리스트 화살표 아이콘, 그림자 제거)이 전혀 적용 안 되고
+            네이티브 기본 뒤로가기 화살표+그림자로 보였던 버그 — 재인증 화면
+            에도 똑같이 적용한다. */}
+        <Stack.Screen
+          options={{
+            headerStyle: { backgroundColor: colors.skyBackground, elevation: 0, shadowOpacity: 0 },
+            headerShadowVisible: false,
+            title: '잠금화면 설정',
+            headerLeft: () => (
+              <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
+                <MaterialCommunityIcons name="chevron-left" size={28} color={colors.textPrimary} />
+              </Pressable>
+            ),
+          }}
+        />
+        <AppLockScreen
+          autoBiometricEnabled={true}
+          onVerified={() => {
+            setIsVerified(true);
+            if (pendingAction === 'none') {
+              setLockMethod('none');
+              setPendingAction(null);
+              showToast('잠금이 해제되었습니다.');
+            }
+          }}
+          isEmbedded={true}
+        />
+      </>
     );
   }
 
