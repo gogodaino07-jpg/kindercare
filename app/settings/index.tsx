@@ -63,7 +63,7 @@ export default function SettingsScreen() {
     fontChoiceId,
     fontSizeChoice,
   } = useAppData();
-  const { resetLock, method } = useAppLock();
+  const { resetLock, method, setPickerActive } = useAppLock();
   const { clearNotifications } = useNotificationCenter();
   const { isSubscribed } = useSubscription();
 
@@ -73,8 +73,13 @@ export default function SettingsScreen() {
   const [weatherLabel, setWeatherLabel] = useState('내 지역');
   const [weatherPreview, setWeatherPreview] = useState<{ emoji: string; tempC: number } | null>(null);
 
+  // resolveCoords()가 처음 위치 권한을 요청할 때 뜨는 시스템 권한 팝업이
+  // 앱을 잠깐 백그라운드로 보내서, 잠금을 이미 풀고 설정 화면에 들어왔는데도
+  // 다시 잠겨버리는 버그가 있었다 — 갤러리/카메라 선택기와 똑같이 외부 동작
+  // 중임을 표시해서 그 사이엔 재잠금을 건너뛰게 한다.
   useEffect(() => {
     let mounted = true;
+    setPickerActive(true);
     resolveCoords()
       .then(({ coords, locationLabel }) => {
         if (!mounted) return;
@@ -84,7 +89,8 @@ export default function SettingsScreen() {
       .then((preview) => {
         if (mounted && preview) setWeatherPreview({ emoji: preview.emoji, tempC: preview.tempC });
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setPickerActive(false));
     return () => {
       mounted = false;
     };

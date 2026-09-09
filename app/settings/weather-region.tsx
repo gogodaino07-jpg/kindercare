@@ -10,6 +10,7 @@ import TextInput from '../../components/common/ClearableTextInput';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { WeatherLeaf, WEATHER_REGION_TREE } from '../../constants/weatherRegionTree';
 import { useAlert } from '../../context/AlertContext';
+import { useAppLock } from '../../context/AppLockContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { invalidateWeatherCache, resolveCoords } from '../../hooks/useWeeklyWeather';
 import { StoredWeatherRegion, useWeatherRegion } from '../../hooks/useWeatherRegion';
@@ -25,6 +26,7 @@ export default function WeatherRegionSettingsScreen() {
   const router = useRouter();
   const { region, setRegion } = useWeatherRegion();
   const { showAlert } = useAlert();
+  const { setPickerActive } = useAppLock();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -49,9 +51,13 @@ export default function WeatherRegionSettingsScreen() {
   const [districtCollapsed, setDistrictCollapsed] = useState(false);
 
   // 화면 진입/지역 변경 시 상단 미리보기 카드를 갱신 — 자동(GPS) 모드면 실제 위치를 다시 구해온다.
+  // resolveCoords()가 처음 위치 권한을 요청할 때 뜨는 시스템 권한 팝업이 앱을
+  // 잠깐 백그라운드로 보내서 잠금이 다시 걸려버리는 문제가 있어, 그 사이엔
+  // 외부 동작 중임을 표시해서 재잠금을 건너뛰게 한다.
   useEffect(() => {
     let cancelled = false;
     setPreviewLoading(true);
+    setPickerActive(true);
     (async () => {
       let latitude: number;
       let longitude: number;
@@ -73,7 +79,9 @@ export default function WeatherRegionSettingsScreen() {
         setPreview(result);
         setPreviewLoading(false);
       }
-    })();
+    })()
+      .catch(() => {})
+      .finally(() => setPickerActive(false));
     return () => {
       cancelled = true;
     };
