@@ -58,80 +58,77 @@ export default function NotificationSettingsScreen() {
       />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.introCard}>
-            <View style={styles.introIconBadge}>
-              <MaterialCommunityIcons name="bell-ring-outline" size={20} color={colors.accent} />
+          <View style={styles.card}>
+            <View style={styles.row}>
+              <Text style={styles.rowLabel}>알림 받기</Text>
+              <Switch
+                value={draft.enabled}
+                onValueChange={handleToggleEnabled}
+                trackColor={{ true: colors.accent, false: colors.border }}
+                thumbColor={colors.cardWhite}
+              />
             </View>
-            <Text style={styles.introText}>
-              등원 준비물과 일정을 놓치지 않도록{'\n'}설정한 시간에 알려드려요
-            </Text>
-          </View>
 
-          <View style={styles.row}>
-            <Text style={styles.rowLabel}>알림 받기</Text>
-            <Switch
-              value={draft.enabled}
-              onValueChange={handleToggleEnabled}
-              trackColor={{ true: colors.accent, false: colors.border }}
-              thumbColor={colors.cardWhite}
-            />
-          </View>
-
-          {draft.enabled && (
-            <>
-              <Text style={styles.sectionLabel}>미리보기</Text>
-              <View style={styles.previewCard}>
-                <View style={styles.previewIconCircle}>
-                  <MaterialCommunityIcons name="school-outline" size={16} color="#FFFFFF" />
-                </View>
-                <View style={styles.previewTextArea}>
-                  <View style={styles.previewTopRow}>
-                    <Text style={styles.previewAppName}>kindercare</Text>
-                    <Text style={styles.previewTime}>{formatTimeOfDay(draft.dayBeforeTime)}</Text>
+            {draft.enabled && (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.previewRow}>
+                  <View style={styles.previewIconCircle}>
+                    <MaterialCommunityIcons name="school-outline" size={15} color="#FFFFFF" />
                   </View>
-                  <Text style={styles.previewTitle} numberOfLines={1}>[내일] 소풍</Text>
-                  <Text style={styles.previewBody} numberOfLines={2}>준비물: 물통, 도시락</Text>
-                </View>
-              </View>
-              <Text style={styles.previewCaption}>설정한 시간에 이런 알림이 도착해요</Text>
-
-              <Text style={styles.sectionLabel}>
-                전날 알림 시간 · {formatTimeOfDay(draft.dayBeforeTime)}
-              </Text>
-              <View style={styles.pickerWrap}>
-                <TimeWheelPicker
-                  value={draft.dayBeforeTime}
-                  onChange={(dayBeforeTime) => setDraft((prev) => ({ ...prev, dayBeforeTime }))}
-                />
-              </View>
-
-              <View style={styles.row}>
-                <Text style={styles.rowLabel}>당일 아침 알림 추가</Text>
-                <Switch
-                  value={draft.sameDayEnabled}
-                  onValueChange={(sameDayEnabled) =>
-                    setDraft((prev) => ({ ...prev, sameDayEnabled }))
-                  }
-                  trackColor={{ true: colors.accent, false: colors.border }}
-                  thumbColor={colors.cardWhite}
-                />
-              </View>
-
-              {draft.sameDayEnabled && (
-                <>
-                  <Text style={styles.sectionLabel}>
-                    당일 알림 시간 · {formatTimeOfDay(draft.sameDayTime)}
-                  </Text>
-                  <View style={styles.pickerWrap}>
-                    <TimeWheelPicker
-                      value={draft.sameDayTime}
-                      onChange={(sameDayTime) => setDraft((prev) => ({ ...prev, sameDayTime }))}
-                    />
+                  <View style={styles.previewTextArea}>
+                    <View style={styles.previewTopRow}>
+                      <Text style={styles.previewAppName}>kindercare</Text>
+                      <Text style={styles.previewTime}>{formatTimeOfDay(draft.dayBeforeTime)}</Text>
+                    </View>
+                    <Text style={styles.previewTitle} numberOfLines={1}>[내일] 소풍</Text>
+                    <Text style={styles.previewBody} numberOfLines={1}>준비물: 물통, 도시락</Text>
                   </View>
-                </>
-              )}
-            </>
-          )}
+                </View>
+
+                <View style={styles.divider} />
+                <View style={styles.sectionRow}>
+                  <Text style={styles.sectionLabel}>전날 알림 시간</Text>
+                  <Text style={styles.sectionValue}>{formatTimeOfDay(draft.dayBeforeTime)}</Text>
+                </View>
+                <View style={styles.pickerWrap}>
+                  <TimeWheelPicker
+                    value={draft.dayBeforeTime}
+                    onChange={(dayBeforeTime) => setDraft((prev) => ({ ...prev, dayBeforeTime }))}
+                  />
+                </View>
+
+                <View style={styles.divider} />
+                <View style={styles.row}>
+                  <Text style={styles.rowLabel}>당일 아침 알림 추가</Text>
+                  <Switch
+                    value={draft.sameDayEnabled}
+                    onValueChange={(sameDayEnabled) =>
+                      setDraft((prev) => ({ ...prev, sameDayEnabled }))
+                    }
+                    trackColor={{ true: colors.accent, false: colors.border }}
+                    thumbColor={colors.cardWhite}
+                  />
+                </View>
+
+                {draft.sameDayEnabled && (
+                  <>
+                    <View style={styles.divider} />
+                    <View style={styles.sectionRow}>
+                      <Text style={styles.sectionLabel}>당일 알림 시간</Text>
+                      <Text style={styles.sectionValue}>{formatTimeOfDay(draft.sameDayTime)}</Text>
+                    </View>
+                    <View style={styles.pickerWrap}>
+                      <TimeWheelPicker
+                        value={draft.sameDayTime}
+                        onChange={(sameDayTime) => setDraft((prev) => ({ ...prev, sameDayTime }))}
+                      />
+                    </View>
+                  </>
+                )}
+              </>
+            )}
+          </View>
         </ScrollView>
 
         {/* Absolute positioned button to match Upload screen layout */}
@@ -155,58 +152,42 @@ function createStyles(colors: ThemeColors) {
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     content: { padding: 20, paddingBottom: 120 },
+    card: {
+      backgroundColor: colors.cardWhite,
+      borderRadius: 16,
+      overflow: 'hidden',
+      ...SHADOW,
+    },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: colors.cardWhite,
-      borderRadius: 14,
-      padding: 16,
-      marginBottom: 16,
-      ...SHADOW,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
     },
+    divider: { height: 1, backgroundColor: colors.border, marginHorizontal: 16 },
     rowLabel: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
-    sectionLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8 },
-    pickerWrap: { marginBottom: 24 },
-    introCard: {
+    sectionRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
-      backgroundColor: colors.cardWhite,
-      borderRadius: 16,
-      padding: 16,
-      marginBottom: 16,
-      ...SHADOW,
-      shadowOpacity: 0.05,
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingTop: 14,
+      paddingBottom: 8,
     },
-    introIconBadge: {
-      width: 40,
-      height: 40,
-      borderRadius: 14,
-      backgroundColor: colors.gray100,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    introText: {
-      flex: 1,
-      fontSize: 12.5,
-      fontWeight: '600',
-      color: colors.textSecondary,
-      lineHeight: 18,
-    },
-    previewCard: {
+    sectionLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+    sectionValue: { fontSize: 13, fontWeight: '700', color: colors.accent },
+    pickerWrap: { paddingHorizontal: 16, paddingBottom: 16 },
+    previewRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
-      backgroundColor: colors.cardWhite,
-      borderRadius: 16,
-      padding: 14,
-      marginBottom: 8,
-      ...SHADOW,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
     },
     previewIconCircle: {
-      width: 32,
-      height: 32,
+      width: 30,
+      height: 30,
       borderRadius: 10,
       backgroundColor: colors.accent,
       alignItems: 'center',
@@ -223,13 +204,6 @@ function createStyles(colors: ThemeColors) {
     previewTime: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
     previewTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 2 },
     previewBody: { fontSize: 12.5, fontWeight: '500', color: colors.textSecondary, lineHeight: 17 },
-    previewCaption: {
-      fontSize: 11.5,
-      fontWeight: '600',
-      color: colors.textSecondary,
-      textAlign: 'center',
-      marginBottom: 24,
-    },
     buttonContainer: { position: 'absolute', left: 20, right: 20 },
     saveButton: {
       backgroundColor: colors.gray900,
