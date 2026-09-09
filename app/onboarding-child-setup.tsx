@@ -21,6 +21,7 @@ import { ChildAge } from '../types/models';
 import { ageFromBirthdate, toISODate } from '../utils/date';
 import { stripInvalidCharacters } from '../utils/validation';
 
+const AGE_OPTIONS: ChildAge[] = [2, 3, 4, 5, 6, 7];
 const CTA_GRADIENT = STAMP_BOARD_THEMES.blue.stampButtonGradient;
 const AVATAR_RING_GRADIENT = ['#BAE6FD', '#DBEAFE', '#C7D2FE'] as const;
 const INK = '#1E293B';
@@ -78,6 +79,7 @@ export default function OnboardingChildSetupScreen() {
   const [name, setName] = useState('');
   const [givenName, setGivenName] = useState('');
   const [birthdate, setBirthdate] = useState<Date | null>(null);
+  const [age, setAge] = useState<ChildAge | null>(null);
   const [className, setClassName] = useState('');
   const [hasNoClass, setHasNoClass] = useState(false);
   const [allergiesText, setAllergiesText] = useState('');
@@ -96,7 +98,7 @@ export default function OnboardingChildSetupScreen() {
     [selectedAvatarId]
   );
 
-  const canCreate = !!name.trim() && !!birthdate && !!className.trim();
+  const canCreate = !!name.trim() && !!birthdate && !!age && !!className.trim();
 
   // 이름을 2글자 이상 입력하면, 아직 애칭을 직접 안 정했을 때만 마지막
   // 두 글자를 기본 애칭으로 제안해준다 (예: "김서준" → "서준"). 예전엔
@@ -174,7 +176,7 @@ export default function OnboardingChildSetupScreen() {
   };
 
   const handleConfirmCreate = () => {
-    if (!birthdate) return;
+    if (!birthdate || !age) return;
     const trimmedClassName = className.trim();
     const allergies = allergiesText
       .split(',')
@@ -183,7 +185,7 @@ export default function OnboardingChildSetupScreen() {
     addChild({
       name: name.trim(),
       givenName: givenName.trim() || undefined,
-      age: ageFromBirthdate(birthdate),
+      age,
       birthdate: toISODate(birthdate),
       className: trimmedClassName === '없음' ? undefined : trimmedClassName,
       photoUri: photoUri ?? undefined,
@@ -199,6 +201,7 @@ export default function OnboardingChildSetupScreen() {
     setGivenName('');
     givenNameTouchedRef.current = false;
     setBirthdate(null);
+    setAge(null);
     setClassName('');
     setHasNoClass(false);
     setAllergiesText('');
@@ -315,7 +318,7 @@ export default function OnboardingChildSetupScreen() {
           <View style={styles.fieldGroup}>
           <View style={styles.labelRow}>
             <Feather name="calendar" size={13} color={ACCENT_BLUE} />
-            <Text style={styles.label}>생년월일</Text>
+            <Text style={styles.label}>생년월일 *</Text>
           </View>
           {Platform.OS === 'web' ? (
             <DateTimePicker
@@ -325,7 +328,12 @@ export default function OnboardingChildSetupScreen() {
               minimumDate={minDate}
               themeVariant="light"
               accentColor={ACCENT_BLUE}
-              onChange={(_, selected) => selected && setBirthdate(selected)}
+              onChange={(_, selected) => {
+                if (selected) {
+                  setBirthdate(selected);
+                  setAge(ageFromBirthdate(selected));
+                }
+              }}
             />
           ) : (
             <>
@@ -349,7 +357,10 @@ export default function OnboardingChildSetupScreen() {
                   accentColor={ACCENT_BLUE}
                   onChange={(event, selected) => {
                     setShowPicker(Platform.OS === 'ios');
-                    if (selected) setBirthdate(selected);
+                    if (selected) {
+                      setBirthdate(selected);
+                      setAge(ageFromBirthdate(selected));
+                    }
                   }}
                 />
               ) : null}
@@ -361,10 +372,25 @@ export default function OnboardingChildSetupScreen() {
           </View>
 
           <View style={styles.fieldGroup}>
+            <Text style={styles.label}>나이 (생년월일 기준 자동 계산, 직접 선택 가능)</Text>
+            <View style={styles.chipRow}>
+              {AGE_OPTIONS.map((option) => (
+                <Pressable
+                  key={option}
+                  style={[styles.chip, age === option && styles.chipSelected]}
+                  onPress={() => setAge(option)}
+                >
+                  <Text style={[styles.chipText, age === option && styles.chipTextSelected]}>{option}세</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.fieldGroup}>
           <View style={styles.labelRowBetween}>
             <View style={styles.labelRow}>
               <Feather name="home" size={13} color={ACCENT_BLUE} />
-              <Text style={styles.label}>반 이름</Text>
+              <Text style={styles.label}>반 이름 *</Text>
             </View>
             <Pressable
               onPress={toggleNoClass}
@@ -688,6 +714,20 @@ const styles = StyleSheet.create({
     noClassChipTextActive: {
       color: NO_CLASS_TEXT,
     },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: {
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 999,
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: BORDER,
+      ...SHADOW,
+      shadowOpacity: 0.03,
+    },
+    chipSelected: { backgroundColor: INK, borderColor: INK },
+    chipText: { fontSize: 14, fontWeight: '600', color: GRAY },
+    chipTextSelected: { color: '#FFFFFF' },
     input: {
       backgroundColor: '#FFFFFF',
       borderRadius: 12,
