@@ -31,12 +31,35 @@ const LAYOUT_ONLY_KEYS = [
   'alignSelf',
 ] as const;
 
+// 배경/테두리(둥근 모서리 포함)를 안드로이드 네이티브 EditText에 직접 그리면, 오른쪽
+// 모서리만 둥근 정도가 왼쪽보다 덜 둥글게(각지게) 그려지는 렌더링 버그가 있었다
+// (실기기 스크린샷으로 확인). 그래서 이 "박스처럼 보이는" 스타일은 감싸는 View로
+// 옮기고, TextInput 자신은 배경 없이 그 안에 얹히기만 하게 한다.
+const BOX_APPEARANCE_KEYS = [
+  'backgroundColor',
+  'borderRadius',
+  'borderTopLeftRadius',
+  'borderTopRightRadius',
+  'borderBottomLeftRadius',
+  'borderBottomRightRadius',
+  'borderWidth',
+  'borderColor',
+  'borderStyle',
+  'borderTopWidth',
+  'borderBottomWidth',
+  'borderLeftWidth',
+  'borderRightWidth',
+] as const;
+
 function splitStyle(style: StyleProp<TextStyle>) {
   const flat = (StyleSheet.flatten(style) ?? {}) as Record<string, unknown>;
   const containerStyle: Record<string, unknown> = {};
   const inputStyle: Record<string, unknown> = {};
   for (const key of Object.keys(flat)) {
-    if ((LAYOUT_ONLY_KEYS as readonly string[]).includes(key)) {
+    if (
+      (LAYOUT_ONLY_KEYS as readonly string[]).includes(key) ||
+      (BOX_APPEARANCE_KEYS as readonly string[]).includes(key)
+    ) {
       containerStyle[key] = flat[key];
     } else {
       inputStyle[key] = flat[key];
@@ -88,6 +111,7 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   input: {
     width: '100%',
