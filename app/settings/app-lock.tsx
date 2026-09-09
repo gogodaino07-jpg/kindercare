@@ -326,9 +326,14 @@ export default function AppLockSettingsScreen() {
             <View style={styles.setupHeader}>
               <Text style={[
                 styles.cardTitle,
+                isPin && styles.cardTitlePin,
                 { color: error ? colors.tomorrowRed : colors.textPrimary }
               ]}>
-                {error ? '입력한 정보가 일치하지 않습니다' : (stage.kind.includes('first') ? '새로운 잠금 설정' : '한 번 더 입력해주세요')}
+                {error
+                  ? '입력한 정보가 일치하지 않습니다'
+                  : isPin
+                    ? (stage.kind.includes('first') ? 'PIN 설정' : 'PIN 확인')
+                    : (stage.kind.includes('first') ? '새로운 잠금 설정' : '한 번 더 입력해주세요')}
               </Text>
               <Text style={[
                 styles.cardSubtitle,
@@ -337,7 +342,9 @@ export default function AppLockSettingsScreen() {
                 {error
                   ? '다시 시도해주세요'
                   : isPin
-                    ? `숫자 PIN ${PIN_MAX_LENGTH}자리를 입력해주세요`
+                    ? (stage.kind.includes('first')
+                        ? `새로운 PIN ${PIN_MAX_LENGTH}자리를 입력해주세요.`
+                        : `PIN ${PIN_MAX_LENGTH}자리를 한 번 더 입력해주세요.`)
                     : isPassword
                       ? `영문+숫자 조합으로 4~${PASSWORD_MAX_LENGTH}자 입력해주세요`
                       : '패턴을 그려주세요'}
@@ -355,17 +362,19 @@ export default function AppLockSettingsScreen() {
                     length={PIN_MAX_LENGTH}
                     error={error}
                     onKeyPress={handlePinKeyPress}
+                    middleSlot={
+                      inputText.length > 0 && !error && stage.kind.includes('first') ? (
+                        <Text style={[styles.strengthTextPin, { color: strengthColor }]}>
+                          {getStrengthLabel(strength!)}
+                        </Text>
+                      ) : null
+                    }
                     bottomLeftSlot={
                       <Pressable onPress={cancelSetup} hitSlop={12}>
                         <Text style={[styles.setupCancelText, { color: colors.textSecondary }]}>취소</Text>
                       </Pressable>
                     }
                   />
-                  {inputText.length > 0 && !error && stage.kind.includes('first') && (
-                    <Text style={[styles.strengthText, { color: strengthColor }]}>
-                      {getStrengthLabel(strength!)}
-                    </Text>
-                  )}
                 </>
               )}
 
@@ -609,6 +618,7 @@ function createStyles(colors: any) {
       overflow: 'hidden',
     },
     cardTitle: { fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 8 },
+    cardTitlePin: { fontSize: 27 },
     cardSubtitle: { fontSize: 14, textAlign: 'center' },
     row: {
       flexDirection: 'row',
@@ -666,6 +676,13 @@ function createStyles(colors: any) {
       fontWeight: '700',
       textAlign: 'center',
       marginBottom: 20,
+    },
+    strengthTextPin: {
+      fontSize: 12,
+      fontWeight: '700',
+      textAlign: 'center',
+      marginTop: 12,
+      marginBottom: 4,
     },
     patternPanel: {
       alignItems: 'center',

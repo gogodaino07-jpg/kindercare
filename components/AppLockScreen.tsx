@@ -142,17 +142,24 @@ export default function AppLockScreen({
     }
   };
 
+  const isPinMethod = method === 'pin';
+
   return (
     <View style={[
       styles.overlay,
       { backgroundColor: colors.skyBackground },
       isEmbedded && { position: 'relative', flex: 1, zIndex: 1 }
     ]}>
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>
+      <View style={[styles.content, isPinMethod && styles.contentPin]}>
+        <Text style={[styles.title, isPinMethod && styles.titlePin, { color: colors.textPrimary }]}>
           {isEmbedded ? '현재 잠금을 해제해주세요' :
-            (method === 'pattern' ? '패턴을 그려주세요' : '비밀번호를 입력해주세요')}
+            (method === 'pattern' ? '패턴을 그려주세요' : isPinMethod ? 'PIN을 입력해주세요' : '비밀번호를 입력해주세요')}
         </Text>
+        {isPinMethod && !isEmbedded && (
+          <Text style={[styles.subtitlePin, { color: colors.textSecondary }]}>
+            PIN {PIN_LENGTH}자리를 입력해주세요.
+          </Text>
+        )}
         {error ? (
           <Text style={[styles.error, { color: colors.tomorrowRed }]}>
             잠금 정보가 일치하지 않아요
@@ -160,6 +167,8 @@ export default function AppLockScreen({
         ) : (
           <View style={styles.error} />
         )}
+
+        {isPinMethod && <View style={styles.pinSpacer} />}
 
         {method === 'pattern' ? (
           <>
@@ -236,10 +245,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
+  // PIN 방식은 위쪽에 제목/부제목, 아래쪽엔 키패드를 붙이는 레이아웃이라
+  // 가운데 정렬 대신 화면 전체 높이를 차지하고 그 안에서 배치한다.
+  contentPin: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    paddingTop: 64,
+    paddingBottom: 12,
+  },
   title: {
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 8,
+  },
+  titlePin: {
+    fontSize: 27,
+  },
+  subtitlePin: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  pinSpacer: {
+    flex: 1,
   },
   error: {
     fontSize: 13,
