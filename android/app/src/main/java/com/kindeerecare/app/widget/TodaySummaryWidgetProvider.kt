@@ -48,7 +48,7 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
       R.id.widget_event_items_6
     )
 
-    private const val SUFFIX_COLOR = "#94A3B8"
+    private const val SUFFIX_COLOR = "#475569"
 
     /** "제목" 뒤에 붙는 부분만 제목보다 연한 색+일반 굵기로 표시해서, 제목과
      *  부가정보가 시각적으로 구분되게 한다(내일 미리보기 줄에서 사용). */
