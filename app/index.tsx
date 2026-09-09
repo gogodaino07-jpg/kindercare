@@ -344,7 +344,7 @@ export default function HomeScreen() {
       if (hasAttemptedAdThisSession) return;
       setAdPopupVisible(true);
       hasAttemptedAdThisSession = true;
-    }, 1500); // 1.5s delay for better UX
+    }, 500); // 0.5s delay for better UX
 
     return () => clearTimeout(timeoutId);
   }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, subscriptionReady, isSubscribed]);
