@@ -450,32 +450,6 @@ export default function SettingsScreen() {
                 </View>
               </View>
 
-            {/* 기타 */}
-              <View style={styles.sectionBlock}>
-                <Text style={styles.sectionLabel}>기타</Text>
-                <View style={styles.card}>
-                  <TouchableOpacity style={styles.plainRow} activeOpacity={0.7} onPress={() => router.push('/settings/support')}>
-                    <Text style={styles.rowTitle}>고객센터 / 문의 및 의견 보내기</Text>
-                    <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
-                  </TouchableOpacity>
-                  <View style={styles.divider} />
-                  <TouchableOpacity style={styles.plainRow} activeOpacity={0.7} onPress={() => router.push('/settings/privacy')}>
-                    <Text style={styles.rowTitle}>개인정보 처리방침</Text>
-                    <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
-                  </TouchableOpacity>
-                  <View style={styles.divider} />
-                  <TouchableOpacity style={styles.plainRow} activeOpacity={0.7} onPress={() => router.push('/settings/terms')}>
-                    <Text style={styles.rowTitle}>이용약관</Text>
-                    <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
-                  </TouchableOpacity>
-                  <View style={styles.divider} />
-                  <TouchableOpacity style={styles.plainRow} activeOpacity={0.7} onPress={() => router.push('/settings/licenses')}>
-                    <Text style={styles.rowTitle}>오픈소스 라이선스</Text>
-                    <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
             <View style={styles.versionContainer}>
               <Text style={styles.versionText}>버전 정보 v{appVersion}</Text>
             </View>
@@ -487,6 +461,26 @@ export default function SettingsScreen() {
               <Text style={styles.footerLinkDivider}>|</Text>
               <TouchableOpacity onPress={handleWithdraw}>
                 <Text style={styles.footerLinkTextMuted}>회원탈퇴</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* 이용약관/오픈소스/개인정보처리방침/문의하기 — 자주 안 쓰는 법적 고지성
+                항목이라 로그아웃/회원탈퇴 아래에 한 줄로 축약해서 보여준다. */}
+            <View style={styles.legalLinkRow}>
+              <TouchableOpacity onPress={() => router.push('/settings/terms')}>
+                <Text style={styles.legalLinkText}>이용약관</Text>
+              </TouchableOpacity>
+              <Text style={styles.legalLinkDivider}>ㅣ</Text>
+              <TouchableOpacity onPress={() => router.push('/settings/licenses')}>
+                <Text style={styles.legalLinkText}>오픈소스</Text>
+              </TouchableOpacity>
+              <Text style={styles.legalLinkDivider}>ㅣ</Text>
+              <TouchableOpacity onPress={() => router.push('/settings/privacy')}>
+                <Text style={styles.legalLinkTextEmphasis}>개인정보처리방침</Text>
+              </TouchableOpacity>
+              <Text style={styles.legalLinkDivider}>ㅣ</Text>
+              <TouchableOpacity onPress={() => router.push('/settings/support')}>
+                <Text style={styles.legalLinkText}>문의하기</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -587,14 +581,6 @@ function createStyles(colors: any) {
     rowLeftGroup: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     rowRightGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     rowSubtitleInline: { fontSize: 12, color: colors.textSecondary, fontWeight: '600', marginTop: 2 },
-    plainRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: 14,
-      paddingHorizontal: 12,
-      borderRadius: 16,
-    },
     rowTitle: { fontSize: 14.5, fontWeight: '700', color: colors.textPrimary, flex: 1 },
     rowValue: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginRight: 2 },
     divider: { height: 1, backgroundColor: colors.border, marginHorizontal: 12 },
@@ -637,6 +623,10 @@ function createStyles(colors: any) {
     footerLinkText: { fontSize: 13, color: colors.textSecondary, fontWeight: '700' },
     footerLinkTextMuted: { fontSize: 12, color: colors.gray400, fontWeight: '500' },
     footerLinkDivider: { fontSize: 13, color: colors.border, fontWeight: '400' },
+    legalLinkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingBottom: 20, flexWrap: 'wrap' },
+    legalLinkText: { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
+    legalLinkTextEmphasis: { fontSize: 12, color: colors.textPrimary, fontWeight: '800' },
+    legalLinkDivider: { fontSize: 12, color: colors.border },
     coupangBannerFullBleed: {
       marginHorizontal: -16,
     },
