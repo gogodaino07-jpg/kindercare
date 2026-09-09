@@ -461,7 +461,10 @@ export default function ChildProfileScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>나이 (생년월일 기준 자동 계산, 직접 선택 가능)</Text>
+          <View style={styles.labelRow}>
+            <Feather name="hash" size={13} color={colors.accent} />
+            <Text style={styles.label}>나이 (생년월일 기준 자동 계산, 직접 선택 가능)</Text>
+          </View>
           <View style={styles.chipRow}>
             {AGE_OPTIONS.map((option) => (
               <Pressable
