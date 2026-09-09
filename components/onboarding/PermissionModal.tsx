@@ -20,6 +20,7 @@ const BORDER = '#BAE6FD';
 const PERMISSION_ITEMS = [
   { icon: '🔔', title: '알림', description: '준비물과 일정을 놓치지 않게 알려드려요' },
   { icon: '📷', title: '카메라', description: '가정통신문을 바로 촬영해서 올릴 수 있어요' },
+  { icon: '🖼️', title: '사진첩', description: '갤러리에 있는 사진을 선택해서 올릴 수 있어요' },
 ];
 
 export default function PermissionModal({ visible, onDone }: PermissionModalProps) {
@@ -30,6 +31,7 @@ export default function PermissionModal({ visible, onDone }: PermissionModalProp
     try {
       await Notifications.requestPermissionsAsync();
       await ImagePicker.requestCameraPermissionsAsync();
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
       // Small breathing room so the transition to Home doesn't feel like an
       // abrupt jump cut right after the permission prompts close.
       await new Promise((resolve) => setTimeout(resolve, 900));

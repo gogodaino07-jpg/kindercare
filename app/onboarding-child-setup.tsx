@@ -80,6 +80,7 @@ export default function OnboardingChildSetupScreen() {
   const [birthdate, setBirthdate] = useState<Date | null>(null);
   const [className, setClassName] = useState('');
   const [hasNoClass, setHasNoClass] = useState(false);
+  const [allergiesText, setAllergiesText] = useState('');
   const [showPicker, setShowPicker] = useState(Platform.OS === 'web');
   const [error, setError] = useState(false);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
@@ -175,6 +176,10 @@ export default function OnboardingChildSetupScreen() {
   const handleConfirmCreate = () => {
     if (!birthdate) return;
     const trimmedClassName = className.trim();
+    const allergies = allergiesText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
     addChild({
       name: name.trim(),
       givenName: givenName.trim() || undefined,
@@ -183,6 +188,7 @@ export default function OnboardingChildSetupScreen() {
       className: trimmedClassName === '없음' ? undefined : trimmedClassName,
       photoUri: photoUri ?? undefined,
       avatarEmoji: photoUri ? undefined : selectedAvatar.emoji,
+      allergies: allergies.length > 0 ? allergies : undefined,
     });
     setShowSuccessModal(false);
     setShowPermissionModal(true);
@@ -195,6 +201,7 @@ export default function OnboardingChildSetupScreen() {
     setBirthdate(null);
     setClassName('');
     setHasNoClass(false);
+    setAllergiesText('');
     setPhotoUri(null);
     setSelectedAvatarId(DEFAULT_AVATARS[0].id);
     setShowSuccessModal(false);
@@ -389,6 +396,22 @@ export default function OnboardingChildSetupScreen() {
           {error && !className.trim() ? (
             <Text style={styles.errorText}>반 이름을 입력해주세요</Text>
           ) : null}
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <View style={styles.labelRow}>
+              <Feather name="alert-triangle" size={13} color={ERROR_RED} />
+              <Text style={styles.label}>알레르기 정보 (선택)</Text>
+            </View>
+            <ClearableTextInput
+              style={styles.input}
+              value={allergiesText}
+              onChangeText={setAllergiesText}
+              onFocus={scrollToClassNameInput}
+              placeholder="예: 새우, 계란, 우유"
+              placeholderTextColor={GRAY}
+            />
+            <Text style={styles.hintText}>쉼표(,)로 구분해서 입력하면 급식 메뉴에 있을 때 강조해서 알려드려요</Text>
           </View>
         </View>
         </View>
