@@ -432,22 +432,16 @@ export default function SettingsScreen() {
                   </Text>
                   <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
                 </TouchableOpacity>
-              </View>
-
-            {/* 보안 */}
-              <View style={styles.sectionBlock}>
-                <Text style={styles.sectionLabel}>보안</Text>
-                <View style={styles.card}>
-                  <Row
-                    icon="lock-outline"
-                    iconBg={colors.tomorrowRedBg}
-                    iconColor={colors.tomorrowRed}
-                    title="잠금화면"
-                    value={LOCK_METHOD_LABELS[method]}
-                    onPress={() => router.push('/settings/app-lock')}
-                    showDivider={false}
-                  />
-                </View>
+                <View style={styles.divider} />
+                <Row
+                  icon="lock-outline"
+                  iconBg={colors.tomorrowRedBg}
+                  iconColor={colors.tomorrowRed}
+                  title="잠금화면"
+                  value={LOCK_METHOD_LABELS[method]}
+                  onPress={() => router.push('/settings/app-lock')}
+                  showDivider={false}
+                />
               </View>
 
             <View style={styles.versionContainer}>
@@ -615,8 +609,6 @@ function createStyles(colors: any) {
     segmentActive: { backgroundColor: colors.accent },
     segmentText: { fontSize: 12.5, fontWeight: '700', color: colors.textSecondary },
     segmentTextActive: { color: '#FFFFFF', fontWeight: '800' },
-    sectionBlock: { marginBottom: 0 },
-    sectionLabel: { fontSize: 12.5, fontWeight: '700', color: colors.textSecondary, marginLeft: 10, marginBottom: 8 },
     versionContainer: { alignItems: 'center', marginTop: 8 },
     versionText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
     footerLinkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16 },
