@@ -163,20 +163,18 @@ export default function OnboardingChildSetupScreen() {
     }
   };
 
-  // "프로필 생성 완료" 버튼: 아직 저장하지 않고, 축하 모달로 입력 내용을
-  // 먼저 보여준 뒤 그 모달의 "확인"에서 실제로 저장한다.
+  // "프로필 생성 완료" 버튼을 누르면 바로 저장하고, 축하 모달은 저장 결과를
+  // 보여주는 용도로만 쓴다 — 예전엔 이 모달에서 "확인"을 한 번 더 눌러야
+  // 실제로 저장됐는데, 이미 끝난 일을 한 번 더 확인시키는 불필요한 클릭이라
+  // 없앴다.
   const handleCreate = () => {
-    if (!canCreate || !birthdate) {
+    if (!canCreate || !birthdate || !age) {
       setError(true);
       return;
     }
     setError(false);
     Keyboard.dismiss();
-    setShowSuccessModal(true);
-  };
 
-  const handleConfirmCreate = () => {
-    if (!birthdate || !age) return;
     const trimmedClassName = className.trim();
     const allergies = allergiesText
       .split(',')
@@ -192,22 +190,12 @@ export default function OnboardingChildSetupScreen() {
       avatarEmoji: photoUri ? undefined : selectedAvatar.emoji,
       allergies: allergies.length > 0 ? allergies : undefined,
     });
-    setShowSuccessModal(false);
-    setShowPermissionModal(true);
+    setShowSuccessModal(true);
   };
 
-  const handleResetForm = () => {
-    setName('');
-    setGivenName('');
-    givenNameTouchedRef.current = false;
-    setBirthdate(null);
-    setAge(null);
-    setClassName('');
-    setHasNoClass(false);
-    setAllergiesText('');
-    setPhotoUri(null);
-    setSelectedAvatarId(DEFAULT_AVATARS[0].id);
+  const handleSuccessConfirm = () => {
     setShowSuccessModal(false);
+    setShowPermissionModal(true);
   };
 
   const handlePermissionDone = () => {
@@ -520,15 +508,9 @@ export default function OnboardingChildSetupScreen() {
               </View>
             </View>
 
-            <View style={styles.successButtonRow}>
-              <Pressable style={styles.resetButton} onPress={handleResetForm}>
-                <Feather name="rotate-ccw" size={14} color={GRAY} />
-                <Text style={styles.resetButtonText}>다시 작성</Text>
-              </Pressable>
-              <Pressable style={styles.confirmButton} onPress={handleConfirmCreate}>
-                <Text style={styles.confirmButtonText}>확인</Text>
-              </Pressable>
-            </View>
+            <Pressable style={styles.confirmButtonFull} onPress={handleSuccessConfirm}>
+              <Text style={styles.confirmButtonText}>확인</Text>
+            </Pressable>
           </View>
         </View>
       )}
@@ -887,29 +869,8 @@ const styles = StyleSheet.create({
       color: INK,
       fontWeight: '700',
     },
-    successButtonRow: {
-      flexDirection: 'row',
-      gap: 10,
+    confirmButtonFull: {
       width: '100%',
-    },
-    resetButton: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 6,
-      paddingVertical: 13,
-      borderRadius: 14,
-      borderWidth: 1.5,
-      borderColor: BORDER,
-    },
-    resetButtonText: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: GRAY,
-    },
-    confirmButton: {
-      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: 13,
