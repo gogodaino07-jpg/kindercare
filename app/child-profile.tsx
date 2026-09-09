@@ -250,27 +250,20 @@ export default function ChildProfileScreen() {
     };
   };
 
-  // 기존 아이 수정은 저장 버튼을 누르면 바로 저장한다. 저장 광고가 실제로 뜬
-  // 경우에는, 광고를 닫고 돌아왔을 때 본인이 누르지도 않았는데 화면이 훅
-  // 넘어가 버리면 불편하다는 예전 피드백이 있어서 화면 이동 없이 토스트로만
-  // 저장 완료를 알린다(뒤로가기는 사용자가 직접). 광고가 안 뜬 경우엔 그
-  // 우려가 없으니 예전처럼 바로 뒤로 이동한다.
-  // 신규 추가는 축하 모달에서 "확인"을 눌러야 실제로 저장되도록 한다(다시 작성으로 취소 가능).
+  // 기존 아이 수정은 저장 버튼을 누르면 광고(뜨는 경우) 종료 후 바로 저장하고
+  // 홈으로 이동한다. 신규 추가는 축하 모달에서 "확인"을 눌러야 실제로
+  // 저장되도록 한다(다시 작성으로 취소 가능).
   const handleSave = async () => {
     if (!canSave || !age) {
       setAttemptedSave(true);
       return;
     }
     if (editingChild) {
-      const adShown = await showChildSaveAd();
+      await showChildSaveAd();
       updateChild(editingChild.id, buildInput());
       justSavedRef.current = true;
-      if (adShown) {
-        showToast('✓ 프로필을 저장했어요.');
-      } else {
-        showToast('저장이 완료되었습니다.');
-        router.back();
-      }
+      showToast('프로필 저장이 완료되었습니다.');
+      router.back();
       return;
     }
     Keyboard.dismiss();
