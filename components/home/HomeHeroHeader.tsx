@@ -21,6 +21,10 @@ interface HomeHeroHeaderProps {
   onPressDate: (date: string) => void;
   /** 오늘 등록된 급식. 있으면 급식 카드에 메인 메뉴 + 나머지 반찬 목록을 보여줌. */
   todayMeal?: MealPlan;
+  /** 이 아이 앞으로 급식표를 한 번이라도 등록한 적 있는지 — 없으면(막 가입한 신규
+   * 유저) 급식 스캔을 먼저 하라고 유도하는 CTA 버튼을 숨긴다. 신규 유저는 보통
+   * 가정통신문/일정부터 스캔하지 급식표부터 스캔하지 않는다. */
+  hasEverRegisteredMeal?: boolean;
 }
 
 /** 인사말에 성을 빼고 이름만 부르도록: "김서준" -> "서준". 2자 이하는 성을 뗄 수 없어 그대로 둠. */
@@ -46,6 +50,7 @@ export default function HomeHeroHeader({
   locationLabel,
   onPressDate,
   todayMeal,
+  hasEverRegisteredMeal,
 }: HomeHeroHeaderProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -87,7 +92,12 @@ export default function HomeHeroHeader({
         </LinearGradient>
       )}
 
-      <MealMenuCard todayMeal={todayMeal} onPressMeal={onPressMeal} allergies={selectedChild?.allergies} />
+      <MealMenuCard
+        todayMeal={todayMeal}
+        onPressMeal={onPressMeal}
+        allergies={selectedChild?.allergies}
+        hasEverRegisteredMeal={hasEverRegisteredMeal}
+      />
 
       {weatherExpanded && (
         <View style={styles.weatherMetaRow}>
@@ -376,10 +386,12 @@ function MealMenuCard({
   todayMeal,
   onPressMeal,
   allergies,
+  hasEverRegisteredMeal,
 }: {
   todayMeal?: MealPlan;
   onPressMeal: () => void;
   allergies?: string[];
+  hasEverRegisteredMeal?: boolean;
 }) {
   const colors = useThemeColors();
   const styles = useMemo(() => createMealCardStyles(colors), [colors]);
@@ -407,10 +419,12 @@ function MealMenuCard({
               </View>
               <Text style={styles.emptyMainText}>오늘 등록된 급식 없음</Text>
             </View>
-            <Pressable style={styles.scanButton} onPress={() => router.push('/meal-scan')} hitSlop={4}>
-              <Ionicons name="camera-outline" size={18} color="#FFFFFF" />
-              <Text style={styles.scanButtonText}>스캔하기</Text>
-            </Pressable>
+            {hasEverRegisteredMeal !== false && (
+              <Pressable style={styles.scanButton} onPress={() => router.push('/meal-scan')} hitSlop={4}>
+                <Ionicons name="camera-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.scanButtonText}>스캔하기</Text>
+              </Pressable>
+            )}
           </View>
         </View>
       </Pressable>

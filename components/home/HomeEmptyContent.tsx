@@ -17,6 +17,7 @@ interface HomeEmptyContentProps {
   locationLabel?: string;
   onPressDate: (date: string) => void;
   todayMeal?: MealPlan;
+  hasEverRegisteredMeal?: boolean;
   refreshing?: boolean;
   onRefresh?: () => void;
 }
@@ -29,6 +30,7 @@ export default function HomeEmptyContent({
   locationLabel,
   onPressDate,
   todayMeal,
+  hasEverRegisteredMeal,
   refreshing,
   onRefresh,
 }: HomeEmptyContentProps) {
@@ -66,6 +68,7 @@ export default function HomeEmptyContent({
           locationLabel={locationLabel}
           onPressDate={onPressDate}
           todayMeal={todayMeal}
+          hasEverRegisteredMeal={hasEverRegisteredMeal}
         />
 
         <SectionHeader emoji="🎒" title="가방에 쏙쏙!" />
