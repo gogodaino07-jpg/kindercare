@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ScreenCapture from 'expo-screen-capture';
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FingerprintIcon from './common/FingerprintIcon';
 import PatternGrid from './settings/PatternGrid';
@@ -12,6 +12,9 @@ import { useToast } from '../context/ToastContext';
 import Text from './common/AppText';
 
 const PIN_LENGTH = 4;
+// 설정 화면(app-lock.tsx)의 PASSWORD_MAX_LENGTH와 맞춘 값 — 그 화면에서 만들 수
+// 있는 비밀번호가 최대 이 길이라, 여기서도 똑같이 막아야 무제한 입력이 안 된다.
+const PASSWORD_MAX_LENGTH = 12;
 
 interface AppLockScreenProps {
   /** False while the boot splash is still covering the screen — the native
@@ -83,6 +86,10 @@ export default function AppLockScreen({
   if (!effectiveLocked || method === 'none') return null;
 
   const handleSuccess = () => {
+    // 비밀번호 방식은 시스템 키보드가 떠있는 채로 잠금이 풀리는데, 화면 전환
+    // 전에 먼저 안 닫아주면 다음 화면(홈)이 뜬 직후에도 키보드가 잠깐 남아있는
+    // 채로 보였다가 사라지는 게 눈에 띄었다.
+    Keyboard.dismiss();
     if (isEmbedded) {
       onVerified?.();
     } else {
@@ -198,6 +205,7 @@ export default function AppLockScreen({
                 secureTextEntry={!passwordVisible}
                 placeholder="비밀번호 입력"
                 placeholderTextColor={colors.textSecondary}
+                maxLength={PASSWORD_MAX_LENGTH}
                 autoFocus
                 onSubmitEditing={handlePasswordSubmit}
                 returnKeyType="done"
