@@ -166,6 +166,7 @@ export default function AppLockScreen({
   };
 
   const isPinMethod = method === 'pin';
+  const isPatternMethod = method === 'pattern';
 
   return (
     <View style={[
@@ -176,19 +177,27 @@ export default function AppLockScreen({
     ]}>
       <View style={[
         styles.content,
-        isPinMethod && styles.contentPin,
-        isPinMethod && { paddingTop: insets.top + 140, paddingBottom: insets.bottom + 12 }
+        (isPinMethod || isPatternMethod) && styles.contentPin,
+        isPinMethod && { paddingTop: insets.top + 140, paddingBottom: insets.bottom + 12 },
+        isPatternMethod && { paddingTop: insets.top + 140, paddingBottom: insets.bottom + 90 }
       ]}>
-        <Text style={[styles.title, isPinMethod && styles.titlePin, { color: colors.textPrimary }]}>
+        <Text style={[styles.title, (isPinMethod || isPatternMethod) && styles.titlePin, { color: colors.textPrimary }]}>
           {isPinMethod
             ? 'PIN을 입력해주세요'
-            : isEmbedded
-              ? '현재 잠금을 해제해주세요'
-              : (method === 'pattern' ? '패턴을 그려주세요' : '비밀번호를 입력해주세요')}
+            : isPatternMethod
+              ? '잠금 해제'
+              : isEmbedded
+                ? '현재 잠금을 해제해주세요'
+                : '비밀번호를 입력해주세요'}
         </Text>
         {isPinMethod && (
           <Text style={[styles.subtitlePin, { color: colors.textSecondary }]}>
             PIN {PIN_LENGTH}자리를 입력해주세요.
+          </Text>
+        )}
+        {isPatternMethod && (
+          <Text style={[styles.subtitlePin, { color: colors.textSecondary }]}>
+            잠금해제 패턴을 입력해주세요.
           </Text>
         )}
         {error ? (
@@ -199,11 +208,11 @@ export default function AppLockScreen({
           <View style={styles.error} />
         )}
 
-        {isPinMethod && <View style={styles.pinSpacer} />}
+        {(isPinMethod || isPatternMethod) && <View style={styles.pinSpacer} />}
 
         {method === 'pattern' ? (
           <>
-            <PatternGrid colors={colors} showTrail={showPatternEnabled} onComplete={handlePatternComplete} />
+            <PatternGrid colors={colors} showTrail={showPatternEnabled} onComplete={handlePatternComplete} size={300} />
             {canUseBiometric ? (
               <Pressable style={styles.bioButton} onPress={() => authenticateWithBiometric().then(s => s && isEmbedded && onVerified?.())}>
                 <Text style={[styles.bioButtonText, { color: colors.accent }]}>지문으로 잠금 해제</Text>
