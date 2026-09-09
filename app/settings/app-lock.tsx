@@ -351,7 +351,7 @@ export default function AppLockSettingsScreen() {
               </Text>
             </View>
 
-            <View style={[styles.setupBottomGroup, isPin && styles.setupBottomGroupPin]}>
+            <View style={[styles.setupBottomGroup, isPin && styles.setupBottomGroupPin, isPattern && styles.setupBottomGroupPattern]}>
               {isPin && (
                 <>
                   {/* 실제 잠금 해제 화면과 똑같은 키패드로 연습하게 해서, 설정할 때 본
@@ -426,6 +426,7 @@ export default function AppLockSettingsScreen() {
                     showTrail
                     keepTrailAfterComplete
                     onComplete={handlePatternComplete}
+                    size={280}
                   />
                 </View>
               )}
@@ -602,6 +603,9 @@ function createStyles(colors: any) {
     // 숫자 키패드는 한 손 입력이 많아서, 가운데 정렬 대신 화면 아래쪽에
     // 가깝게 둬서 엄지로 누르기 편하게 한다.
     setupBottomGroupPin: { justifyContent: 'flex-end', paddingBottom: 12 },
+    // 패턴은 키패드처럼 바닥에 붙일 필요는 없지만, 가운데보다 살짝 아래가
+    // 엄지로 그리기 편해서 조금만 내린다.
+    setupBottomGroupPattern: { justifyContent: 'flex-end', paddingBottom: 80 },
     setupFooterRow: {
       flexDirection: 'row',
       alignItems: 'center',
