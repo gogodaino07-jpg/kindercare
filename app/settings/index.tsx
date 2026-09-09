@@ -177,36 +177,6 @@ export default function SettingsScreen() {
     });
   };
 
-  const Row = ({
-    icon,
-    iconBg,
-    iconColor,
-    title,
-    value,
-    onPress,
-    showDivider = true,
-  }: {
-    icon: keyof typeof MaterialCommunityIcons.glyphMap;
-    iconBg: string;
-    iconColor: string;
-    title: string;
-    value?: string;
-    onPress: () => void;
-    showDivider?: boolean;
-  }) => (
-    <View>
-      <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={onPress}>
-        <View style={[styles.rowIconBadge, { backgroundColor: iconBg }]}>
-          <MaterialCommunityIcons name={icon} size={18} color={iconColor} />
-        </View>
-        <Text style={styles.rowTitle}>{title}</Text>
-        {value ? <Text style={styles.rowValue} numberOfLines={1}>{value}</Text> : null}
-        <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
-      </TouchableOpacity>
-      {showDivider && <View style={styles.divider} />}
-    </View>
-  );
-
   return (
     <View style={styles.screenBg}>
       <Stack.Screen
@@ -433,15 +403,11 @@ export default function SettingsScreen() {
                   <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
                 </TouchableOpacity>
                 <View style={styles.divider} />
-                <Row
-                  icon="lock-outline"
-                  iconBg={colors.tomorrowRedBg}
-                  iconColor={colors.tomorrowRed}
-                  title="잠금화면"
-                  value={LOCK_METHOD_LABELS[method]}
-                  onPress={() => router.push('/settings/app-lock')}
-                  showDivider={false}
-                />
+                <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => router.push('/settings/app-lock')}>
+                  <Text style={styles.rowTitle}>잠금화면</Text>
+                  <Text style={styles.rowValue} numberOfLines={1}>{LOCK_METHOD_LABELS[method]}</Text>
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
+                </TouchableOpacity>
               </View>
 
             <View style={styles.versionContainer}>
