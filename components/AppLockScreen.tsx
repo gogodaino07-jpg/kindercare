@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ScreenCapture from 'expo-screen-capture';
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FingerprintIcon from './common/FingerprintIcon';
 import PatternGrid from './settings/PatternGrid';
 import PinPad from './settings/PinPad';
@@ -29,6 +30,7 @@ export default function AppLockScreen({
   isEmbedded = false
 }: AppLockScreenProps) {
   const colors = useThemeColors();
+  const insets = useSafeAreaInsets();
   const { showToast } = useToast();
   const {
     method,
@@ -150,7 +152,11 @@ export default function AppLockScreen({
       { backgroundColor: colors.skyBackground },
       isEmbedded && { position: 'relative', flex: 1, zIndex: 1 }
     ]}>
-      <View style={[styles.content, isPinMethod && styles.contentPin]}>
+      <View style={[
+        styles.content,
+        isPinMethod && styles.contentPin,
+        isPinMethod && { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 12 }
+      ]}>
         <Text style={[styles.title, isPinMethod && styles.titlePin, { color: colors.textPrimary }]}>
           {isEmbedded ? '현재 잠금을 해제해주세요' :
             (method === 'pattern' ? '패턴을 그려주세요' : isPinMethod ? 'PIN을 입력해주세요' : '비밀번호를 입력해주세요')}
