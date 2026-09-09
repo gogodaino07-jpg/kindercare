@@ -68,43 +68,39 @@
             android:paddingHorizontal="8dp"
             android:paddingVertical="3dp" />
 
+        <!-- 일정마다 "제목 (준비물 N개)" 한 줄씩 — 최대 3건, 넘치면 마지막 줄에
+             "(+N건 더)"만 붙인다. 칩(배경 있는 wrap_content 뷰)이 실기기에서
+             렌더링에 실패해서, 배경 없는 단순 텍스트 줄로 바꿈. -->
         <TextView
-            android:id="@+id/widget_event_1_title"
+            android:id="@+id/widget_event_line_1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
             android:textColor="#1E293B"
-            android:textSize="13.5sp"
+            android:textSize="13sp"
             android:textStyle="bold"
             android:maxLines="1"
             android:ellipsize="end" />
 
-        <!-- 준비물 칩 2개를 한 줄에 나란히 두려던 중첩 LinearLayout이 렌더링 실패의
-             원인 중 하나로 의심되어, 각 칩을 카드의 직계 자식으로 세로로 쌓는
-             단순한 구조로 바꿈(이전에 검증된 방식과 동일). -->
         <TextView
-            android:id="@+id/widget_event_1_chip_1"
+            android:id="@+id/widget_event_line_2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:background="@drawable/widget_chip_bg"
-            android:paddingHorizontal="9dp"
-            android:paddingVertical="4dp"
-            android:textColor="#334155"
-            android:textSize="11sp"
+            android:layout_marginTop="3dp"
+            android:textColor="#1E293B"
+            android:textSize="13sp"
+            android:textStyle="bold"
             android:maxLines="1"
             android:ellipsize="end" />
 
         <TextView
-            android:id="@+id/widget_event_1_chip_2"
+            android:id="@+id/widget_event_line_3"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:background="@drawable/widget_chip_bg"
-            android:paddingHorizontal="9dp"
-            android:paddingVertical="4dp"
-            android:textColor="#334155"
-            android:textSize="11sp"
+            android:layout_marginTop="3dp"
+            android:textColor="#1E293B"
+            android:textSize="13sp"
+            android:textStyle="bold"
             android:maxLines="1"
             android:ellipsize="end" />
     </LinearLayout>

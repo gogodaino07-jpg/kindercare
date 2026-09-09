@@ -13,8 +13,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** 홈 화면 위젯 — JS 쪽(utils/homeWidget.ts)이 HomeWidgetModule을 통해 써준
- *  SharedPreferences의 요약 데이터를 읽어 오늘 대표 일정 + 그 준비물 + 내일 미리보기를 보여준다.
- *  위젯 높이 제한(2행) 때문에 오늘 일정은 1건만 카드에 담고, 더 있으면 제목 뒤에 "(+N건 더)"를 붙인다. */
+ *  SharedPreferences의 요약 데이터를 읽어 오늘 일정(최대 3건)마다 "제목 (준비물 N개)"
+ *  한 줄씩 + 내일 미리보기를 보여준다. */
 class TodaySummaryWidgetProvider : AppWidgetProvider() {
 
   override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
@@ -25,23 +25,33 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
     const val PREFS_NAME = "widget_data"
     const val KEY_SUMMARY_JSON = "summary_json"
 
-    private val CHIP_IDS = intArrayOf(R.id.widget_event_1_chip_1, R.id.widget_event_1_chip_2)
+    private val EVENT_LINE_IDS = intArrayOf(
+      R.id.widget_event_line_1,
+      R.id.widget_event_line_2,
+      R.id.widget_event_line_3
+    )
 
-    private fun renderChips(views: RemoteViews, itemNames: JSONArray?) {
-      val count = itemNames?.length() ?: 0
-      for (i in CHIP_IDS.indices) {
+    /** 일정 최대 3건까지 "제목 (준비물 N개)" 한 줄씩 채우고, 넘치는 만큼은
+     *  마지막 줄에 "(+N건 더)"로 요약한다(준비물 개수 대신). */
+    private fun renderEventLines(views: RemoteViews, events: JSONArray?) {
+      val count = events?.length() ?: 0
+      for (i in EVENT_LINE_IDS.indices) {
         if (i >= count) {
-          views.setViewVisibility(CHIP_IDS[i], View.GONE)
+          views.setViewVisibility(EVENT_LINE_IDS[i], View.GONE)
           continue
         }
-        views.setViewVisibility(CHIP_IDS[i], View.VISIBLE)
-        val isLastVisibleSlot = i == CHIP_IDS.size - 1
-        val label = if (isLastVisibleSlot && count > CHIP_IDS.size) {
-          "${itemNames!!.optString(i)} 외 ${count - CHIP_IDS.size}건"
+        views.setViewVisibility(EVENT_LINE_IDS[i], View.VISIBLE)
+        val event = events!!.optJSONObject(i)
+        val title = event?.optString("title") ?: ""
+        val isLastVisibleSlot = i == EVENT_LINE_IDS.size - 1
+
+        val line = if (isLastVisibleSlot && count > EVENT_LINE_IDS.size) {
+          "$title (+${count - EVENT_LINE_IDS.size}건 더)"
         } else {
-          itemNames!!.optString(i)
+          val itemCount = event?.optJSONArray("itemNames")?.length() ?: 0
+          if (itemCount > 0) "$title (준비물 ${itemCount}개)" else title
         }
-        views.setTextViewText(CHIP_IDS[i], "✓ $label")
+        views.setTextViewText(EVENT_LINE_IDS[i], line)
       }
     }
 
@@ -63,15 +73,13 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
 
             if (eventCount == 0) {
               views.setViewVisibility(R.id.widget_badge, View.GONE)
-              views.setTextViewText(R.id.widget_event_1_title, "오늘 등록된 일정이 없어요")
-              renderChips(views, null)
+              views.setViewVisibility(R.id.widget_event_line_1, View.VISIBLE)
+              views.setTextViewText(R.id.widget_event_line_1, "오늘 등록된 일정이 없어요")
+              views.setViewVisibility(R.id.widget_event_line_2, View.GONE)
+              views.setViewVisibility(R.id.widget_event_line_3, View.GONE)
             } else {
               views.setViewVisibility(R.id.widget_badge, View.VISIBLE)
-              val first = events!!.optJSONObject(0)
-              var title = first?.optString("title") ?: ""
-              if (eventCount > 1) title = "$title (+${eventCount - 1}건 더)"
-              views.setTextViewText(R.id.widget_event_1_title, title)
-              renderChips(views, first?.optJSONArray("itemNames"))
+              renderEventLines(views, events)
             }
 
             val tomorrow = json.optJSONObject("tomorrow")
@@ -96,8 +104,10 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
         if (!handled) {
           views.setTextViewText(R.id.widget_date, "")
           views.setViewVisibility(R.id.widget_badge, View.GONE)
-          views.setTextViewText(R.id.widget_event_1_title, "킨더케어를 열어 확인해주세요")
-          renderChips(views, null)
+          views.setViewVisibility(R.id.widget_event_line_1, View.VISIBLE)
+          views.setTextViewText(R.id.widget_event_line_1, "킨더케어를 열어 확인해주세요")
+          views.setViewVisibility(R.id.widget_event_line_2, View.GONE)
+          views.setViewVisibility(R.id.widget_event_line_3, View.GONE)
           views.setViewVisibility(R.id.widget_tomorrow_row, View.GONE)
         }
 
