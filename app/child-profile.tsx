@@ -424,12 +424,6 @@ export default function ChildProfileScreen() {
             placeholder="예: 김서준 → 서준"
             placeholderTextColor={colors.textSecondary}
           />
-          {name.trim().length >= 2 && givenName ? (
-            <View style={styles.sparkleHint}>
-              <Feather name="star" size={11} color={colors.accent} />
-              <Text style={styles.sparkleHintText}>앱에서 "{givenName}"(으)로 다정하게 부를게요!</Text>
-            </View>
-          ) : null}
         </View>
 
         <View style={styles.field}>
@@ -687,8 +681,6 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     labelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
     labelRowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
     labelHint: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
-    sparkleHint: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6, paddingHorizontal: 2 },
-    sparkleHintText: { fontSize: 11, fontWeight: '600', color: colors.accent, flexShrink: 1 },
     fieldHint: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
     noClassChip: {
       paddingHorizontal: 10,

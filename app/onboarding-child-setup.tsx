@@ -307,12 +307,6 @@ export default function OnboardingChildSetupScreen() {
               placeholder="예: 서준이, 준이"
               placeholderTextColor={GRAY}
             />
-            {name.trim().length >= 2 && givenName ? (
-              <View style={styles.sparkleHint}>
-                <Feather name="star" size={11} color={ACCENT_BLUE} />
-                <Text style={styles.sparkleHintText}>앱에서 "{givenName}"(으)로 다정하게 부를게요!</Text>
-              </View>
-            ) : null}
           </View>
 
           <View style={styles.fieldGroup}>
@@ -682,20 +676,6 @@ const styles = StyleSheet.create({
       fontSize: 11,
       fontWeight: '600',
       color: GRAY,
-    },
-    sparkleHint: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 5,
-      marginTop: 6,
-      marginBottom: 2,
-      paddingHorizontal: 2,
-    },
-    sparkleHintText: {
-      fontSize: 11,
-      fontWeight: '600',
-      color: ACCENT_BLUE,
-      flexShrink: 1,
     },
     noClassChip: {
       paddingHorizontal: 10,
