@@ -49,7 +49,7 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
           "$title (+${count - EVENT_LINE_IDS.size}건 더)"
         } else {
           val itemCount = event?.optJSONArray("itemNames")?.length() ?: 0
-          if (itemCount > 0) "$title (준비물 ${itemCount}개)" else title
+          "$title (준비물 ${itemCount}개)"
         }
         views.setTextViewText(EVENT_LINE_IDS[i], line)
       }
@@ -87,11 +87,10 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
               views.setViewVisibility(R.id.widget_tomorrow_row, View.GONE)
             } else {
               val itemCount = tomorrow.optInt("itemCount", 0)
-              val suffix = if (itemCount > 0) " (준비물 ${itemCount}개)" else ""
               views.setViewVisibility(R.id.widget_tomorrow_row, View.VISIBLE)
               views.setTextViewText(
                 R.id.widget_tomorrow_text,
-                "내일 ${tomorrow.optString("dateLabel")} · ${tomorrow.optString("title")}$suffix"
+                "내일 ${tomorrow.optString("dateLabel")} · ${tomorrow.optString("title")} (준비물 ${itemCount}개)"
               )
             }
 
