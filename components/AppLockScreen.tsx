@@ -155,7 +155,7 @@ export default function AppLockScreen({
       <View style={[
         styles.content,
         isPinMethod && styles.contentPin,
-        isPinMethod && { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 12 }
+        isPinMethod && { paddingTop: insets.top + 72, paddingBottom: insets.bottom + 12 }
       ]}>
         <Text style={[styles.title, isPinMethod && styles.titlePin, { color: colors.textPrimary }]}>
           {isEmbedded ? '현재 잠금을 해제해주세요' :
