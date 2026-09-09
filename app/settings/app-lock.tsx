@@ -652,7 +652,7 @@ function createStyles(colors: any) {
     rowTitle: { fontSize: 15.5, fontWeight: '700' },
     rowDesc: { fontSize: 12, marginTop: 2 },
     divider: { height: 1, marginHorizontal: 20 },
-    inputWrap: { position: 'relative', justifyContent: 'center', marginBottom: 6 },
+    inputWrap: { width: '100%', position: 'relative', justifyContent: 'center', marginBottom: 6 },
     charCountText: { alignSelf: 'flex-end', fontSize: 11, fontWeight: '600', marginBottom: 8 },
     input: {
       borderWidth: 1.5,
