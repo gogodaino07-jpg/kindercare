@@ -137,11 +137,14 @@ export default function EditEventModal({ visible, event, onClose }: EditEventMod
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>일정명</Text>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>일정명</Text>
+                <Text style={styles.charCount}>{title.length}/30자</Text>
+              </View>
               <TextInput
                 style={styles.input}
                 value={title}
-                onChangeText={(text) => setTitle(stripInvalidCharacters(text))}
+                onChangeText={setTitle}
                 placeholder="예: 여름 물놀이 행사"
                 placeholderTextColor={t.textMuted}
                 maxLength={30}

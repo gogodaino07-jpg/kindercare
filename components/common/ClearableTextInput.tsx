@@ -96,18 +96,18 @@ const styles = StyleSheet.create({
     paddingRight: 34,
   },
   paddingForClearMultiline: {
-    paddingRight: 30,
+    paddingRight: 32,
   },
   clearButton: {
     position: 'absolute',
-    right: 8,
+    right: 10,
     top: 0,
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
   },
   clearButtonMultiline: {
-    top: 8,
+    top: 12,
     bottom: undefined,
   },
 });
