@@ -225,6 +225,17 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
     color: t.textSecondary,
     marginBottom: 8,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  charCount: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: t.textMuted,
+    marginBottom: 8,
+  },
   input: {
     backgroundColor: t.gray50,
     borderRadius: 14,
