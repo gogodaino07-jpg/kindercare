@@ -58,5 +58,6 @@
       </intent-filter>
       <meta-data android:name="android.appwidget.provider" android:resource="@xml/today_summary_widget_info"/>
     </receiver>
+    <service android:name=".widget.TodayEventsRemoteViewsService" android:permission="android.permission.BIND_REMOTEVIEWS" android:exported="false"/>
   </application>
 </manifest>

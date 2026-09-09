@@ -44,12 +44,15 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- 오늘 일정 카드 — 내용만큼만 높이를 차지하게(wrap_content) 해서, 준비물이
-         적을 때 카드 아래쪽에 빈 여백이 크게 남지 않게 한다. -->
+    <!-- 오늘 일정 카드 — 위젯을 배치한 크기만큼 고정 높이를 차지하고, 그 안의
+         일정 목록(widget_event_list)이 넘치면 스크롤된다. 일정 수가 적어도
+         카드 자체는 항상 이 고정 높이를 유지한다(스크롤이 가능하려면 목록
+         영역이 고정 크기여야 하기 때문). -->
     <LinearLayout
         android:id="@+id/widget_card"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:layout_marginTop="7dp"
         android:orientation="vertical"
         android:background="@drawable/widget_card_bg"
@@ -60,6 +63,7 @@
             android:id="@+id/widget_badge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
             android:text="오늘 챙겨요"
             android:textColor="#FFFFFF"
             android:textSize="10.5sp"
@@ -68,137 +72,27 @@
             android:paddingHorizontal="9dp"
             android:paddingVertical="3dp" />
 
-        <!-- 일정마다 "제목" 줄 + 그 아래 "준비물: ..." 줄 — 최대 6건까지 슬롯을
-             만들어두고 실제 일정 수만큼만 보여준다. 위젯을 기본 크기보다 키우면
-             화면에 가려져 있던 슬롯이 그만큼 더 드러나 보이는 방식(스크롤 대신).
-             6건도 넘치면 마지막 슬롯 제목 줄에 "(+N건 더)"만 붙이고 준비물
-             줄은 숨긴다. 칩(배경 있는 wrap_content 뷰)이 실기기에서 렌더링에
-             실패해서, 배경 없는 단순 텍스트 줄로 구성함. -->
+        <!-- 일정이 없거나 데이터를 못 불러왔을 때만 보이는 단일 안내 문구 -->
         <TextView
-            android:id="@+id/widget_event_line_1"
+            android:id="@+id/widget_empty_message"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
             android:textColor="#1E293B"
-            android:textSize="15.5sp"
+            android:textSize="14sp"
             android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end" />
+            android:visibility="gone" />
 
-        <TextView
-            android:id="@+id/widget_event_items_1"
+        <!-- 오늘 일정 목록 — widget_event_item.xml을 아이템으로 쓰는 진짜
+             스크롤 리스트(TodayEventsRemoteViewsService/Factory가 채움).
+             몇 건이든 다 넣고, 위젯 높이보다 넘치면 스크롤로 본다. -->
+        <ListView
+            android:id="@+id/widget_event_list"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
-            android:textColor="#475569"
-            android:textSize="13sp"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/widget_event_line_2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:textColor="#1E293B"
-            android:textSize="15.5sp"
-            android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/widget_event_items_2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
-            android:textColor="#475569"
-            android:textSize="13sp"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/widget_event_line_3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:textColor="#1E293B"
-            android:textSize="15.5sp"
-            android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/widget_event_items_3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
-            android:textColor="#475569"
-            android:textSize="13sp"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/widget_event_line_4"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:textColor="#1E293B"
-            android:textSize="15.5sp"
-            android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/widget_event_items_4"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
-            android:textColor="#475569"
-            android:textSize="13sp"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/widget_event_line_5"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:textColor="#1E293B"
-            android:textSize="15.5sp"
-            android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/widget_event_items_5"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
-            android:textColor="#475569"
-            android:textSize="13sp"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/widget_event_line_6"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:textColor="#1E293B"
-            android:textSize="15.5sp"
-            android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/widget_event_items_6"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
-            android:textColor="#475569"
-            android:textSize="13sp"
-            android:maxLines="1"
-            android:ellipsize="end" />
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:scrollbars="none" />
     </LinearLayout>
 
     <!-- 내일 요약 (내일 일정 없으면 전체 숨김) -->
