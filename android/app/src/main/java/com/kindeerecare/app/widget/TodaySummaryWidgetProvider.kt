@@ -5,6 +5,12 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
+import android.graphics.Typeface
 import android.view.View
 import android.widget.RemoteViews
 import com.kindeerecare.app.MainActivity
@@ -31,6 +37,19 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
       R.id.widget_event_line_3
     )
 
+    private const val SUFFIX_COLOR = "#94A3B8"
+
+    /** "제목" 뒤에 붙는 "(준비물 N개)"/"(+N건 더)" 부분만 제목보다 연한 색+
+     *  일반 굵기로 표시해서, 제목과 부가정보가 시각적으로 구분되게 한다. */
+    private fun buildEventLine(title: String, suffix: String): CharSequence {
+      val full = "$title $suffix"
+      val span = SpannableString(full)
+      val suffixStart = title.length + 1
+      span.setSpan(ForegroundColorSpan(Color.parseColor(SUFFIX_COLOR)), suffixStart, full.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+      span.setSpan(StyleSpan(Typeface.NORMAL), suffixStart, full.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+      return span
+    }
+
     /** 일정 최대 3건까지 "제목 (준비물 N개)" 한 줄씩 채우고, 넘치는 만큼은
      *  마지막 줄에 "(+N건 더)"로 요약한다(준비물 개수 대신). */
     private fun renderEventLines(views: RemoteViews, events: JSONArray?) {
@@ -45,13 +64,13 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
         val title = event?.optString("title") ?: ""
         val isLastVisibleSlot = i == EVENT_LINE_IDS.size - 1
 
-        val line = if (isLastVisibleSlot && count > EVENT_LINE_IDS.size) {
-          "$title (+${count - EVENT_LINE_IDS.size}건 더)"
+        val suffix = if (isLastVisibleSlot && count > EVENT_LINE_IDS.size) {
+          "(+${count - EVENT_LINE_IDS.size}건 더)"
         } else {
           val itemCount = event?.optJSONArray("itemNames")?.length() ?: 0
-          "$title (준비물 ${itemCount}개)"
+          "(준비물 ${itemCount}개)"
         }
-        views.setTextViewText(EVENT_LINE_IDS[i], line)
+        views.setTextViewText(EVENT_LINE_IDS[i], buildEventLine(title, suffix))
       }
     }
 
@@ -90,7 +109,7 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
               views.setViewVisibility(R.id.widget_tomorrow_row, View.VISIBLE)
               views.setTextViewText(
                 R.id.widget_tomorrow_text,
-                "내일 ${tomorrow.optString("dateLabel")} · ${tomorrow.optString("title")} (준비물 ${itemCount}개)"
+                buildEventLine("내일 ${tomorrow.optString("dateLabel")} · ${tomorrow.optString("title")}", "(준비물 ${itemCount}개)")
               )
             }
 
