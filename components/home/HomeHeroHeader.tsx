@@ -410,13 +410,13 @@ function MealMenuCard({
         <View style={styles.cardTopBar} />
         <View style={styles.cardContent}>
           <View style={styles.emptyRow}>
-            <View style={[styles.emptyLeftCol, hasEverRegisteredMeal === false && styles.emptyLeftColCentered]}>
-              <View style={styles.emptyHeaderRow}>
-                <View style={styles.miniTag}>
-                  <Text style={styles.miniTagText}>점심</Text>
-                </View>
-                <Text style={styles.unregisteredText}>미등록</Text>
+            <View style={styles.emptyHeaderRow}>
+              <View style={styles.miniTag}>
+                <Text style={styles.miniTagText}>점심</Text>
               </View>
+              <Text style={styles.unregisteredText}>미등록</Text>
+            </View>
+            <View style={styles.emptyMainTextWrap} pointerEvents="none">
               <Text style={styles.emptyMainText}>오늘 등록된 급식 없음</Text>
             </View>
             {hasEverRegisteredMeal !== false && (
@@ -579,22 +579,24 @@ function createMealCardStyles(colors: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 12,
-    },
-    emptyLeftCol: {
-      flex: 1,
-      minWidth: 0,
-    },
-    // 급식 스캔 버튼이 없을 때(신규 프로필)는 왼쪽에 붙어있던 내용이 카드 안에서
-    // 붕 떠 보여서, 배너 가운데로 오도록 정렬한다.
-    emptyLeftColCentered: {
-      alignItems: 'center',
-      paddingVertical: 6,
+      position: 'relative',
+      minHeight: 32,
     },
     emptyHeaderRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-      marginBottom: 8,
+    },
+    // "오늘 등록된 급식 없음"은 왼쪽 태그·오른쪽 버튼 유무와 상관없이 배너
+    // 정가운데에 오도록 절대 위치로 겹쳐 그린다.
+    emptyMainTextWrap: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     miniTag: {
       backgroundColor: colors.pastelOrangeAccent,
