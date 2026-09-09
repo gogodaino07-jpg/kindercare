@@ -57,6 +57,7 @@
                 android:id="@+id/widget_badge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
                 android:text="오늘 챙겨요"
                 android:textColor="#FFFFFF"
                 android:textSize="13sp"
@@ -64,11 +65,6 @@
                 android:background="@drawable/widget_badge_bg"
                 android:paddingHorizontal="13dp"
                 android:paddingVertical="5dp" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
 
             <TextView
                 android:id="@+id/widget_date"
