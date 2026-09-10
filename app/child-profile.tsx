@@ -625,7 +625,7 @@ export default function ChildProfileScreen() {
   );
 }
 
-const PHOTO_SIZE = 96;
+const PHOTO_SIZE = 120;
 
 function createStyles(colors: ThemeColors, bottomInset: number) {
   return StyleSheet.create({
@@ -643,12 +643,12 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       paddingHorizontal: 24,
       paddingTop: 8,
       alignItems: 'center',
-      paddingBottom: 80 + bottomInset,
+      paddingBottom: 100 + bottomInset,
     },
     avatarWrap: {
       width: PHOTO_SIZE,
       height: PHOTO_SIZE,
-      marginBottom: 12,
+      marginBottom: 18,
     },
     avatarRing: {
       width: PHOTO_SIZE,
@@ -670,7 +670,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       borderWidth: 2,
       borderColor: colors.cardWhite,
     },
-    avatarEmoji: { fontSize: 36 },
+    avatarEmoji: { fontSize: 44 },
     photo: {
       width: PHOTO_SIZE,
       height: PHOTO_SIZE,
@@ -690,7 +690,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       borderColor: colors.cardWhite,
       ...SHADOW,
     },
-    field: { width: '100%', marginBottom: 10 },
+    field: { width: '100%', marginBottom: 14 },
     label: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
     labelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
     labelRowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
@@ -711,7 +711,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       backgroundColor: colors.cardWhite,
       borderRadius: 16,
       paddingHorizontal: 16,
-      paddingVertical: 11,
+      paddingVertical: 14,
       fontSize: 15,
       color: colors.textPrimary,
       borderWidth: 1,
