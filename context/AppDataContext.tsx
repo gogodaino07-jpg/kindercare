@@ -3,6 +3,7 @@ import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { login as kakaoLogin, logout as kakaoLogout, getProfile as getKakaoProfile } from '@react-native-seoul/kakao-login';
+import * as FileSystem from 'expo-file-system/legacy';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_CHALKBOARD_THEME_ID } from '../constants/chalkboardThemes';
 import {
@@ -45,6 +46,45 @@ const FAMILY_OWNER_EMAIL_KEY = 'kindercare_family_owner_email';
 // 재가입한 뒤에도 "이어서 진행할까요?" 팝업으로 되살아나 예전 사진 경로를 쓰게 된다.
 const PENDING_ANALYSIS_SESSION_KEY = 'kindercare:pendingAnalysis';
 const PHOTO_URIS_BY_EVENT_KEY = 'kindercare_event_photo_uris';
+
+// 일정의 원본 스캔 사진은 기기 저장공간에 계속 쌓이기만 하고 자동으로 지워지지
+// 않았다 — 생성된 지 7일이 지난 사진은 앱을 열 때 파일과 함께 정리한다.
+// ai-review.tsx가 파일명을 `${Date.now()}-${random}.${ext}` 형식으로 저장해두므로
+// 파일명 맨 앞의 타임스탬프만 보고 판단할 수 있다.
+const SCANNED_PHOTO_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+function getPhotoCreatedAt(uri: string): number | null {
+  const fileName = uri.split('/').pop() ?? '';
+  const timestamp = parseInt(fileName.split('-')[0], 10);
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+/** 7일 지난 사진 파일은 지우고, 만료된 사진만 걸러낸 새 맵을 돌려준다. */
+async function cleanupExpiredScannedPhotos(
+  photoUrisByEventId: Record<string, string[]>
+): Promise<Record<string, string[]>> {
+  const now = Date.now();
+  const next: Record<string, string[]> = {};
+  let changed = false;
+
+  for (const [eventId, uris] of Object.entries(photoUrisByEventId)) {
+    const kept: string[] = [];
+    for (const uri of uris) {
+      const createdAt = getPhotoCreatedAt(uri);
+      const isExpired = createdAt !== null && now - createdAt > SCANNED_PHOTO_MAX_AGE_MS;
+      if (isExpired) {
+        changed = true;
+        await FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
+      } else {
+        kept.push(uri);
+      }
+    }
+    if (kept.length > 0) next[eventId] = kept;
+    else if (uris.length > 0) changed = true;
+  }
+
+  return changed ? next : photoUrisByEventId;
+}
 
 /** 무료 사용자가 등록할 수 있는 아이 최대 인원 — 2번째부터는 프리미엄 구독이 필요하다. */
 export const FREE_CHILD_LIMIT = 1;
@@ -282,7 +322,9 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
           if (storedPhotoUrisByEventId) {
             try {
               const parsed = JSON.parse(storedPhotoUrisByEventId);
-              if (parsed && typeof parsed === 'object') setPhotoUrisByEventId(parsed);
+              if (parsed && typeof parsed === 'object') {
+                cleanupExpiredScannedPhotos(parsed).then(setPhotoUrisByEventId);
+              }
             } catch (e) {
               console.error('Failed to parse stored event photo uris:', e);
             }
