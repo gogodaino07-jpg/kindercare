@@ -423,19 +423,19 @@ export default function UploadScreen() {
             <View style={styles.dockRow}>
               <Pressable onPress={handleTakePhoto} style={styles.dockButton}>
                 <View style={styles.dockButtonIconCircle}>
-                  <Feather name="camera" size={20} color={C.violet600} />
+                  <Feather name="camera" size={16} color={C.violet600} />
                 </View>
                 <Text style={styles.dockButtonText}>카메라 촬영</Text>
               </Pressable>
               <Pressable onPress={handlePickGallery} style={[styles.dockButton, styles.dockButtonAccent]}>
                 <View style={[styles.dockButtonIconCircle, styles.dockButtonIconCircleAccent]}>
-                  <Feather name="image" size={20} color={C.violet700} />
+                  <Feather name="image" size={16} color={C.violet700} />
                 </View>
                 <Text style={styles.dockButtonTextAccent}>앨범 사진</Text>
               </Pressable>
               <Pressable onPress={handlePickFile} style={styles.dockButton}>
                 <View style={styles.dockButtonIconCircle}>
-                  <Feather name="file-text" size={20} color={C.slate600} />
+                  <Feather name="file-text" size={16} color={C.slate600} />
                 </View>
                 <Text style={styles.dockButtonText}>PDF / 문서</Text>
               </Pressable>
@@ -911,12 +911,12 @@ function createStyles(C: ScanColors) {
   dockButton: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    paddingVertical: 14,
+    borderRadius: 16,
+    paddingVertical: 10,
     borderWidth: 1.5,
     borderColor: C.slate200,
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.06,
@@ -925,9 +925,9 @@ function createStyles(C: ScanColors) {
   },
   dockButtonAccent: { backgroundColor: C.violet50, borderColor: C.violet600, borderWidth: 2 },
   dockButtonIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: C.slate100,
