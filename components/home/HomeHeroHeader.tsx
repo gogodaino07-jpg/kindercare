@@ -7,7 +7,7 @@ import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useTheme, useThemeColors } from '../../context/ThemeContext';
 import { WEATHER_SOURCE_LABEL, WeatherDay } from '../../hooks/useWeeklyWeather';
 import { Child, MealPlan } from '../../types/models';
-import { isAllergyMatch } from '../../utils/allergy';
+import { getMatchedAllergyKeywords, isAllergyMatch } from '../../utils/allergy';
 import { formatMD, toISODate } from '../../utils/date';
 import { describeGuideTip, describeMiniTip } from '../../utils/weatherCode';
 import Text from '../common/AppText';
@@ -96,6 +96,7 @@ export default function HomeHeroHeader({
         todayMeal={todayMeal}
         onPressMeal={onPressMeal}
         allergies={selectedChild?.allergies}
+        childName={greetingName}
         hasEverRegisteredMeal={hasEverRegisteredMeal}
       />
 
@@ -386,11 +387,13 @@ function MealMenuCard({
   todayMeal,
   onPressMeal,
   allergies,
+  childName,
   hasEverRegisteredMeal,
 }: {
   todayMeal?: MealPlan;
   onPressMeal: () => void;
   allergies?: string[];
+  childName?: string;
   hasEverRegisteredMeal?: boolean;
 }) {
   const colors = useThemeColors();
@@ -403,6 +406,14 @@ function MealMenuCard({
     [todayMeal, mainText]
   );
   const mainHasAllergy = !!mainText && isAllergyMatch(mainText, allergies);
+
+  // 메인/반찬 전체에서 알레르기 키워드가 매칭된 항목만 모아 하단 경고 배너에 쓴다.
+  const allergyMatches = useMemo(() => {
+    if (!todayMeal) return [];
+    return todayMeal.menu
+      .map((item) => ({ item, keywords: getMatchedAllergyKeywords(item, allergies) }))
+      .filter((entry) => entry.keywords.length > 0);
+  }, [todayMeal, allergies]);
 
   if (!todayMeal) {
     return (
@@ -474,6 +485,19 @@ function MealMenuCard({
             )}
           </View>
         </View>
+
+        {allergyMatches.length > 0 && (
+          <View style={styles.allergyBanner}>
+            <Text style={styles.allergyBannerTitle} numberOfLines={2}>
+              ⚠️ 알레르기 주의: {childName ? `${childName}이가` : '아이가'} 먹을 수 없는 성분이 포함되어 있어요
+            </Text>
+            <Text style={styles.allergyBannerDetail} numberOfLines={2}>
+              {allergyMatches
+                .map((entry) => `${entry.item} (${entry.keywords.join(', ')})`)
+                .join(' · ')}
+            </Text>
+          </View>
+        )}
       </View>
     </Pressable>
   );
@@ -573,6 +597,26 @@ function createMealCardStyles(colors: ThemeColors) {
     allergyText: {
       color: colors.tomorrowRed,
       fontWeight: '800',
+    },
+    allergyBanner: {
+      marginTop: 10,
+      backgroundColor: colors.tomorrowRedBg,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.tomorrowRed,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+    },
+    allergyBannerTitle: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.tomorrowRed,
+      marginBottom: 2,
+    },
+    allergyBannerDetail: {
+      fontSize: 11.5,
+      fontWeight: '600',
+      color: colors.tomorrowRed,
     },
     emptyRow: {
       flexDirection: 'row',
