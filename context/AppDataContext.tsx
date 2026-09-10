@@ -13,6 +13,7 @@ import {
   FontChoiceId,
   FontSizeChoice,
 } from '../constants/fontOptions';
+import { PREMIUM_PURCHASE_VISIBLE } from '../constants/premium';
 import {
   generateFamilyKey,
   seedNotificationSettings,
@@ -86,15 +87,20 @@ async function cleanupExpiredScannedPhotos(
   return changed ? next : photoUrisByEventId;
 }
 
-/** 무료 사용자가 등록할 수 있는 아이 최대 인원 — 2번째부터는 프리미엄 구독이 필요하다. */
+/** 무료 사용자가 등록할 수 있는 아이 최대 인원 — 2번째부터는 프리미엄 구독이 필요하다(구독 결제가 열려있을 때 기준). */
 export const FREE_CHILD_LIMIT = 1;
 
 /**
  * 무료 한도를 넘겨 등록된 아이(가장 나중에 추가된 아이부터)는 구독이 없으면
  * 접근이 잠긴다. children 배열의 순서를 등록 순서로 취급한다 — child-profile.tsx의
  * isMainChild(children[0]이 대표 아이)와 동일한 전제.
+ *
+ * 구독 결제(PREMIUM_PURCHASE_VISIBLE)를 꺼둔 동안은 잠글 수 있는 방법이 없어지므로
+ * 잠금 자체를 걸지 않는다 — 이 기간엔 2번째 아이부터 리워드 광고 시청으로 추가한다
+ * (child-profile.tsx의 useAddChildRewardedAd 참고).
  */
 export function isChildLocked(children: Child[], childId: string, isSubscribed: boolean): boolean {
+  if (!PREMIUM_PURCHASE_VISIBLE) return false;
   if (isSubscribed) return false;
   const index = children.findIndex((c) => c.id === childId);
   return index >= FREE_CHILD_LIMIT;

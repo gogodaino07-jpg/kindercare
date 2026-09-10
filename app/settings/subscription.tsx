@@ -15,9 +15,7 @@ import {
   PREMIUM_MONTHLY_LIMIT,
   PREMIUM_WEEKLY_LIMIT,
 } from '../../features/newsletter-analysis';
-
-// 구독 결제 기능을 잠시 꺼둔 상태 — 나중에 구독을 다시 열 때 이 플래그만 true로 바꾸면 됨.
-const SUBSCRIPTION_PURCHASE_VISIBLE = false;
+import { PREMIUM_PURCHASE_VISIBLE as SUBSCRIPTION_PURCHASE_VISIBLE } from '../../constants/premium';
 
 const BENEFITS = [
   {

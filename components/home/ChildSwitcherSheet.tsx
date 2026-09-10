@@ -65,14 +65,9 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
     });
   };
 
+  // 2번째 아이부터는 등록 한도를 프리미엄 안내로 막지 않고, child-profile.tsx의
+  // 리워드 광고 게이트(useAddChildRewardedAd)를 거쳐 추가하도록 넘긴다.
   const handleAddChild = () => {
-    if (!isSubscribed && children.length >= FREE_CHILD_LIMIT) {
-      showPremiumRequiredAlert(
-        '아이 등록 한도 초과',
-        `무료 이용 시 아이는 최대 ${FREE_CHILD_LIMIT}명까지 등록할 수 있어요. 프리미엄으로 구독하시면 제한 없이 등록하실 수 있습니다.`
-      );
-      return;
-    }
     handleClose();
     router.push('/child-profile');
   };
