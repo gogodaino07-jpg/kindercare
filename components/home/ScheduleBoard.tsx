@@ -1,12 +1,11 @@
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Dimensions, Image, Modal, Pressable, StyleSheet, View } from 'react-native';
-import { GestureHandlerRootView, ScrollView } from 'react-native-gesture-handler';
+import React, { useMemo, useState } from 'react';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
-import { ZoomableImage } from '../../features/newsletter-analysis/components/ZoomableImage';
 import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { EventDateGroup } from '../../hooks/useUpcomingEvents';
 import { Event, EventItem } from '../../types/models';
@@ -16,15 +15,9 @@ import { getSpecialEventTheme } from '../../utils/specialEventTheme';
 import { isValidCoupangKeyword } from '../../utils/validation';
 import Text from '../common/AppText';
 import EventIcon from '../common/EventIcon';
+import PhotoViewerModal from '../common/PhotoViewerModal';
 
 export type ScheduleTab = 'today' | 'tomorrow' | 'dayAfterTomorrow';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const PHOTO_ZOOM_WIDTH = SCREEN_WIDTH - 80;
-// 사진마다 원본 비율이 달라 고정 박스에 억지로 맞추면(letterbox) 사진마다 남는
-// 여백 크기가 제각각이라 규격이 안 맞는 느낌을 준다 — PhotoPage가 이 최대 크기
-// 안에서 사진 실제 비율대로 크기를 계산해 여백을 최소화·일관되게 만든다.
-const PHOTO_ZOOM_HEIGHT = Math.min(SCREEN_HEIGHT * 0.6, 560);
 
 interface ScheduleBoardProps {
   mainEvents: Event[];
@@ -230,74 +223,7 @@ export default function ScheduleBoard({
         </View>
       </Pressable>
 
-      <Modal
-        visible={!!viewerPhotos}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setViewerPhotos(null)}
-      >
-        {/* RN Modal은 안드로이드에서 별도 네이티브 윈도우에 렌더링돼 앱 루트의
-            GestureHandlerRootView 밖에 놓이면서 핀치줌/팬 제스처가 먹지 않는다 —
-            Modal 내부에 별도로 하나 더 씌워줘야 제스처가 정상 동작한다. */}
-        <GestureHandlerRootView style={styles.zoomOverlay}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setViewerPhotos(null)} />
-          <View style={styles.zoomCard}>
-            <View style={styles.zoomHeader}>
-              <View style={styles.zoomHeaderLeft}>
-                <Feather name="image" size={16} color={colors.purple500} />
-                <Text style={styles.zoomHeaderText}>스캔한 원본 사진</Text>
-              </View>
-              <Pressable onPress={() => setViewerPhotos(null)} style={styles.zoomCloseButton} hitSlop={6}>
-                <MaterialIcons name="close" size={16} color={colors.gray500} />
-              </Pressable>
-            </View>
-
-            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
-              {(viewerPhotos ?? []).map((uri) => (
-                <PhotoPage key={uri} uri={uri} maxWidth={PHOTO_ZOOM_WIDTH} maxHeight={PHOTO_ZOOM_HEIGHT} />
-              ))}
-            </ScrollView>
-          </View>
-        </GestureHandlerRootView>
-      </Modal>
-    </View>
-  );
-}
-
-/** 스와이프 페이지 한 장 — maxWidth/maxHeight 박스 안에서 사진 원본 비율대로
- *  크기를 계산해, 사진마다 letterbox 여백 크기가 들쭉날쭉해 보이지 않게 한다.
- *  가로 폭은 페이지 정렬을 위해 항상 maxWidth로 고정하고, 세로만 비율에 맞춘다. */
-function PhotoPage({ uri, maxWidth, maxHeight }: { uri: string; maxWidth: number; maxHeight: number }) {
-  const [ratio, setRatio] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setRatio(null);
-    Image.getSize(
-      uri,
-      (w, h) => {
-        if (!cancelled && h > 0) setRatio(w / h);
-      },
-      () => {}
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [uri]);
-
-  let width = maxWidth;
-  let height = maxHeight;
-  if (ratio) {
-    height = maxWidth / ratio;
-    if (height > maxHeight) {
-      height = maxHeight;
-      width = maxHeight * ratio;
-    }
-  }
-
-  return (
-    <View style={{ width: maxWidth, height: maxHeight, alignItems: 'center', justifyContent: 'center' }}>
-      <ZoomableImage uri={uri} width={width} height={height} />
+      <PhotoViewerModal photos={viewerPhotos} onClose={() => setViewerPhotos(null)} />
     </View>
   );
 }
@@ -701,38 +627,5 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
     },
     emptyScanButtonIcon: { fontSize: 14 },
     emptyScanButtonText: { fontSize: 13.5, fontWeight: '800', color: '#FFFFFF' },
-    zoomOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(2, 6, 23, 0.8)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 24,
-    },
-    zoomCard: {
-      width: '100%',
-      maxHeight: '85%',
-      backgroundColor: colors.cardWhite,
-      borderRadius: 32,
-      padding: 20,
-      gap: 12,
-    },
-    zoomHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      borderBottomWidth: 1,
-      borderBottomColor: colors.gray100,
-      paddingBottom: 10,
-    },
-    zoomHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    zoomHeaderText: { fontSize: 13, fontWeight: '900', color: colors.textPrimary },
-    zoomCloseButton: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: colors.gray100,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
   });
 }

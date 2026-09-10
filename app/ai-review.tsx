@@ -16,7 +16,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, ScrollView as ZoomScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../components/common/AppText';
 import { useAlert } from '../context/AlertContext';
@@ -470,11 +470,14 @@ export default function AIReviewScreen() {
               </Pressable>
             </View>
 
-            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+            {/* 핀치줌(RNGH)과 페이지 스와이프가 부드럽게 같이 동작하도록, 이 확대
+                모달에서만 RNGH가 제공하는 ScrollView를 쓴다(일반 ScrollView와 섞이면
+                핀치 인식이 버벅인다). */}
+            <ZoomScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
               {imageDocs.map((doc) => (
                 <ZoomableImage key={doc.id} uri={doc.uri} width={ZOOM_WIDTH} height={ZOOM_HEIGHT} />
               ))}
-            </ScrollView>
+            </ZoomScrollView>
 
             <Pressable onPress={() => setShowZoomModal(false)} style={styles.zoomCloseFooter}>
               <Text style={styles.zoomCloseFooterText}>닫기</Text>

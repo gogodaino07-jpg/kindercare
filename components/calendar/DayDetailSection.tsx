@@ -1,18 +1,13 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
-import { Dimensions, Modal, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { ZoomableImage } from '../../features/newsletter-analysis/components/ZoomableImage';
+import { Pressable, Share, StyleSheet, View } from 'react-native';
 import Text from '../common/AppText';
 import EventIcon from '../common/EventIcon';
+import PhotoViewerModal from '../common/PhotoViewerModal';
 import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { Event, EventItem } from '../../types/models';
 import { isValidCoupangKeyword } from '../../utils/validation';
 import { useCalendarTheme } from './useCalendarTheme';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const PHOTO_ZOOM_WIDTH = SCREEN_WIDTH - 80;
-const PHOTO_ZOOM_HEIGHT = 380;
 
 interface DayDetailSectionProps {
   selectedDate: string;
@@ -69,36 +64,7 @@ export default function DayDetailSection({
         />
       ))}
 
-      <Modal
-        visible={!!viewerPhotos}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setViewerPhotos(null)}
-      >
-        {/* RN Modal은 안드로이드에서 별도 네이티브 윈도우에 렌더링돼 앱 루트의
-            GestureHandlerRootView 밖에 놓이면서 핀치줌/팬 제스처가 먹지 않는다 —
-            Modal 내부에 별도로 하나 더 씌워줘야 제스처가 정상 동작한다. */}
-        <GestureHandlerRootView style={styles.zoomOverlay}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setViewerPhotos(null)} />
-          <View style={styles.zoomCard}>
-            <View style={styles.zoomHeader}>
-              <View style={styles.zoomHeaderLeft}>
-                <MaterialCommunityIcons name="image-outline" size={16} color={t.violet} />
-                <Text style={styles.zoomHeaderText}>스캔한 원본 사진</Text>
-              </View>
-              <Pressable onPress={() => setViewerPhotos(null)} style={styles.zoomCloseButton} hitSlop={6}>
-                <MaterialCommunityIcons name="close" size={16} color={t.textMuted} />
-              </Pressable>
-            </View>
-
-            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
-              {(viewerPhotos ?? []).map((uri) => (
-                <ZoomableImage key={uri} uri={uri} width={PHOTO_ZOOM_WIDTH} height={PHOTO_ZOOM_HEIGHT} />
-              ))}
-            </ScrollView>
-          </View>
-        </GestureHandlerRootView>
-      </Modal>
+      <PhotoViewerModal photos={viewerPhotos} onClose={() => setViewerPhotos(null)} />
     </View>
   );
 }
@@ -537,39 +503,6 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
     fontSize: 10,
     fontWeight: '700',
     color: t.textSecondary,
-  },
-  zoomOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(2, 6, 23, 0.8)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  zoomCard: {
-    width: '100%',
-    maxHeight: '85%',
-    backgroundColor: t.cardWhite,
-    borderRadius: 32,
-    padding: 20,
-    gap: 12,
-  },
-  zoomHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: t.gray50,
-    paddingBottom: 10,
-  },
-  zoomHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  zoomHeaderText: { fontSize: 13, fontWeight: '900', color: t.textPrimary },
-  zoomCloseButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: t.gray100,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   });
 }
