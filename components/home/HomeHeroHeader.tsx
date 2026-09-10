@@ -602,8 +602,6 @@ function createMealCardStyles(colors: ThemeColors) {
       marginTop: 10,
       backgroundColor: colors.tomorrowRedBg,
       borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.tomorrowRed,
       paddingVertical: 8,
       paddingHorizontal: 12,
     },
