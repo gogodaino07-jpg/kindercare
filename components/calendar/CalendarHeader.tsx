@@ -17,13 +17,6 @@ interface CalendarHeaderProps {
   onBack: () => void;
 }
 
-function hasFinalConsonant(text: string): boolean {
-  const trimmed = text.trim();
-  const code = trimmed.charCodeAt(trimmed.length - 1);
-  if (code < 0xac00 || code > 0xd7a3) return true;
-  return (code - 0xac00) % 28 !== 0;
-}
-
 /** "햇살" -> "햇살반" / "햇살반" -> "햇살반" 그대로. */
 function formatClassName(className?: string): string | undefined {
   const trimmed = className?.trim();
@@ -43,7 +36,6 @@ export default function CalendarHeader({
 }: CalendarHeaderProps) {
   const t = useCalendarTheme();
   const styles = useMemo(() => createStyles(t), [t]);
-  const particle = useMemo(() => (hasFinalConsonant(childName) ? '이' : ''), [childName]);
   const classLabel = useMemo(
     () => [age !== undefined ? `${age}세` : undefined, formatClassName(className)].filter(Boolean).join(' '),
     [age, className]
@@ -74,7 +66,7 @@ export default function CalendarHeader({
       <View style={styles.textBlock}>
         <View style={styles.titleRow}>
           <Text style={styles.title} numberOfLines={1}>
-            {childName}{particle}의 등원 캘린더
+            {childName}의 등원 캘린더
           </Text>
           {!!classLabel && (
             <View style={styles.classBadge}>
