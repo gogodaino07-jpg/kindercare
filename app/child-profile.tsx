@@ -356,6 +356,11 @@ export default function ChildProfileScreen() {
         ref={scrollViewRef}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        // 이제 내용이 한 화면에 다 들어와서 손으로 끌어 스크롤할 필요가 없다.
+        // scrollEnabled=false는 터치 스크롤만 막고, 반 이름/알레르기 입력칸
+        // 포커스 시 scrollToEnd로 자동으로 올려주는 동작(scrollToEndOnFocus)은
+        // 그대로 동작한다(키보드가 떠서 내용이 가려질 때 대비).
+        scrollEnabled={false}
         bounces={false}
         overScrollMode="never"
       >
