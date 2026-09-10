@@ -25,6 +25,7 @@ import MealPlanSheet from '../components/home/MealPlanSheet';
 import MultiChildPrepSummary from '../components/home/MultiChildPrepSummary';
 import NoticeBoardCard from '../components/home/NoticeBoardCard';
 import ScheduleBoard, { ScheduleTab } from '../components/home/ScheduleBoard';
+import TomorrowWeatherAlert from '../components/home/TomorrowWeatherAlert';
 import StickyPrepBar from '../components/home/StickyPrepBar';
 import TodayPrepProgress from '../components/home/TodayPrepProgress';
 import ScreenBackground from '../components/ScreenBackground';
@@ -369,6 +370,7 @@ export default function HomeScreen() {
   return (
     <ScreenBackground showDots={false}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <TomorrowWeatherAlert weatherDays={weather.days} weatherLoading={weather.loading} />
         <HomeProfileBar
           selectedChild={selectedChild}
           onPressChild={() => setSwitcherOpen(true)}
