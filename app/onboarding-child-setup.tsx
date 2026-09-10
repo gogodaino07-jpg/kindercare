@@ -13,7 +13,6 @@ import Text from '../components/common/AppText';
 import ClearableTextInput from '../components/common/ClearableTextInput';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
 import { SHADOW } from '../constants/theme';
-import { STAMP_BOARD_THEMES } from '../constants/stampBoardThemes';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
@@ -22,17 +21,21 @@ import { ageFromBirthdate, toISODate } from '../utils/date';
 import { stripInvalidCharacters } from '../utils/validation';
 
 const AGE_OPTIONS: ChildAge[] = [2, 3, 4, 5, 6, 7];
-const CTA_GRADIENT = STAMP_BOARD_THEMES.blue.stampButtonGradient;
 const AVATAR_RING_GRADIENT = ['#BAE6FD', '#DBEAFE', '#C7D2FE'] as const;
-const INK = '#1E293B';
-const GRAY = '#64748B';
-const ACCENT_BLUE = '#0EA5E9';
-const ERROR_RED = '#E4574C';
-const BORDER = '#E2E8F0';
+// 아이 프로필 수정 화면(child-profile.tsx)과 톤을 맞추기 위해 그 화면의
+// 라이트 테마 색상 값을 그대로 가져와 쓴다. 이 화면은 온보딩 체인이라
+// 의도적으로 항상 라이트 고정이라 useThemeColors()는 쓰지 않는다.
+const INK = '#2B3A45'; // colors.textPrimary
+const GRAY = '#6B7C89'; // colors.textSecondary
+const ACCENT_BLUE = '#4A90D9'; // colors.accent
+const ERROR_RED = '#E4574C'; // colors.tomorrowRed
+const BORDER = '#DCE8F0'; // colors.border
 const GIRL_ROSE = '#FB7185';
-const NO_CLASS_BG = '#DBEAFE';
-const NO_CLASS_BORDER = '#93C5FD';
-const NO_CLASS_TEXT = '#1D4ED8';
+const GRAY_50 = '#F9FAFB'; // colors.gray50
+const GRAY_400 = '#9CA3AF'; // colors.gray400
+const NO_CLASS_BG = '#F3E8FF'; // colors.purpleBg
+const NO_CLASS_BORDER = '#8B5CF6'; // colors.purple500
+const NO_CLASS_TEXT = '#8B5CF6'; // colors.purple500
 
 function formatBirthdate(date: Date): string {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
@@ -255,13 +258,11 @@ export default function OnboardingChildSetupScreen() {
           </View>
         </View>
 
-        <View style={styles.cardShadow}>
-        <View style={styles.card}>
+        <View style={styles.fieldsWrap}>
           <View style={styles.fieldGroup}>
             <View style={styles.labelRow}>
               <Feather name="user" size={13} color={ACCENT_BLUE} />
-              <Text style={styles.label}>이름</Text>
-              <Text style={styles.requiredMark}>*</Text>
+              <Text style={styles.label}>이름 *</Text>
             </View>
             <ClearableTextInput
               style={[styles.input, error && !name.trim() && styles.inputInvalid]}
@@ -320,7 +321,7 @@ export default function OnboardingChildSetupScreen() {
           ) : (
             <>
               <Pressable
-                style={[styles.dateButton, error && !birthdate && styles.inputInvalid]}
+                style={[styles.input, styles.dateButton, error && !birthdate && styles.inputInvalid]}
                 onPress={() => setShowPicker(true)}
               >
                 <Text style={styles.dateButtonText}>
@@ -358,7 +359,7 @@ export default function OnboardingChildSetupScreen() {
               <Feather name="hash" size={13} color={ACCENT_BLUE} />
               <Text style={styles.label}>나이 (생년월일 기준 자동 계산, 직접 선택 가능)</Text>
             </View>
-            <View style={[styles.chipRow, styles.ageChipRow]}>
+            <View style={styles.chipRow}>
               {AGE_OPTIONS.map((option) => (
                 <Pressable
                   key={option}
@@ -425,24 +426,18 @@ export default function OnboardingChildSetupScreen() {
             <Text style={styles.hintText}>쉼표(,)로 구분해서 입력하면 급식 메뉴에 있을 때 강조해서 알려드려요</Text>
           </View>
         </View>
-        </View>
 
         <View style={styles.spacer} />
         <View style={styles.spacer} />
       </ScrollView>
 
-      <View style={[styles.completeButtonShadow, !canCreate && styles.completeButtonDisabled]}>
-        <Pressable onPress={handleCreate} disabled={!canCreate}>
-          <LinearGradient
-            colors={CTA_GRADIENT}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.completeButton}
-          >
-            <Text style={styles.completeButtonText}>프로필 생성 완료</Text>
-          </LinearGradient>
-        </Pressable>
-      </View>
+      <Pressable
+        style={[styles.completeButton, !canCreate && styles.completeButtonDisabled]}
+        onPress={handleCreate}
+        disabled={!canCreate}
+      >
+        <Text style={styles.completeButtonText}>프로필 생성 완료</Text>
+      </Pressable>
       </KeyboardAvoidingView>
 
       <AvatarPickerModal
@@ -613,46 +608,30 @@ const styles = StyleSheet.create({
       borderColor: '#FFFFFF',
       ...SHADOW,
     },
-    // 안드로이드 elevation은 배경 없는(투명) 뷰에서 둥근 모서리를 무시하고
-    // 각진 그림자를 그려 흰 상자처럼 비치는 버그가 있어, 안드로이드에서는
-    // 그림자를 끄고 iOS 전용 그림자만 유지한다.
-    cardShadow: {
-      borderRadius: 20,
-      ...SHADOW,
-      shadowOpacity: 0.08,
-      elevation: 0,
-    },
-    card: {
-      backgroundColor: 'rgba(255,255,255,0.72)',
-      borderWidth: 2,
-      borderColor: '#BAE6FD',
-      borderRadius: 20,
-      padding: 24,
+    // 아이 프로필 수정 화면(child-profile.tsx)과 같은 톤으로, 필드들을 감싸던
+    // 테두리 카드를 없애고 배경 위에 바로 놓는다.
+    fieldsWrap: {
+      width: '100%',
     },
     fieldGroup: {
-      marginBottom: 18,
+      marginBottom: 14,
     },
     labelRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      marginBottom: 8,
+      marginBottom: 6,
     },
     labelRowBetween: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 8,
+      marginBottom: 6,
     },
     label: {
-      fontSize: 13,
-      fontWeight: '700',
-      color: INK,
-    },
-    requiredMark: {
-      fontSize: 13,
-      fontWeight: '700',
-      color: ACCENT_BLUE,
+      fontSize: 14,
+      fontWeight: '600',
+      color: GRAY,
     },
     labelHint: {
       fontSize: 11,
@@ -680,10 +659,6 @@ const styles = StyleSheet.create({
       color: NO_CLASS_TEXT,
     },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    // 이 화면은 필드 전체가 카드(padding 24)로 한 번 더 감싸여 있어, 아이 프로필
-    // 수정 화면(카드 없음)과 같은 나이 옵션이 한 줄에 다 안 들어가고 줄바꿈됐다.
-    // 카드 오른쪽 여백만큼 오른쪽으로 폭을 늘려 수정 화면과 같은 한 줄 배치로 맞춘다.
-    ageChipRow: { marginRight: -24 },
     chip: {
       paddingVertical: 10,
       paddingHorizontal: 16,
@@ -699,28 +674,24 @@ const styles = StyleSheet.create({
     chipTextSelected: { color: '#FFFFFF' },
     input: {
       backgroundColor: '#FFFFFF',
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
+      borderRadius: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
       fontSize: 15,
       color: INK,
-      borderWidth: 1.5,
+      borderWidth: 1,
       borderColor: BORDER,
+      ...SHADOW,
+      shadowOpacity: 0.03,
     },
     inputDisabled: {
-      backgroundColor: '#F1F5F9',
+      backgroundColor: GRAY_50,
       color: GRAY,
     },
     inputInvalid: {
       borderColor: ERROR_RED,
     },
     dateButton: {
-      backgroundColor: '#FFFFFF',
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      borderWidth: 1.5,
-      borderColor: BORDER,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -728,38 +699,39 @@ const styles = StyleSheet.create({
     dateButtonText: {
       fontSize: 15,
       color: INK,
-      fontWeight: '600',
     },
     errorText: {
       color: ERROR_RED,
       fontSize: 12,
-      marginTop: 10,
+      marginTop: 4,
     },
     hintText: {
       color: GRAY,
       fontSize: 12,
-      marginTop: 6,
+      marginTop: 4,
     },
-    completeButtonShadow: {
+    // 아이 프로필 수정 화면의 "저장하기" 버튼과 같은 톤(진한 남색 단색)으로 맞춘다.
+    completeButton: {
       marginHorizontal: 24,
       marginBottom: 24,
-      borderRadius: 16,
-      ...SHADOW,
-      shadowOpacity: 0.16,
-      elevation: 0,
-    },
-    completeButton: {
-      borderRadius: 16,
+      backgroundColor: INK,
+      borderRadius: 18,
       paddingVertical: 16,
       alignItems: 'center',
+      justifyContent: 'center',
+      ...SHADOW,
+      shadowColor: INK,
+      shadowOpacity: 0.3,
+      elevation: 5,
     },
     completeButtonDisabled: {
-      opacity: 0.4,
+      backgroundColor: GRAY_400,
+      opacity: 0.6,
     },
     completeButtonText: {
       color: '#FFFFFF',
       fontSize: 16,
-      fontWeight: '700',
+      fontWeight: 'bold',
     },
     successOverlay: {
       position: 'absolute',
@@ -786,11 +758,11 @@ const styles = StyleSheet.create({
       width: 64,
       height: 64,
       borderRadius: 32,
-      backgroundColor: '#EFF6FF',
+      backgroundColor: NO_CLASS_BG,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
-      borderColor: '#DBEAFE',
+      borderColor: BORDER,
       marginBottom: 14,
     },
     successTitle: {
