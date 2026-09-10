@@ -513,8 +513,6 @@ export default function ChildProfileScreen() {
           <Text style={styles.fieldHint}>쉼표(,)로 구분해서 입력하면 급식 메뉴에 있을 때 강조해서 알려드려요</Text>
         </View>
 
-        {showErrors && <Text style={styles.summaryErrorText}>이름, 나이, 반 이름을 모두 입력해주세요</Text>}
-
         {editingChild && !isMainChild && (
           <Pressable style={styles.deleteLink} onPress={handleDelete}>
             <Text style={styles.deleteLinkText}>아이 프로필 삭제</Text>
@@ -525,8 +523,11 @@ export default function ChildProfileScreen() {
 
       {/* Floating Action Button (Save) - Positioned exactly like Calendar */}
       <View style={styles.fabContainer}>
+        {/* scrollEnabled=false라 스크롤로 내려서 볼 수 없는 영역이라, 안내 문구를
+            콘텐츠 쪽이 아니라 버튼 바로 위(고정 영역)에 둬야 안 잘리고 항상 보인다. */}
+        {showErrors && <Text style={styles.fabErrorText}>이름, 나이, 반 이름을 모두 입력해주세요</Text>}
         <TouchableOpacity
-          style={[styles.saveButton, ((!canSave && attemptedSave) || isSaving) && styles.saveButtonDisabled]}
+          style={[styles.saveButton, (!canSave || isSaving) && styles.saveButtonDisabled]}
           onPress={handleSave}
           disabled={isSaving}
           activeOpacity={0.8}
@@ -746,7 +747,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     chipSelected: { backgroundColor: colors.textPrimary, borderColor: colors.textPrimary },
     chipText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
     chipTextSelected: { color: colors.cardWhite },
-    summaryErrorText: { color: colors.tomorrowRed, fontSize: 12, fontWeight: '600', textAlign: 'center', marginTop: 8 },
+    fabErrorText: { color: colors.tomorrowRed, fontSize: 12, fontWeight: '600', textAlign: 'center', marginBottom: 8 },
     deleteLink: { marginTop: 16, paddingVertical: 10 },
     deleteLinkText: { color: colors.tomorrowRed, fontSize: 14, fontWeight: '700', textAlign: 'center' },
     fabContainer: {
