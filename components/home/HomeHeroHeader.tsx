@@ -87,7 +87,7 @@ export default function HomeHeroHeader({
             adjustsFontSizeToFit
             minimumFontScale={0.6}
           >
-            🎂 오늘은 {greetingName ?? '우리 아이'} 생일이에요! 축하해요!
+            🎂 오늘은 우리 아이 생일이에요! 축하해요!
           </Text>
         </LinearGradient>
       )}
