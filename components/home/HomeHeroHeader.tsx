@@ -412,12 +412,12 @@ function MealMenuCard({
   );
   const mainHasAllergy = !!mainText && isAllergyMatch(mainText, allergies);
 
-  // 메인/반찬 전체에서 알레르기 키워드가 매칭된 항목만 모아 하단 경고 배너에 쓴다.
-  const allergyMatches = useMemo(() => {
+  // 메인/반찬 전체에서 매칭된 알레르기 키워드만 중복 없이 모은다 — 메뉴명은
+  // 위 본문에 이미 강조 표시되어 있어 배너에서 또 반복하지 않는다.
+  const allergyKeywords = useMemo(() => {
     if (!todayMeal) return [];
-    return todayMeal.menu
-      .map((item) => ({ item, keywords: getMatchedAllergyKeywords(item, allergies) }))
-      .filter((entry) => entry.keywords.length > 0);
+    const keywords = todayMeal.menu.flatMap((item) => getMatchedAllergyKeywords(item, allergies));
+    return Array.from(new Set(keywords));
   }, [todayMeal, allergies]);
 
   if (!todayMeal) {
@@ -491,15 +491,10 @@ function MealMenuCard({
           </View>
         </View>
 
-        {allergyMatches.length > 0 && (
+        {allergyKeywords.length > 0 && (
           <View style={styles.allergyBanner}>
-            <Text style={styles.allergyBannerTitle} numberOfLines={2}>
-              ⚠️ 알레르기 주의: {childName ? `${childName}이가` : '아이가'} 먹을 수 없는 성분이 포함되어 있어요
-            </Text>
-            <Text style={styles.allergyBannerDetail} numberOfLines={2}>
-              {allergyMatches
-                .map((entry) => `${entry.item} (${entry.keywords.join(', ')})`)
-                .join(' · ')}
+            <Text style={styles.allergyBannerTitle} numberOfLines={1}>
+              ⚠️ 알레르기 주의: {childName ? `${childName}이가` : '아이가'} {allergyKeywords.join(', ')}에 반응할 수 있어요
             </Text>
           </View>
         )}
@@ -615,12 +610,6 @@ function createMealCardStyles(colors: ThemeColors) {
     allergyBannerTitle: {
       fontSize: 12,
       fontWeight: '800',
-      color: colors.tomorrowRed,
-      marginBottom: 2,
-    },
-    allergyBannerDetail: {
-      fontSize: 11.5,
-      fontWeight: '600',
       color: colors.tomorrowRed,
     },
     emptyRow: {
