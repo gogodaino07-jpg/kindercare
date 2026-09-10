@@ -61,6 +61,17 @@ export function useIntervalInterstitialAd(adUnitId: string | null, storageKey: s
   const showIfEligible = useCallback(async (): Promise<boolean> => {
     if (!adUnitId) return false;
 
+    // 쿨다운(간격 제한) 여부를 먼저 확인한다 — 어차피 안 띄울 상황이면
+    // 아래 광고 로드 대기(최대 8초 폴링)를 거칠 필요 없이 즉시 반환해야
+    // 저장 버튼을 눌렀을 때 지연 없이 바로 저장/이동이 된다.
+    try {
+      const lastShownRaw = await AsyncStorage.getItem(storageKey);
+      const lastShownAt = lastShownRaw ? Number(lastShownRaw) : 0;
+      if (Date.now() - lastShownAt < minIntervalMs) return false;
+    } catch {
+      return false; // 간격 제한을 확인할 수 없으면 과다 노출을 피하기 위해 이번엔 건너뜀
+    }
+
     if (!isLoadedRef.current) {
       let waited = 0;
       while (!isLoadedRef.current && waited < LOAD_WAIT_MS) {
@@ -70,14 +81,10 @@ export function useIntervalInterstitialAd(adUnitId: string | null, storageKey: s
     }
     if (!isLoadedRef.current) return false;
 
-    const now = Date.now();
     try {
-      const lastShownRaw = await AsyncStorage.getItem(storageKey);
-      const lastShownAt = lastShownRaw ? Number(lastShownRaw) : 0;
-      if (now - lastShownAt < minIntervalMs) return false;
-      await AsyncStorage.setItem(storageKey, String(now));
+      await AsyncStorage.setItem(storageKey, String(Date.now()));
     } catch {
-      return false; // 간격 제한을 확인할 수 없으면 과다 노출을 피하기 위해 이번엔 건너뜀
+      return false;
     }
 
     const closed = new Promise<void>((resolve) => {
