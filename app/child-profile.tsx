@@ -38,7 +38,10 @@ import { stripInvalidCharacters } from '../utils/validation';
 import { ageFromBirthdate, toISODate, parseISODate } from '../utils/date';
 
 const AGE_OPTIONS: ChildAge[] = [2, 3, 4, 5, 6, 7];
-const AVATAR_RING_GRADIENT = ['#BAE6FD', '#DBEAFE', '#C7D2FE'] as const;
+// 남자/여자아이 이모지(파란/분홍) 제거 후 기본 캐릭터가 전부 병아리·곰돌이·
+// 토끼 같은 따뜻한 파스텔 톤만 남아, 예전의 차가운 파랑/보라 링과 안 어울려
+// 보였다 — 세 캐릭터 배경색과 같은 계열(노랑→주황→분홍)로 바꿔 맞췄다.
+const AVATAR_RING_GRADIENT = ['#FEF3C7', '#FFEDD5', '#FCE7F3'] as const;
 const GIRL_ROSE = '#FB7185';
 
 function formatBirthdate(date: Date): string {

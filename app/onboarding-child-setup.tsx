@@ -21,7 +21,10 @@ import { ageFromBirthdate, toISODate } from '../utils/date';
 import { stripInvalidCharacters } from '../utils/validation';
 
 const AGE_OPTIONS: ChildAge[] = [2, 3, 4, 5, 6, 7];
-const AVATAR_RING_GRADIENT = ['#BAE6FD', '#DBEAFE', '#C7D2FE'] as const;
+// 남자/여자아이 이모지(파란/분홍) 제거 후 기본 캐릭터가 전부 병아리·곰돌이·
+// 토끼 같은 따뜻한 파스텔 톤만 남아, 예전의 차가운 파랑/보라 링과 안 어울려
+// 보였다 — 세 캐릭터 배경색과 같은 계열(노랑→주황→분홍)로 바꿔 맞췄다.
+const AVATAR_RING_GRADIENT = ['#FEF3C7', '#FFEDD5', '#FCE7F3'] as const;
 // 아이 프로필 수정 화면(child-profile.tsx)과 톤을 맞추기 위해 그 화면의
 // 라이트 테마 색상 값을 그대로 가져와 쓴다. 이 화면은 온보딩 체인이라
 // 의도적으로 항상 라이트 고정이라 useThemeColors()는 쓰지 않는다.
