@@ -3,7 +3,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useNavigation, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dimensions,
   Image,
@@ -90,6 +90,7 @@ export default function AIReviewScreen() {
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateResolution, setDuplicateResolution] = useState<'add' | 'overwrite'>('add');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const zoomScrollRef = useRef<any>(null);
 
   // 원본 이미지 미리보기가 화면 위쪽 고정 공간을 차지해서, 키보드가 뜨면
   // 아래 입력 카드들이 전부 밀려 안 보이는 문제가 있었다 — 키보드가 떠 있는
@@ -472,10 +473,17 @@ export default function AIReviewScreen() {
 
             {/* 핀치줌(RNGH)과 페이지 스와이프가 부드럽게 같이 동작하도록, 이 확대
                 모달에서만 RNGH가 제공하는 ScrollView를 쓴다(일반 ScrollView와 섞이면
-                핀치 인식이 버벅인다). */}
-            <ZoomScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+                핀치 인식이 버벅인다). scrollViewRef로 서로 동시 인식되게 등록해,
+                두 손가락을 가로로 벌릴 때도 확대가 잘 먹게 한다. */}
+            <ZoomScrollView ref={zoomScrollRef} horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
               {imageDocs.map((doc) => (
-                <ZoomableImage key={doc.id} uri={doc.uri} width={ZOOM_WIDTH} height={ZOOM_HEIGHT} />
+                <ZoomableImage
+                  key={doc.id}
+                  uri={doc.uri}
+                  width={ZOOM_WIDTH}
+                  height={ZOOM_HEIGHT}
+                  scrollViewRef={zoomScrollRef}
+                />
               ))}
             </ZoomScrollView>
 

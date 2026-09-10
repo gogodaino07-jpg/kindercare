@@ -11,9 +11,14 @@ interface ZoomableImageProps {
   uri: string;
   width: number;
   height: number;
+  /** 이 사진이 가로 페이지 스와이프용 ScrollView 안에 놓일 때 그 ScrollView의 ref.
+   *  넘겨주면 핀치/팬 제스처를 ScrollView의 제스처와 "동시 인식" 대상으로 등록해,
+   *  두 손가락을 가로 방향으로 벌릴 때 ScrollView가 그 움직임을 스와이프로 먼저
+   *  가로채서 확대가 잘 안 먹던 문제를 없앤다(세로 방향은 원래도 문제없었음). */
+  scrollViewRef?: React.RefObject<any>;
 }
 
-export const ZoomableImage = ({ uri, width, height }: ZoomableImageProps) => {
+export const ZoomableImage = ({ uri, width, height, scrollViewRef }: ZoomableImageProps) => {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -21,7 +26,7 @@ export const ZoomableImage = ({ uri, width, height }: ZoomableImageProps) => {
   const savedTranslateX = useSharedValue(0);
   const savedTranslateY = useSharedValue(0);
 
-  const pinchGesture = Gesture.Pinch()
+  let pinchGesture = Gesture.Pinch()
     .onUpdate((e) => {
       scale.value = savedScale.value * e.scale;
     })
@@ -34,7 +39,7 @@ export const ZoomableImage = ({ uri, width, height }: ZoomableImageProps) => {
       savedScale.value = scale.value;
     });
 
-  const panGesture = Gesture.Pan()
+  let panGesture = Gesture.Pan()
     .manualActivation(true)
     .onTouchesMove((_event, manager) => {
       if (scale.value > 1) {
@@ -59,7 +64,7 @@ export const ZoomableImage = ({ uri, width, height }: ZoomableImageProps) => {
       }
     });
 
-  const doubleTapGesture = Gesture.Tap()
+  let doubleTapGesture = Gesture.Tap()
     .numberOfTaps(2)
     .onEnd(() => {
       if (scale.value > 1) {
@@ -82,6 +87,12 @@ export const ZoomableImage = ({ uri, width, height }: ZoomableImageProps) => {
       { scale: scale.value },
     ],
   }));
+
+  if (scrollViewRef) {
+    pinchGesture = pinchGesture.simultaneousWithExternalGesture(scrollViewRef);
+    panGesture = panGesture.simultaneousWithExternalGesture(scrollViewRef);
+    doubleTapGesture = doubleTapGesture.simultaneousWithExternalGesture(scrollViewRef);
+  }
 
   const composedGesture = Gesture.Simultaneous(pinchGesture, panGesture, doubleTapGesture);
 

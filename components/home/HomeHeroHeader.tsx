@@ -27,12 +27,6 @@ interface HomeHeroHeaderProps {
   hasEverRegisteredMeal?: boolean;
 }
 
-/** 인사말에 성을 빼고 이름만 부르도록: "김서준" -> "서준". 2자 이하는 성을 뗄 수 없어 그대로 둠. */
-function stripSurname(name: string): string {
-  const trimmed = name.trim();
-  return trimmed.length >= 3 ? trimmed.slice(1) : trimmed;
-}
-
 /** birthdate(YYYY-MM-DD)의 월-일이 오늘과 같으면 생일. */
 function isBirthdayToday(birthdate?: string): boolean {
   if (!birthdate) return false;
@@ -65,11 +59,6 @@ export default function HomeHeroHeader({
     return weatherDays[todayIdx + 2];
   }, [weatherDays]);
 
-  const greetingName = selectedChild?.givenName?.trim()
-    ? selectedChild.givenName.trim()
-    : selectedChild?.name
-      ? stripSurname(selectedChild.name)
-      : undefined;
   const isBirthday = isBirthdayToday(selectedChild?.birthdate);
 
   return (
@@ -96,7 +85,6 @@ export default function HomeHeroHeader({
         todayMeal={todayMeal}
         onPressMeal={onPressMeal}
         allergies={selectedChild?.allergies}
-        childName={greetingName}
         hasEverRegisteredMeal={hasEverRegisteredMeal}
       />
 
@@ -392,13 +380,11 @@ function MealMenuCard({
   todayMeal,
   onPressMeal,
   allergies,
-  childName,
   hasEverRegisteredMeal,
 }: {
   todayMeal?: MealPlan;
   onPressMeal: () => void;
   allergies?: string[];
-  childName?: string;
   hasEverRegisteredMeal?: boolean;
 }) {
   const colors = useThemeColors();
@@ -494,7 +480,7 @@ function MealMenuCard({
         {allergyKeywords.length > 0 && (
           <View style={styles.allergyBanner}>
             <Text style={styles.allergyBannerTitle} numberOfLines={1}>
-              ⚠️ 알레르기 주의: {childName ? `${childName}이가` : '아이가'} {allergyKeywords.join(', ')}에 반응할 수 있어요
+              ⚠️ 알레르기 주의: 우리 아이가 {allergyKeywords.join(', ')}에 반응할 수 있어요
             </Text>
           </View>
         )}

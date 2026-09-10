@@ -1,5 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useRef } from 'react';
 import { Dimensions, Modal, Pressable, StyleSheet, View } from 'react-native';
 // 핀치줌 제스처(RNGH)와 페이지 스와이프가 같은 화면에서 부드럽게 같이 동작하도록,
 // 일반 react-native의 ScrollView 대신 RNGH가 제공하는 ScrollView를 쓴다 — 서로 다른
@@ -22,6 +22,7 @@ interface PhotoViewerModalProps {
  *  버튼만 띄우는 방식으로 바꿨다. */
 export default function PhotoViewerModal({ photos, onClose }: PhotoViewerModalProps) {
   const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
 
   return (
     <Modal visible={!!photos} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
@@ -29,10 +30,10 @@ export default function PhotoViewerModal({ photos, onClose }: PhotoViewerModalPr
           GestureHandlerRootView 밖에 놓이면서 핀치줌/팬 제스처가 먹지 않는다 —
           Modal 내부에 별도로 하나 더 씌워줘야 제스처가 정상 동작한다. */}
       <GestureHandlerRootView style={styles.overlay}>
-        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+        <ScrollView ref={scrollRef} horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
           {(photos ?? []).map((uri) => (
             <View key={uri} style={styles.page}>
-              <ZoomableImage uri={uri} width={SCREEN_WIDTH} height={SCREEN_HEIGHT} />
+              <ZoomableImage uri={uri} width={SCREEN_WIDTH} height={SCREEN_HEIGHT} scrollViewRef={scrollRef} />
             </View>
           ))}
         </ScrollView>
