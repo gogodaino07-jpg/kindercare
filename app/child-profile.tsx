@@ -20,7 +20,7 @@ import {
   Platform
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import AvatarPickerModal, { DEFAULT_AVATARS } from '../components/child-profile/AvatarPickerModal';
+import AvatarPickerModal from '../components/child-profile/AvatarPickerModal';
 import PhotoCropModal from '../components/child-profile/PhotoCropModal';
 import ScreenBackground from '../components/ScreenBackground';
 import Text from '../components/common/AppText';
@@ -38,10 +38,11 @@ import { stripInvalidCharacters } from '../utils/validation';
 import { ageFromBirthdate, toISODate, parseISODate } from '../utils/date';
 
 const AGE_OPTIONS: ChildAge[] = [2, 3, 4, 5, 6, 7];
-// 남자/여자아이 이모지(파란/분홍) 제거 후 기본 캐릭터가 전부 병아리·곰돌이·
-// 토끼 같은 따뜻한 파스텔 톤만 남아, 예전의 차가운 파랑/보라 링과 안 어울려
-// 보였다 — 세 캐릭터 배경색과 같은 계열(노랑→주황→분홍)로 바꿔 맞췄다.
-const AVATAR_RING_GRADIENT = ['#FEF3C7', '#FFEDD5', '#FCE7F3'] as const;
+const AVATAR_RING_GRADIENT = ['#BAE6FD', '#DBEAFE', '#C7D2FE'] as const;
+// 캐릭터 선택 기능을 없애고 사진(앨범/카메라)만 받기로 하면서, 사진이
+// 없을 때 보여줄 기본 아이콘도 고정 이모지 하나로 단순화했다.
+const DEFAULT_AVATAR_EMOJI = '🧒';
+const DEFAULT_AVATAR_BG = '#E0E7FF';
 const GIRL_ROSE = '#FB7185';
 
 function formatBirthdate(date: Date): string {
@@ -99,13 +100,6 @@ export default function ChildProfileScreen() {
   const [pendingAsset, setPendingAsset] = useState<ImagePickerAsset | null>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(editingChild?.photoUri ?? null);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
-  const [selectedAvatarId, setSelectedAvatarId] = useState(
-    DEFAULT_AVATARS.find((a) => a.emoji === editingChild?.avatarEmoji)?.id ?? DEFAULT_AVATARS[0].id
-  );
-  const selectedAvatar = useMemo(
-    () => DEFAULT_AVATARS.find((a) => a.id === selectedAvatarId) ?? DEFAULT_AVATARS[0],
-    [selectedAvatarId]
-  );
   const [name, setName] = useState(editingChild?.name ?? '');
   const [givenName, setGivenName] = useState(editingChild?.givenName ?? '');
 
@@ -252,7 +246,7 @@ export default function ChildProfileScreen() {
       className: className.trim() === '없음' ? undefined : className.trim(),
       photoUri: photoUri ?? undefined,
       birthdate: birthdate ? toISODate(birthdate) : undefined,
-      avatarEmoji: photoUri ? undefined : selectedAvatar.emoji,
+      avatarEmoji: photoUri ? undefined : editingChild?.avatarEmoji ?? DEFAULT_AVATAR_EMOJI,
       allergies: allergies.length > 0 ? allergies : undefined,
     };
   };
@@ -314,7 +308,6 @@ export default function ChildProfileScreen() {
     setHasNoClass(false);
     setAllergiesText('');
     setPhotoUri(null);
-    setSelectedAvatarId(DEFAULT_AVATARS[0].id);
     setShowSuccessModal(false);
   };
 
@@ -370,14 +363,14 @@ export default function ChildProfileScreen() {
         <View style={styles.avatarWrap}>
           <LinearGradient colors={AVATAR_RING_GRADIENT} style={styles.avatarRing}>
             <Pressable
-              style={[styles.avatarInner, { backgroundColor: photoUri ? colors.cardWhite : selectedAvatar.bg }]}
+              style={[styles.avatarInner, { backgroundColor: photoUri ? colors.cardWhite : DEFAULT_AVATAR_BG }]}
               onPress={() => setShowAvatarModal(true)}
-              accessibilityLabel="프로필 사진 또는 캐릭터 선택"
+              accessibilityLabel="프로필 사진 선택"
             >
               {photoUri ? (
                 <Image source={{ uri: photoUri }} style={styles.photo} />
               ) : (
-                <Text style={styles.avatarEmoji}>{selectedAvatar.emoji}</Text>
+                <Text style={styles.avatarEmoji}>{editingChild?.avatarEmoji ?? DEFAULT_AVATAR_EMOJI}</Text>
               )}
             </Pressable>
           </LinearGradient>
@@ -551,13 +544,6 @@ export default function ChildProfileScreen() {
 
       <AvatarPickerModal
         visible={showAvatarModal}
-        avatars={DEFAULT_AVATARS}
-        selectedId={photoUri ? '' : selectedAvatarId}
-        onSelect={(avatar) => {
-          setSelectedAvatarId(avatar.id);
-          setPhotoUri(null);
-          setShowAvatarModal(false);
-        }}
         onPickCamera={() => { setShowAvatarModal(false); openCamera(); }}
         onPickGallery={() => { setShowAvatarModal(false); openGallery(); }}
         onClose={() => setShowAvatarModal(false)}
@@ -579,11 +565,11 @@ export default function ChildProfileScreen() {
 
             <View style={styles.summaryCard}>
               <View style={styles.summaryHeader}>
-                <View style={[styles.summaryAvatar, { backgroundColor: photoUri ? colors.cardWhite : selectedAvatar.bg }]}>
+                <View style={[styles.summaryAvatar, { backgroundColor: photoUri ? colors.cardWhite : DEFAULT_AVATAR_BG }]}>
                   {photoUri ? (
                     <Image source={{ uri: photoUri }} style={styles.summaryAvatarPhoto} />
                   ) : (
-                    <Text style={styles.summaryAvatarEmoji}>{selectedAvatar.emoji}</Text>
+                    <Text style={styles.summaryAvatarEmoji}>{DEFAULT_AVATAR_EMOJI}</Text>
                   )}
                 </View>
                 <View style={styles.summaryHeaderText}>

@@ -5,25 +5,8 @@ import Text from '../common/AppText';
 import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 
-export interface AvatarOption {
-  id: string;
-  emoji: string;
-  label: string;
-  bg: string;
-}
-
-/** 실제 사진을 안 올렸을 때 고를 수 있는 기본 캐릭터 프리셋. 아이 프로필 신규 등록·수정 화면에서 공용으로 사용. */
-export const DEFAULT_AVATARS: AvatarOption[] = [
-  { id: 'chick', emoji: '🐣', label: '병아리', bg: '#FEF3C7' },
-  { id: 'bear', emoji: '🐻', label: '곰돌이', bg: '#FFEDD5' },
-  { id: 'rabbit', emoji: '🐰', label: '토끼', bg: '#FCE7F3' },
-];
-
 interface AvatarPickerModalProps {
   visible: boolean;
-  avatars: AvatarOption[];
-  selectedId: string;
-  onSelect: (avatar: AvatarOption) => void;
   onPickCamera: () => void;
   onPickGallery: () => void;
   onClose: () => void;
@@ -31,9 +14,6 @@ interface AvatarPickerModalProps {
 
 export default function AvatarPickerModal({
   visible,
-  avatars,
-  selectedId,
-  onSelect,
   onPickCamera,
   onPickGallery,
   onClose,
@@ -47,32 +27,12 @@ export default function AvatarPickerModal({
         <Pressable style={styles.sheet} onPress={() => {}}>
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
-              <Feather name="smile" size={18} color={colors.purple500} />
+              <Feather name="camera" size={18} color={colors.purple500} />
               <Text style={styles.title}>프로필 사진 설정</Text>
             </View>
             <Pressable onPress={onClose} hitSlop={8} accessibilityLabel="닫기">
               <Feather name="x" size={18} color={colors.gray500} />
             </Pressable>
-          </View>
-
-          <Text style={styles.hint}>귀여운 기본 캐릭터를 골라보세요</Text>
-          <View style={styles.grid}>
-            {avatars.map((avatar) => {
-              const isSelected = avatar.id === selectedId;
-              return (
-                <Pressable
-                  key={avatar.id}
-                  onPress={() => onSelect(avatar)}
-                  style={[
-                    styles.avatarCell,
-                    { backgroundColor: avatar.bg },
-                    isSelected && styles.avatarCellSelected,
-                  ]}
-                >
-                  <Text style={styles.avatarCellEmoji}>{avatar.emoji}</Text>
-                </Pressable>
-              );
-            })}
           </View>
 
           <Pressable style={styles.uploadButton} onPress={onPickGallery}>
@@ -120,32 +80,6 @@ function createStyles(colors: ThemeColors) {
       fontSize: 16,
       fontWeight: '800',
       color: colors.textPrimary,
-    },
-    hint: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: colors.textSecondary,
-      marginTop: 14,
-      marginBottom: 10,
-    },
-    grid: {
-      flexDirection: 'row',
-      justifyContent: 'space-evenly',
-    },
-    avatarCell: {
-      width: 84,
-      height: 84,
-      borderRadius: 24,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 2,
-      borderColor: 'transparent',
-    },
-    avatarCellSelected: {
-      borderColor: colors.purple500,
-    },
-    avatarCellEmoji: {
-      fontSize: 38,
     },
     uploadButton: {
       marginTop: 20,
