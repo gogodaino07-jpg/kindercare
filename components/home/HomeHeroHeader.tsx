@@ -362,6 +362,11 @@ function MiniWeatherCard({
       onPress={onPress}
       disabled={!day}
     >
+      {day && (
+        <Text style={styles.watermarkEmoji} numberOfLines={1}>
+          {day.emoji}
+        </Text>
+      )}
       <Text style={styles.label}>
         {label}
         {day ? ` ${formatMD(day.date)}` : ''}
@@ -874,9 +879,18 @@ function createMiniCardStyles(colors: ThemeColors) {
       paddingHorizontal: 10,
       justifyContent: 'center',
       alignItems: 'flex-start',
+      overflow: 'hidden',
       ...SHADOW,
       shadowOpacity: 0.05,
       elevation: 1,
+    },
+    watermarkEmoji: {
+      position: 'absolute',
+      right: -8,
+      bottom: -10,
+      fontSize: 46,
+      opacity: 0.16,
+      transform: [{ rotate: '-8deg' }],
     },
     skeleton: {
       backgroundColor: colors.gray100,
