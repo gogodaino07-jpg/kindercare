@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -11,6 +12,8 @@ import { getMatchedAllergyKeywords, isAllergyMatch } from '../../utils/allergy';
 import { formatMD, toISODate } from '../../utils/date';
 import { describeGuideTip, describeMiniTip } from '../../utils/weatherCode';
 import Text from '../common/AppText';
+
+const WEATHER_EXPANDED_KEY = 'kindercare:weatherExpanded';
 
 interface HomeHeroHeaderProps {
   selectedChild: Child | undefined;
@@ -49,6 +52,26 @@ export default function HomeHeroHeader({
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [weatherExpanded, setWeatherExpanded] = useState(false);
+  // 앱을 재실행해도 마지막에 펼쳐/접어둔 상태를 그대로 기억하게 한다. 저장된
+  // 값을 다 읽기 전까지는 아래 저장 effect가 되돌려쓰지 않도록 막아둔다
+  // (안 그러면 초기 렌더의 기본값(false)으로 방금 불러온 true를 덮어써버린다).
+  const weatherPrefLoadedRef = useRef(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(WEATHER_EXPANDED_KEY)
+      .then((stored) => {
+        if (stored === 'true') setWeatherExpanded(true);
+      })
+      .catch(() => {})
+      .finally(() => {
+        weatherPrefLoadedRef.current = true;
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!weatherPrefLoadedRef.current) return;
+    AsyncStorage.setItem(WEATHER_EXPANDED_KEY, weatherExpanded ? 'true' : 'false').catch(() => {});
+  }, [weatherExpanded]);
 
   const today = weatherDays?.find((d) => d.isToday);
   const tomorrow = weatherDays?.find((d) => d.isTomorrow);
