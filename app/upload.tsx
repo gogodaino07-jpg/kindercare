@@ -422,15 +422,21 @@ export default function UploadScreen() {
           <View style={[styles.dock, isSubscribed && { paddingBottom: 8 + insets.bottom }]}>
             <View style={styles.dockRow}>
               <Pressable onPress={handleTakePhoto} style={styles.dockButton}>
-                <Feather name="camera" size={22} color={C.violet600} />
+                <View style={styles.dockButtonIconCircle}>
+                  <Feather name="camera" size={20} color={C.violet600} />
+                </View>
                 <Text style={styles.dockButtonText}>카메라 촬영</Text>
               </Pressable>
               <Pressable onPress={handlePickGallery} style={[styles.dockButton, styles.dockButtonAccent]}>
-                <Feather name="image" size={22} color={C.violet700} />
+                <View style={[styles.dockButtonIconCircle, styles.dockButtonIconCircleAccent]}>
+                  <Feather name="image" size={20} color={C.violet700} />
+                </View>
                 <Text style={styles.dockButtonTextAccent}>앨범 사진</Text>
               </Pressable>
               <Pressable onPress={handlePickFile} style={styles.dockButton}>
-                <Feather name="file-text" size={22} color={C.slate600} />
+                <View style={styles.dockButtonIconCircle}>
+                  <Feather name="file-text" size={20} color={C.slate600} />
+                </View>
                 <Text style={styles.dockButtonText}>PDF / 문서</Text>
               </Pressable>
             </View>
@@ -512,9 +518,28 @@ function CircularGauge({ value, max }: { value: number; max: number }) {
   );
 }
 
+// 점선 테두리(예전 스타일)는 "여기를 눌러서 선택하세요"처럼 보여서, 실제
+// 선택 동작은 하단 독(카메라/앨범/문서) 버튼에 있는데도 이 카드를 눌러보려는
+// 사용자가 있었다 — 테두리를 없애 순수 안내문 카드로 바꾸고, 진짜 선택
+// 지점인 하단 버튼 쪽으로 시선을 유도하는 바운스 화살표 힌트를 덧붙였다.
 function DropzoneCard() {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
+  const bounce = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounce, { toValue: 1, duration: 550, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(bounce, { toValue: 0, duration: 550, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [bounce]);
+
+  const translateY = bounce.interpolate({ inputRange: [0, 1], outputRange: [0, 6] });
+
   return (
     <View style={styles.dropzoneCard}>
       <View style={styles.dropzoneIconBox}>
@@ -524,6 +549,10 @@ function DropzoneCard() {
       <Text style={styles.dropzoneSubtitle}>
         가정통신문, 주간계획안, 식단표를 추가하면{'\n'}AI가 일정을 쏙쏙 뽑아 캘린더에 정리해 드려요 ✨
       </Text>
+      <Animated.View style={[styles.dropzoneHint, { transform: [{ translateY }] }]}>
+        <Feather name="chevron-down" size={14} color={C.violet600} />
+        <Text style={styles.dropzoneHintText}>아래에서 사진이나 파일을 선택해주세요</Text>
+      </Animated.View>
     </View>
   );
 }
@@ -745,10 +774,10 @@ function createStyles(C: ScanColors) {
   gaugeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.violet600 },
   gaugeHeadline: { fontSize: 15, fontWeight: '900', color: C.slate900, flexShrink: 1 },
   gaugeSubtitle: { fontSize: 12.5, color: C.slate400, fontWeight: '500', marginLeft: 16 },
+  // 점선 테두리를 없애고 은은한 배경 채움으로 바꿔서, 선택 가능한 영역이
+  // 아니라 순수 안내문 카드라는 느낌을 준다.
   dropzoneCard: {
-    borderWidth: 2,
-    borderColor: C.violet200,
-    borderStyle: 'dashed',
+    backgroundColor: C.violet50,
     borderRadius: 32,
     paddingVertical: 20,
     paddingHorizontal: 20,
@@ -759,13 +788,20 @@ function createStyles(C: ScanColors) {
     width: 56,
     height: 56,
     borderRadius: 18,
-    backgroundColor: C.violet50,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
   },
   dropzoneTitle: { fontSize: 16, fontWeight: '900', color: C.slate900, textAlign: 'center' },
   dropzoneSubtitle: { fontSize: 13.5, color: C.slate400, textAlign: 'center', lineHeight: 19 },
+  dropzoneHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  dropzoneHintText: { fontSize: 12, fontWeight: '700', color: C.violet600 },
   tipBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -870,19 +906,35 @@ function createStyles(C: ScanColors) {
     gap: 8,
   },
   dockRow: { flexDirection: 'row', gap: 8 },
+  // 실제로 눌러서 선택하는 지점이라는 걸 분명히 보여주려고, 흰 배경 + 그림자 +
+  // 아이콘 원형 배지로 카드형 버튼처럼 강조했다.
   dockButton: {
     flex: 1,
-    backgroundColor: C.slate50,
-    borderRadius: 16,
-    paddingVertical: 10,
-    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    paddingVertical: 14,
+    borderWidth: 1.5,
     borderColor: C.slate200,
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  dockButtonAccent: { backgroundColor: C.violet50, borderColor: C.violet200 },
-  dockButtonText: { fontSize: 14, fontWeight: '800', color: C.slate800 },
-  dockButtonTextAccent: { fontSize: 14, fontWeight: '800', color: C.violet900 },
+  dockButtonAccent: { backgroundColor: C.violet50, borderColor: C.violet600, borderWidth: 2 },
+  dockButtonIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.slate100,
+  },
+  dockButtonIconCircleAccent: { backgroundColor: C.violet100 },
+  dockButtonText: { fontSize: 13, fontWeight: '800', color: C.slate800 },
+  dockButtonTextAccent: { fontSize: 13, fontWeight: '800', color: C.violet900 },
   analyzeButtonWrap: { borderRadius: 16, overflow: 'hidden' },
   analyzeButtonWrapDisabled: { opacity: 0.5 },
   analyzeButton: {
