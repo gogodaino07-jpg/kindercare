@@ -339,18 +339,15 @@ export default function ChildProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen
-        options={{
-          title: '아이 프로필 설정',
-          headerStyle: { backgroundColor: colors.skyBackground },
-          headerShadowVisible: false,
-          headerLeft: () => (
-            <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerBackButton}>
-              <MaterialCommunityIcons name="chevron-left" size={28} color={colors.textPrimary} />
-            </Pressable>
-          ),
-        }}
-      />
+      {/* 기본 네비게이션 헤더 대신 훨씬 낮은 커스텀 헤더를 써서(다른 스캔/캘린더
+          화면들과 같은 패턴), 스크롤 없이 화면에 더 많은 내용이 보이게 한다. */}
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerButton}>
+          <MaterialCommunityIcons name="chevron-left" size={26} color={colors.textPrimary} />
+        </Pressable>
+        <Text style={styles.headerTitle}>아이 프로필 설정</Text>
+      </View>
       <KeyboardAvoidingView
         style={styles.keyboardAvoider}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -633,8 +630,23 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       flex: 1,
       backgroundColor: colors.skyBackground,
     },
-    headerBackButton: {
-      paddingHorizontal: 4,
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    headerButton: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerTitle: {
+      fontSize: 17,
+      fontWeight: '800',
+      color: colors.textPrimary,
     },
     keyboardAvoider: {
       flex: 1,
