@@ -265,7 +265,7 @@ export default function CalendarScreen() {
         <Stack.Screen options={{ headerShown: false }} />
 
         <CalendarHeader
-          childName={selectedChild?.name ?? '우리 아이'}
+          childName={selectedChild?.givenName?.trim() || selectedChild?.name || '우리 아이'}
           age={selectedChild?.age}
           className={selectedChild?.className}
           photoUri={selectedChild?.photoUri}
