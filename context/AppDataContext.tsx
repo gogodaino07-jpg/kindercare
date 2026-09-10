@@ -1447,7 +1447,11 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       FONT_CHOICE_KEY,
       CHALKBOARD_THEME_KEY,
       EVENTS_KEY,
-      PHOTO_URIS_BY_EVENT_KEY,
+      // photoUris(원본 스캔 사진)는 클라우드에 백업되지 않는 로컬 전용 데이터라 여기서
+      // 지우면 영영 복구가 안 된다. preserveOnboarded=true인 일반 로그아웃(같은 계정
+      // 재로그인 가능성이 있는 경로)에서는 지우지 않아야, "스캔 후 7일간 사진 유지"
+      // 약속이 로그아웃→재로그인으로 깨지지 않는다. 계정 전환/회원탈퇴 때는 그대로 지움.
+      ...(options?.preserveOnboarded ? [] : [PHOTO_URIS_BY_EVENT_KEY]),
       MEAL_PLANS_KEY,
       CHILDREN_KEY,
       SELECTED_CHILD_ID_KEY,
@@ -1469,7 +1473,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     setFamilyMembers([]);
     setChildProfiles([]);
     setEvents([]);
-    setPhotoUrisByEventId({});
+    if (!options?.preserveOnboarded) setPhotoUrisByEventId({});
     setMealPlans([]);
     setSelectedChildId(undefined);
     setNotificationSettings(seedNotificationSettings);
