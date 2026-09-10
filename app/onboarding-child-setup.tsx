@@ -358,7 +358,7 @@ export default function OnboardingChildSetupScreen() {
               <Feather name="hash" size={13} color={ACCENT_BLUE} />
               <Text style={styles.label}>나이 (생년월일 기준 자동 계산, 직접 선택 가능)</Text>
             </View>
-            <View style={styles.chipRow}>
+            <View style={[styles.chipRow, styles.ageChipRow]}>
               {AGE_OPTIONS.map((option) => (
                 <Pressable
                   key={option}
@@ -680,6 +680,10 @@ const styles = StyleSheet.create({
       color: NO_CLASS_TEXT,
     },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    // 이 화면은 필드 전체가 카드(padding 24)로 한 번 더 감싸여 있어, 아이 프로필
+    // 수정 화면(카드 없음)과 같은 나이 옵션이 한 줄에 다 안 들어가고 줄바꿈됐다.
+    // 카드 오른쪽 여백만큼 오른쪽으로 폭을 늘려 수정 화면과 같은 한 줄 배치로 맞춘다.
+    ageChipRow: { marginRight: -24 },
     chip: {
       paddingVertical: 10,
       paddingHorizontal: 16,
