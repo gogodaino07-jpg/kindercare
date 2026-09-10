@@ -154,14 +154,17 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
           {birthdayBurstKey !== undefined && <BirthdayBurst triggerKey={birthdayBurstKey} />}
         </Pressable>
         <View style={styles.profileTextBlock}>
-          <View style={styles.nameRow}>
+          {/* 이름 영역 전체를 눌러도 전환 팝업이 뜨게 한다 — 아바타 사진(옆의
+              별도 Pressable, 크게보기 용도)과는 12px 간격으로 떨어져 있고
+              hitSlop을 왼쪽으로 늘리지 않아 두 터치 영역이 겹치지 않는다. */}
+          <Pressable
+            style={styles.nameRow}
+            onPress={onPressChild}
+            hitSlop={{ top: 10, bottom: 10, right: 10 }}
+            accessibilityLabel="아이 전환하기"
+          >
             <Text style={styles.profileName} numberOfLines={1}>{selectedChild?.name ?? '우리 아이'}</Text>
-            <Pressable
-              style={styles.switcherButton}
-              onPress={onPressChild}
-              hitSlop={{ top: 12, bottom: 12, left: 10, right: 14 }}
-              accessibilityLabel="아이 전환하기"
-            >
+            <View style={styles.switcherButton}>
               {selectedChild && (
                 <View style={styles.miniBadge}>
                   <Text style={styles.miniBadgeText}>
@@ -170,8 +173,8 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
                 </View>
               )}
               <MaterialIcons name="expand-more" size={18} color={colors.gray600} />
-            </Pressable>
-          </View>
+            </View>
+          </Pressable>
           {daysOld !== undefined && (
             <View style={styles.daysOldRow}>
               <MaterialCommunityIcons name="clock-outline" size={13} color={colors.gray400} />
