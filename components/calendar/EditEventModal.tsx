@@ -138,7 +138,7 @@ export default function EditEventModal({ visible, event, onClose }: EditEventMod
 
             <View style={styles.field}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>일정명</Text>
+                <Text style={styles.label}>일정명 <Text style={styles.requiredMark}>*필수</Text></Text>
                 <Text style={styles.charCount}>{title.length}/30자</Text>
               </View>
               <TextInput
@@ -152,7 +152,7 @@ export default function EditEventModal({ visible, event, onClose }: EditEventMod
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>선생님 전언 · 알림 메모</Text>
+              <Text style={styles.label}>선생님 전언 · 알림 메모 <Text style={styles.optionalMark}>(선택)</Text></Text>
               <TextInput
                 style={[styles.input, styles.multiline]}
                 value={noticeText}
@@ -164,7 +164,7 @@ export default function EditEventModal({ visible, event, onClose }: EditEventMod
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>준비물 (줄바꿈으로 구분)</Text>
+              <Text style={styles.label}>준비물 <Text style={styles.optionalMark}>(선택, 줄바꿈으로 구분)</Text></Text>
               <TextInput
                 style={[styles.input, styles.multiline]}
                 value={itemsText}
@@ -224,6 +224,16 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
     fontWeight: '700',
     color: t.textSecondary,
     marginBottom: 8,
+  },
+  requiredMark: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: t.rose,
+  },
+  optionalMark: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: t.textMuted,
   },
   labelRow: {
     flexDirection: 'row',
