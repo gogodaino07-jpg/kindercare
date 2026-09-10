@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useNavigation, Stack } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Keyboard,
   KeyboardAvoidingView,
@@ -117,6 +118,9 @@ export default function ChildProfileScreen() {
   const [allergiesText, setAllergiesText] = useState(editingChild?.allergies?.join(', ') ?? '');
   const [attemptedSave, setAttemptedSave] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  // 저장 버튼을 누른 뒤 광고 노출 여부에 따라 완료까지 몇 초 걸릴 수 있어,
+  // 멈춘 것처럼 보이지 않도록 그동안 버튼에 로딩 상태를 표시한다.
+  const [isSaving, setIsSaving] = useState(false);
 
   // 진입 시점 값 스냅샷 — 저장 없이 뒤로가기 시도할 때 변경 여부를 판단하는 기준.
   const initialSnapshot = useRef({
@@ -259,6 +263,7 @@ export default function ChildProfileScreen() {
       return;
     }
     if (editingChild) {
+      setIsSaving(true);
       await showChildSaveAd();
       updateChild(editingChild.id, buildInput());
       justSavedRef.current = true;
@@ -274,10 +279,12 @@ export default function ChildProfileScreen() {
   // 두 경우 모두 광고를 먼저 다 보여준 뒤에야 실제로 등록하도록 순서를 맞춘다
   // (저장부터 해놓고 광고를 나중에 띄우면, 광고가 끝났을 때 이미 화면이 넘어가 있어 어색하다).
   const handleConfirmCreate = async () => {
+    setIsSaving(true);
     const isAdditionalChild = children.length >= 1;
     if (isAdditionalChild) {
       const earnedReward = await requestAddChildAd();
       if (!earnedReward) {
+        setIsSaving(false);
         showAlert({
           title: '광고 시청이 필요해요',
           message: '광고를 끝까지 시청해야 아이를 추가할 수 있어요. 다시 시도해주세요.',
@@ -521,11 +528,19 @@ export default function ChildProfileScreen() {
       {/* Floating Action Button (Save) - Positioned exactly like Calendar */}
       <View style={styles.fabContainer}>
         <TouchableOpacity
-          style={[styles.saveButton, !canSave && attemptedSave && styles.saveButtonDisabled]}
+          style={[styles.saveButton, ((!canSave && attemptedSave) || isSaving) && styles.saveButtonDisabled]}
           onPress={handleSave}
+          disabled={isSaving}
           activeOpacity={0.8}
         >
-          <Text style={styles.saveButtonText}>저장하기</Text>
+          {isSaving ? (
+            <View style={styles.savingRow}>
+              <ActivityIndicator size="small" color={colors.cardWhite} />
+              <Text style={styles.saveButtonText}>저장 중...</Text>
+            </View>
+          ) : (
+            <Text style={styles.saveButtonText}>저장하기</Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -584,12 +599,23 @@ export default function ChildProfileScreen() {
             </View>
 
             <View style={styles.successButtonRow}>
-              <Pressable style={styles.resetButton} onPress={handleResetForm}>
+              <Pressable style={styles.resetButton} onPress={handleResetForm} disabled={isSaving}>
                 <Feather name="rotate-ccw" size={14} color={colors.textSecondary} />
                 <Text style={styles.resetButtonText}>다시 작성</Text>
               </Pressable>
-              <Pressable style={styles.confirmButton} onPress={handleConfirmCreate}>
-                <Text style={styles.confirmButtonText}>확인</Text>
+              <Pressable
+                style={[styles.confirmButton, isSaving && styles.saveButtonDisabled]}
+                onPress={handleConfirmCreate}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <View style={styles.savingRow}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={styles.confirmButtonText}>저장 중...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.confirmButtonText}>확인</Text>
+                )}
               </Pressable>
             </View>
           </View>
@@ -737,6 +763,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     saveButtonDisabled: { backgroundColor: colors.gray400, opacity: 0.6 },
     saveButtonText: { color: colors.cardWhite, fontSize: 16, fontWeight: 'bold' },
+    savingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     successOverlay: {
       position: 'absolute',
       top: 0,

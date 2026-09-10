@@ -1,7 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Text from '../common/AppText';
 import TextInput from '../common/ClearableTextInput';
 import { useAlert } from '../../context/AlertContext';
@@ -37,6 +37,9 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
   const [title, setTitle] = useState('');
   const [noticeText, setNoticeText] = useState('');
   const [itemsText, setItemsText] = useState('');
+  // 등록 버튼을 누른 뒤 광고 노출 여부에 따라 완료까지 몇 초 걸릴 수 있어,
+  // 멈춘 것처럼 보이지 않도록 그동안 버튼에 로딩 상태를 표시한다.
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -45,6 +48,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
       setNoticeText('');
       setItemsText('');
       setShowPicker(false);
+      setIsSaving(false);
     }
   }, [visible, initialDateISO]);
 
@@ -66,6 +70,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
       return;
     }
 
+    setIsSaving(true);
     const adShown = await showAddEventAd();
 
     const items: EventItem[] = itemsText
@@ -87,6 +92,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
       icon: '📌',
     });
 
+    setIsSaving(false);
     if (adShown) {
       showToast('✓ 일정을 등록했어요.');
     } else {
@@ -196,11 +202,18 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
           </ScrollView>
 
           <Pressable
-            style={[styles.saveButton, !title.trim() && styles.saveButtonDisabled]}
+            style={[styles.saveButton, (!title.trim() || isSaving) && styles.saveButtonDisabled]}
             onPress={handleSave}
-            disabled={!title.trim()}
+            disabled={!title.trim() || isSaving}
           >
-            <Text style={styles.saveButtonText}>등록하기</Text>
+            {isSaving ? (
+              <View style={styles.savingRow}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+                <Text style={styles.saveButtonText}>등록 중...</Text>
+              </View>
+            ) : (
+              <Text style={styles.saveButtonText}>등록하기</Text>
+            )}
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -310,6 +323,11 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
     fontSize: 15,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  savingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   });
 }
