@@ -472,19 +472,19 @@ export default function UploadScreen() {
             <View style={styles.dockRow}>
               <Pressable onPress={handleTakePhoto} style={styles.dockButton}>
                 <View style={styles.dockButtonIconCircle}>
-                  <Feather name="camera" size={16} color={C.violet600} />
+                  <Feather name="camera" size={18} color={C.violet600} />
                 </View>
                 <Text style={styles.dockButtonText}>카메라 촬영</Text>
               </Pressable>
               <Pressable onPress={handlePickGallery} style={[styles.dockButton, styles.dockButtonAccent]}>
                 <View style={[styles.dockButtonIconCircle, styles.dockButtonIconCircleAccent]}>
-                  <Feather name="image" size={16} color="#FFFFFF" />
+                  <Feather name="image" size={18} color="#FFFFFF" />
                 </View>
                 <Text style={styles.dockButtonTextAccent}>앨범 사진</Text>
               </Pressable>
               <Pressable onPress={handlePickFile} style={styles.dockButton}>
                 <View style={styles.dockButtonIconCircle}>
-                  <Feather name="file-text" size={16} color={C.violet600} />
+                  <Feather name="file-text" size={18} color={C.violet600} />
                 </View>
                 <Text style={styles.dockButtonText}>PDF / 문서</Text>
               </Pressable>
@@ -847,9 +847,9 @@ function createStyles(C: ScanColors) {
   backButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 17, fontWeight: '800', color: C.slate900 },
   scrollFlex: { flex: 1 },
-  scrollContent: { padding: 10, gap: 6 },
+  scrollContent: { padding: 8, gap: 5 },
   scrollContentFill: { flexGrow: 1 },
-  emptyStateFill: { flex: 1, gap: 6 },
+  emptyStateFill: { flex: 1, gap: 5 },
   emptyStateSpacer: { flex: 1, minHeight: 6 },
   gaugeCard: {
     backgroundColor: C.surface,
@@ -872,10 +872,10 @@ function createStyles(C: ScanColors) {
     borderRadius: 24,
     borderWidth: 1,
     borderColor: C.slate200,
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 20,
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   dropzoneIconBox: {
     width: 38,
@@ -903,15 +903,15 @@ function createStyles(C: ScanColors) {
     borderWidth: 1,
     borderColor: C.amber200,
     borderRadius: 14,
-    paddingVertical: 9,
+    paddingVertical: 7,
     paddingHorizontal: 12,
   },
   tipText: { flex: 1, fontSize: 11.5, color: C.slate700 },
   tipBold: { fontWeight: '400', color: C.amber700 },
   creditCard: {
     borderRadius: 24,
-    padding: 14,
-    gap: 8,
+    padding: 12,
+    gap: 7,
   },
   creditTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
   creditTextBlock: { flex: 1, gap: 6 },
@@ -952,10 +952,10 @@ function createStyles(C: ScanColors) {
   guideCard: {
     backgroundColor: C.surface,
     borderRadius: 22,
-    padding: 12,
+    padding: 10,
     borderWidth: 1,
     borderColor: C.slate200,
-    gap: 8,
+    gap: 6,
   },
   guideHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   guideHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -978,9 +978,9 @@ function createStyles(C: ScanColors) {
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: 'transparent',
-    paddingVertical: 9,
+    paddingVertical: 7,
     alignItems: 'center',
-    gap: 3,
+    gap: 2,
   },
   guideStepSelected: { backgroundColor: C.violet50 },
   guideStepCircle: {
@@ -1073,11 +1073,11 @@ function createStyles(C: ScanColors) {
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingVertical: 9,
+    paddingVertical: 12,
     borderWidth: 1.5,
     borderColor: C.slate200,
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
@@ -1094,9 +1094,9 @@ function createStyles(C: ScanColors) {
     elevation: 4,
   },
   dockButtonIconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: C.violet50,
