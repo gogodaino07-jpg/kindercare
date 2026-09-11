@@ -1065,7 +1065,7 @@ function createStyles(C: ScanColors) {
   dockHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dockHeaderText: { fontSize: 12.5, fontWeight: '700', color: C.slate600 },
   dockFastBadge: { backgroundColor: C.violet50, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
-  dockFastBadgeText: { fontSize: 10.5, fontWeight: '800', color: C.violet700 },
+  dockFastBadgeText: { fontSize: 10.5, fontWeight: '500', color: C.violet700 },
   dockRow: { flexDirection: 'row', gap: 8 },
   // 실제로 눌러서 선택하는 지점이라는 걸 분명히 보여주려고, 흰 배경 + 그림자 +
   // 아이콘 사각 배지로 카드형 버튼처럼 강조했다.
