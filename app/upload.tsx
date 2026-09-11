@@ -98,7 +98,10 @@ export default function UploadScreen() {
   const needsAdThisScan = !isSubscribed && !skipAd && !hasFreeCredit && !adCredited;
   // 카드 노출 자체는 skipAd(테스트 계정)와 무관하게 보여준다 — 테스트 계정도 디자인을
   // 확인/QA할 수 있어야 하므로. 실제 광고 시청 생략은 handleWatchAdForCredit 안에서 처리.
-  const showCreditCard = !isSubscribed && !hasFreeCredit && !adCredited;
+  // adCredited가 true여도 카드를 계속 보여준다 — 충전 직후 카드 자체가 다른 모양으로
+  // 바뀌면 실제로 충전됐는데도 "반영이 안 된 것처럼" 보이는 문제가 있었다. 카드는
+  // 그대로 두고 내부 게이지만 0→1로 채워서 보여준다(ScanCreditCard 참고).
+  const showCreditCard = !isSubscribed && !hasFreeCredit;
 
   const handleWatchAdForCredit = async () => {
     if (watchingCredit) return;
@@ -418,7 +421,7 @@ export default function UploadScreen() {
             showsVerticalScrollIndicator={false}
           >
             {showCreditCard ? (
-              <ScanCreditCard watching={watchingCredit} onWatchAd={handleWatchAdForCredit} />
+              <ScanCreditCard watching={watchingCredit} onWatchAd={handleWatchAdForCredit} adCredited={adCredited} />
             ) : (
               <View style={styles.gaugeCard}>
                 <View style={styles.gaugeTextBlock}>
@@ -533,22 +536,37 @@ export default function UploadScreen() {
   );
 }
 
-function CircularGauge({ value, max }: { value: number; max: number }) {
+function CircularGauge({
+  value,
+  max,
+  size = 76,
+  trackColor,
+  fillColor,
+  textColor,
+  subTextColor,
+}: {
+  value: number;
+  max: number;
+  size?: number;
+  trackColor?: string;
+  fillColor?: string;
+  textColor?: string;
+  subTextColor?: string;
+}) {
   const C = useScanColors();
-  const size = 76;
-  const strokeWidth = 7;
+  const strokeWidth = size >= 60 ? 7 : 5;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const progress = max > 0 ? Math.min(Math.max(value / max, 0), 1) : 0;
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size}>
-        <Circle cx={size / 2} cy={size / 2} r={radius} stroke={C.violet100} strokeWidth={strokeWidth} fill="none" />
+        <Circle cx={size / 2} cy={size / 2} r={radius} stroke={trackColor ?? C.violet100} strokeWidth={strokeWidth} fill="none" />
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={C.violet600}
+          stroke={fillColor ?? C.violet600}
           strokeWidth={strokeWidth}
           fill="none"
           strokeDasharray={`${circumference} ${circumference}`}
@@ -558,9 +576,9 @@ function CircularGauge({ value, max }: { value: number; max: number }) {
         />
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <Text style={{ fontSize: 15, fontWeight: '900', color: C.slate900 }}>
+        <Text style={{ fontSize: size >= 60 ? 15 : 13, fontWeight: '900', color: textColor ?? C.slate900 }}>
           {value}
-          <Text style={{ fontSize: 11, fontWeight: '700', color: C.slate400 }}>/{max}</Text>
+          <Text style={{ fontSize: size >= 60 ? 11 : 9.5, fontWeight: '700', color: subTextColor ?? C.slate400 }}>/{max}</Text>
         </Text>
       </View>
     </View>
@@ -621,18 +639,33 @@ function TipBox() {
 }
 
 // 무료 횟수를 다 쓴 사용자에게 분석 버튼까지 가지 않고도 바로 상단에서 광고를
-// 보고 스캔권을 미리 충전할 수 있게 해주는 카드. 충전 후엔 이 카드 대신
-// 평소의 작은 게이지 카드가 다시 보인다(UploadScreen의 showCreditCard 참고).
-function ScanCreditCard({ watching, onWatchAd }: { watching: boolean; onWatchAd: () => void }) {
+// 보고 스캔권을 미리 충전할 수 있게 해주는 카드. 충전 후에도 카드는 그대로
+// 두고 오른쪽 게이지가 0→1로 차오르는 것으로 충전됐음을 보여준다(카드 자체가
+// 다른 모양으로 바뀌면, 실제로는 충전됐는데도 "반영이 안 된 것처럼" 보이는
+// 문제가 있었다 — 기존 무료 스캔 잔여 게이지는 완전히 다른 숫자라 헷갈렸음).
+function ScanCreditCard({
+  watching,
+  onWatchAd,
+  adCredited,
+}: {
+  watching: boolean;
+  onWatchAd: () => void;
+  adCredited: boolean;
+}) {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
   // 버튼 전체가 아주 살짝 작아졌다 커졌다 하며(+ 옅어졌다 또렷해지며) 천천히
   // 숨쉬듯 반복해서, 무료 횟수가 다 떨어졌을 때 시선이 자연스럽게 이 버튼으로
-  // 가도록 유도한다.
+  // 가도록 유도한다. 이미 충전된 뒤에는 더 유도할 필요가 없어 멈춘다.
   const pulse = useRef(new Animated.Value(1)).current;
   const pulseScale = pulse.interpolate({ inputRange: [0.6, 1], outputRange: [0.97, 1] });
 
   useEffect(() => {
+    if (adCredited) {
+      pulse.stopAnimation();
+      pulse.setValue(1);
+      return;
+    }
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, { toValue: 0.6, duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
@@ -641,7 +674,7 @@ function ScanCreditCard({ watching, onWatchAd }: { watching: boolean; onWatchAd:
     );
     loop.start();
     return () => loop.stop();
-  }, [pulse]);
+  }, [pulse, adCredited]);
 
   return (
     <LinearGradient
@@ -656,29 +689,41 @@ function ScanCreditCard({ watching, onWatchAd }: { watching: boolean; onWatchAd:
             <Ionicons name="flash" size={13} color="#FCD34D" />
             <Text style={styles.creditBadgeText}>무료 이용권 모두 소진</Text>
           </View>
-          <Text style={styles.creditHeadline}>광고 1개 보고 스캔권 충전하기</Text>
+          <Text style={styles.creditHeadline}>
+            {adCredited ? '스캔권 충전 완료!' : '광고 1개 보고 스캔권 충전하기'}
+          </Text>
           <Text style={styles.creditSubtitle}>
-            짧은 광고 시청 시 <Text style={styles.creditSubtitleEm}>1회 즉시 충전</Text>
+            {adCredited ? (
+              '지금 알림장을 추가해 바로 분석해보세요'
+            ) : (
+              <>짧은 광고 시청 시 <Text style={styles.creditSubtitleEm}>1회 즉시 충전</Text></>
+            )}
           </Text>
         </View>
-        <View style={styles.creditCountCircle}>
-          <Text style={styles.creditCountNumber}>
-            0<Text style={styles.creditCountUnit}>/1회</Text>
-          </Text>
-        </View>
+        <CircularGauge
+          value={adCredited ? 1 : 0}
+          max={1}
+          size={56}
+          trackColor="rgba(255,255,255,0.25)"
+          fillColor="#FCD34D"
+          textColor="#FFFFFF"
+          subTextColor="rgba(255,255,255,0.85)"
+        />
       </View>
-      <Animated.View style={{ opacity: pulse, transform: [{ scale: pulseScale }] }}>
-        <Pressable style={styles.creditButton} onPress={onWatchAd} disabled={watching}>
-          {watching ? (
-            <ActivityIndicator color={C.violet700} />
-          ) : (
-            <>
-              <Ionicons name="play" size={15} color={C.violet700} />
-              <Text style={styles.creditButtonText}>광고 1개 시청하고 1회 충전하기</Text>
-            </>
-          )}
-        </Pressable>
-      </Animated.View>
+      {!adCredited && (
+        <Animated.View style={{ opacity: pulse, transform: [{ scale: pulseScale }] }}>
+          <Pressable style={styles.creditButton} onPress={onWatchAd} disabled={watching}>
+            {watching ? (
+              <ActivityIndicator color={C.violet700} />
+            ) : (
+              <>
+                <Ionicons name="play" size={15} color={C.violet700} />
+                <Text style={styles.creditButtonText}>광고 1개 시청하고 1회 충전하기</Text>
+              </>
+            )}
+          </Pressable>
+        </Animated.View>
+      )}
     </LinearGradient>
   );
 }
@@ -929,16 +974,6 @@ function createStyles(C: ScanColors) {
   creditHeadline: { fontSize: 19, fontWeight: '700', color: '#FFFFFF' },
   creditSubtitle: { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
   creditSubtitleEm: { fontWeight: '600', color: '#FCD34D', textDecorationLine: 'underline' },
-  creditCountCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  creditCountNumber: { fontSize: 15, fontWeight: '900', color: '#FFFFFF' },
-  creditCountUnit: { fontSize: 9.5, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
   creditButton: {
     flexDirection: 'row',
     alignItems: 'center',
