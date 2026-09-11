@@ -1,4 +1,4 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { getInfoAsync } from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
@@ -84,21 +84,48 @@ export default function UploadScreen() {
   // 아니라(그건 실제 AI 분석이 시작될 때만 켜짐) 버튼에 아무 반응이 없어 보여서
   // 여러 번 누르게 되는 문제가 있었음 — 그 구간을 채우기 위한 별도 상태.
   const [starting, setStarting] = useState(false);
+  // 무료 횟수를 다 쓴 사용자가 분석 버튼을 누르는 시점이 아니라, 화면 상단에서
+  // 미리 광고를 보고 스캔권 1회를 "충전"해둘 수 있게 하는 상태. 충전해두면
+  // 다음 분석 시 광고를 다시 요구하지 않고, 분석에 성공하면 소모돼 다시 false로 돌아간다.
+  const [adCredited, setAdCredited] = useState(false);
+  const [watchingCredit, setWatchingCredit] = useState(false);
 
   const maxCredits = isSubscribed ? PREMIUM_WEEKLY_LIMIT : FREE_LIFETIME_LIMIT;
   const skipAd = isAdTestAccount(googleAccount?.email);
   // 무료 사용자는 처음 FREE_LIFETIME_LIMIT회까지만 광고 없이 쓰고, 그 이후엔 구독하지
   // 않는 한 스캔마다 광고 시청이 필요하다(막히지 않고 무제한 반복 가능).
   const hasFreeCredit = !isSubscribed && remainingAnalyses !== null && remainingAnalyses > 0;
-  const needsAdThisScan = !isSubscribed && !skipAd && !hasFreeCredit;
+  const needsAdThisScan = !isSubscribed && !skipAd && !hasFreeCredit && !adCredited;
+  // 무료 횟수도 없고 미리 충전해둔 스캔권도 없을 때만 상단에 "광고 보고 충전하기" 카드를 보여준다.
+  const showCreditCard = !isSubscribed && !skipAd && !hasFreeCredit && !adCredited;
+
+  const handleWatchAdForCredit = async () => {
+    if (watchingCredit) return;
+    setWatchingCredit(true);
+    try {
+      const earned = await requestAndShow();
+      if (earned) {
+        setAdCredited(true);
+        showToast('스캔권 1회가 충전됐어요 🎟️');
+      } else {
+        showAlert({ title: '광고 시청이 필요해요', message: '광고를 끝까지 시청해야 충전돼요. 다시 시도해주세요.' });
+      }
+    } finally {
+      setWatchingCredit(false);
+    }
+  };
 
   const gaugeHeadline = isSubscribed
     ? `이번 주 ${remainingAnalyses ?? 0}번 더 스캔할 수 있어요`
     : hasFreeCredit
       ? `${remainingAnalyses}번 더 무료로 스캔할 수 있어요`
-      : '광고 보면 계속 스캔할 수 있어요';
+      : adCredited
+        ? '충전된 스캔권으로 바로 분석할 수 있어요'
+        : '광고 보면 계속 스캔할 수 있어요';
   const gaugeSubtitle = !isSubscribed && !hasFreeCredit
-    ? `무료 ${maxCredits}회를 모두 사용했어요 · 광고 시청 후 계속 이용 가능`
+    ? adCredited
+      ? '스캔권 1회 충전 완료 · 지금 분석을 진행해보세요'
+      : `무료 ${maxCredits}회를 모두 사용했어요 · 광고 시청 후 계속 이용 가능`
     : `총 ${maxCredits}회 중 ${remainingAnalyses ?? 0}회 남음 · 1건당 1회 차감`;
 
   // Prevent accidental navigation during analysis
@@ -349,6 +376,8 @@ export default function UploadScreen() {
           showAlert({ title: '광고 시청이 필요해요', message: '광고를 끝까지 시청해야 분석을 진행할 수 있어요. 다시 시도해주세요.' });
           return;
         }
+      } else if (adCredited) {
+        setAdCredited(false); // 미리 충전해둔 스캔권을 이번 분석에 소모
       }
 
       await performAnalysis(docs, selectedChild);
@@ -383,16 +412,20 @@ export default function UploadScreen() {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.gaugeCard}>
-              <View style={styles.gaugeTextBlock}>
-                <View style={styles.gaugeHeadlineRow}>
-                  <View style={styles.gaugeDot} />
-                  <Text style={styles.gaugeHeadline}>{gaugeHeadline}</Text>
+            {showCreditCard ? (
+              <ScanCreditCard watching={watchingCredit} onWatchAd={handleWatchAdForCredit} />
+            ) : (
+              <View style={styles.gaugeCard}>
+                <View style={styles.gaugeTextBlock}>
+                  <View style={styles.gaugeHeadlineRow}>
+                    <View style={styles.gaugeDot} />
+                    <Text style={styles.gaugeHeadline}>{gaugeHeadline}</Text>
+                  </View>
+                  <Text style={styles.gaugeSubtitle}>{gaugeSubtitle}</Text>
                 </View>
-                <Text style={styles.gaugeSubtitle}>{gaugeSubtitle}</Text>
+                <CircularGauge value={remainingAnalyses ?? 0} max={maxCredits} />
               </View>
-              <CircularGauge value={remainingAnalyses ?? 0} max={maxCredits} />
-            </View>
+            )}
 
             {docs.length > 0 ? (
               <View style={styles.docsSection}>
@@ -413,7 +446,7 @@ export default function UploadScreen() {
             ) : (
               <View style={styles.emptyStateFill}>
                 <DropzoneCard />
-                <AutomationProcessCard />
+                <ScanGuideCard />
                 <TipBox />
               </View>
             )}
@@ -564,54 +597,135 @@ function TipBox() {
     <View style={styles.tipBox}>
       <Ionicons name="bulb" size={18} color={C.amber700} />
       <Text style={styles.tipText}>
-        <Text style={styles.tipBold}>스캔 팁: </Text>
-        빛 반사 없이 평평한 곳에서 찍으면 인식률이 훨씬 높아져요!
+        <Text style={styles.tipBold}>인식률 높이기 TIP: </Text>
+        빛 반사가 없도록 평평한 곳에서 위에서 아래로 수직 촬영해 보세요!
       </Text>
     </View>
   );
 }
 
-const AUTOMATION_STEPS = [
-  { number: '1', title: '사진·파일', caption: '업로드', variant: 'default' as const },
-  { number: '2', title: 'AI 분석', caption: '일정 추출', variant: 'accent' as const },
-  { number: '3', title: '캘린더', caption: '자동 저장', variant: 'done' as const },
-];
-
-function AutomationProcessCard() {
+// 무료 횟수를 다 쓴 사용자에게 분석 버튼까지 가지 않고도 바로 상단에서 광고를
+// 보고 스캔권을 미리 충전할 수 있게 해주는 카드. 충전 후엔 이 카드 대신
+// 평소의 작은 게이지 카드가 다시 보인다(UploadScreen의 showCreditCard 참고).
+function ScanCreditCard({ watching, onWatchAd }: { watching: boolean; onWatchAd: () => void }) {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
   return (
-    <View style={styles.processCard}>
-      <View style={styles.processHeaderRow}>
-        <Text style={styles.processTitle}>AI 스캔 자동화 프로세스</Text>
-        <View style={styles.processBadge}>
-          <Text style={styles.processBadgeText}>3단계 자동 완료</Text>
+    <LinearGradient
+      colors={[C.violet600, C.indigo600]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.creditCard}
+    >
+      <View style={styles.creditTopRow}>
+        <View style={styles.creditTextBlock}>
+          <View style={styles.creditBadge}>
+            <Feather name="zap" size={12} color="#FFFFFF" />
+            <Text style={styles.creditBadgeText}>무료 이용권 모두 소진</Text>
+          </View>
+          <Text style={styles.creditHeadline}>광고 1개 보고 스캔권 충전하기</Text>
+          <Text style={styles.creditSubtitle}>
+            짧은 광고 시청 시 <Text style={styles.creditSubtitleEm}>1회 즉시 충전</Text>
+          </Text>
+        </View>
+        <View style={styles.creditCountCircle}>
+          <Text style={styles.creditCountNumber}>
+            0<Text style={styles.creditCountUnit}>/1회</Text>
+          </Text>
         </View>
       </View>
-      <View style={styles.processGrid}>
-        {AUTOMATION_STEPS.map((step) => (
-          <View key={step.number} style={styles.processStep}>
-            <View
-              style={[
-                styles.processStepCircle,
-                step.variant === 'accent' && styles.processStepCircleAccent,
-                step.variant === 'done' && styles.processStepCircleDone,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.processStepNumber,
-                  step.variant === 'accent' && styles.processStepNumberAccent,
-                  step.variant === 'done' && styles.processStepNumberDone,
-                ]}
-              >
-                {step.number}
-              </Text>
-            </View>
-            <Text style={styles.processStepTitle}>{step.title}</Text>
-            <Text style={styles.processStepCaption}>{step.caption}</Text>
+      <Pressable style={styles.creditButton} onPress={onWatchAd} disabled={watching}>
+        {watching ? (
+          <ActivityIndicator color={C.violet700} />
+        ) : (
+          <>
+            <Ionicons name="play" size={15} color={C.violet700} />
+            <Text style={styles.creditButtonText}>광고 1개 시청하고 1회 충전하기</Text>
+          </>
+        )}
+      </Pressable>
+    </LinearGradient>
+  );
+}
+
+const GUIDE_STEPS = [
+  {
+    id: '1',
+    title: '사진 업로드',
+    caption: '터치해서 보기',
+    detailTitle: '1단계: 스마트폰으로 촬영하거나 파일 선택',
+    detailDesc: '가정통신문, 안내장, 식단표를 카메라로 찍거나 앨범에서 불러오세요.',
+    icon: (color: string) => <Feather name="camera" size={22} color={color} />,
+  },
+  {
+    id: '2',
+    title: 'AI 정밀 분석',
+    caption: '일정 추출',
+    detailTitle: '2단계: AI가 텍스트와 일정을 꼼꼼히 분석',
+    detailDesc: '업로드된 문서 속 날짜, 시간, 준비물 등의 핵심 일정을 AI가 자동으로 추출합니다.',
+    icon: (color: string) => <Ionicons name="sparkles" size={22} color={color} />,
+  },
+  {
+    id: '3',
+    title: '캘린더 연동',
+    caption: '자동 저장',
+    detailTitle: '3단계: 스마트폰 캘린더에 원클릭 자동 저장',
+    detailDesc: '추출된 일정을 확인하고 내 캘린더에 바로 저장하여 놓치지 않고 관리하세요.',
+    icon: (color: string) => <MaterialCommunityIcons name="calendar-check" size={22} color={color} />,
+  },
+];
+
+// 탭해서 단계별 설명을 바꿔 보여주는 가이드 카드. 세로로 늘어놓던 예전 로드맵
+// 대신, 3개 탭 중 고른 단계의 상세 설명만 아래 패널에 보여주는 방식으로 바꿨다.
+function ScanGuideCard() {
+  const C = useScanColors();
+  const styles = useMemo(() => createStyles(C), [C]);
+  const [selectedId, setSelectedId] = useState('1');
+  const selected = GUIDE_STEPS.find((s) => s.id === selectedId) ?? GUIDE_STEPS[0];
+
+  return (
+    <View style={styles.guideCard}>
+      <View style={styles.guideHeaderRow}>
+        <View style={styles.guideHeaderLeft}>
+          <View style={styles.guideInfoBadge}>
+            <Feather name="info" size={13} color={C.violet700} />
           </View>
-        ))}
+          <Text style={styles.guideTitle}>AI 스캔 이용 가이드</Text>
+        </View>
+        <View style={styles.guideHintPill}>
+          <Text style={styles.guideHintText}>탭하여 단계 확인</Text>
+        </View>
+      </View>
+
+      <View style={styles.guideGrid}>
+        {GUIDE_STEPS.map((step) => {
+          const isSelected = step.id === selectedId;
+          return (
+            <Pressable
+              key={step.id}
+              style={[styles.guideStep, isSelected && styles.guideStepSelected]}
+              onPress={() => setSelectedId(step.id)}
+            >
+              <View style={[styles.guideStepCircle, isSelected && styles.guideStepCircleSelected]}>
+                <Text style={[styles.guideStepNumber, isSelected && styles.guideStepNumberSelected]}>
+                  {step.id}
+                </Text>
+              </View>
+              <Text style={styles.guideStepTitle}>{step.title}</Text>
+              <Text style={[styles.guideStepCaption, isSelected && styles.guideStepCaptionSelected]}>
+                {step.caption}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <View style={styles.guideDetailBox}>
+        <View style={styles.guideDetailIcon}>{selected.icon('#FFFFFF')}</View>
+        <View style={styles.guideDetailTextBlock}>
+          <Text style={styles.guideDetailTitle}>{selected.detailTitle}</Text>
+          <Text style={styles.guideDetailDesc}>{selected.detailDesc}</Text>
+        </View>
       </View>
     </View>
   );
@@ -789,42 +903,113 @@ function createStyles(C: ScanColors) {
   },
   tipText: { flex: 1, fontSize: 13.5, color: C.slate700, lineHeight: 18 },
   tipBold: { fontWeight: '900', color: C.amber700 },
-  processCard: {
+  creditCard: {
+    borderRadius: 28,
+    padding: 22,
+    gap: 16,
+  },
+  creditTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+  creditTextBlock: { flex: 1, gap: 10 },
+  creditBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  creditBadgeText: { fontSize: 11.5, fontWeight: '800', color: '#FFFFFF' },
+  creditHeadline: { fontSize: 19, fontWeight: '900', color: '#FFFFFF' },
+  creditSubtitle: { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
+  creditSubtitleEm: { fontWeight: '900', color: '#FFFFFF', textDecorationLine: 'underline' },
+  creditCountCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  creditCountNumber: { fontSize: 17, fontWeight: '900', color: '#FFFFFF' },
+  creditCountUnit: { fontSize: 10.5, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
+  creditButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 15,
+  },
+  creditButtonText: { fontSize: 14, fontWeight: '800', color: C.violet700 },
+  guideCard: {
     backgroundColor: C.surface,
     borderRadius: 24,
     padding: 16,
     borderWidth: 1,
     borderColor: C.slate200,
-    gap: 12,
+    gap: 14,
   },
-  processHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  processTitle: { fontSize: 14, fontWeight: '800', color: C.slate800 },
-  processBadge: { backgroundColor: C.violet100, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  processBadgeText: { fontSize: 11, fontWeight: '800', color: C.violet700 },
-  processGrid: { flexDirection: 'row', gap: 10 },
-  processStep: {
-    flex: 1,
-    backgroundColor: C.slate50,
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-    gap: 6,
-  },
-  processStepCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  guideHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  guideHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  guideInfoBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
     backgroundColor: C.violet100,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  processStepCircleAccent: { backgroundColor: C.violet600 },
-  processStepCircleDone: { backgroundColor: C.emerald50, borderWidth: 1, borderColor: C.emerald100 },
-  processStepNumber: { fontSize: 16, fontWeight: '900', color: C.violet700 },
-  processStepNumberAccent: { color: '#FFFFFF' },
-  processStepNumberDone: { color: C.emerald700 },
-  processStepTitle: { fontSize: 13, fontWeight: '900', color: C.slate900 },
-  processStepCaption: { fontSize: 11, fontWeight: '600', color: C.slate400 },
+  guideTitle: { fontSize: 14.5, fontWeight: '800', color: C.slate900 },
+  guideHintPill: { backgroundColor: C.violet50, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  guideHintText: { fontSize: 10.5, fontWeight: '700', color: C.violet700 },
+  guideGrid: { flexDirection: 'row', gap: 8 },
+  guideStep: {
+    flex: 1,
+    backgroundColor: C.slate50,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    paddingVertical: 12,
+    alignItems: 'center',
+    gap: 6,
+  },
+  guideStepSelected: { backgroundColor: C.surface, borderColor: C.violet600 },
+  guideStepCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: C.slate200,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guideStepCircleSelected: { backgroundColor: C.violet600 },
+  guideStepNumber: { fontSize: 15, fontWeight: '900', color: C.slate500 },
+  guideStepNumberSelected: { color: '#FFFFFF' },
+  guideStepTitle: { fontSize: 12.5, fontWeight: '800', color: C.slate900, textAlign: 'center' },
+  guideStepCaption: { fontSize: 10.5, fontWeight: '600', color: C.slate400 },
+  guideStepCaptionSelected: { color: C.violet700 },
+  guideDetailBox: {
+    flexDirection: 'row',
+    gap: 14,
+    backgroundColor: C.slate50,
+    borderRadius: 18,
+    padding: 14,
+    alignItems: 'flex-start',
+  },
+  guideDetailIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: C.violet600,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guideDetailTextBlock: { flex: 1, gap: 4 },
+  guideDetailTitle: { fontSize: 13.5, fontWeight: '800', color: C.slate900 },
+  guideDetailDesc: { fontSize: 12.5, color: C.slate500, lineHeight: 18 },
   docsSection: { gap: 10 },
   docsCountLabel: { fontSize: 13, fontWeight: '700', color: C.slate400 },
   docCard: {
