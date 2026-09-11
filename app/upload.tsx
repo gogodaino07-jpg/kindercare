@@ -1,4 +1,4 @@
-import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { getInfoAsync } from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
@@ -672,39 +672,18 @@ function ScanCreditCard({ watching, onWatchAd }: { watching: boolean; onWatchAd:
 }
 
 const GUIDE_STEPS = [
-  {
-    id: '1',
-    title: '사진 업로드',
-    caption: '터치해서 보기',
-    detailTitle: '1단계: 스마트폰으로 촬영하거나 파일 선택',
-    detailDesc: '가정통신문, 안내장, 식단표를 카메라로 찍거나 앨범에서 불러오세요.',
-    icon: (color: string) => <Feather name="camera" size={18} color={color} />,
-  },
-  {
-    id: '2',
-    title: 'AI 정밀 분석',
-    caption: '일정 추출',
-    detailTitle: '2단계: AI가 텍스트와 일정을 꼼꼼히 분석',
-    detailDesc: '업로드된 문서 속 날짜, 시간, 준비물 등의 핵심 일정을 AI가 자동으로 추출합니다.',
-    icon: (color: string) => <Ionicons name="sparkles" size={18} color={color} />,
-  },
-  {
-    id: '3',
-    title: '캘린더 연동',
-    caption: '자동 저장',
-    detailTitle: '3단계: 스마트폰 캘린더에 원클릭 자동 저장',
-    detailDesc: '추출된 일정을 확인하고 내 캘린더에 바로 저장하여 놓치지 않고 관리하세요.',
-    icon: (color: string) => <MaterialCommunityIcons name="calendar-check" size={18} color={color} />,
-  },
+  { id: '1', title: '사진 업로드', caption: '터치해서 보기' },
+  { id: '2', title: 'AI 정밀 분석', caption: '일정 추출' },
+  { id: '3', title: '캘린더 연동', caption: '자동 저장' },
 ];
 
-// 탭해서 단계별 설명을 바꿔 보여주는 가이드 카드. 세로로 늘어놓던 예전 로드맵
-// 대신, 3개 탭 중 고른 단계의 상세 설명만 아래 패널에 보여주는 방식으로 바꿨다.
+// 탭하면 눌린 단계가 강조 표시되는 3단 가이드 카드. 원래는 아래에 단계별
+// 상세 설명 패널이 더 있었는데, 내용이 뻔해서 군더더기라는 피드백으로 빼고
+// 탭 강조 표시만 남겼다.
 function ScanGuideCard() {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
   const [selectedId, setSelectedId] = useState('1');
-  const selected = GUIDE_STEPS.find((s) => s.id === selectedId) ?? GUIDE_STEPS[0];
 
   return (
     <View style={styles.guideCard}>
@@ -714,9 +693,6 @@ function ScanGuideCard() {
             <Feather name="info" size={13} color={C.violet700} />
           </View>
           <Text style={styles.guideTitle}>AI 스캔 이용 가이드</Text>
-        </View>
-        <View style={styles.guideHintPill}>
-          <Text style={styles.guideHintText}>탭하여 단계 확인</Text>
         </View>
       </View>
 
@@ -741,14 +717,6 @@ function ScanGuideCard() {
             </Pressable>
           );
         })}
-      </View>
-
-      <View style={styles.guideDetailBox}>
-        <View style={styles.guideDetailIcon}>{selected.icon('#FFFFFF')}</View>
-        <View style={styles.guideDetailTextBlock}>
-          <Text style={styles.guideDetailTitle}>{selected.detailTitle}</Text>
-          <Text style={styles.guideDetailDesc}>{selected.detailDesc}</Text>
-        </View>
       </View>
     </View>
   );
@@ -984,8 +952,6 @@ function createStyles(C: ScanColors) {
     justifyContent: 'center',
   },
   guideTitle: { fontSize: 14.5, fontWeight: '800', color: C.slate900 },
-  guideHintPill: { backgroundColor: C.violet50, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  guideHintText: { fontSize: 10.5, fontWeight: '700', color: C.violet700 },
   guideGrid: { flexDirection: 'row', gap: 8 },
   guideStep: {
     flex: 1,
@@ -1012,25 +978,6 @@ function createStyles(C: ScanColors) {
   guideStepTitle: { fontSize: 12.5, fontWeight: '800', color: C.slate900, textAlign: 'center' },
   guideStepCaption: { fontSize: 10.5, fontWeight: '600', color: C.slate400 },
   guideStepCaptionSelected: { color: C.violet700 },
-  guideDetailBox: {
-    flexDirection: 'row',
-    gap: 10,
-    backgroundColor: C.slate50,
-    borderRadius: 16,
-    padding: 10,
-    alignItems: 'flex-start',
-  },
-  guideDetailIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: C.violet600,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  guideDetailTextBlock: { flex: 1, gap: 2 },
-  guideDetailTitle: { fontSize: 13, fontWeight: '800', color: C.slate900 },
-  guideDetailDesc: { fontSize: 12, color: C.slate500, lineHeight: 16.5 },
   docsSection: { gap: 10 },
   docsCountLabel: { fontSize: 13, fontWeight: '700', color: C.slate400 },
   docCard: {
