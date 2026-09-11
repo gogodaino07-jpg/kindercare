@@ -601,8 +601,8 @@ function TipBox() {
   const styles = useMemo(() => createStyles(C), [C]);
   return (
     <View style={styles.tipBox}>
-      <Ionicons name="bulb" size={18} color={C.amber700} />
-      <Text style={styles.tipText}>
+      <Ionicons name="bulb" size={15} color={C.amber700} />
+      <Text style={styles.tipText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
         <Text style={styles.tipBold}>인식률 높이기 TIP: </Text>
         빛 반사가 없도록 평평한 곳에서 위에서 아래로 수직 촬영해 보세요!
       </Text>
@@ -914,16 +914,16 @@ function createStyles(C: ScanColors) {
   dropzoneHintText: { fontSize: 12, fontWeight: '700', color: C.violet600 },
   tipBox: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: C.amber50,
     borderWidth: 1,
     borderColor: C.amber200,
     borderRadius: 14,
     padding: 8,
   },
-  tipText: { flex: 1, fontSize: 13.5, color: C.slate700, lineHeight: 18 },
-  tipBold: { fontWeight: '900', color: C.amber700 },
+  tipText: { flex: 1, fontSize: 11.5, color: C.slate700 },
+  tipBold: { fontWeight: '400', color: C.amber700 },
   creditCard: {
     borderRadius: 24,
     padding: 16,
