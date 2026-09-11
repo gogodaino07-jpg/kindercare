@@ -474,9 +474,9 @@ export default function UploadScreen() {
               <View style={styles.emptyStateFill}>
                 <DropzoneCard />
                 <ScanGuideCard />
-                <View style={[styles.emptyStateSpacer, { flex: 0.4 }]} />
+                <View style={[styles.emptyStateSpacer, { flex: 0.25 }]} />
                 <TipBox />
-                <View style={[styles.emptyStateSpacer, { flex: 1.6 }]} />
+                <View style={[styles.emptyStateSpacer, { flex: 1.75 }]} />
               </View>
             )}
           </ScrollView>
@@ -910,10 +910,10 @@ function createStyles(C: ScanColors) {
   backButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 17, fontWeight: '800', color: C.slate900 },
   scrollFlex: { flex: 1 },
-  scrollContent: { padding: 8, gap: 5 },
+  scrollContent: { padding: 6, gap: 5 },
   scrollContentFill: { flexGrow: 1 },
-  emptyStateFill: { flex: 1, gap: 10 },
-  emptyStateSpacer: { flex: 1, minHeight: 6 },
+  emptyStateFill: { flex: 1, gap: 8 },
+  emptyStateSpacer: { flex: 1, minHeight: 0 },
   gaugeCard: {
     backgroundColor: C.surface,
     borderRadius: 24,
@@ -935,10 +935,10 @@ function createStyles(C: ScanColors) {
     borderRadius: 24,
     borderWidth: 1,
     borderColor: C.slate200,
-    paddingVertical: 16,
+    paddingVertical: 12,
     paddingHorizontal: 20,
     alignItems: 'center',
-    gap: 5,
+    gap: 3,
   },
   dropzoneIconBox: {
     width: 38,
@@ -966,20 +966,19 @@ function createStyles(C: ScanColors) {
     borderWidth: 1,
     borderColor: C.amber200,
     borderRadius: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    // 위쪽 스페이서가 채워주는 여백 위에, 조금 더 아래로 내려 보이도록 추가 여백.
-    marginTop: 10,
+    marginTop: 4,
   },
   tipText: { flex: 1, fontSize: 12.5, color: C.slate700 },
   tipBold: { fontWeight: '600', color: C.amber700 },
   creditCard: {
     borderRadius: 24,
     padding: 12,
-    gap: 7,
+    gap: 5,
   },
   creditTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
-  creditTextBlock: { flex: 1, gap: 6 },
+  creditTextBlock: { flex: 1, gap: 4 },
   creditBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1001,18 +1000,17 @@ function createStyles(C: ScanColors) {
     gap: 8,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
-    paddingVertical: 11,
+    paddingVertical: 9,
   },
   creditButtonText: { fontSize: 12.5, fontWeight: '800', color: C.violet700 },
   guideCard: {
     backgroundColor: C.surface,
     borderRadius: 22,
-    padding: 10,
+    padding: 8,
     borderWidth: 1,
     borderColor: C.slate200,
     gap: 6,
-    // 드롭존 카드와의 간격을 기본 gap보다 조금 더 벌려서 아래로 내려 보이게 함.
-    marginTop: 6,
+    marginTop: 3,
   },
   guideHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   guideHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -1035,7 +1033,7 @@ function createStyles(C: ScanColors) {
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: 'transparent',
-    paddingVertical: 7,
+    paddingVertical: 6,
     alignItems: 'center',
     gap: 2,
   },
