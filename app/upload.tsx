@@ -376,8 +376,11 @@ export default function UploadScreen() {
           </View>
 
           <ScrollView
-            style={styles.scrollFlex}
-            contentContainerStyle={[styles.scrollContent, docs.length === 0 && styles.scrollContentFill]}
+            // 문서가 없을 땐 안내 카드들이 화면보다 짧아서, flex:1로 강제로 늘리면
+            // 카드와 하단 버튼 사이에 붕 뜬 여백이 생겼다 — 이때는 내용 높이만큼만
+            // 차지하게 해서 버튼이 내용 바로 아래에 붙게 한다.
+            style={docs.length > 0 ? styles.scrollFlex : undefined}
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.gaugeCard}>
@@ -729,7 +732,6 @@ function createStyles(C: ScanColors) {
   headerTitle: { fontSize: 17, fontWeight: '800', color: C.slate900 },
   scrollFlex: { flex: 1 },
   scrollContent: { padding: 12, gap: 8 },
-  scrollContentFill: { flexGrow: 1 },
   emptyStateFill: { gap: 10 },
   gaugeCard: {
     backgroundColor: C.surface,
@@ -892,22 +894,30 @@ function createStyles(C: ScanColors) {
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderWidth: 1.5,
     borderColor: C.slate200,
     alignItems: 'center',
     gap: 4,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 7,
+    elevation: 3,
   },
-  dockButtonAccent: { backgroundColor: C.violet50, borderColor: C.violet600, borderWidth: 2 },
+  dockButtonAccent: {
+    backgroundColor: C.violet50,
+    borderColor: C.violet600,
+    borderWidth: 2,
+    shadowColor: C.violet600,
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   dockButtonIconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: C.slate100,
