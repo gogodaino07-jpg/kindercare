@@ -463,19 +463,19 @@ export default function UploadScreen() {
             <View style={styles.dockRow}>
               <Pressable onPress={handleTakePhoto} style={styles.dockButton}>
                 <View style={styles.dockButtonIconCircle}>
-                  <Feather name="camera" size={16} color={C.violet600} />
+                  <Feather name="camera" size={18} color={C.violet600} />
                 </View>
                 <Text style={styles.dockButtonText}>카메라 촬영</Text>
               </Pressable>
               <Pressable onPress={handlePickGallery} style={[styles.dockButton, styles.dockButtonAccent]}>
                 <View style={[styles.dockButtonIconCircle, styles.dockButtonIconCircleAccent]}>
-                  <Feather name="image" size={16} color={C.violet700} />
+                  <Feather name="image" size={18} color="#FFFFFF" />
                 </View>
                 <Text style={styles.dockButtonTextAccent}>앨범 사진</Text>
               </Pressable>
               <Pressable onPress={handlePickFile} style={styles.dockButton}>
                 <View style={styles.dockButtonIconCircle}>
-                  <Feather name="file-text" size={16} color={C.slate600} />
+                  <Feather name="file-text" size={18} color={C.violet600} />
                 </View>
                 <Text style={styles.dockButtonText}>PDF / 문서</Text>
               </Pressable>
@@ -1050,16 +1050,16 @@ function createStyles(C: ScanColors) {
   },
   dockRow: { flexDirection: 'row', gap: 8 },
   // 실제로 눌러서 선택하는 지점이라는 걸 분명히 보여주려고, 흰 배경 + 그림자 +
-  // 아이콘 원형 배지로 카드형 버튼처럼 강조했다.
+  // 아이콘 사각 배지로 카드형 버튼처럼 강조했다.
   dockButton: {
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderWidth: 1.5,
     borderColor: C.slate200,
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
@@ -1067,25 +1067,25 @@ function createStyles(C: ScanColors) {
     elevation: 3,
   },
   dockButtonAccent: {
-    backgroundColor: C.violet50,
+    backgroundColor: C.violet600,
     borderColor: C.violet600,
     borderWidth: 2,
     shadowColor: C.violet600,
-    shadowOpacity: 0.22,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   dockButtonIconCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: C.slate100,
+    backgroundColor: C.violet50,
   },
-  dockButtonIconCircleAccent: { backgroundColor: C.violet100 },
+  dockButtonIconCircleAccent: { backgroundColor: 'rgba(255,255,255,0.25)' },
   dockButtonText: { fontSize: 13, fontWeight: '800', color: C.slate800 },
-  dockButtonTextAccent: { fontSize: 13, fontWeight: '800', color: C.violet900 },
+  dockButtonTextAccent: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
   analyzeButtonWrap: { borderRadius: 16, overflow: 'hidden' },
   analyzeButtonWrapDisabled: { opacity: 0.5 },
   analyzeButton: {
