@@ -914,7 +914,7 @@ function createStyles(C: ScanColors) {
   creditBadgeText: { fontSize: 11.5, fontWeight: '800', color: '#FFFFFF' },
   creditHeadline: { fontSize: 19, fontWeight: '700', color: '#FFFFFF' },
   creditSubtitle: { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
-  creditSubtitleEm: { fontWeight: '900', color: '#FFFFFF', textDecorationLine: 'underline' },
+  creditSubtitleEm: { fontWeight: '600', color: '#FCD34D', textDecorationLine: 'underline' },
   creditCountCircle: {
     width: 52,
     height: 52,
