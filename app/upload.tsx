@@ -460,6 +460,15 @@ export default function UploadScreen() {
           </ScrollView>
 
           <View style={[styles.dock, isSubscribed && { paddingBottom: 8 + insets.bottom }]}>
+            <View style={styles.dockHeaderRow}>
+              <View style={styles.dockHeaderLeft}>
+                <Feather name="folder" size={14} color={C.slate600} />
+                <Text style={styles.dockHeaderText}>알림장 파일 선택하기</Text>
+              </View>
+              <View style={styles.dockFastBadge}>
+                <Text style={styles.dockFastBadgeText}>빠른 업로드</Text>
+              </View>
+            </View>
             <View style={styles.dockRow}>
               <Pressable onPress={handleTakePhoto} style={styles.dockButton}>
                 <View style={styles.dockButtonIconCircle}>
@@ -675,17 +684,14 @@ function ScanCreditCard({ watching, onWatchAd }: { watching: boolean; onWatchAd:
 }
 
 const GUIDE_STEPS = [
-  { id: '1', title: '사진 업로드', caption: '업로드' },
-  { id: '2', title: 'AI 정밀 분석', caption: '일정 추출' },
-  { id: '3', title: '캘린더 연동', caption: '자동 저장' },
+  { id: '1', title: '사진·파일 업로드', caption: '카메라나 앨범 선택' },
+  { id: '2', title: 'AI 정밀 분석', caption: '날짜·일정 자동 추출' },
+  { id: '3', title: '캘린더 연동', caption: '스마트 일정 저장' },
 ];
 
-// 탭하면 눌린 단계가 강조 표시되는 3단 가이드 카드. 원래는 아래에 단계별
-// 상세 설명 패널이 더 있었는데, 내용이 뻔해서 군더더기라는 피드백으로 빼고
-// 탭 강조 표시만 남겼다.
-// 탭해서 단계를 바꿔 보이게 했더니, 눌렀을 때 강조 테두리가 하단 버튼과
-// 시각적으로 겹쳐 보여 혼란스럽다는 피드백으로 탭 상호작용을 제거했다.
-// 1단계만 고정으로 강조 표시되는 정적인 3단 요약으로 남긴다.
+// 탭하면 눌린 단계가 강조 표시되는 3단 가이드 카드였는데, 눌렀을 때 강조
+// 테두리가 하단 버튼과 시각적으로 겹쳐 보여 혼란스럽다는 피드백으로 탭
+// 상호작용을 제거하고 1단계만 고정으로 강조 표시되는 정적인 요약으로 남겼다.
 function ScanGuideCard() {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
@@ -699,7 +705,11 @@ function ScanGuideCard() {
           </View>
           <Text style={styles.guideTitle}>AI 스캔 이용 가이드</Text>
         </View>
+        <View style={styles.guideProgressBadge}>
+          <Text style={styles.guideProgressBadgeText}>3단계 자동 진행</Text>
+        </View>
       </View>
+      <View style={styles.guideDivider} />
 
       <View style={styles.guideGrid}>
         {GUIDE_STEPS.map((step) => {
@@ -958,6 +968,9 @@ function createStyles(C: ScanColors) {
     justifyContent: 'center',
   },
   guideTitle: { fontSize: 14.5, fontWeight: '800', color: C.slate900 },
+  guideProgressBadge: { backgroundColor: C.violet50, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  guideProgressBadgeText: { fontSize: 10.5, fontWeight: '800', color: C.violet700 },
+  guideDivider: { height: StyleSheet.hairlineWidth, backgroundColor: C.slate100 },
   guideGrid: { flexDirection: 'row', gap: 10 },
   guideStep: {
     flex: 1,
@@ -969,7 +982,7 @@ function createStyles(C: ScanColors) {
     alignItems: 'center',
     gap: 5,
   },
-  guideStepSelected: { backgroundColor: C.surface, borderColor: C.violet600 },
+  guideStepSelected: { backgroundColor: C.violet50, borderColor: C.violet600 },
   guideStepCircle: {
     width: 36,
     height: 36,
@@ -1048,6 +1061,11 @@ function createStyles(C: ScanColors) {
     paddingBottom: 6,
     gap: 6,
   },
+  dockHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  dockHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  dockHeaderText: { fontSize: 12.5, fontWeight: '700', color: C.slate600 },
+  dockFastBadge: { backgroundColor: C.violet50, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
+  dockFastBadgeText: { fontSize: 10.5, fontWeight: '800', color: C.violet700 },
   dockRow: { flexDirection: 'row', gap: 8 },
   // 실제로 눌러서 선택하는 지점이라는 걸 분명히 보여주려고, 흰 배경 + 그림자 +
   // 아이콘 사각 배지로 카드형 버튼처럼 강조했다.
