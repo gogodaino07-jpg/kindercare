@@ -487,11 +487,6 @@ export default function UploadScreen() {
             </View>
 
             {docs.length > 0 && (
-              <Text style={styles.analyzeHint}>
-                아래 <Text style={styles.analyzeHintBold}>AI로 내용 분석하기</Text> 버튼을 누르면 일정이 추출돼요
-              </Text>
-            )}
-            {docs.length > 0 && (
               <Pressable
                 onPress={handleAnalyze}
                 disabled={remainingAnalyses === null || starting}
@@ -1080,8 +1075,6 @@ function createStyles(C: ScanColors) {
   docCardInfo: { flex: 1, gap: 2 },
   docCardName: { fontSize: 14, fontWeight: '900', color: C.slate900 },
   docCardMeta: { fontSize: 12.5, color: C.slate400 },
-  analyzeHint: { fontSize: 12, color: C.slate500, textAlign: 'center', marginBottom: 8 },
-  analyzeHintBold: { fontWeight: '700', color: C.slate700 },
   dock: {
     backgroundColor: C.surface,
     borderTopWidth: 1,
