@@ -411,11 +411,10 @@ export default function UploadScreen() {
           </View>
 
           <ScrollView
-            // 문서가 없을 땐 안내 카드들이 화면보다 짧아서, flex:1로 강제로 늘리면
-            // 카드와 하단 버튼 사이에 붕 뜬 여백이 생겼다 — 이때는 내용 높이만큼만
-            // 차지하게 해서 버튼이 내용 바로 아래에 붙게 한다.
-            style={docs.length > 0 ? styles.scrollFlex : undefined}
-            contentContainerStyle={styles.scrollContent}
+            style={styles.scrollFlex}
+            // 문서가 없을 땐 남는 세로 공간을 emptyStateFill 안의 스페이서가 흡수해서
+            // 스캔 팁이 하단 버튼 바로 위까지 내려가게 한다(스크린 아래 붕 뜬 여백 방지).
+            contentContainerStyle={[styles.scrollContent, docs.length === 0 && styles.scrollContentFill]}
             showsVerticalScrollIndicator={false}
           >
             {showCreditCard ? (
@@ -453,6 +452,7 @@ export default function UploadScreen() {
               <View style={styles.emptyStateFill}>
                 <DropzoneCard />
                 <ScanGuideCard />
+                <View style={styles.emptyStateSpacer} />
                 <TipBox />
               </View>
             )}
@@ -672,7 +672,7 @@ function ScanCreditCard({ watching, onWatchAd }: { watching: boolean; onWatchAd:
 }
 
 const GUIDE_STEPS = [
-  { id: '1', title: '사진 업로드', caption: '터치해서 보기' },
+  { id: '1', title: '사진 업로드', caption: '업로드' },
   { id: '2', title: 'AI 정밀 분석', caption: '일정 추출' },
   { id: '3', title: '캘린더 연동', caption: '자동 저장' },
 ];
@@ -837,7 +837,9 @@ function createStyles(C: ScanColors) {
   headerTitle: { fontSize: 17, fontWeight: '800', color: C.slate900 },
   scrollFlex: { flex: 1 },
   scrollContent: { padding: 10, gap: 6 },
-  emptyStateFill: { gap: 6 },
+  scrollContentFill: { flexGrow: 1 },
+  emptyStateFill: { flex: 1, gap: 6 },
+  emptyStateSpacer: { flex: 1, minHeight: 6 },
   gaugeCard: {
     backgroundColor: C.surface,
     borderRadius: 20,
