@@ -472,7 +472,7 @@ export default function UploadScreen() {
             <View style={styles.dockRow}>
               <Pressable onPress={handleTakePhoto} style={styles.dockButton}>
                 <View style={styles.dockButtonIconCircle}>
-                  <Feather name="camera" size={18} color={C.violet600} />
+                  <Feather name="camera" size={18} color={C.slate700} />
                 </View>
                 <Text style={styles.dockButtonText}>카메라 촬영</Text>
               </Pressable>
@@ -484,7 +484,7 @@ export default function UploadScreen() {
               </Pressable>
               <Pressable onPress={handlePickFile} style={styles.dockButton}>
                 <View style={styles.dockButtonIconCircle}>
-                  <Feather name="file-text" size={18} color={C.violet600} />
+                  <Feather name="file-text" size={18} color={C.slate700} />
                 </View>
                 <Text style={styles.dockButtonText}>PDF / 문서</Text>
               </Pressable>
@@ -1099,10 +1099,10 @@ function createStyles(C: ScanColors) {
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: C.violet50,
+    backgroundColor: C.slate50,
   },
   dockButtonIconCircleAccent: { backgroundColor: 'rgba(255,255,255,0.25)' },
-  dockButtonText: { fontSize: 13, fontWeight: '800', color: C.slate800 },
+  dockButtonText: { fontSize: 13, fontWeight: '500', color: C.slate800 },
   dockButtonTextAccent: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
   analyzeButtonWrap: { borderRadius: 16, overflow: 'hidden' },
   analyzeButtonWrapDisabled: { opacity: 0.5 },
