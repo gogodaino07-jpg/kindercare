@@ -1086,7 +1086,7 @@ function createStyles(C: ScanColors) {
   },
   dockButtonAccent: {
     backgroundColor: C.violet600,
-    borderColor: C.violet600,
+    borderColor: C.violet200,
     borderWidth: 2,
     shadowColor: C.violet600,
     shadowOpacity: 0.3,
