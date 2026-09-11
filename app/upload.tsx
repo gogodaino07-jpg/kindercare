@@ -626,7 +626,7 @@ function ScanCreditCard({ watching, onWatchAd }: { watching: boolean; onWatchAd:
       <View style={styles.creditTopRow}>
         <View style={styles.creditTextBlock}>
           <View style={styles.creditBadge}>
-            <Feather name="zap" size={12} color="#FFFFFF" />
+            <Ionicons name="flash" size={13} color="#FCD34D" />
             <Text style={styles.creditBadgeText}>무료 이용권 모두 소진</Text>
           </View>
           <Text style={styles.creditHeadline}>광고 1개 보고 스캔권 충전하기</Text>
@@ -925,7 +925,7 @@ function createStyles(C: ScanColors) {
     paddingVertical: 5,
   },
   creditBadgeText: { fontSize: 11.5, fontWeight: '800', color: '#FFFFFF' },
-  creditHeadline: { fontSize: 19, fontWeight: '900', color: '#FFFFFF' },
+  creditHeadline: { fontSize: 19, fontWeight: '700', color: '#FFFFFF' },
   creditSubtitle: { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
   creditSubtitleEm: { fontWeight: '900', color: '#FFFFFF', textDecorationLine: 'underline' },
   creditCountCircle: {
