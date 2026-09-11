@@ -1,4 +1,5 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -225,10 +226,17 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
           )}
 
           <Pressable
-            style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.85 }]}
+            style={({ pressed }) => [styles.closeButtonWrap, pressed && { opacity: 0.85 }]}
             onPress={handleClose}
           >
-            <Text style={styles.closeButtonText}>확인 완료</Text>
+            <LinearGradient
+              colors={[colors.peachOrangeDeep, colors.pastelOrangeAccent]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.closeButton}
+            >
+              <Text style={styles.closeButtonText}>확인 완료</Text>
+            </LinearGradient>
           </Pressable>
         </Animated.View>
       </View>
@@ -315,7 +323,7 @@ function createStyles(colors: ThemeColors) {
     },
     mealCardTag: {
       alignSelf: 'flex-start',
-      backgroundColor: colors.pastelOrange,
+      backgroundColor: colors.pastelOrangeAccent,
       borderRadius: 999,
       paddingHorizontal: 10,
       paddingVertical: 4,
@@ -324,7 +332,7 @@ function createStyles(colors: ThemeColors) {
     mealCardTagText: {
       fontSize: 11.5,
       fontWeight: '800',
-      color: colors.peachOrangeDeep,
+      color: '#FFFFFF',
     },
     mealCardText: {
       fontSize: 14.5,
@@ -349,6 +357,7 @@ function createStyles(colors: ThemeColors) {
       fontSize: 13,
       fontWeight: '700',
       color: colors.accent,
+      textDecorationLine: 'underline',
     },
     weekNavRow: {
       flexDirection: 'row',
@@ -427,13 +436,20 @@ function createStyles(colors: ThemeColors) {
       color: colors.tomorrowRed,
       fontWeight: '800',
     },
-    closeButton: {
+    closeButtonWrap: {
       marginTop: 16,
+      borderRadius: 14,
+      shadowColor: colors.pastelOrangeAccent,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.35,
+      shadowRadius: 10,
+      elevation: 5,
+    },
+    closeButton: {
       width: '100%',
       paddingVertical: 14,
       borderRadius: 14,
       alignItems: 'center',
-      backgroundColor: colors.pastelOrangeAccent,
     },
     closeButtonText: {
       fontSize: 14,
