@@ -1097,7 +1097,7 @@ function createStyles(C: ScanColors) {
   // 아이콘 사각 배지로 카드형 버튼처럼 강조했다.
   dockButton: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: C.surface,
     borderRadius: 16,
     paddingVertical: 12,
     borderWidth: 1.5,
