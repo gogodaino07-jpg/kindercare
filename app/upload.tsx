@@ -454,9 +454,9 @@ export default function UploadScreen() {
               <View style={styles.emptyStateFill}>
                 <DropzoneCard />
                 <ScanGuideCard />
-                <View style={styles.emptyStateSpacer} />
+                <View style={[styles.emptyStateSpacer, { flex: 0.6 }]} />
                 <TipBox />
-                <View style={styles.emptyStateSpacer} />
+                <View style={[styles.emptyStateSpacer, { flex: 1.4 }]} />
               </View>
             )}
           </ScrollView>
@@ -702,7 +702,6 @@ function ScanCreditCard({
           value={adCredited ? 1 : 0}
           max={1}
           unit="회"
-          size={56}
           trackColor="rgba(255,255,255,0.25)"
           fillColor="#FCD34D"
           textColor="#FFFFFF"
@@ -891,13 +890,13 @@ function createStyles(C: ScanColors) {
   backButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 17, fontWeight: '800', color: C.slate900 },
   scrollFlex: { flex: 1 },
-  scrollContent: { padding: 8, gap: 5 },
+  scrollContent: { padding: 8, gap: 10 },
   scrollContentFill: { flexGrow: 1 },
-  emptyStateFill: { flex: 1, gap: 10 },
+  emptyStateFill: { flex: 1, gap: 14 },
   emptyStateSpacer: { flex: 1, minHeight: 6 },
   gaugeCard: {
     backgroundColor: C.surface,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 12,
     borderWidth: 1,
     borderColor: C.slate200,
