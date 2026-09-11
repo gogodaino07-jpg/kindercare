@@ -616,6 +616,21 @@ function TipBox() {
 function ScanCreditCard({ watching, onWatchAd }: { watching: boolean; onWatchAd: () => void }) {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
+  // 버튼이 옅어졌다 다시 또렷해지는 걸 반복해서, 무료 횟수가 다 떨어졌을 때
+  // 시선이 자연스럽게 이 버튼으로 가도록 유도한다.
+  const fade = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(fade, { toValue: 0.55, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(fade, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [fade]);
+
   return (
     <LinearGradient
       colors={[C.violet600, C.indigo600]}
@@ -640,16 +655,18 @@ function ScanCreditCard({ watching, onWatchAd }: { watching: boolean; onWatchAd:
           </Text>
         </View>
       </View>
-      <Pressable style={styles.creditButton} onPress={onWatchAd} disabled={watching}>
-        {watching ? (
-          <ActivityIndicator color={C.violet700} />
-        ) : (
-          <>
-            <Ionicons name="play" size={15} color={C.violet700} />
-            <Text style={styles.creditButtonText}>광고 1개 시청하고 1회 충전하기</Text>
-          </>
-        )}
-      </Pressable>
+      <Animated.View style={{ opacity: fade }}>
+        <Pressable style={styles.creditButton} onPress={onWatchAd} disabled={watching}>
+          {watching ? (
+            <ActivityIndicator color={C.violet700} />
+          ) : (
+            <>
+              <Ionicons name="play" size={15} color={C.violet700} />
+              <Text style={styles.creditButtonText}>광고 1개 시청하고 1회 충전하기</Text>
+            </>
+          )}
+        </Pressable>
+      </Animated.View>
     </LinearGradient>
   );
 }
@@ -947,7 +964,7 @@ function createStyles(C: ScanColors) {
     borderRadius: 14,
     paddingVertical: 11,
   },
-  creditButtonText: { fontSize: 14, fontWeight: '800', color: C.violet700 },
+  creditButtonText: { fontSize: 12.5, fontWeight: '800', color: C.violet700 },
   guideCard: {
     backgroundColor: C.surface,
     borderRadius: 22,
