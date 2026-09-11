@@ -629,7 +629,7 @@ function TipBox() {
   const styles = useMemo(() => createStyles(C), [C]);
   return (
     <View style={styles.tipBox}>
-      <Ionicons name="bulb" size={15} color={C.amber700} />
+      <Ionicons name="bulb" size={18} color={C.amber700} />
       <Text style={styles.tipText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
         <Text style={styles.tipBold}>인식률 높이기 TIP: </Text>
         빛 반사가 없도록 평평한 곳에서 위에서 아래로 수직 촬영해 보세요!
@@ -895,7 +895,7 @@ function createStyles(C: ScanColors) {
   scrollFlex: { flex: 1 },
   scrollContent: { padding: 8, gap: 5 },
   scrollContentFill: { flexGrow: 1 },
-  emptyStateFill: { flex: 1, gap: 5 },
+  emptyStateFill: { flex: 1, gap: 10 },
   emptyStateSpacer: { flex: 1, minHeight: 6 },
   gaugeCard: {
     backgroundColor: C.surface,
@@ -944,15 +944,15 @@ function createStyles(C: ScanColors) {
   tipBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     backgroundColor: C.amber50,
     borderWidth: 1,
     borderColor: C.amber200,
-    borderRadius: 14,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
-  tipText: { flex: 1, fontSize: 11.5, color: C.slate700 },
+  tipText: { flex: 1, fontSize: 12.5, color: C.slate700 },
   tipBold: { fontWeight: '600', color: C.amber700 },
   creditCard: {
     borderRadius: 24,
