@@ -409,7 +409,7 @@ export default function UploadScreen() {
               </View>
             ) : (
               <View style={styles.emptyStateFill}>
-                <DropzoneCard onPickFile={handlePickFile} />
+                <DropzoneCard />
                 <AutomationProcessCard />
                 <TipBox />
               </View>
@@ -515,9 +515,27 @@ function CircularGauge({ value, max }: { value: number; max: number }) {
   );
 }
 
-function DropzoneCard({ onPickFile }: { onPickFile: () => void }) {
+// 점선 테두리(예전 스타일)는 "여기를 눌러서 선택하세요"처럼 보여서, 실제
+// 선택 동작은 하단 독(카메라/앨범/문서) 버튼에 있는데도 이 카드를 눌러보려는
+// 사용자가 있었다 — 테두리를 없애 순수 안내문 카드로 바꾸고, 진짜 선택
+// 지점인 하단 버튼 쪽으로 시선을 유도하는 바운스 화살표 힌트를 덧붙였다.
+function DropzoneCard() {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
+  const bounce = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounce, { toValue: 1, duration: 550, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(bounce, { toValue: 0, duration: 550, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [bounce]);
+
+  const translateY = bounce.interpolate({ inputRange: [0, 1], outputRange: [0, 6] });
 
   return (
     <View style={styles.dropzoneCard}>
@@ -528,10 +546,10 @@ function DropzoneCard({ onPickFile }: { onPickFile: () => void }) {
       <Text style={styles.dropzoneSubtitle}>
         가정통신문, 식단표를 넣으면 AI가 일정을 캘린더에 쏙쏙 정리해 드려요
       </Text>
-      <Pressable style={styles.dropzonePickButton} onPress={onPickFile} hitSlop={4}>
-        <Text style={styles.dropzonePickButtonText}>사진이나 파일 선택하기</Text>
-        <Feather name="chevron-down" size={16} color={C.violet600} />
-      </Pressable>
+      <Animated.View style={[styles.dropzoneHint, { transform: [{ translateY }] }]}>
+        <Text style={styles.dropzoneHintText}>아래에서 사진이나 파일을 선택해주세요</Text>
+        <Feather name="chevron-down" size={14} color={C.violet600} />
+      </Animated.View>
     </View>
   );
 }
@@ -732,9 +750,6 @@ function createStyles(C: ScanColors) {
   dropzoneCard: {
     backgroundColor: C.violet50,
     borderRadius: 28,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: C.violet200,
     paddingVertical: 18,
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -751,17 +766,13 @@ function createStyles(C: ScanColors) {
   },
   dropzoneTitle: { fontSize: 16, fontWeight: '900', color: C.slate900, textAlign: 'center' },
   dropzoneSubtitle: { fontSize: 13.5, color: C.slate400, textAlign: 'center', lineHeight: 18 },
-  dropzonePickButton: {
-    flexDirection: 'row',
+  dropzoneHint: {
+    flexDirection: 'column',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 999,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    gap: 2,
     marginTop: 4,
   },
-  dropzonePickButtonText: { fontSize: 13.5, fontWeight: '800', color: C.violet700 },
+  dropzoneHintText: { fontSize: 12, fontWeight: '700', color: C.violet600 },
   tipBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
