@@ -1117,11 +1117,11 @@ function createStyles(C: ScanColors) {
   dockButtonAccent: {
     backgroundColor: C.violet600,
     borderColor: C.violet200,
-    borderWidth: 2,
+    borderWidth: 3,
     shadowColor: C.violet600,
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 5,
   },
   dockButtonIconCircle: {
     width: 40,
