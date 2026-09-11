@@ -513,12 +513,9 @@ export default function UploadScreen() {
                       <Text style={styles.analyzeButtonText}>잠시만요...</Text>
                     </>
                   ) : (
-                    <>
-                      <Ionicons name="sparkles" size={18} color="#FCD34D" />
-                      <Text style={styles.analyzeButtonText}>
-                        {needsAdThisScan ? '광고 보고 분석하기' : 'AI로 내용 분석하기 (1회 차감)'}
-                      </Text>
-                    </>
+                    <Text style={styles.analyzeButtonText}>
+                      {needsAdThisScan ? '광고 보고 분석하기' : 'AI로 내용 분석하기 (1회 차감)'}
+                    </Text>
                   )}
                 </LinearGradient>
               </Pressable>
