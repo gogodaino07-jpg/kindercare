@@ -410,7 +410,7 @@ export default function UploadScreen() {
             <Pressable onPress={() => router.back()} style={styles.backButton} hitSlop={6}>
               <Feather name="chevron-left" size={24} color={C.slate900} />
             </Pressable>
-            <Text style={styles.headerTitle}>AI 알림장 스마트 스캔</Text>
+            <Text style={styles.headerTitle}>AI 알림장 스캔</Text>
           </View>
 
           <ScrollView
@@ -918,10 +918,10 @@ function createStyles(C: ScanColors) {
     borderRadius: 24,
     borderWidth: 1,
     borderColor: C.slate200,
-    paddingVertical: 8,
+    paddingVertical: 16,
     paddingHorizontal: 20,
     alignItems: 'center',
-    gap: 3,
+    gap: 5,
   },
   dropzoneIconBox: {
     width: 38,
@@ -951,6 +951,8 @@ function createStyles(C: ScanColors) {
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 16,
+    // 위쪽 스페이서가 채워주는 여백 위에, 조금 더 아래로 내려 보이도록 추가 여백.
+    marginTop: 10,
   },
   tipText: { flex: 1, fontSize: 12.5, color: C.slate700 },
   tipBold: { fontWeight: '600', color: C.amber700 },
@@ -992,6 +994,8 @@ function createStyles(C: ScanColors) {
     borderWidth: 1,
     borderColor: C.slate200,
     gap: 6,
+    // 드롭존 카드와의 간격을 기본 gap보다 조금 더 벌려서 아래로 내려 보이게 함.
+    marginTop: 6,
   },
   guideHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   guideHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
