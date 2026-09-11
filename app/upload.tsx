@@ -454,6 +454,7 @@ export default function UploadScreen() {
                 <ScanGuideCard />
                 <View style={styles.emptyStateSpacer} />
                 <TipBox />
+                <View style={styles.emptyStateSpacer} />
               </View>
             )}
           </ScrollView>
