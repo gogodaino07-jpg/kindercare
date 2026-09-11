@@ -422,7 +422,10 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
     // 버튼 사이에 생기도록(justifyContent: space-between) 해서 버튼이 화면 하단에
     // 붙게 한다(부모 스크롤뷰의 contentContainerStyle에 flexGrow:1이 있어야 동작함
     // — app/index.tsx 참고). 일정이 많아 이미 화면을 넘치면 평소처럼 스크롤된다.
-    container: { marginTop: 20, paddingHorizontal: 20, flex: 1, justifyContent: 'space-between' },
+    // minHeight로 바닥선을 고정해, 홈 화면 콘텐츠가 이미 화면보다 길어 flex:1이
+    // 여유 공간을 못 받는 상황에서도 "오늘 1개" 탭과 "내일 0개" 탭의 전체 높이가
+    // 카드 유무에 따라 들쭉날쭉해지지 않게 한다.
+    container: { marginTop: 20, paddingHorizontal: 20, flex: 1, minHeight: 280, justifyContent: 'space-between' },
     topBlock: {},
     // 일정이 없는 날엔 topBlock을 남는 세로 공간까지 늘려서, 그 안의 emptyCard도
     // 같이 커지게 한다 — 점선 카드가 작게 뜨고 그 밑에 빈 공간만 남는 걸 방지.
