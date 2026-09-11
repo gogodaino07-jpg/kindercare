@@ -96,3 +96,37 @@ export function useScanColors(): ScanColors {
   const { resolvedScheme } = useTheme();
   return resolvedScheme === 'dark' ? SCAN_COLORS_DARK : SCAN_COLORS;
 }
+
+// 알림장 스캔(업로드/검토)은 인디고·네이비로 테마를 바꿨지만, 식단표 스캔/검토
+// 화면은 사용자가 기존 보라 톤을 그대로 유지해달라고 해서 별도 팔레트로 분리했다
+// — violet*/indigo600(브랜드 포인트 컬러)만 원래 보라 값으로 덮어쓰고, 나머지
+// (slate/amber/emerald 등 의미색과 surface/border)는 SCAN_COLORS와 동일하게 공유.
+export const MEAL_COLORS = {
+  ...SCAN_COLORS,
+  violet600: '#7C3AED',
+  violet700: '#6D28D9',
+  indigo600: '#4F46E5',
+  violet50: '#F5F3FF',
+  violet100: '#EDE9FE',
+  violet200: '#DDD6FE',
+  violet900: '#4C1D95',
+  violet950: '#2E1065',
+} as const;
+
+export const MEAL_COLORS_DARK = {
+  ...SCAN_COLORS_DARK,
+  violet600: '#A78BFA',
+  violet700: '#8B5CF6',
+  indigo600: '#818CF8',
+  violet50: '#241B3D',
+  violet100: '#2E2350',
+  violet200: '#3D2E63',
+  violet900: '#DDD6FE',
+  violet950: '#EDE9FE',
+} as const;
+
+/** 현재 앱 테마(라이트/다크)에 맞는 식단표 스캔 화면 전용(보라 톤 유지) 팔레트를 반환한다. */
+export function useMealColors(): ScanColors {
+  const { resolvedScheme } = useTheme();
+  return resolvedScheme === 'dark' ? MEAL_COLORS_DARK : MEAL_COLORS;
+}

@@ -8,7 +8,7 @@ import Text from '../components/common/AppText';
 import { useAppData } from '../context/AppDataContext';
 import { useToast } from '../context/ToastContext';
 import { AnalysisResultStore } from '../features/newsletter-analysis';
-import { ScanColors, useScanColors } from '../features/newsletter-analysis/uiColors';
+import { ScanColors, useMealColors } from '../features/newsletter-analysis/uiColors';
 import { MealPlan } from '../types/models';
 import { formatMD, parseISODate, startOfDay, toISODate } from '../utils/date';
 import { stripInvalidCharacters } from '../utils/validation';
@@ -21,7 +21,7 @@ export default function MealReviewScreen() {
   const router = useRouter();
   const { addMealPlans } = useAppData();
   const { showToast } = useToast();
-  const C = useScanColors();
+  const C = useMealColors();
   const styles = useMemo(() => createStyles(C), [C]);
   const insets = useSafeAreaInsets();
 
