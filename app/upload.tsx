@@ -683,10 +683,12 @@ const GUIDE_STEPS = [
 // 탭하면 눌린 단계가 강조 표시되는 3단 가이드 카드. 원래는 아래에 단계별
 // 상세 설명 패널이 더 있었는데, 내용이 뻔해서 군더더기라는 피드백으로 빼고
 // 탭 강조 표시만 남겼다.
+// 탭해서 단계를 바꿔 보이게 했더니, 눌렀을 때 강조 테두리가 하단 버튼과
+// 시각적으로 겹쳐 보여 혼란스럽다는 피드백으로 탭 상호작용을 제거했다.
+// 1단계만 고정으로 강조 표시되는 정적인 3단 요약으로 남긴다.
 function ScanGuideCard() {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
-  const [selectedId, setSelectedId] = useState('1');
 
   return (
     <View style={styles.guideCard}>
@@ -701,13 +703,9 @@ function ScanGuideCard() {
 
       <View style={styles.guideGrid}>
         {GUIDE_STEPS.map((step) => {
-          const isSelected = step.id === selectedId;
+          const isSelected = step.id === '1';
           return (
-            <Pressable
-              key={step.id}
-              style={[styles.guideStep, isSelected && styles.guideStepSelected]}
-              onPress={() => setSelectedId(step.id)}
-            >
+            <View key={step.id} style={[styles.guideStep, isSelected && styles.guideStepSelected]}>
               <View style={[styles.guideStepCircle, isSelected && styles.guideStepCircleSelected]}>
                 <Text style={[styles.guideStepNumber, isSelected && styles.guideStepNumberSelected]}>
                   {step.id}
@@ -717,7 +715,7 @@ function ScanGuideCard() {
               <Text style={[styles.guideStepCaption, isSelected && styles.guideStepCaptionSelected]}>
                 {step.caption}
               </Text>
-            </Pressable>
+            </View>
           );
         })}
       </View>
