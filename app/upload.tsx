@@ -616,20 +616,22 @@ function TipBox() {
 function ScanCreditCard({ watching, onWatchAd }: { watching: boolean; onWatchAd: () => void }) {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
-  // 버튼이 옅어졌다 다시 또렷해지는 걸 반복해서, 무료 횟수가 다 떨어졌을 때
-  // 시선이 자연스럽게 이 버튼으로 가도록 유도한다.
-  const fade = useRef(new Animated.Value(1)).current;
+  // 버튼 전체가 아주 살짝 작아졌다 커졌다 하며(+ 옅어졌다 또렷해지며) 천천히
+  // 숨쉬듯 반복해서, 무료 횟수가 다 떨어졌을 때 시선이 자연스럽게 이 버튼으로
+  // 가도록 유도한다.
+  const pulse = useRef(new Animated.Value(1)).current;
+  const pulseScale = pulse.interpolate({ inputRange: [0.6, 1], outputRange: [0.97, 1] });
 
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(fade, { toValue: 0.55, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(fade, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.6, duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       ])
     );
     loop.start();
     return () => loop.stop();
-  }, [fade]);
+  }, [pulse]);
 
   return (
     <LinearGradient
@@ -655,7 +657,7 @@ function ScanCreditCard({ watching, onWatchAd }: { watching: boolean; onWatchAd:
           </Text>
         </View>
       </View>
-      <Animated.View style={{ opacity: fade }}>
+      <Animated.View style={{ opacity: pulse, transform: [{ scale: pulseScale }] }}>
         <Pressable style={styles.creditButton} onPress={onWatchAd} disabled={watching}>
           {watching ? (
             <ActivityIndicator color={C.violet700} />
