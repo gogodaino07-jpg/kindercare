@@ -96,11 +96,17 @@ export default function UploadScreen() {
   // 않는 한 스캔마다 광고 시청이 필요하다(막히지 않고 무제한 반복 가능).
   const hasFreeCredit = !isSubscribed && remainingAnalyses !== null && remainingAnalyses > 0;
   const needsAdThisScan = !isSubscribed && !skipAd && !hasFreeCredit && !adCredited;
-  // 무료 횟수도 없고 미리 충전해둔 스캔권도 없을 때만 상단에 "광고 보고 충전하기" 카드를 보여준다.
-  const showCreditCard = !isSubscribed && !skipAd && !hasFreeCredit && !adCredited;
+  // 카드 노출 자체는 skipAd(테스트 계정)와 무관하게 보여준다 — 테스트 계정도 디자인을
+  // 확인/QA할 수 있어야 하므로. 실제 광고 시청 생략은 handleWatchAdForCredit 안에서 처리.
+  const showCreditCard = !isSubscribed && !hasFreeCredit && !adCredited;
 
   const handleWatchAdForCredit = async () => {
     if (watchingCredit) return;
+    if (skipAd) {
+      setAdCredited(true);
+      showToast('테스트 계정: 광고 없이 충전됐어요');
+      return;
+    }
     setWatchingCredit(true);
     try {
       const earned = await requestAndShow();
@@ -576,7 +582,7 @@ function DropzoneCard() {
   return (
     <View style={styles.dropzoneCard}>
       <View style={styles.dropzoneIconBox}>
-        <Ionicons name="sparkles" size={24} color={C.violet600} />
+        <Ionicons name="sparkles" size={18} color={C.violet600} />
       </View>
       <Text style={styles.dropzoneTitle}>분석할 알림장을 추가해 주세요</Text>
       <Text style={styles.dropzoneSubtitle}>
@@ -655,7 +661,7 @@ const GUIDE_STEPS = [
     caption: '터치해서 보기',
     detailTitle: '1단계: 스마트폰으로 촬영하거나 파일 선택',
     detailDesc: '가정통신문, 안내장, 식단표를 카메라로 찍거나 앨범에서 불러오세요.',
-    icon: (color: string) => <Feather name="camera" size={22} color={color} />,
+    icon: (color: string) => <Feather name="camera" size={18} color={color} />,
   },
   {
     id: '2',
@@ -663,7 +669,7 @@ const GUIDE_STEPS = [
     caption: '일정 추출',
     detailTitle: '2단계: AI가 텍스트와 일정을 꼼꼼히 분석',
     detailDesc: '업로드된 문서 속 날짜, 시간, 준비물 등의 핵심 일정을 AI가 자동으로 추출합니다.',
-    icon: (color: string) => <Ionicons name="sparkles" size={22} color={color} />,
+    icon: (color: string) => <Ionicons name="sparkles" size={18} color={color} />,
   },
   {
     id: '3',
@@ -671,7 +677,7 @@ const GUIDE_STEPS = [
     caption: '자동 저장',
     detailTitle: '3단계: 스마트폰 캘린더에 원클릭 자동 저장',
     detailDesc: '추출된 일정을 확인하고 내 캘린더에 바로 저장하여 놓치지 않고 관리하세요.',
-    icon: (color: string) => <MaterialCommunityIcons name="calendar-check" size={22} color={color} />,
+    icon: (color: string) => <MaterialCommunityIcons name="calendar-check" size={18} color={color} />,
   },
 ];
 
@@ -845,8 +851,8 @@ function createStyles(C: ScanColors) {
   backButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 17, fontWeight: '800', color: C.slate900 },
   scrollFlex: { flex: 1 },
-  scrollContent: { padding: 12, gap: 8 },
-  emptyStateFill: { gap: 10 },
+  scrollContent: { padding: 10, gap: 6 },
+  emptyStateFill: { gap: 6 },
   gaugeCard: {
     backgroundColor: C.surface,
     borderRadius: 20,
@@ -865,20 +871,20 @@ function createStyles(C: ScanColors) {
   gaugeSubtitle: { fontSize: 12.5, color: C.slate400, fontWeight: '500', marginLeft: 16 },
   dropzoneCard: {
     backgroundColor: C.violet50,
-    borderRadius: 28,
-    paddingVertical: 18,
+    borderRadius: 24,
+    paddingVertical: 12,
     paddingHorizontal: 20,
     alignItems: 'center',
-    gap: 8,
+    gap: 5,
   },
   dropzoneIconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   dropzoneTitle: { fontSize: 16, fontWeight: '900', color: C.slate900, textAlign: 'center' },
   dropzoneSubtitle: { fontSize: 13.5, color: C.slate400, textAlign: 'center', lineHeight: 18 },
@@ -896,20 +902,18 @@ function createStyles(C: ScanColors) {
     backgroundColor: C.amber50,
     borderWidth: 1,
     borderColor: C.amber200,
-    borderRadius: 16,
-    padding: 9,
-    // 아래쪽에 남는 여백을 활용하도록 프로세스 카드와의 간격을 조금 더 벌림.
-    marginTop: 14,
+    borderRadius: 14,
+    padding: 8,
   },
   tipText: { flex: 1, fontSize: 13.5, color: C.slate700, lineHeight: 18 },
   tipBold: { fontWeight: '900', color: C.amber700 },
   creditCard: {
-    borderRadius: 28,
-    padding: 22,
-    gap: 16,
+    borderRadius: 24,
+    padding: 16,
+    gap: 10,
   },
   creditTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
-  creditTextBlock: { flex: 1, gap: 10 },
+  creditTextBlock: { flex: 1, gap: 6 },
   creditBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -925,32 +929,32 @@ function createStyles(C: ScanColors) {
   creditSubtitle: { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
   creditSubtitleEm: { fontWeight: '900', color: '#FFFFFF', textDecorationLine: 'underline' },
   creditCountCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  creditCountNumber: { fontSize: 17, fontWeight: '900', color: '#FFFFFF' },
-  creditCountUnit: { fontSize: 10.5, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
+  creditCountNumber: { fontSize: 15, fontWeight: '900', color: '#FFFFFF' },
+  creditCountUnit: { fontSize: 9.5, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
   creditButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 15,
+    borderRadius: 14,
+    paddingVertical: 11,
   },
   creditButtonText: { fontSize: 14, fontWeight: '800', color: C.violet700 },
   guideCard: {
     backgroundColor: C.surface,
-    borderRadius: 24,
-    padding: 16,
+    borderRadius: 22,
+    padding: 12,
     borderWidth: 1,
     borderColor: C.slate200,
-    gap: 14,
+    gap: 8,
   },
   guideHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   guideHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -969,47 +973,47 @@ function createStyles(C: ScanColors) {
   guideStep: {
     flex: 1,
     backgroundColor: C.slate50,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1.5,
     borderColor: 'transparent',
-    paddingVertical: 12,
+    paddingVertical: 8,
     alignItems: 'center',
-    gap: 6,
+    gap: 3,
   },
   guideStepSelected: { backgroundColor: C.surface, borderColor: C.violet600 },
   guideStepCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: C.slate200,
     alignItems: 'center',
     justifyContent: 'center',
   },
   guideStepCircleSelected: { backgroundColor: C.violet600 },
-  guideStepNumber: { fontSize: 15, fontWeight: '900', color: C.slate500 },
+  guideStepNumber: { fontSize: 13, fontWeight: '900', color: C.slate500 },
   guideStepNumberSelected: { color: '#FFFFFF' },
   guideStepTitle: { fontSize: 12.5, fontWeight: '800', color: C.slate900, textAlign: 'center' },
   guideStepCaption: { fontSize: 10.5, fontWeight: '600', color: C.slate400 },
   guideStepCaptionSelected: { color: C.violet700 },
   guideDetailBox: {
     flexDirection: 'row',
-    gap: 14,
+    gap: 10,
     backgroundColor: C.slate50,
-    borderRadius: 18,
-    padding: 14,
+    borderRadius: 16,
+    padding: 10,
     alignItems: 'flex-start',
   },
   guideDetailIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     backgroundColor: C.violet600,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  guideDetailTextBlock: { flex: 1, gap: 4 },
-  guideDetailTitle: { fontSize: 13.5, fontWeight: '800', color: C.slate900 },
-  guideDetailDesc: { fontSize: 12.5, color: C.slate500, lineHeight: 18 },
+  guideDetailTextBlock: { flex: 1, gap: 2 },
+  guideDetailTitle: { fontSize: 13, fontWeight: '800', color: C.slate900 },
+  guideDetailDesc: { fontSize: 12, color: C.slate500, lineHeight: 16.5 },
   docsSection: { gap: 10 },
   docsCountLabel: { fontSize: 13, fontWeight: '700', color: C.slate400 },
   docCard: {
