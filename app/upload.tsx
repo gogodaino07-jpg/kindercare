@@ -472,19 +472,19 @@ export default function UploadScreen() {
             <View style={styles.dockRow}>
               <Pressable onPress={handleTakePhoto} style={styles.dockButton}>
                 <View style={styles.dockButtonIconCircle}>
-                  <Feather name="camera" size={18} color={C.violet600} />
+                  <Feather name="camera" size={16} color={C.violet600} />
                 </View>
                 <Text style={styles.dockButtonText}>카메라 촬영</Text>
               </Pressable>
               <Pressable onPress={handlePickGallery} style={[styles.dockButton, styles.dockButtonAccent]}>
                 <View style={[styles.dockButtonIconCircle, styles.dockButtonIconCircleAccent]}>
-                  <Feather name="image" size={18} color="#FFFFFF" />
+                  <Feather name="image" size={16} color="#FFFFFF" />
                 </View>
                 <Text style={styles.dockButtonTextAccent}>앨범 사진</Text>
               </Pressable>
               <Pressable onPress={handlePickFile} style={styles.dockButton}>
                 <View style={styles.dockButtonIconCircle}>
-                  <Feather name="file-text" size={18} color={C.violet600} />
+                  <Feather name="file-text" size={16} color={C.violet600} />
                 </View>
                 <Text style={styles.dockButtonText}>PDF / 문서</Text>
               </Pressable>
@@ -872,10 +872,10 @@ function createStyles(C: ScanColors) {
     borderRadius: 24,
     borderWidth: 1,
     borderColor: C.slate200,
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 20,
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
   },
   dropzoneIconBox: {
     width: 38,
@@ -902,16 +902,16 @@ function createStyles(C: ScanColors) {
     backgroundColor: C.amber50,
     borderWidth: 1,
     borderColor: C.amber200,
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
+    borderRadius: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
   },
   tipText: { flex: 1, fontSize: 11.5, color: C.slate700 },
   tipBold: { fontWeight: '400', color: C.amber700 },
   creditCard: {
     borderRadius: 24,
-    padding: 16,
-    gap: 10,
+    padding: 14,
+    gap: 8,
   },
   creditTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
   creditTextBlock: { flex: 1, gap: 6 },
@@ -952,10 +952,10 @@ function createStyles(C: ScanColors) {
   guideCard: {
     backgroundColor: C.surface,
     borderRadius: 22,
-    padding: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: C.slate200,
-    gap: 12,
+    gap: 8,
   },
   guideHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   guideHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -978,15 +978,15 @@ function createStyles(C: ScanColors) {
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: 'transparent',
-    paddingVertical: 14,
+    paddingVertical: 9,
     alignItems: 'center',
-    gap: 5,
+    gap: 3,
   },
   guideStepSelected: { backgroundColor: C.violet50, borderColor: C.violet600 },
   guideStepCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: C.slate200,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1057,9 +1057,9 @@ function createStyles(C: ScanColors) {
     borderTopWidth: 1,
     borderTopColor: C.slate100,
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 6,
-    gap: 6,
+    paddingTop: 6,
+    paddingBottom: 5,
+    gap: 4,
   },
   dockHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   dockHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -1073,11 +1073,11 @@ function createStyles(C: ScanColors) {
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingVertical: 12,
+    paddingVertical: 9,
     borderWidth: 1.5,
     borderColor: C.slate200,
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
@@ -1094,9 +1094,9 @@ function createStyles(C: ScanColors) {
     elevation: 4,
   },
   dockButtonIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: C.violet50,
