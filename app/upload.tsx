@@ -417,7 +417,11 @@ export default function UploadScreen() {
             style={styles.scrollFlex}
             // 문서가 없을 땐 남는 세로 공간을 emptyStateFill 안의 스페이서가 흡수해서
             // 스캔 팁이 하단 버튼 바로 위까지 내려가게 한다(스크린 아래 붕 뜬 여백 방지).
-            contentContainerStyle={[styles.scrollContent, docs.length === 0 && styles.scrollContentFill]}
+            contentContainerStyle={[
+              styles.scrollContent,
+              showCreditCard && styles.scrollContentCharged,
+              docs.length === 0 && styles.scrollContentFill,
+            ]}
             showsVerticalScrollIndicator={false}
           >
             {showCreditCard ? (
@@ -451,12 +455,12 @@ export default function UploadScreen() {
                 ))}
               </View>
             ) : (
-              <View style={styles.emptyStateFill}>
+              <View style={[styles.emptyStateFill, showCreditCard && styles.emptyStateFillCharged]}>
                 <DropzoneCard />
                 <ScanGuideCard />
-                <View style={[styles.emptyStateSpacer, { flex: 0.6 }]} />
+                <View style={[styles.emptyStateSpacer, { flex: showCreditCard ? 0.6 : 0.4 }]} />
                 <TipBox />
-                <View style={[styles.emptyStateSpacer, { flex: 1.4 }]} />
+                <View style={[styles.emptyStateSpacer, { flex: showCreditCard ? 1.4 : 1.6 }]} />
               </View>
             )}
           </ScrollView>
@@ -890,9 +894,11 @@ function createStyles(C: ScanColors) {
   backButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 17, fontWeight: '800', color: C.slate900 },
   scrollFlex: { flex: 1 },
-  scrollContent: { padding: 8, gap: 10 },
+  scrollContent: { padding: 8, gap: 5 },
+  scrollContentCharged: { gap: 10 },
   scrollContentFill: { flexGrow: 1 },
-  emptyStateFill: { flex: 1, gap: 14 },
+  emptyStateFill: { flex: 1, gap: 10 },
+  emptyStateFillCharged: { gap: 14 },
   emptyStateSpacer: { flex: 1, minHeight: 6 },
   gaugeCard: {
     backgroundColor: C.surface,
