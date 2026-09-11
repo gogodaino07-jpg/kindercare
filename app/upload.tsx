@@ -437,9 +437,13 @@ export default function UploadScreen() {
 
             {docs.length > 0 ? (
               <View style={styles.docsSection}>
-                <Text style={styles.docsCountLabel}>
-                  선택된 파일 {docs.length}개
-                </Text>
+                {/* 파일이 1개뿐일 때는 카드 안의 "선택된 OOO" 배지와 겹쳐 보여
+                    어색해서, 여러 개를 골랐을 때만 전체 개수를 따로 보여준다. */}
+                {docs.length > 1 && (
+                  <Text style={styles.docsCountLabel}>
+                    총 {docs.length}개 파일 선택됨
+                  </Text>
+                )}
                 {docs.map((doc) => (
                   <DocCard key={doc.id} doc={doc} onRemove={() => removeDoc(doc.id)} />
                 ))}
