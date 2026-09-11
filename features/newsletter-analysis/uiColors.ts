@@ -39,7 +39,7 @@ export const SCAN_COLORS = {
   rose700: '#BE123C',
   blue100: '#DBEAFE',
   blue700: '#1D4ED8',
-  appBg: '#F8FAF9',
+  appBg: '#F6F5FC',
   surface: '#FFFFFF',
   border: 'rgba(0,0,0,0.045)',
   /** 원본 미리보기 패널·저장 버튼처럼 라이트/다크 상관없이 항상 짙게 유지해야 하는
