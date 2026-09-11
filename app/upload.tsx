@@ -907,7 +907,7 @@ function createStyles(C: ScanColors) {
     paddingHorizontal: 12,
   },
   tipText: { flex: 1, fontSize: 11.5, color: C.slate700 },
-  tipBold: { fontWeight: '400', color: C.amber700 },
+  tipBold: { fontWeight: '600', color: C.amber700 },
   creditCard: {
     borderRadius: 24,
     padding: 12,
