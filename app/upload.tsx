@@ -438,11 +438,13 @@ export default function UploadScreen() {
             {docs.length > 0 ? (
               <View style={styles.docsSection}>
                 {/* 파일이 1개뿐일 때는 카드 안의 "선택된 OOO" 배지와 겹쳐 보여
-                    어색해서, 여러 개를 골랐을 때만 전체 개수를 따로 보여준다. */}
+                    어색해서, 여러 개를 골랐을 때만 전체 개수를 배지 형태로 보여준다
+                    — 맨 텍스트로 붕 떠 있지 않도록 아이콘+배경을 갖춘 칩으로 디자인. */}
                 {docs.length > 1 && (
-                  <Text style={styles.docsCountLabel}>
-                    총 {docs.length}개 파일 선택됨
-                  </Text>
+                  <View style={styles.docsCountBadge}>
+                    <Feather name="paperclip" size={12} color={C.violet700} />
+                    <Text style={styles.docsCountBadgeText}>총 {docs.length}개 파일 선택됨</Text>
+                  </View>
                 )}
                 {docs.map((doc) => (
                   <DocCard key={doc.id} doc={doc} onRemove={() => removeDoc(doc.id)} />
@@ -1037,7 +1039,17 @@ function createStyles(C: ScanColors) {
   guideStepCaption: { fontSize: 10.5, fontWeight: '600', color: C.slate400 },
   guideStepCaptionSelected: { color: C.violet700 },
   docsSection: { gap: 10 },
-  docsCountLabel: { fontSize: 13, fontWeight: '700', color: C.slate400 },
+  docsCountBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: C.violet50,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  docsCountBadgeText: { fontSize: 12, fontWeight: '700', color: C.violet700 },
   docCard: {
     backgroundColor: C.surface,
     borderRadius: 24,
