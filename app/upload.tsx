@@ -542,6 +542,7 @@ function CircularGauge({
   fillColor,
   textColor,
   subTextColor,
+  unit = '',
 }: {
   value: number;
   max: number;
@@ -550,6 +551,7 @@ function CircularGauge({
   fillColor?: string;
   textColor?: string;
   subTextColor?: string;
+  unit?: string;
 }) {
   const C = useScanColors();
   const strokeWidth = size >= 60 ? 7 : 5;
@@ -576,7 +578,7 @@ function CircularGauge({
       <View style={{ position: 'absolute', alignItems: 'center' }}>
         <Text style={{ fontSize: size >= 60 ? 15 : 13, fontWeight: '900', color: textColor ?? C.slate900 }}>
           {value}
-          <Text style={{ fontSize: size >= 60 ? 11 : 9.5, fontWeight: '700', color: subTextColor ?? C.slate400 }}>/{max}</Text>
+          <Text style={{ fontSize: size >= 60 ? 11 : 9.5, fontWeight: '700', color: subTextColor ?? C.slate400 }}>/{max}{unit}</Text>
         </Text>
       </View>
     </View>
@@ -701,6 +703,7 @@ function ScanCreditCard({
         <CircularGauge
           value={adCredited ? 1 : 0}
           max={1}
+          unit="회"
           size={56}
           trackColor="rgba(255,255,255,0.25)"
           fillColor="#FCD34D"
