@@ -1,4 +1,4 @@
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -138,7 +138,6 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
                 <View style={styles.titleRow}>
                   <Text style={styles.title}>오늘의 급식 메뉴</Text>
                   <Pressable style={styles.aiPillButton} onPress={handleAiScan} hitSlop={4}>
-                    <Ionicons name="sparkles" size={12} color={AMBER_DEEP} />
                     <Text style={styles.aiPillButtonText}>AI 분석</Text>
                   </Pressable>
                 </View>
