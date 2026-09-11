@@ -784,6 +784,8 @@ function createStyles(C: ScanColors) {
     borderColor: C.amber200,
     borderRadius: 16,
     padding: 9,
+    // 아래쪽에 남는 여백을 활용하도록 프로세스 카드와의 간격을 조금 더 벌림.
+    marginTop: 14,
   },
   tipText: { flex: 1, fontSize: 13.5, color: C.slate700, lineHeight: 18 },
   tipBold: { fontWeight: '900', color: C.amber700 },
