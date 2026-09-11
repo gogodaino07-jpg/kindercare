@@ -443,13 +443,6 @@ export default function UploadScreen() {
                 {docs.map((doc) => (
                   <DocCard key={doc.id} doc={doc} onRemove={() => removeDoc(doc.id)} />
                 ))}
-                <View style={styles.hintBox}>
-                  <Ionicons name="sparkles" size={16} color={C.violet600} />
-                  <Text style={styles.hintText}>
-                    아래 <Text style={styles.hintBold}>[AI로 내용 분석하기]</Text> 버튼을 누르면 일정이
-                    추출됩니다.
-                  </Text>
-                </View>
               </View>
             ) : (
               <View style={styles.emptyStateFill}>
@@ -493,6 +486,11 @@ export default function UploadScreen() {
               </Pressable>
             </View>
 
+            {docs.length > 0 && (
+              <Text style={styles.analyzeHint}>
+                아래 <Text style={styles.analyzeHintBold}>AI로 내용 분석하기</Text> 버튼을 누르면 일정이 추출돼요
+              </Text>
+            )}
             {docs.length > 0 && (
               <Pressable
                 onPress={handleAnalyze}
@@ -1075,18 +1073,8 @@ function createStyles(C: ScanColors) {
   docCardInfo: { flex: 1, gap: 2 },
   docCardName: { fontSize: 14, fontWeight: '900', color: C.slate900 },
   docCardMeta: { fontSize: 12.5, color: C.slate400 },
-  hintBox: {
-    backgroundColor: C.slate50,
-    borderWidth: 1,
-    borderColor: C.slate200,
-    borderRadius: 14,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  hintText: { flex: 1, fontSize: 13, color: C.slate600, lineHeight: 19 },
-  hintBold: { fontWeight: '800', color: C.slate800 },
+  analyzeHint: { fontSize: 12, color: C.slate500, textAlign: 'center', marginBottom: 8 },
+  analyzeHintBold: { fontWeight: '700', color: C.slate700 },
   dock: {
     backgroundColor: C.surface,
     borderTopWidth: 1,
