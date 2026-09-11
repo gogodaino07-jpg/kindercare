@@ -409,9 +409,9 @@ export default function UploadScreen() {
               </View>
             ) : (
               <View style={styles.emptyStateFill}>
-                <DropzoneCard />
+                <DropzoneCard onPickFile={handlePickFile} />
+                <AutomationProcessCard />
                 <TipBox />
-                <RoadmapCard />
               </View>
             )}
           </ScrollView>
@@ -515,27 +515,9 @@ function CircularGauge({ value, max }: { value: number; max: number }) {
   );
 }
 
-// 점선 테두리(예전 스타일)는 "여기를 눌러서 선택하세요"처럼 보여서, 실제
-// 선택 동작은 하단 독(카메라/앨범/문서) 버튼에 있는데도 이 카드를 눌러보려는
-// 사용자가 있었다 — 테두리를 없애 순수 안내문 카드로 바꾸고, 진짜 선택
-// 지점인 하단 버튼 쪽으로 시선을 유도하는 바운스 화살표 힌트를 덧붙였다.
-function DropzoneCard() {
+function DropzoneCard({ onPickFile }: { onPickFile: () => void }) {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
-  const bounce = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bounce, { toValue: 1, duration: 550, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.timing(bounce, { toValue: 0, duration: 550, easing: Easing.in(Easing.quad), useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [bounce]);
-
-  const translateY = bounce.interpolate({ inputRange: [0, 1], outputRange: [0, 6] });
 
   return (
     <View style={styles.dropzoneCard}>
@@ -544,12 +526,12 @@ function DropzoneCard() {
       </View>
       <Text style={styles.dropzoneTitle}>분석할 알림장을 추가해 주세요</Text>
       <Text style={styles.dropzoneSubtitle}>
-        가정통신문, 주간계획안, 식단표를 추가하면{'\n'}AI가 일정을 쏙쏙 뽑아 캘린더에 정리해 드려요 ✨
+        가정통신문, 식단표를 넣으면 AI가 일정을 캘린더에 쏙쏙 정리해 드려요
       </Text>
-      <Animated.View style={[styles.dropzoneHint, { transform: [{ translateY }] }]}>
-        <Feather name="chevron-down" size={14} color={C.violet600} />
-        <Text style={styles.dropzoneHintText}>아래에서 사진이나 파일을 선택해주세요</Text>
-      </Animated.View>
+      <Pressable style={styles.dropzonePickButton} onPress={onPickFile} hitSlop={4}>
+        <Text style={styles.dropzonePickButtonText}>사진이나 파일 선택하기</Text>
+        <Feather name="chevron-down" size={16} color={C.violet600} />
+      </Pressable>
     </View>
   );
 }
@@ -561,78 +543,54 @@ function TipBox() {
     <View style={styles.tipBox}>
       <Ionicons name="bulb" size={18} color={C.amber700} />
       <Text style={styles.tipText}>
-        <Text style={styles.tipBold}>스마트 스캔 팁! </Text>
-        글자가 잘 보이도록 빛 반사 없이 평평한 곳에서 찍어주시면 정확도가 올라가요.
+        <Text style={styles.tipBold}>스캔 팁: </Text>
+        빛 반사 없이 평평한 곳에서 찍으면 인식률이 훨씬 높아져요!
       </Text>
     </View>
   );
 }
 
-function RoadmapConnector() {
+const AUTOMATION_STEPS = [
+  { number: '1', title: '사진·파일', caption: '업로드', variant: 'default' as const },
+  { number: '2', title: 'AI 분석', caption: '일정 추출', variant: 'accent' as const },
+  { number: '3', title: '캘린더', caption: '자동 저장', variant: 'done' as const },
+];
+
+function AutomationProcessCard() {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
   return (
-    <View style={styles.roadmapConnector}>
-      <Feather name="chevron-down" size={16} color={C.slate300} />
-    </View>
-  );
-}
-
-function RoadmapCard() {
-  const C = useScanColors();
-  const styles = useMemo(() => createStyles(C), [C]);
-  return (
-    <View style={styles.roadmapSection}>
-      <Text style={styles.roadmapSectionLabel}>이렇게 작동해요</Text>
-      <View style={styles.roadmapCard}>
-      <View style={styles.roadmapRow}>
-        <View style={styles.roadmapStepCircle}>
-          <Text style={styles.roadmapStepNumber}>01</Text>
-        </View>
-        <View style={styles.roadmapTextBlock}>
-          <View style={styles.roadmapTitleRow}>
-            <Text style={styles.roadmapTitle}>사진 또는 파일 올리기</Text>
-            <View style={styles.roadmapTag}>
-              <Text style={styles.roadmapTagText}>사진·PDF</Text>
-            </View>
-          </View>
-          <Text style={styles.roadmapDesc}>스마트폰으로 찍거나 저장된 문서를 선택하세요.</Text>
+    <View style={styles.processCard}>
+      <View style={styles.processHeaderRow}>
+        <Text style={styles.processTitle}>AI 스캔 자동화 프로세스</Text>
+        <View style={styles.processBadge}>
+          <Text style={styles.processBadgeText}>3단계 자동 완료</Text>
         </View>
       </View>
-
-      <RoadmapConnector />
-
-      <View style={styles.roadmapRow}>
-        <View style={[styles.roadmapStepCircle, styles.roadmapStepCircleAccent]}>
-          <Ionicons name="sparkles" size={14} color="#FCD34D" />
-        </View>
-        <View style={styles.roadmapTextBlock}>
-          <View style={styles.roadmapTitleRow}>
-            <Text style={[styles.roadmapTitle, styles.roadmapTitleAccent]}>AI가 날짜와 준비물 자동 추출</Text>
-            <View style={[styles.roadmapTag, styles.roadmapTagAccent]}>
-              <Text style={[styles.roadmapTagText, styles.roadmapTagTextAccent]}>AI 엔진</Text>
+      <View style={styles.processGrid}>
+        {AUTOMATION_STEPS.map((step) => (
+          <View key={step.number} style={styles.processStep}>
+            <View
+              style={[
+                styles.processStepCircle,
+                step.variant === 'accent' && styles.processStepCircleAccent,
+                step.variant === 'done' && styles.processStepCircleDone,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.processStepNumber,
+                  step.variant === 'accent' && styles.processStepNumberAccent,
+                  step.variant === 'done' && styles.processStepNumberDone,
+                ]}
+              >
+                {step.number}
+              </Text>
             </View>
+            <Text style={styles.processStepTitle}>{step.title}</Text>
+            <Text style={styles.processStepCaption}>{step.caption}</Text>
           </View>
-          <Text style={styles.roadmapDesc}>행사 일시, 챙길 물품 등을 척척 분류해요.</Text>
-        </View>
-      </View>
-
-      <RoadmapConnector />
-
-      <View style={styles.roadmapRow}>
-        <View style={[styles.roadmapStepCircle, styles.roadmapStepCircleDone]}>
-          <Text style={styles.roadmapStepNumber}>03</Text>
-        </View>
-        <View style={styles.roadmapTextBlock}>
-          <View style={styles.roadmapTitleRow}>
-            <Text style={styles.roadmapTitle}>내 캘린더에 바로 저장</Text>
-            <View style={[styles.roadmapTag, styles.roadmapTagDone]}>
-              <Text style={[styles.roadmapTagText, styles.roadmapTagTextDone]}>완료</Text>
-            </View>
-          </View>
-          <Text style={styles.roadmapDesc}>알림과 준비물 체크리스트가 자동 연동돼요.</Text>
-        </View>
-      </View>
+        ))}
       </View>
     </View>
   );
@@ -771,15 +729,16 @@ function createStyles(C: ScanColors) {
   gaugeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.violet600 },
   gaugeHeadline: { fontSize: 15, fontWeight: '900', color: C.slate900, flexShrink: 1 },
   gaugeSubtitle: { fontSize: 12.5, color: C.slate400, fontWeight: '500', marginLeft: 16 },
-  // 점선 테두리를 없애고 은은한 배경 채움으로 바꿔서, 선택 가능한 영역이
-  // 아니라 순수 안내문 카드라는 느낌을 준다.
   dropzoneCard: {
     backgroundColor: C.violet50,
-    borderRadius: 32,
-    paddingVertical: 14,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: C.violet200,
+    paddingVertical: 18,
     paddingHorizontal: 20,
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   dropzoneIconBox: {
     width: 48,
@@ -792,13 +751,17 @@ function createStyles(C: ScanColors) {
   },
   dropzoneTitle: { fontSize: 16, fontWeight: '900', color: C.slate900, textAlign: 'center' },
   dropzoneSubtitle: { fontSize: 13.5, color: C.slate400, textAlign: 'center', lineHeight: 18 },
-  dropzoneHint: {
+  dropzonePickButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     marginTop: 4,
   },
-  dropzoneHintText: { fontSize: 12, fontWeight: '700', color: C.violet600 },
+  dropzonePickButtonText: { fontSize: 13.5, fontWeight: '800', color: C.violet700 },
   tipBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -811,33 +774,42 @@ function createStyles(C: ScanColors) {
   },
   tipText: { flex: 1, fontSize: 13.5, color: C.slate700, lineHeight: 18 },
   tipBold: { fontWeight: '900', color: C.amber700 },
-  roadmapSection: { gap: 8 },
-  roadmapSectionLabel: { fontSize: 13, fontWeight: '800', color: C.slate400 },
-  roadmapCard: { gap: 2 },
-  roadmapRow: { flexDirection: 'row', gap: 12 },
-  roadmapConnector: { width: 32, alignItems: 'center' },
-  roadmapStepCircle: {
-    width: 32,
-    height: 32,
+  processCard: {
+    backgroundColor: C.surface,
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: C.slate200,
+    gap: 12,
+  },
+  processHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  processTitle: { fontSize: 14, fontWeight: '800', color: C.slate800 },
+  processBadge: { backgroundColor: C.violet100, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  processBadgeText: { fontSize: 11, fontWeight: '800', color: C.violet700 },
+  processGrid: { flexDirection: 'row', gap: 10 },
+  processStep: {
+    flex: 1,
+    backgroundColor: C.slate50,
     borderRadius: 16,
-    backgroundColor: C.slate100,
+    paddingVertical: 14,
+    alignItems: 'center',
+    gap: 6,
+  },
+  processStepCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: C.violet100,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  roadmapStepCircleAccent: { backgroundColor: C.violet600 },
-  roadmapStepCircleDone: { backgroundColor: C.emerald50, borderWidth: 1, borderColor: C.emerald100 },
-  roadmapStepNumber: { fontSize: 14, fontWeight: '900', color: C.slate700 },
-  roadmapTextBlock: { flex: 1, gap: 2 },
-  roadmapTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  roadmapTitle: { fontSize: 14, fontWeight: '900', color: C.slate800 },
-  roadmapTitleAccent: { color: C.violet950 },
-  roadmapDesc: { fontSize: 13, color: C.slate400, fontWeight: '400' },
-  roadmapTag: { backgroundColor: C.slate100, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  roadmapTagAccent: { backgroundColor: C.violet100 },
-  roadmapTagDone: { backgroundColor: C.emerald100 },
-  roadmapTagText: { fontSize: 10.5, fontWeight: '900', color: C.slate500 },
-  roadmapTagTextAccent: { color: C.violet700 },
-  roadmapTagTextDone: { color: C.emerald800 },
+  processStepCircleAccent: { backgroundColor: C.violet600 },
+  processStepCircleDone: { backgroundColor: C.emerald50, borderWidth: 1, borderColor: C.emerald100 },
+  processStepNumber: { fontSize: 16, fontWeight: '900', color: C.violet700 },
+  processStepNumberAccent: { color: '#FFFFFF' },
+  processStepNumberDone: { color: C.emerald700 },
+  processStepTitle: { fontSize: 13, fontWeight: '900', color: C.slate900 },
+  processStepCaption: { fontSize: 11, fontWeight: '600', color: C.slate400 },
   docsSection: { gap: 10 },
   docsCountLabel: { fontSize: 13, fontWeight: '700', color: C.slate400 },
   docCard: {
