@@ -24,7 +24,7 @@ import {
   PREMIUM_MEAL_WEEKLY_LIMIT,
 } from '../features/newsletter-analysis';
 import { ZoomableImage } from '../features/newsletter-analysis/components/ZoomableImage';
-import { ScanColors, useMealColors } from '../features/newsletter-analysis/uiColors';
+import { ScanColors, useScanColors } from '../features/newsletter-analysis/uiColors';
 import { useScanRewardedAd } from '../hooks/useScanRewardedAd';
 import { UploadedDoc } from '../types/models';
 
@@ -43,7 +43,7 @@ export default function MealScanScreen() {
   const { setPickerActive } = useAppLock();
   const { requestAndShow } = useScanRewardedAd();
   const insets = useSafeAreaInsets();
-  const C = useMealColors();
+  const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
 
   const [doc, setDoc] = useState<UploadedDoc | null>(null);

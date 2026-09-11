@@ -5,14 +5,14 @@ import { useTheme } from '../../context/ThemeContext';
  *  카드 배경에 `white`를, 테두리에 하드코딩된 반투명 검정을 그대로 썼던 것을 다크모드 대응을
  *  위해 뽑아낸 키 — `white`는 컬러 버튼 위에 얹는 흰 텍스트/아이콘용으로 라이트·다크 공통 고정값. */
 export const SCAN_COLORS = {
-  violet600: '#4550B4',
-  violet700: '#38428F',
-  indigo600: '#2E3B78',
-  violet50: '#EEF1F8',
-  violet100: '#E1E6F5',
-  violet200: '#C7D0EA',
-  violet900: '#232C5C',
-  violet950: '#161B3D',
+  violet600: '#7C3AED',
+  violet700: '#6D28D9',
+  indigo600: '#4F46E5',
+  violet50: '#F5F3FF',
+  violet100: '#EDE9FE',
+  violet200: '#DDD6FE',
+  violet900: '#4C1D95',
+  violet950: '#2E1065',
   slate900: '#0F172A',
   slate800: '#1E293B',
   slate700: '#334155',
@@ -49,14 +49,14 @@ export const SCAN_COLORS = {
 } as const;
 
 export const SCAN_COLORS_DARK = {
-  violet600: '#7C89D9',
-  violet700: '#6572C4',
-  indigo600: '#98A4EA',
-  violet50: '#161A2E',
-  violet100: '#1E2440',
-  violet200: '#2C3760',
-  violet900: '#C4CBF2',
-  violet950: '#E3E7FB',
+  violet600: '#A78BFA',
+  violet700: '#8B5CF6',
+  indigo600: '#818CF8',
+  violet50: '#241B3D',
+  violet100: '#2E2350',
+  violet200: '#3D2E63',
+  violet900: '#DDD6FE',
+  violet950: '#EDE9FE',
   slate900: '#F1F5F9',
   slate800: '#E2E8F0',
   slate700: '#CBD5E1',
@@ -95,38 +95,4 @@ export type ScanColors = { [K in keyof typeof SCAN_COLORS]: string };
 export function useScanColors(): ScanColors {
   const { resolvedScheme } = useTheme();
   return resolvedScheme === 'dark' ? SCAN_COLORS_DARK : SCAN_COLORS;
-}
-
-// 알림장 스캔(업로드/검토)은 인디고·네이비로 테마를 바꿨지만, 식단표 스캔/검토
-// 화면은 사용자가 기존 보라 톤을 그대로 유지해달라고 해서 별도 팔레트로 분리했다
-// — violet*/indigo600(브랜드 포인트 컬러)만 원래 보라 값으로 덮어쓰고, 나머지
-// (slate/amber/emerald 등 의미색과 surface/border)는 SCAN_COLORS와 동일하게 공유.
-export const MEAL_COLORS = {
-  ...SCAN_COLORS,
-  violet600: '#7C3AED',
-  violet700: '#6D28D9',
-  indigo600: '#4F46E5',
-  violet50: '#F5F3FF',
-  violet100: '#EDE9FE',
-  violet200: '#DDD6FE',
-  violet900: '#4C1D95',
-  violet950: '#2E1065',
-} as const;
-
-export const MEAL_COLORS_DARK = {
-  ...SCAN_COLORS_DARK,
-  violet600: '#A78BFA',
-  violet700: '#8B5CF6',
-  indigo600: '#818CF8',
-  violet50: '#241B3D',
-  violet100: '#2E2350',
-  violet200: '#3D2E63',
-  violet900: '#DDD6FE',
-  violet950: '#EDE9FE',
-} as const;
-
-/** 현재 앱 테마(라이트/다크)에 맞는 식단표 스캔 화면 전용(보라 톤 유지) 팔레트를 반환한다. */
-export function useMealColors(): ScanColors {
-  const { resolvedScheme } = useTheme();
-  return resolvedScheme === 'dark' ? MEAL_COLORS_DARK : MEAL_COLORS;
 }
