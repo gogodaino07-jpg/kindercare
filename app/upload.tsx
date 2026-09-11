@@ -1,4 +1,5 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 import { getInfoAsync } from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
@@ -29,6 +30,13 @@ import { ScanColors, useScanColors } from '../features/newsletter-analysis/uiCol
 import { useScanRewardedAd } from '../hooks/useScanRewardedAd';
 import { Event, MealPlan, UploadedDoc } from '../types/models';
 import { toISODate } from '../utils/date';
+
+// 광고 시청으로 미리 충전해둔 스캔권 1회는 이번 분석에 쓰일 때까지 화면을 나갔다 와도
+// 유지돼야 한다(사용자가 광고를 보고 받은 걸 화면 재진입만으로 잃으면 안 됨) — 계정별로
+// 캐시해서 뒤로가기 후 재진입 시에도 충전 완료 상태를 그대로 복원한다.
+function adCreditStorageKey(email: string | undefined): string {
+  return `kindercare:adCreditPending:${email ?? 'anon'}`;
+}
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -103,10 +111,15 @@ export default function UploadScreen() {
   // 그대로 두고 내부 게이지만 0→1로 채워서 보여준다(ScanCreditCard 참고).
   const showCreditCard = !isSubscribed && !hasFreeCredit;
 
+  const creditAdBonus = () => {
+    setAdCredited(true);
+    AsyncStorage.setItem(adCreditStorageKey(googleAccount?.email), '1').catch(() => {});
+  };
+
   const handleWatchAdForCredit = async () => {
     if (watchingCredit) return;
     if (skipAd) {
-      setAdCredited(true);
+      creditAdBonus();
       showToast('테스트 계정: 광고 없이 충전됐어요');
       return;
     }
@@ -114,7 +127,7 @@ export default function UploadScreen() {
     try {
       const earned = await requestAndShow();
       if (earned) {
-        setAdCredited(true);
+        creditAdBonus();
         showToast('스캔권 1회가 충전됐어요 🎟️');
       } else {
         showAlert({ title: '광고 시청이 필요해요', message: '광고를 끝까지 시청해야 충전돼요. 다시 시도해주세요.' });
@@ -185,6 +198,12 @@ export default function UploadScreen() {
   useEffect(() => {
     AIUsageLimitService.getRemainingCount(googleAccount?.email, isSubscribed).then(setRemainingAnalyses);
   }, [googleAccount?.email, isSubscribed]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(adCreditStorageKey(googleAccount?.email)).then((value) => {
+      if (value === '1') setAdCredited(true);
+    });
+  }, [googleAccount?.email]);
 
   useEffect(() => {
     const checkPendingSession = async () => {
@@ -387,6 +406,7 @@ export default function UploadScreen() {
         }
       } else if (adCredited) {
         setAdCredited(false); // 미리 충전해둔 스캔권을 이번 분석에 소모
+        AsyncStorage.removeItem(adCreditStorageKey(googleAccount?.email)).catch(() => {});
       }
 
       await performAnalysis(docs, selectedChild);
@@ -417,11 +437,7 @@ export default function UploadScreen() {
             style={styles.scrollFlex}
             // 문서가 없을 땐 남는 세로 공간을 emptyStateFill 안의 스페이서가 흡수해서
             // 스캔 팁이 하단 버튼 바로 위까지 내려가게 한다(스크린 아래 붕 뜬 여백 방지).
-            contentContainerStyle={[
-              styles.scrollContent,
-              showCreditCard && styles.scrollContentCharged,
-              docs.length === 0 && styles.scrollContentFill,
-            ]}
+            contentContainerStyle={[styles.scrollContent, docs.length === 0 && styles.scrollContentFill]}
             showsVerticalScrollIndicator={false}
           >
             {showCreditCard ? (
@@ -455,12 +471,12 @@ export default function UploadScreen() {
                 ))}
               </View>
             ) : (
-              <View style={[styles.emptyStateFill, showCreditCard && styles.emptyStateFillCharged]}>
+              <View style={styles.emptyStateFill}>
                 <DropzoneCard />
                 <ScanGuideCard />
-                <View style={[styles.emptyStateSpacer, { flex: showCreditCard ? 0.6 : 0.4 }]} />
+                <View style={[styles.emptyStateSpacer, { flex: 0.4 }]} />
                 <TipBox />
-                <View style={[styles.emptyStateSpacer, { flex: showCreditCard ? 1.4 : 1.6 }]} />
+                <View style={[styles.emptyStateSpacer, { flex: 1.6 }]} />
               </View>
             )}
           </ScrollView>
@@ -895,10 +911,8 @@ function createStyles(C: ScanColors) {
   headerTitle: { fontSize: 17, fontWeight: '800', color: C.slate900 },
   scrollFlex: { flex: 1 },
   scrollContent: { padding: 8, gap: 5 },
-  scrollContentCharged: { gap: 10 },
   scrollContentFill: { flexGrow: 1 },
   emptyStateFill: { flex: 1, gap: 10 },
-  emptyStateFillCharged: { gap: 14 },
   emptyStateSpacer: { flex: 1, minHeight: 6 },
   gaugeCard: {
     backgroundColor: C.surface,
