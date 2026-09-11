@@ -968,8 +968,8 @@ function createStyles(C: ScanColors) {
     justifyContent: 'center',
   },
   guideTitle: { fontSize: 14.5, fontWeight: '500', color: C.slate900 },
-  guideProgressBadge: { backgroundColor: C.violet50, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  guideProgressBadgeText: { fontSize: 10.5, fontWeight: '800', color: C.violet700 },
+  guideProgressBadge: { backgroundColor: C.slate100, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  guideProgressBadgeText: { fontSize: 10.5, fontWeight: '800', color: C.slate600 },
   guideDivider: { height: StyleSheet.hairlineWidth, backgroundColor: C.slate100 },
   guideGrid: { flexDirection: 'row', gap: 10 },
   guideStep: {
