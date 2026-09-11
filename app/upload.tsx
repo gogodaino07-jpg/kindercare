@@ -442,7 +442,7 @@ export default function UploadScreen() {
                     — 맨 텍스트로 붕 떠 있지 않도록 아이콘+배경을 갖춘 칩으로 디자인. */}
                 {docs.length > 1 && (
                   <View style={styles.docsCountBadge}>
-                    <Feather name="paperclip" size={12} color={C.violet700} />
+                    <Feather name="paperclip" size={12} color={C.slate600} />
                     <Text style={styles.docsCountBadgeText}>총 {docs.length}개 파일 선택됨</Text>
                   </View>
                 )}
@@ -611,7 +611,7 @@ function DropzoneCard() {
   return (
     <View style={styles.dropzoneCard}>
       <View style={styles.dropzoneIconBox}>
-        <Ionicons name="sparkles" size={18} color={C.violet600} />
+        <Ionicons name="sparkles" size={18} color={C.slate600} />
       </View>
       <Text style={styles.dropzoneTitle}>분석할 알림장을 추가해 주세요</Text>
       <Text style={styles.dropzoneSubtitle}>
@@ -619,7 +619,7 @@ function DropzoneCard() {
       </Text>
       <Animated.View style={[styles.dropzoneHint, { transform: [{ translateY }] }]}>
         <Text style={styles.dropzoneHintText}>아래에서 사진이나 파일을 선택해주세요</Text>
-        <Feather name="chevron-down" size={14} color={C.violet600} />
+        <Feather name="chevron-down" size={14} color={C.slate500} />
       </Animated.View>
     </View>
   );
@@ -748,7 +748,7 @@ function ScanGuideCard() {
       <View style={styles.guideHeaderRow}>
         <View style={styles.guideHeaderLeft}>
           <View style={styles.guideInfoBadge}>
-            <Feather name="info" size={13} color={C.violet700} />
+            <Feather name="info" size={13} color={C.slate600} />
           </View>
           <Text style={styles.guideTitle}>AI 스캔 이용 가이드</Text>
         </View>
@@ -787,7 +787,7 @@ function DocCard({ doc, onRemove }: { doc: UploadedDoc; onRemove: () => void }) 
     <View style={styles.docCard}>
       <View style={styles.docCardTopRow}>
         <View style={styles.docCardTag}>
-          <Feather name={doc.kind === 'image' ? 'image' : 'file'} size={13} color={C.violet700} />
+          <Feather name={doc.kind === 'image' ? 'image' : 'file'} size={13} color={C.slate700} />
           <Text style={styles.docCardTagText}>선택된 {docTagLabel(doc)}</Text>
         </View>
         <Pressable onPress={onRemove} style={styles.docCardRemove} hitSlop={8}>
@@ -928,7 +928,7 @@ function createStyles(C: ScanColors) {
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: C.violet50,
+    backgroundColor: C.slate100,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 1,
@@ -941,7 +941,7 @@ function createStyles(C: ScanColors) {
     gap: 2,
     marginTop: 4,
   },
-  dropzoneHintText: { fontSize: 12, fontWeight: '700', color: C.violet600 },
+  dropzoneHintText: { fontSize: 12, fontWeight: '700', color: C.slate500 },
   tipBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1004,7 +1004,7 @@ function createStyles(C: ScanColors) {
     width: 24,
     height: 24,
     borderRadius: 8,
-    backgroundColor: C.violet100,
+    backgroundColor: C.slate100,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1044,12 +1044,12 @@ function createStyles(C: ScanColors) {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: C.violet50,
+    backgroundColor: C.slate100,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  docsCountBadgeText: { fontSize: 12, fontWeight: '700', color: C.violet700 },
+  docsCountBadgeText: { fontSize: 12, fontWeight: '700', color: C.slate600 },
   docCard: {
     backgroundColor: C.surface,
     borderRadius: 24,
@@ -1070,14 +1070,14 @@ function createStyles(C: ScanColors) {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: C.violet50,
+    backgroundColor: C.slate50,
     borderWidth: 1,
-    borderColor: C.violet100,
+    borderColor: C.slate200,
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  docCardTagText: { fontSize: 13, fontWeight: '800', color: C.violet700 },
+  docCardTagText: { fontSize: 13, fontWeight: '800', color: C.slate700 },
   docCardRemove: {
     width: 26,
     height: 26,
@@ -1103,8 +1103,8 @@ function createStyles(C: ScanColors) {
   dockHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   dockHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dockHeaderText: { fontSize: 12.5, fontWeight: '700', color: C.slate600 },
-  dockFastBadge: { backgroundColor: C.violet50, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
-  dockFastBadgeText: { fontSize: 10.5, fontWeight: '500', color: C.violet700 },
+  dockFastBadge: { backgroundColor: C.slate100, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
+  dockFastBadgeText: { fontSize: 10.5, fontWeight: '500', color: C.slate600 },
   dockRow: { flexDirection: 'row', gap: 8 },
   // 실제로 눌러서 선택하는 지점이라는 걸 분명히 보여주려고, 흰 배경 + 그림자 +
   // 아이콘 사각 배지로 카드형 버튼처럼 강조했다.
