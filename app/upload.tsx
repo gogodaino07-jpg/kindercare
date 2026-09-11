@@ -691,7 +691,7 @@ const GUIDE_STEPS = [
 
 // 탭하면 눌린 단계가 강조 표시되는 3단 가이드 카드였는데, 눌렀을 때 강조
 // 테두리가 하단 버튼과 시각적으로 겹쳐 보여 혼란스럽다는 피드백으로 탭
-// 상호작용을 제거하고 1단계만 고정으로 강조 표시되는 정적인 요약으로 남겼다.
+// 상호작용을 제거하고 2단계(AI 분석)만 고정으로 강조 표시되는 정적인 요약으로 남겼다.
 function ScanGuideCard() {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
@@ -713,7 +713,7 @@ function ScanGuideCard() {
 
       <View style={styles.guideGrid}>
         {GUIDE_STEPS.map((step) => {
-          const isSelected = step.id === '1';
+          const isSelected = step.id === '2';
           return (
             <View key={step.id} style={[styles.guideStep, isSelected && styles.guideStepSelected]}>
               <View style={[styles.guideStepCircle, isSelected && styles.guideStepCircleSelected]}>
@@ -982,7 +982,7 @@ function createStyles(C: ScanColors) {
     alignItems: 'center',
     gap: 3,
   },
-  guideStepSelected: { backgroundColor: C.violet50, borderColor: C.violet600 },
+  guideStepSelected: { backgroundColor: C.violet50 },
   guideStepCircle: {
     width: 30,
     height: 30,
