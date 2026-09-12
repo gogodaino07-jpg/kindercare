@@ -21,15 +21,6 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
     updateWidgets(context, appWidgetManager, appWidgetIds)
   }
 
-  // 위젯을 홈 화면에서 치우면 그 위젯에 배정해뒀던 "어느 아이 기준" 설정도 같이 지운다 —
-  // 안 지우면 SharedPreferences에 계속 쌓이고, 나중에 같은 appWidgetId가 재사용될 때
-  // 엉뚱한 아이 배정이 남아있을 수 있다.
-  override fun onDeleted(context: Context, appWidgetIds: IntArray) {
-    for (widgetId in appWidgetIds) {
-      WidgetChildPrefs.remove(context, widgetId)
-    }
-  }
-
   companion object {
     const val PREFS_NAME = "widget_data"
     const val KEY_SUMMARY_JSON = "summary_json"
@@ -37,11 +28,6 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
     fun updateWidgets(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
       val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
       val jsonString = prefs.getString(KEY_SUMMARY_JSON, null)
-      val root = try {
-        if (jsonString != null) JSONObject(jsonString) else null
-      } catch (e: Exception) {
-        null
-      }
 
       for (widgetId in appWidgetIds) {
         val views = RemoteViews(context.packageName, R.layout.widget_today_summary)
@@ -52,13 +38,12 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
         }
         views.setRemoteAdapter(R.id.widget_event_list, adapterIntent)
 
-        val json = WidgetDataResolver.resolveChildSummary(context, widgetId, root)
-
         var handled = false
         var todayISO: String? = null
         var tomorrowISO: String? = null
-        if (json != null) {
+        if (jsonString != null) {
           try {
+            val json = JSONObject(jsonString)
             views.setTextViewText(R.id.widget_date, json.optString("dateLabel"))
             todayISO = json.optString("dateISO").takeIf { it.isNotBlank() }
 

@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- ImageView의 clipToOutline이 이 배경의 외곽선(원)으로 실제 사진을 잘라내는 용도라
-     색 자체는 안 보인다(사진이 항상 덮으므로). -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
-    <solid android:color="#FFFFFF" />
-</shape>

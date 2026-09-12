@@ -17,7 +17,7 @@ interface WidgetTomorrowPreview {
   itemCount: number;
 }
 
-interface WidgetChildSummary {
+interface WidgetSummaryPayload {
   /** 위젯 헤더에 보여줄 오늘 날짜 — "9.8 (화)" 형태로 미리 포맷해서 넘긴다. */
   dateLabel: string;
   /** 위젯(오늘 일정 목록 포함) 탭 시 캘린더의 이 날짜로 바로 이동하기 위한 ISO 날짜. */
@@ -26,23 +26,6 @@ interface WidgetChildSummary {
   todayEvents: WidgetTodayEvent[];
   /** 내일 일정 미리보기 — 내일 일정이 없으면 null(위젯에서 그 줄 자체를 숨김). 있으면 첫 번째 일정만. */
   tomorrow: WidgetTomorrowPreview | null;
-}
-
-interface WidgetChildInfo {
-  id: string;
-  /** 위젯 추가 시 아이 선택 화면에 보여줄 이름. */
-  name: string;
-  /** 기기 로컬 캐시 경로 — 있으면 프로필 사진을, 없으면 avatarEmoji를 보여준다. */
-  photoUri?: string;
-  avatarEmoji?: string;
-}
-
-interface WidgetSummaryPayload {
-  /** 아이가 2명 이상일 때, 위젯을 홈 화면에 새로 추가하면 뜨는 "아이 선택" 화면에
-   *  쓰일 목록 — 무료 한도로 잠긴 아이는 호출부에서 미리 제외하고 넘긴다. */
-  children: WidgetChildInfo[];
-  /** 아이 id별 요약 데이터. 위젯 인스턴스마다 설정 시 고른 아이의 항목만 골라서 보여준다. */
-  summaries: Record<string, WidgetChildSummary>;
 }
 
 /** 안드로이드 홈 화면 위젯(오늘 일정별 제목 + 준비물 + 내일 미리보기)에 최신 요약을 밀어준다.

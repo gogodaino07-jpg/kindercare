@@ -58,11 +58,6 @@
       </intent-filter>
       <meta-data android:name="android.appwidget.provider" android:resource="@xml/today_summary_widget_info"/>
     </receiver>
-    <activity android:name=".widget.WidgetChildPickerActivity" android:exported="true" android:theme="@style/AppTheme" android:excludeFromRecents="true">
-      <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
-      </intent-filter>
-    </activity>
     <service android:name=".widget.TodayEventsRemoteViewsService" android:permission="android.permission.BIND_REMOTEVIEWS" android:exported="false"/>
   </application>
 </manifest>
