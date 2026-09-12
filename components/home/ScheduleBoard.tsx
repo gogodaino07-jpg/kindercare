@@ -12,7 +12,6 @@ import { Child, Event, EventItem } from '../../types/models';
 import { formatMD, parseISODate, startOfDay, toISODate } from '../../utils/date';
 import { openCoupangSearch } from '../../utils/coupang';
 import { getSpecialEventTheme } from '../../utils/specialEventTheme';
-import { isValidCoupangKeyword } from '../../utils/validation';
 import Text from '../common/AppText';
 import TextInput from '../common/ClearableTextInput';
 import EventIcon from '../common/EventIcon';
@@ -514,11 +513,6 @@ function PrepItemRow({
         color={checked ? colors.green500 : colors.gray400}
       />
       <Text style={[styles.itemText, checked && styles.itemTextChecked]}>{item.name}</Text>
-      {!checked && isValidCoupangKeyword(item.name) && (
-        <Pressable style={styles.buyButton} hitSlop={6} onPress={() => openCoupangSearch(item.name)}>
-          <Text style={styles.buyButtonText}>구매하기</Text>
-        </Pressable>
-      )}
       <View style={[styles.itemStatusPill, checked ? styles.itemStatusPillDone : styles.itemStatusPillTodo]}>
         <Text
           style={[
@@ -749,14 +743,6 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
     itemRowChecked: { backgroundColor: colors.green50 },
     itemText: { fontSize: 13, fontWeight: '600', color: colors.gray900, flex: 1 },
     itemTextChecked: { color: colors.gray500, textDecorationLine: 'line-through' },
-    buyButton: {
-      borderRadius: 999,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-      backgroundColor: colors.purpleBg,
-      marginRight: 6,
-    },
-    buyButtonText: { fontSize: 10, fontWeight: '800', color: colors.purple500 },
     itemStatusPill: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
     itemStatusPillTodo: { backgroundColor: tint(colors.pastelOrangeAccent, 0.85, isDark) },
     itemStatusPillDone: { backgroundColor: tint(colors.green500, 0.85, isDark) },
