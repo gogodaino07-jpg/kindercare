@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { Event, NotificationSettings, TimeOfDay } from '../types/models';
-import { isPast, parseISODate } from './date';
+import { isPast, parseISODate, toISODate } from './date';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -229,4 +229,29 @@ export async function snoozeNotification(
 
   map[notifKey] = newId;
   await AsyncStorage.setItem(SNOOZE_MAP_STORAGE_KEY, JSON.stringify(map)).catch(() => {});
+}
+
+// TODO(임시 테스트 기능): 배포 전 제거. 설정 > 알림 화면의 "테스트 알림 보내기" 버튼에서만 쓰인다.
+// 스누즈 액션 버튼이 붙은 알림을 3초 뒤에 띄워서 실제 알림/스누즈 동작을 빠르게 확인하기 위한 용도.
+export async function sendTestSnoozeNotification(): Promise<void> {
+  const { status } = await Notifications.requestPermissionsAsync();
+  if (status !== 'granted') return;
+
+  await ensureAndroidChannel();
+  await ensureSnoozeCategory();
+
+  const notifKey = `test:${Date.now()}`;
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: '[테스트] 알림 확인',
+      body: '스누즈 버튼을 눌러 동작을 확인해보세요.',
+      data: { date: toISODate(new Date()), notifKey },
+      categoryIdentifier: SNOOZE_CATEGORY_ID,
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: 3,
+      channelId: ANDROID_CHANNEL_ID,
+    },
+  });
 }
