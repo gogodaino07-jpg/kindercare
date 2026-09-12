@@ -1,7 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Text from '../common/AppText';
 import TextInput from '../common/ClearableTextInput';
 import { useAlert } from '../../context/AlertContext';
@@ -40,6 +40,20 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
   // 등록 버튼을 누른 뒤 광고 노출 여부에 따라 완료까지 몇 초 걸릴 수 있어,
   // 멈춘 것처럼 보이지 않도록 그동안 버튼에 로딩 상태를 표시한다.
   const [isSaving, setIsSaving] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // 이 모달은 화면 중앙에 뜨는 카드라, KeyboardAvoidingView만으로는(특히 안드로이드에서)
+  // 키보드가 올라와도 카드 위치가 그대로라 맨 아래 "준비물" 입력창이 키보드에 가려졌다.
+  // (app-lock 화면에서도 같은 이유로 실제 키보드 높이를 직접 받아 처리한 전례가 있음)
+  // 실제 키보드 높이만큼 카드를 아래쪽에 붙여서 항상 키보드 위에 보이게 한다.
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => setKeyboardHeight(e.endCoordinates.height));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -122,9 +136,11 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleRequestClose} statusBarTranslucent>
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      <View
+        style={[
+          styles.overlay,
+          keyboardHeight > 0 && { justifyContent: 'flex-end', paddingBottom: keyboardHeight + 16 },
+        ]}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={handleRequestClose} />
         <View style={styles.card}>
@@ -212,7 +228,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
             )}
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
