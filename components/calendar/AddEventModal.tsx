@@ -94,7 +94,12 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
 
     setIsSaving(false);
     if (adShown) {
+      // 모달을 닫지 않고 그대로 두므로, 입력값을 비워주지 않으면 사용자가 등록이 안 된
+      // 줄 알고 버튼을 다시 눌러 같은 내용으로 일정이 중복 등록되는 문제가 있었다.
       showToast('✓ 일정을 등록했어요.');
+      setTitle('');
+      setNoticeText('');
+      setItemsText('');
     } else {
       showToast('일정을 등록했어요.');
       onClose();
