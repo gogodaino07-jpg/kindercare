@@ -2,11 +2,12 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import { Pressable, Share, StyleSheet, View } from 'react-native';
 import Text from '../common/AppText';
+import TextInput from '../common/ClearableTextInput';
 import EventIcon from '../common/EventIcon';
 import PhotoViewerModal from '../common/PhotoViewerModal';
 import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { Event, EventItem } from '../../types/models';
-import { isValidCoupangKeyword } from '../../utils/validation';
+import { openCoupangSearch } from '../../utils/coupang';
 import { useCalendarTheme } from './useCalendarTheme';
 
 interface DayDetailSectionProps {
@@ -16,7 +17,6 @@ interface DayDetailSectionProps {
   onAddEvent: () => void;
   onPressEvent: (event: Event) => void;
   onToggleItem: (event: Event, item: EventItem) => void;
-  onOpenBuy: (event: Event, item: EventItem) => void;
 }
 
 function computeDday(dateISO: string, todayISO: string): number {
@@ -32,7 +32,6 @@ export default function DayDetailSection({
   onAddEvent,
   onPressEvent,
   onToggleItem,
-  onOpenBuy,
 }: DayDetailSectionProps) {
   const t = useCalendarTheme();
   const styles = useMemo(() => createStyles(t), [t]);
@@ -59,7 +58,6 @@ export default function DayDetailSection({
           todayISO={todayISO}
           onPressEvent={onPressEvent}
           onToggleItem={onToggleItem}
-          onOpenBuy={onOpenBuy}
           onOpenPhotos={setViewerPhotos}
         />
       ))}
@@ -74,14 +72,12 @@ function EventDetailCard({
   todayISO,
   onPressEvent,
   onToggleItem,
-  onOpenBuy,
   onOpenPhotos,
 }: {
   event: Event;
   todayISO: string;
   onPressEvent: (event: Event) => void;
   onToggleItem: (event: Event, item: EventItem) => void;
-  onOpenBuy: (event: Event, item: EventItem) => void;
   onOpenPhotos: (photoUris: string[]) => void;
 }) {
   const t = useCalendarTheme();
@@ -92,6 +88,13 @@ function EventDetailCard({
   const incompleteItems = items.filter((i) => !i.completed);
   const completedItems = items.filter((i) => i.completed);
   const dotDate = event.date.replace(/-/g, '.');
+  const [coupangQuery, setCoupangQuery] = useState('');
+
+  const handleCoupangSearch = () => {
+    const query = coupangQuery.trim();
+    if (!query) return;
+    openCoupangSearch(query);
+  };
 
   const handleShare = () => {
     const lines = [`[${dotDate}] ${event.title}`];
@@ -164,31 +167,21 @@ function EventDetailCard({
             <Text style={styles.allDoneText}>🎉 모든 준비물을 차곡차곡 다 챙겼어요!</Text>
           ) : (
             <View style={styles.itemList}>
-              {incompleteItems.map((item) => {
-                const isBuy = isValidCoupangKeyword(item.name);
-                return (
-                  <View key={item.id} style={styles.itemRow}>
-                    <Pressable
-                      style={styles.itemLeft}
-                      onPress={() => onToggleItem(event, item)}
-                      hitSlop={6}
-                    >
-                      <View style={styles.checkboxEmpty} />
-                      <Text style={styles.itemName}>{item.name}</Text>
-                    </Pressable>
-                    {isBuy ? (
-                      <Pressable style={styles.buyButton} onPress={() => onOpenBuy(event, item)}>
-                        <MaterialCommunityIcons name="shopping-outline" size={13} color={t.violet} />
-                        <Text style={styles.buyButtonText}>구매하기</Text>
-                      </Pressable>
-                    ) : (
-                      <View style={styles.neededLabel}>
-                        <Text style={styles.neededLabelText}>준비 필요</Text>
-                      </View>
-                    )}
+              {incompleteItems.map((item) => (
+                <View key={item.id} style={styles.itemRow}>
+                  <Pressable
+                    style={styles.itemLeft}
+                    onPress={() => onToggleItem(event, item)}
+                    hitSlop={6}
+                  >
+                    <View style={styles.checkboxEmpty} />
+                    <Text style={styles.itemName}>{item.name}</Text>
+                  </Pressable>
+                  <View style={styles.neededLabel}>
+                    <Text style={styles.neededLabelText}>준비 필요</Text>
                   </View>
-                );
-              })}
+                </View>
+              ))}
             </View>
           )}
 
@@ -214,6 +207,26 @@ function EventDetailCard({
               ))}
             </View>
           )}
+
+          <View style={styles.coupangSearchRow}>
+            <TextInput
+              style={styles.coupangSearchInput}
+              value={coupangQuery}
+              onChangeText={setCoupangQuery}
+              placeholder="필요한 준비물을 검색해서 쿠팡으로"
+              placeholderTextColor={t.textMuted}
+              returnKeyType="search"
+              onSubmitEditing={handleCoupangSearch}
+            />
+            <Pressable
+              style={[styles.coupangSearchButton, !coupangQuery.trim() && styles.coupangSearchButtonDisabled]}
+              onPress={handleCoupangSearch}
+              disabled={!coupangQuery.trim()}
+              hitSlop={6}
+            >
+              <MaterialCommunityIcons name="magnify" size={18} color="#FFFFFF" />
+            </Pressable>
+          </View>
         </View>
       )}
     </View>
@@ -425,20 +438,6 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
     fontWeight: '600',
     color: t.textPrimary,
   },
-  buyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: t.violetBg,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  buyButtonText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: t.violetDeep,
-  },
   neededLabel: {
     backgroundColor: t.gray100,
     borderRadius: 999,
@@ -503,6 +502,34 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
     fontSize: 10,
     fontWeight: '700',
     color: t.textSecondary,
+  },
+  coupangSearchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  coupangSearchInput: {
+    flex: 1,
+    backgroundColor: t.gray50,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: t.border,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: t.textPrimary,
+  },
+  coupangSearchButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: t.violet,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  coupangSearchButtonDisabled: {
+    opacity: 0.4,
   },
   });
 }
