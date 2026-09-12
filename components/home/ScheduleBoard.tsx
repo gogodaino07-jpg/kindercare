@@ -8,12 +8,13 @@ import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { EventDateGroup } from '../../hooks/useUpcomingEvents';
-import { Event, EventItem } from '../../types/models';
+import { Child, Event, EventItem } from '../../types/models';
 import { formatMD, parseISODate, startOfDay, toISODate } from '../../utils/date';
 import { openCoupangSearch } from '../../utils/coupang';
 import { getSpecialEventTheme } from '../../utils/specialEventTheme';
 import { isValidCoupangKeyword } from '../../utils/validation';
 import Text from '../common/AppText';
+import TextInput from '../common/ClearableTextInput';
 import EventIcon from '../common/EventIcon';
 import PhotoViewerModal from '../common/PhotoViewerModal';
 
@@ -28,6 +29,16 @@ interface ScheduleBoardProps {
   onEventPress: (event: Event) => void;
   onToggleItem: (event: Event, item: EventItem) => void;
   onToggleAll: (event: Event, items: EventItem[], value: boolean) => void;
+  /** 선택된 아이 기준으로 이미 필터링된 mainEvents/secondaryEvents/laterGroups와 달리,
+   *  "전체보기" 토글을 위해 등록된 모든 아이의 일정을 한꺼번에 봐야 해서 별도로 받는다. */
+  allEvents: Event[];
+  /** 무료 한도로 잠긴 아이는 호출부에서 미리 걸러서 넘겨준다(프로필 등록 순서 유지). */
+  unlockedChildren: Child[];
+}
+
+interface ChildPrepSection {
+  child: Child;
+  entries: { event: Event; item: EventItem }[];
 }
 
 /** Blends a hex color toward white by `amount` (0-1) to make it a paler shade. */
@@ -95,13 +106,21 @@ export default function ScheduleBoard({
   onEventPress,
   onToggleItem,
   onToggleAll,
+  allEvents,
+  unlockedChildren,
 }: ScheduleBoardProps) {
   const router = useRouter();
   const { colors, resolvedScheme } = useTheme();
   const isDark = resolvedScheme === 'dark';
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [viewerPhotos, setViewerPhotos] = useState<string[] | null>(null);
+  // 아이가 2명 이상일 때만 의미가 있는 토글이라 기본은 항상 "선택된 아이 1명 보기"이고,
+  // 화면을 벗어나면(재마운트되면) 그냥 이 초기값으로 돌아가면 되므로 별도 저장은 안 한다.
+  const [showAllChildren, setShowAllChildren] = useState(false);
+  const [coupangQuery, setCoupangQuery] = useState('');
 
+  const todayISO = useMemo(() => toISODate(new Date()), []);
+  const tomorrowISO = useMemo(() => toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000)), []);
   const dayAfterTomorrowISO = useMemo(() => toISODate(new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)), []);
 
   const combined = useMemo<CombinedRow[]>(() => {
@@ -140,27 +159,65 @@ export default function ScheduleBoard({
 
   const isEmpty = filtered.length === 0;
 
+  // "전체보기"는 지금 선택된 탭(오늘/내일/모레)이 가리키는 그 날짜 하나를 기준으로,
+  // 등록된 모든(잠기지 않은) 아이의 그날 준비물을 아이별로 묶어서 보여준다.
+  const activeTabDateISO =
+    activeTab === 'today' ? todayISO : activeTab === 'tomorrow' ? tomorrowISO : dayAfterTomorrowISO;
+
+  const childSections = useMemo<ChildPrepSection[]>(() => {
+    return unlockedChildren
+      .map((child) => {
+        const childEvents = allEvents.filter((e) => e.childId === child.id && e.date === activeTabDateISO);
+        const entries = childEvents.flatMap((event) =>
+          getDisplayItems(event).map((item) => ({ event, item }))
+        );
+        return { child, entries };
+      })
+      .filter((section) => section.entries.length > 0);
+  }, [unlockedChildren, allEvents, activeTabDateISO]);
+
+  const canShowAllChildren = unlockedChildren.length > 1;
+  const displayIsEmpty = showAllChildren && canShowAllChildren ? childSections.length === 0 : isEmpty;
+
+  const handleCoupangSearch = () => {
+    const query = coupangQuery.trim();
+    if (!query) return;
+    openCoupangSearch(query);
+  };
+
   return (
     <View style={styles.container}>
-      <View style={[styles.topBlock, isEmpty && styles.topBlockEmpty]}>
+      <View style={[styles.topBlock, displayIsEmpty && styles.topBlockEmpty]}>
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
             <MaterialIcons name="calendar-today" size={17} color={colors.peachOrangeDeep} />
             <Text style={styles.headerTitle}>알림장 일정 & 준비물</Text>
           </View>
-          {!isEmpty && (
-            <Pressable onPress={() => router.push('/upload')}>
-              <LinearGradient
-                colors={['#6366F1', '#9333EA']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.scanButton}
+          <View style={styles.headerRight}>
+            {canShowAllChildren && (
+              <Pressable
+                onPress={() => setShowAllChildren((v) => !v)}
+                style={styles.moreButton}
+                hitSlop={6}
               >
-                <Text style={styles.scanButtonIcon}>✨</Text>
-                <Text style={styles.scanButtonText}>AI 스캔</Text>
-              </LinearGradient>
-            </Pressable>
-          )}
+                <Text style={styles.moreButtonText}>{showAllChildren ? '1명 보기' : '전체보기'}</Text>
+                <Feather name="chevron-right" size={14} color={colors.gray500} />
+              </Pressable>
+            )}
+            {!displayIsEmpty && (
+              <Pressable onPress={() => router.push('/upload')}>
+                <LinearGradient
+                  colors={['#6366F1', '#9333EA']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.scanButton}
+                >
+                  <Text style={styles.scanButtonIcon}>✨</Text>
+                  <Text style={styles.scanButtonText}>AI 스캔</Text>
+                </LinearGradient>
+              </Pressable>
+            )}
+          </View>
         </View>
 
         <View style={styles.tabRow}>
@@ -177,7 +234,7 @@ export default function ScheduleBoard({
           ))}
         </View>
 
-        {isEmpty ? (
+        {displayIsEmpty ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyEmoji}>🏝️</Text>
             <Text style={styles.emptyTitle}>이 날은 특별한 일정이 없어요</Text>
@@ -196,6 +253,21 @@ export default function ScheduleBoard({
               </LinearGradient>
             </Pressable>
           </View>
+        ) : showAllChildren && canShowAllChildren ? (
+          <ScrollView style={styles.childScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+            <View style={styles.list}>
+              {childSections.map(({ child, entries }) => (
+                <ChildPrepSection
+                  key={child.id}
+                  child={child}
+                  entries={entries}
+                  colors={colors}
+                  styles={styles}
+                  onToggleItem={onToggleItem}
+                />
+              ))}
+            </View>
+          </ScrollView>
         ) : (
           <View style={styles.list}>
             {filtered.map(({ event, dateText }) => (
@@ -214,6 +286,26 @@ export default function ScheduleBoard({
             ))}
           </View>
         )}
+
+        <View style={styles.coupangSearchRow}>
+          <TextInput
+            style={styles.coupangSearchInput}
+            value={coupangQuery}
+            onChangeText={setCoupangQuery}
+            placeholder="필요한 준비물을 검색해서 쿠팡으로"
+            placeholderTextColor={colors.gray400}
+            returnKeyType="search"
+            onSubmitEditing={handleCoupangSearch}
+          />
+          <Pressable
+            style={[styles.coupangSearchButton, !coupangQuery.trim() && styles.coupangSearchButtonDisabled]}
+            onPress={handleCoupangSearch}
+            disabled={!coupangQuery.trim()}
+            hitSlop={6}
+          >
+            <Feather name="search" size={16} color="#FFFFFF" />
+          </Pressable>
+        </View>
       </View>
 
       <Pressable style={styles.seeAllRow} onPress={() => router.push('/calendar')}>
@@ -379,39 +471,113 @@ function ScheduleCard({
             </View>
             <Text style={styles.itemsHint}>클릭하여 체크</Text>
           </View>
-          {items.map((item) => {
-            const checked = !!item.completed;
-            return (
-              <Pressable
-                key={item.id}
-                onPress={() => onToggleItem(event, item)}
-                style={[styles.itemRow, checked && styles.itemRowChecked]}
-              >
-                <MaterialIcons
-                  name={checked ? 'check-box' : 'check-box-outline-blank'}
-                  size={18}
-                  color={checked ? colors.green500 : colors.gray400}
-                />
-                <Text style={[styles.itemText, checked && styles.itemTextChecked]}>{item.name}</Text>
-                {!checked && isValidCoupangKeyword(item.name) && (
-                  <Pressable
-                    style={styles.buyButton}
-                    hitSlop={6}
-                    onPress={() => openCoupangSearch(item.name)}
-                  >
-                    <Text style={styles.buyButtonText}>구매하기</Text>
-                  </Pressable>
-                )}
-                <View style={[styles.itemStatusPill, checked ? styles.itemStatusPillDone : styles.itemStatusPillTodo]}>
-                  <Text style={[styles.itemStatusPillText, checked ? styles.itemStatusPillTextDone : styles.itemStatusPillTextTodo]}>
-                    {checked ? '챙김 완료' : '준비 필요'}
-                  </Text>
-                </View>
-              </Pressable>
-            );
-          })}
+          {items.map((item) => (
+            <PrepItemRow
+              key={item.id}
+              event={event}
+              item={item}
+              colors={colors}
+              styles={styles}
+              onToggleItem={onToggleItem}
+            />
+          ))}
         </View>
       )}
+    </View>
+  );
+}
+
+/** 체크박스 탭으로 개별 완료/해제하는 준비물 한 줄 — 오늘/내일/모레 탭의 일정 카드와
+ *  "전체보기"의 아이별 섹션이 똑같은 인터랙션을 쓰도록 공용으로 뺐다. */
+function PrepItemRow({
+  event,
+  item,
+  colors,
+  styles,
+  onToggleItem,
+}: {
+  event: Event;
+  item: EventItem;
+  colors: ThemeColors;
+  styles: ReturnType<typeof createStyles>;
+  onToggleItem: (event: Event, item: EventItem) => void;
+}) {
+  const checked = !!item.completed;
+  return (
+    <Pressable
+      onPress={() => onToggleItem(event, item)}
+      style={[styles.itemRow, checked && styles.itemRowChecked]}
+    >
+      <MaterialIcons
+        name={checked ? 'check-box' : 'check-box-outline-blank'}
+        size={18}
+        color={checked ? colors.green500 : colors.gray400}
+      />
+      <Text style={[styles.itemText, checked && styles.itemTextChecked]}>{item.name}</Text>
+      {!checked && isValidCoupangKeyword(item.name) && (
+        <Pressable style={styles.buyButton} hitSlop={6} onPress={() => openCoupangSearch(item.name)}>
+          <Text style={styles.buyButtonText}>구매하기</Text>
+        </Pressable>
+      )}
+      <View style={[styles.itemStatusPill, checked ? styles.itemStatusPillDone : styles.itemStatusPillTodo]}>
+        <Text
+          style={[
+            styles.itemStatusPillText,
+            checked ? styles.itemStatusPillTextDone : styles.itemStatusPillTextTodo,
+          ]}
+        >
+          {checked ? '챙김 완료' : '준비 필요'}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+/** "전체보기" 상태에서 아이 한 명 몫의 섹션 — 프로필 사진/이름으로 구분하고, 그 아래
+ *  체크리스트는 ScheduleCard와 동일한 PrepItemRow를 그대로 재사용한다. */
+function ChildPrepSection({
+  child,
+  entries,
+  colors,
+  styles,
+  onToggleItem,
+}: {
+  child: Child;
+  entries: { event: Event; item: EventItem }[];
+  colors: ThemeColors;
+  styles: ReturnType<typeof createStyles>;
+  onToggleItem: (event: Event, item: EventItem) => void;
+}) {
+  const checkedCount = entries.filter(({ item }) => item.completed).length;
+  const label = child.givenName?.trim() || child.name || '아이';
+
+  return (
+    <View style={styles.childSection}>
+      <View style={styles.childSectionHeader}>
+        {child.photoUri ? (
+          <Image source={{ uri: child.photoUri }} style={styles.childAvatar} />
+        ) : (
+          <View style={styles.childAvatarPlaceholder}>
+            <Text style={styles.childAvatarEmoji}>{child.avatarEmoji ?? '🧒'}</Text>
+          </View>
+        )}
+        <Text style={styles.childSectionName} numberOfLines={1}>{label}</Text>
+        <Text style={styles.childSectionCount}>
+          {checkedCount}/{entries.length}
+        </Text>
+      </View>
+      <View style={styles.childSectionItems}>
+        {entries.map(({ event, item }) => (
+          <PrepItemRow
+            key={`${event.id}-${item.id}`}
+            event={event}
+            item={item}
+            colors={colors}
+            styles={styles}
+            onToggleItem={onToggleItem}
+          />
+        ))}
+      </View>
     </View>
   );
 }
@@ -433,6 +599,10 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     headerTitle: { fontSize: 16, fontWeight: '800', color: colors.gray900, letterSpacing: -0.4 },
+    headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    // NoticeBoardCard의 "전체보기" 텍스트 링크와 같은 톤으로 통일.
+    moreButton: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    moreButtonText: { fontSize: 12.5, fontWeight: '700', color: colors.gray500 },
     scanButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -630,5 +800,49 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
     },
     emptyScanButtonIcon: { fontSize: 14 },
     emptyScanButtonText: { fontSize: 13.5, fontWeight: '800', color: '#FFFFFF' },
+    // "전체보기" 상태에서 아이별 섹션이 여러 개라 길어지면, 전체 화면 스크롤과 겹치지
+    // 않도록 카드 내부에서만 스크롤되게 높이를 고정한다.
+    childScroll: { maxHeight: 360 },
+    childSection: { marginBottom: 14 },
+    childSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+    childAvatar: { width: 26, height: 26, borderRadius: 13 },
+    childAvatarPlaceholder: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: colors.gray100,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    childAvatarEmoji: { fontSize: 14 },
+    childSectionName: { flex: 1, fontSize: 13.5, fontWeight: '800', color: colors.gray900 },
+    childSectionCount: { fontSize: 12, fontWeight: '700', color: colors.gray500 },
+    childSectionItems: { gap: 6 },
+    coupangSearchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 14,
+    },
+    coupangSearchInput: {
+      flex: 1,
+      backgroundColor: colors.gray50,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      fontSize: 13,
+      color: colors.gray900,
+    },
+    coupangSearchButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: colors.gray900,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    coupangSearchButtonDisabled: { opacity: 0.4 },
   });
 }

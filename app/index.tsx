@@ -478,6 +478,8 @@ export default function HomeScreen() {
                 onEventPress={handleEventPress}
                 onToggleItem={handleToggleItem}
                 onToggleAll={handleToggleAll}
+                allEvents={events}
+                unlockedChildren={unlockedChildren}
               />
               </Animated.ScrollView>
             </GestureDetector>
