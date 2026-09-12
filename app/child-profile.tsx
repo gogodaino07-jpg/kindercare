@@ -351,6 +351,11 @@ export default function ChildProfileScreen() {
           <MaterialCommunityIcons name="chevron-left" size={26} color={colors.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>아이 프로필 설정</Text>
+        {editingChild && !isMainChild && (
+          <Pressable onPress={handleDelete} hitSlop={8} style={styles.headerButton}>
+            <MaterialCommunityIcons name="trash-can-outline" size={22} color={colors.tomorrowRed} />
+          </Pressable>
+        )}
       </View>
       <KeyboardAvoidingView
         style={styles.keyboardAvoider}
@@ -522,12 +527,6 @@ export default function ChildProfileScreen() {
           />
           <Text style={styles.fieldHint}>쉼표(,)로 구분해서 입력하면 급식 메뉴에 있을 때 강조해서 알려드려요</Text>
         </View>
-
-        {editingChild && !isMainChild && (
-          <Pressable style={styles.deleteLink} onPress={handleDelete}>
-            <Text style={styles.deleteLinkText}>아이 프로필 삭제</Text>
-          </Pressable>
-        )}
       </ScrollView>
       </KeyboardAvoidingView>
 
@@ -649,6 +648,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       justifyContent: 'center',
     },
     headerTitle: {
+      flex: 1,
       fontSize: 17,
       fontWeight: '800',
       color: colors.textPrimary,
@@ -758,8 +758,6 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     chipText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
     chipTextSelected: { color: colors.cardWhite },
     fabErrorText: { color: colors.tomorrowRed, fontSize: 12, fontWeight: '600', textAlign: 'center', marginBottom: 8 },
-    deleteLink: { marginTop: 16, paddingVertical: 10 },
-    deleteLinkText: { color: colors.tomorrowRed, fontSize: 14, fontWeight: '700', textAlign: 'center' },
     fabContainer: {
       position: 'absolute',
       bottom: 20 + bottomInset,
