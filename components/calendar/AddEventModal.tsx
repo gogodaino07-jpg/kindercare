@@ -52,10 +52,10 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
     }
   }, [visible, initialDateISO]);
 
-  // 저장 버튼을 누르면 바로 등록한다. 저장 광고가 실제로 뜬 경우, 광고를 닫고
-  // 돌아왔을 때 본인이 누르지도 않았는데 모달이 훅 닫혀버리면 불편하다는 예전
-  // 피드백이 있어서 모달은 안 닫고 토스트로만 등록 완료를 알린다(닫기는
-  // 사용자가 직접). 광고가 안 뜬 경우엔 그 우려가 없으니 예전처럼 바로 닫는다.
+  // 저장 버튼을 누르면 광고 노출 여부와 상관없이 등록과 동시에 토스트를 띄우고
+  // 모달을 닫는다. 예전엔 광고가 뜬 경우에만 모달을 안 닫고 폼을 비워뒀었는데,
+  // 사용자가 등록이 안 된 줄 알고 버튼을 다시 눌러 일정이 중복 등록되는 문제가
+  // 있어서 광고 유무 상관없이 동작을 통일했다.
   const handleSave = async () => {
     // 이 모달이 열려있는 동안 안드로이드에서는 Modal이 앱 루트와 별도의
     // 네이티브 창에 그려져서, 루트에 뜨는 토스트가 이 모달 뒤로 가려져
@@ -71,7 +71,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
     }
 
     setIsSaving(true);
-    const adShown = await showAddEventAd();
+    await showAddEventAd();
 
     const items: EventItem[] = itemsText
       .split('\n')
@@ -93,17 +93,8 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
     });
 
     setIsSaving(false);
-    if (adShown) {
-      // 모달을 닫지 않고 그대로 두므로, 입력값을 비워주지 않으면 사용자가 등록이 안 된
-      // 줄 알고 버튼을 다시 눌러 같은 내용으로 일정이 중복 등록되는 문제가 있었다.
-      showToast('✓ 일정을 등록했어요.');
-      setTitle('');
-      setNoticeText('');
-      setItemsText('');
-    } else {
-      showToast('일정을 등록했어요.');
-      onClose();
-    }
+    showToast('✓ 일정을 등록했어요.');
+    onClose();
   };
 
   const isDirty =
