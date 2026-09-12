@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AddEventModal from '../components/calendar/AddEventModal';
+import BuyModal from '../components/calendar/BuyModal';
 import CalendarAccordion from '../components/calendar/CalendarAccordion';
 import { useCalendarTheme } from '../components/calendar/useCalendarTheme';
 import CalendarHeader from '../components/calendar/CalendarHeader';
@@ -48,6 +49,7 @@ export default function CalendarScreen() {
 
   const [addEventVisible, setAddEventVisible] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [buyState, setBuyState] = useState<{ event: Event; item: EventItem } | null>(null);
 
   // 달력 축소/확대 진행도(0=주간 1줄, 1=월간). 카드 드래그·리스트 드래그·아래로
   // 당겨 펼치기가 모두 이 값을 실시간으로 갱신하고, 손을 떼면 가까운 상태로
@@ -248,6 +250,15 @@ export default function CalendarScreen() {
     [setItemCompleted]
   );
 
+  const handleOpenBuy = useCallback((event: Event, item: EventItem) => {
+    setBuyState({ event, item });
+  }, []);
+
+  const handleMarkOrdered = useCallback(() => {
+    if (!buyState) return;
+    setItemCompleted(buyState.event, buyState.item, true);
+  }, [buyState, setItemCompleted]);
+
   return (
     <View style={styles.root}>
       <SafeAreaView style={styles.safeArea}>
@@ -306,6 +317,7 @@ export default function CalendarScreen() {
               onAddEvent={() => setAddEventVisible(true)}
               onPressEvent={setEditingEvent}
               onToggleItem={handleToggleItem}
+              onOpenBuy={handleOpenBuy}
             />
           </Animated.ScrollView>
         </GestureDetector>
@@ -317,6 +329,12 @@ export default function CalendarScreen() {
         </Pressable>
       </View>
 
+      <BuyModal
+        visible={!!buyState}
+        itemName={buyState?.item.name ?? null}
+        onClose={() => setBuyState(null)}
+        onMarkOrdered={handleMarkOrdered}
+      />
       <AddEventModal
         visible={addEventVisible}
         initialDateISO={selectedDate}
