@@ -28,6 +28,9 @@ interface ScheduleBoardProps {
   onEventPress: (event: Event) => void;
   onToggleItem: (event: Event, item: EventItem) => void;
   onToggleAll: (event: Event, items: EventItem[], value: boolean) => void;
+  /** AI 스캔 버튼을 눌렀을 때의 진입점 — 아이가 2명 이상이면 호출부(app/index.tsx)가
+   *  스캔 화면으로 바로 보내지 않고 대상 아이를 먼저 고르는 팝업을 띄운다. */
+  onRequestScan: () => void;
   /** 선택된 아이 기준으로 이미 필터링된 mainEvents/secondaryEvents/laterGroups와 달리,
    *  "전체보기" 토글을 위해 등록된 모든 아이의 일정을 한꺼번에 봐야 해서 별도로 받는다. */
   allEvents: Event[];
@@ -105,6 +108,7 @@ export default function ScheduleBoard({
   onEventPress,
   onToggleItem,
   onToggleAll,
+  onRequestScan,
   allEvents,
   unlockedChildren,
 }: ScheduleBoardProps) {
@@ -199,12 +203,12 @@ export default function ScheduleBoard({
                 style={styles.moreButton}
                 hitSlop={6}
               >
-                <Text style={styles.moreButtonText}>{showAllChildren ? '1명 보기' : '전체보기'}</Text>
+                <Text style={styles.moreButtonText}>{showAllChildren ? '1명만 보기' : '다른 아이도 보기'}</Text>
                 <Feather name="chevron-right" size={14} color={colors.gray500} />
               </Pressable>
             )}
             {!displayIsEmpty && (
-              <Pressable onPress={() => router.push('/upload')}>
+              <Pressable onPress={onRequestScan}>
                 <LinearGradient
                   colors={['#6366F1', '#9333EA']}
                   start={{ x: 0, y: 0 }}
@@ -240,7 +244,7 @@ export default function ScheduleBoard({
             <Text style={styles.emptySubtitle}>
               선생님이 보내주신 알림장이 있다면{'\n'}스캔해서 일정을 바로 등록해보세요
             </Text>
-            <Pressable onPress={() => router.push('/upload')}>
+            <Pressable onPress={onRequestScan}>
               <LinearGradient
                 colors={['#6366F1', '#9333EA']}
                 start={{ x: 0, y: 0 }}

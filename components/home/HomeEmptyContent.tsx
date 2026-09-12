@@ -1,5 +1,4 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
@@ -20,6 +19,11 @@ interface HomeEmptyContentProps {
   hasEverRegisteredMeal?: boolean;
   refreshing?: boolean;
   onRefresh?: () => void;
+  /** AI 알림장 스캔 버튼 진입점 — 아이가 2명 이상이면 호출부가 스캔 화면으로
+   *  바로 보내지 않고 대상 아이를 먼저 고르는 팝업을 띄운다. */
+  onRequestScan: () => void;
+  /** 급식 스캔 버튼 진입점(HomeHeroHeader로 그대로 전달). */
+  onRequestMealScan: () => void;
 }
 
 export default function HomeEmptyContent({
@@ -33,8 +37,9 @@ export default function HomeEmptyContent({
   hasEverRegisteredMeal,
   refreshing,
   onRefresh,
+  onRequestScan,
+  onRequestMealScan,
 }: HomeEmptyContentProps) {
-  const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -69,6 +74,7 @@ export default function HomeEmptyContent({
           onPressDate={onPressDate}
           todayMeal={todayMeal}
           hasEverRegisteredMeal={hasEverRegisteredMeal}
+          onRequestMealScan={onRequestMealScan}
         />
 
         <SectionHeader emoji="🎒" title="가방에 쏙쏙!" />
@@ -80,7 +86,7 @@ export default function HomeEmptyContent({
         <Text style={styles.cardSubtitle}>
           알림장을 일일이 읽지 않아도 괜찮아요.{'\n'}AI가 똑똑하게 필요한 준비물을 찾아드릴게요!
         </Text>
-        <Pressable onPress={() => router.push('/upload')}>
+        <Pressable onPress={onRequestScan}>
           <LinearGradient
             colors={[colors.purple500, colors.purpleDeep]}
             start={{ x: 0, y: 0 }}

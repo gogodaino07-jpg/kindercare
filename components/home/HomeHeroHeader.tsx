@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
@@ -28,6 +27,9 @@ interface HomeHeroHeaderProps {
    * 유저) 급식 스캔을 먼저 하라고 유도하는 CTA 버튼을 숨긴다. 신규 유저는 보통
    * 가정통신문/일정부터 스캔하지 급식표부터 스캔하지 않는다. */
   hasEverRegisteredMeal?: boolean;
+  /** 급식 카드의 "스캔하기" 버튼 진입점 — 아이가 2명 이상이면 호출부(app/index.tsx)가
+   *  스캔 화면으로 바로 보내지 않고 대상 아이를 먼저 고르는 팝업을 띄운다. */
+  onRequestMealScan: () => void;
 }
 
 /** birthdate(YYYY-MM-DD)의 월-일이 오늘과 같으면 생일. */
@@ -48,6 +50,7 @@ export default function HomeHeroHeader({
   onPressDate,
   todayMeal,
   hasEverRegisteredMeal,
+  onRequestMealScan,
 }: HomeHeroHeaderProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -109,6 +112,7 @@ export default function HomeHeroHeader({
         onPressMeal={onPressMeal}
         allergies={selectedChild?.allergies}
         hasEverRegisteredMeal={hasEverRegisteredMeal}
+        onRequestMealScan={onRequestMealScan}
       />
 
       {weatherExpanded && (
@@ -404,15 +408,16 @@ function MealMenuCard({
   onPressMeal,
   allergies,
   hasEverRegisteredMeal,
+  onRequestMealScan,
 }: {
   todayMeal?: MealPlan;
   onPressMeal: () => void;
   allergies?: string[];
   hasEverRegisteredMeal?: boolean;
+  onRequestMealScan: () => void;
 }) {
   const colors = useThemeColors();
   const styles = useMemo(() => createMealCardStyles(colors), [colors]);
-  const router = useRouter();
 
   const mainText = todayMeal?.mainMenu?.trim() || todayMeal?.menu[0];
   const sideItems = useMemo(
@@ -445,7 +450,7 @@ function MealMenuCard({
               <Text style={styles.emptyMainText}>오늘 등록된 급식 없음</Text>
             </View>
             {hasEverRegisteredMeal !== false && (
-              <Pressable style={styles.scanButton} onPress={() => router.push('/meal-scan')} hitSlop={4}>
+              <Pressable style={styles.scanButton} onPress={onRequestMealScan} hitSlop={4}>
                 <Ionicons name="camera-outline" size={18} color="#FFFFFF" />
                 <Text style={styles.scanButtonText}>스캔하기</Text>
               </Pressable>

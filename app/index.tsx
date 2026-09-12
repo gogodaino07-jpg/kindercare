@@ -24,6 +24,7 @@ import HomeProfileBar from '../components/home/HomeProfileBar';
 import MealPlanSheet from '../components/home/MealPlanSheet';
 import MultiChildPrepSummary from '../components/home/MultiChildPrepSummary';
 import NoticeBoardCard from '../components/home/NoticeBoardCard';
+import ScanChildPickerModal from '../components/home/ScanChildPickerModal';
 import ScheduleBoard, { ScheduleTab } from '../components/home/ScheduleBoard';
 import TomorrowWeatherAlert from '../components/home/TomorrowWeatherAlert';
 import StickyPrepBar from '../components/home/StickyPrepBar';
@@ -161,6 +162,32 @@ export default function HomeScreen() {
   const unlockedChildren = useMemo(
     () => children.filter((c) => !isChildLocked(children, c.id, isSubscribed)),
     [children, isSubscribed]
+  );
+
+  // AI 알림장 스캔/급식 스캔 버튼 진입점. 아이가 1명뿐이면 예전처럼 선택된 아이 기준으로
+  // 바로 스캔 화면으로 넘어가고, 2명 이상이면 "지금 선택된 아이"로 조용히 넘어가버려
+  // 엉뚱한 아이 몫으로 등록되는 걸 막기 위해 대상 아이를 먼저 고르는 팝업을 띄운다.
+  const [scanPickerRoute, setScanPickerRoute] = useState<'/upload' | '/meal-scan' | null>(null);
+
+  const requestScan = useCallback(
+    (route: '/upload' | '/meal-scan') => {
+      if (unlockedChildren.length > 1) {
+        setScanPickerRoute(route);
+      } else {
+        router.push(route);
+      }
+    },
+    [unlockedChildren, router]
+  );
+
+  const handlePickScanChild = useCallback(
+    (childId: string) => {
+      selectChild(childId);
+      const route = scanPickerRoute;
+      setScanPickerRoute(null);
+      if (route) router.push(route);
+    },
+    [scanPickerRoute, selectChild, router]
   );
 
   const todayProgress = useMemo(() => {
@@ -411,6 +438,8 @@ export default function HomeScreen() {
             hasEverRegisteredMeal={hasEverRegisteredMeal}
             refreshing={refreshing}
             onRefresh={onRefresh}
+            onRequestScan={() => requestScan('/upload')}
+            onRequestMealScan={() => requestScan('/meal-scan')}
           />
         ) : (
           <>
@@ -443,6 +472,7 @@ export default function HomeScreen() {
                 onPressDate={onDatePress}
                 todayMeal={todayMeal}
                 hasEverRegisteredMeal={hasEverRegisteredMeal}
+                onRequestMealScan={() => requestScan('/meal-scan')}
               />
               {noticeEvents.length > 0 && (
                 <NoticeBoardCard notices={noticeEvents} onPressNotice={handleEventPress} />
@@ -478,6 +508,7 @@ export default function HomeScreen() {
                 onEventPress={handleEventPress}
                 onToggleItem={handleToggleItem}
                 onToggleAll={handleToggleAll}
+                onRequestScan={() => requestScan('/upload')}
                 allEvents={events}
                 unlockedChildren={unlockedChildren}
               />
@@ -500,7 +531,17 @@ export default function HomeScreen() {
       </View>
 
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
-      <MealPlanSheet visible={mealSheetOpen} onClose={() => setMealSheetOpen(false)} />
+      <MealPlanSheet
+        visible={mealSheetOpen}
+        onClose={() => setMealSheetOpen(false)}
+        onRequestScan={() => requestScan('/meal-scan')}
+      />
+      <ScanChildPickerModal
+        visible={!!scanPickerRoute}
+        children={unlockedChildren}
+        onSelect={handlePickScanChild}
+        onClose={() => setScanPickerRoute(null)}
+      />
       {!isLocked && subscriptionReady && !isSubscribed && <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />}
     </ScreenBackground>
   );

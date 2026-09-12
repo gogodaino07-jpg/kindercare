@@ -1,6 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
@@ -14,6 +13,9 @@ import Text from '../common/AppText';
 interface MealPlanSheetProps {
   visible: boolean;
   onClose: () => void;
+  /** 급식 스캔 버튼 진입점 — 아이가 2명 이상이면 호출부(app/index.tsx)가 스캔
+   *  화면으로 바로 보내지 않고 대상 아이를 먼저 고르는 팝업을 띄운다. */
+  onRequestScan: () => void;
 }
 
 /** Monday of the week containing `date`, as an ISO string. */
@@ -35,8 +37,7 @@ const AMBER_SOFT = '#FEF3C7';
 const AMBER_SOFT_BORDER = '#FDE68A';
 const AMBER_DEEP = '#B45309';
 
-export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) {
-  const router = useRouter();
+export default function MealPlanSheet({ visible, onClose, onRequestScan }: MealPlanSheetProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { mealPlans, selectedChild } = useAppData();
@@ -119,7 +120,7 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
       Animated.timing(opacityAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
     ]).start(() => {
       onClose();
-      router.push('/meal-scan');
+      onRequestScan();
     });
   };
 
