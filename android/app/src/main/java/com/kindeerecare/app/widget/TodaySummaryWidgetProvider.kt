@@ -38,24 +38,14 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
         }
         views.setRemoteAdapter(R.id.widget_event_list, adapterIntent)
 
-        // requestCode를 아래 위젯 전체 클릭용(0)과 다르게 줘야 한다 — 둘 다
-        // MainActivity로 가는 같은 Intent라 requestCode까지 같으면 시스템이
-        // 같은 PendingIntent로 취급해서, FLAG_IMMUTABLE/FLAG_MUTABLE이 서로
-        // 달라 "Flag mismatch" 크래시가 난다.
-        val itemClickIntent = Intent(context, MainActivity::class.java)
-        val itemClickPendingIntent = PendingIntent.getActivity(
-          context,
-          1,
-          itemClickIntent,
-          PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-        )
-        views.setPendingIntentTemplate(R.id.widget_event_list, itemClickPendingIntent)
-
         var handled = false
+        var todayISO: String? = null
+        var tomorrowISO: String? = null
         if (jsonString != null) {
           try {
             val json = JSONObject(jsonString)
             views.setTextViewText(R.id.widget_date, json.optString("dateLabel"))
+            todayISO = json.optString("dateISO").takeIf { it.isNotBlank() }
 
             val eventCount = json.optJSONArray("todayEvents")?.length() ?: 0
             if (eventCount == 0) {
@@ -74,6 +64,7 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
               views.setViewVisibility(R.id.widget_tomorrow_row, View.GONE)
             } else {
               val itemCount = tomorrow.optInt("itemCount", 0)
+              tomorrowISO = tomorrow.optString("dateISO").takeIf { it.isNotBlank() }
               views.setViewVisibility(R.id.widget_tomorrow_row, View.VISIBLE)
               views.setTextViewText(
                 R.id.widget_tomorrow_text,
@@ -96,19 +87,47 @@ class TodaySummaryWidgetProvider : AppWidgetProvider() {
           views.setViewVisibility(R.id.widget_tomorrow_row, View.GONE)
         }
 
-        val intent = Intent(context, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-          context,
-          0,
-          intent,
-          PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        // 위젯을 탭하면 앱만 그냥 켜지던 걸, 일정 탭했을 때와 똑같이 그 날짜의 캘린더로
+        // 바로 들어가게 한다. kindercare:// 딥링크는 expo-router가 이미 처리하고 있어서
+        // (AndroidManifest의 VIEW 인텐트 필터) 그 스킴으로 이동시키면 된다.
+        // requestCode를 서로 다르게 줘야 한다 — 같은 Intent에 flag만 다르면 시스템이
+        // 같은 PendingIntent로 취급해서 "Flag mismatch" 크래시가 난다.
+        views.setOnClickPendingIntent(R.id.widget_root, buildCalendarPendingIntent(context, todayISO, requestCode = 0, mutable = false))
+        views.setPendingIntentTemplate(
+          R.id.widget_event_list,
+          buildCalendarPendingIntent(context, todayISO, requestCode = 1, mutable = true)
         )
-        views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
+        if (tomorrowISO != null) {
+          views.setOnClickPendingIntent(
+            R.id.widget_tomorrow_row,
+            buildCalendarPendingIntent(context, tomorrowISO, requestCode = 2, mutable = false)
+          )
+        }
 
         appWidgetManager.updateAppWidget(widgetId, views)
       }
 
       appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_event_list)
+    }
+
+    /** dateISO가 있으면 앱 안에서 일정을 탭했을 때와 동일하게 kindercare://calendar
+     *  딥링크로 그 날짜의 캘린더 화면으로 바로 이동시키고, 없으면(데이터 없음/파싱 실패)
+     *  예전처럼 그냥 앱만 여는 Intent로 대체한다. 목록(ListView) 아이템 템플릿용
+     *  PendingIntent는 FLAG_MUTABLE이 필수라 mutable 인자로 구분한다. */
+    private fun buildCalendarPendingIntent(
+      context: Context,
+      dateISO: String?,
+      requestCode: Int,
+      mutable: Boolean
+    ): PendingIntent {
+      val intent = if (dateISO != null) {
+        Intent(Intent.ACTION_VIEW, Uri.parse("kindercare://calendar?date=$dateISO"), context, MainActivity::class.java)
+      } else {
+        Intent(context, MainActivity::class.java)
+      }
+      val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+        if (mutable) PendingIntent.FLAG_MUTABLE else PendingIntent.FLAG_IMMUTABLE
+      return PendingIntent.getActivity(context, requestCode, intent, flags)
     }
   }
 }

@@ -2,6 +2,7 @@ package com.kindeerecare.app.widget
 
 import android.content.Context
 import android.content.Intent
+import android.text.SpannableStringBuilder
 import android.view.View
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
@@ -57,11 +58,12 @@ private class TodayEventsRemoteViewsFactory(private val context: Context) : Remo
     } else {
       views.setTextViewText(R.id.widget_item_title, title)
       val itemsText = WidgetFormatting.itemNamesText(event)
-      if (itemsText.isEmpty()) {
+      if (itemsText == null) {
         views.setViewVisibility(R.id.widget_item_prep, View.GONE)
       } else {
         views.setViewVisibility(R.id.widget_item_prep, View.VISIBLE)
-        views.setTextViewText(R.id.widget_item_prep, "준비물: $itemsText")
+        val combined = SpannableStringBuilder("준비물: ").append(itemsText)
+        views.setTextViewText(R.id.widget_item_prep, combined)
       }
     }
     views.setOnClickFillInIntent(R.id.widget_item_row, Intent())

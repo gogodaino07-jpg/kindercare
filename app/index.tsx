@@ -211,6 +211,7 @@ export default function HomeScreen() {
 
     updateHomeWidget({
       dateLabel: widgetDateLabel(todayISO),
+      dateISO: todayISO,
       todayEvents: upcoming.mainEvents.map((e) => {
         const displayItems = getDisplayItems(e);
         return {
@@ -222,6 +223,7 @@ export default function HomeScreen() {
       tomorrow: tomorrowEvent
         ? {
             dateLabel: widgetDateLabel(tomorrowISO),
+            dateISO: tomorrowISO,
             title: tomorrowEvent.title,
             itemCount: getDisplayItems(tomorrowEvent).filter((i) => !i.completed).length,
           }

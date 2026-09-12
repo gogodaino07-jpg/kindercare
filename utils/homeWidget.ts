@@ -11,6 +11,8 @@ interface WidgetTodayEvent {
 interface WidgetTomorrowPreview {
   /** "9.9 (수)" 형태로 미리 포맷한 문자열. */
   dateLabel: string;
+  /** 위젯 탭 시 캘린더의 이 날짜로 바로 이동하기 위한 ISO 날짜("YYYY-MM-DD"). */
+  dateISO: string;
   title: string;
   itemCount: number;
 }
@@ -18,6 +20,8 @@ interface WidgetTomorrowPreview {
 interface WidgetSummaryPayload {
   /** 위젯 헤더에 보여줄 오늘 날짜 — "9.8 (화)" 형태로 미리 포맷해서 넘긴다. */
   dateLabel: string;
+  /** 위젯(오늘 일정 목록 포함) 탭 시 캘린더의 이 날짜로 바로 이동하기 위한 ISO 날짜. */
+  dateISO: string;
   /** 오늘 일정 — 일정마다 자기 준비물과 묶어서 보여주기 위해 배열로 넘긴다. 위젯 높이 제한으로 최대 2건까지만 표시. */
   todayEvents: WidgetTodayEvent[];
   /** 내일 일정 미리보기 — 내일 일정이 없으면 null(위젯에서 그 줄 자체를 숨김). 있으면 첫 번째 일정만. */
