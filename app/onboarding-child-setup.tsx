@@ -464,7 +464,7 @@ export default function OnboardingChildSetupScreen() {
         <View style={styles.successOverlay}>
           <View style={styles.successCard}>
             <View style={styles.successIconCircle}>
-              <Feather name="gift" size={28} color={ACCENT_BLUE} />
+              <Feather name="gift" size={24} color={ACCENT_BLUE} />
             </View>
             <Text style={styles.successTitle}>프로필 등록 완료!</Text>
             <Text style={styles.successSubtitle}>우리 아이의 새로운 기록 공간이 준비되었습니다.</Text>
@@ -741,21 +741,21 @@ const styles = StyleSheet.create({
       maxWidth: 360,
       backgroundColor: '#FFFFFF',
       borderRadius: 24,
-      padding: 24,
+      padding: 20,
       alignItems: 'center',
       ...SHADOW,
       shadowOpacity: 0.2,
     },
     successIconCircle: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
       backgroundColor: NO_CLASS_BG,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: BORDER,
-      marginBottom: 14,
+      marginBottom: 10,
     },
     successTitle: {
       fontSize: 19,
@@ -767,7 +767,7 @@ const styles = StyleSheet.create({
       fontSize: 12,
       color: GRAY,
       textAlign: 'center',
-      marginBottom: 18,
+      marginBottom: 14,
     },
     summaryCard: {
       width: '100%',
@@ -775,15 +775,15 @@ const styles = StyleSheet.create({
       borderRadius: 16,
       borderWidth: 1,
       borderColor: '#F1F5F9',
-      padding: 14,
-      marginBottom: 18,
+      padding: 12,
+      marginBottom: 14,
     },
     summaryHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
-      paddingBottom: 10,
-      marginBottom: 8,
+      paddingBottom: 8,
+      marginBottom: 6,
       borderBottomWidth: 1,
       borderBottomColor: '#F1F5F9',
     },
