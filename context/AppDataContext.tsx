@@ -213,6 +213,12 @@ function nextMealPlanId() {
   return `mealplan-${Date.now()}-${mealPlanIdCounter}`;
 }
 
+let childIdCounter = 0;
+function nextChildId() {
+  childIdCounter += 1;
+  return `child-${Date.now()}-${childIdCounter}`;
+}
+
 export function AppDataProvider({ children: reactChildren }: { children: React.ReactNode }) {
   const [hasOnboarded, setHasOnboarded] = useState(false);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
@@ -1064,7 +1070,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   };
 
   const addChild = (input: Omit<Child, 'id'>) => {
-    const newChild: Child = { ...input, id: `child-${Date.now()}` };
+    const newChild: Child = { ...input, id: nextChildId() };
     setChildProfiles((prev) => [...prev, newChild]);
     setSelectedChildId(newChild.id);
     if (effectiveFamilyOwnerEmail) {
