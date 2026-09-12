@@ -1,5 +1,6 @@
 package com.kindeerecare.app.widget
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.text.SpannableStringBuilder
@@ -16,11 +17,15 @@ import org.json.JSONObject
  *  wrap_content가 아니라 위젯에 배정된 높이를 그대로 채우도록 바뀌었다. */
 class TodayEventsRemoteViewsService : RemoteViewsService() {
   override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
-    return TodayEventsRemoteViewsFactory(applicationContext)
+    val widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+    return TodayEventsRemoteViewsFactory(applicationContext, widgetId)
   }
 }
 
-private class TodayEventsRemoteViewsFactory(private val context: Context) : RemoteViewsService.RemoteViewsFactory {
+private class TodayEventsRemoteViewsFactory(
+  private val context: Context,
+  private val widgetId: Int
+) : RemoteViewsService.RemoteViewsFactory {
   private var events: JSONArray = JSONArray()
 
   override fun onCreate() {
@@ -35,7 +40,9 @@ private class TodayEventsRemoteViewsFactory(private val context: Context) : Remo
     val prefs = context.getSharedPreferences(TodaySummaryWidgetProvider.PREFS_NAME, Context.MODE_PRIVATE)
     val jsonString = prefs.getString(TodaySummaryWidgetProvider.KEY_SUMMARY_JSON, null)
     events = try {
-      if (jsonString != null) JSONObject(jsonString).optJSONArray("todayEvents") ?: JSONArray() else JSONArray()
+      val root = if (jsonString != null) JSONObject(jsonString) else null
+      val childJson = WidgetDataResolver.resolveChildSummary(context, widgetId, root)
+      childJson?.optJSONArray("todayEvents") ?: JSONArray()
     } catch (e: Exception) {
       JSONArray()
     }

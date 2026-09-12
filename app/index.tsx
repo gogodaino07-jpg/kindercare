@@ -200,36 +200,63 @@ export default function HomeScreen() {
     };
   }, [upcoming.mainEvents]);
 
-  // 홈 화면 위젯(안드로이드)에 오늘 일정을 일정별 준비물과 함께, 내일 일정도 미리보기로 밀어준다.
-  // 앱을 켜거나, 준비물을 체크하거나, 날짜가 바뀌어 일정이 갱신될 때마다 최신 상태로 맞춘다.
+  // 홈 화면 위젯(안드로이드)에 아이별 오늘 일정을 준비물과 함께, 내일 일정도 미리보기로
+  // 밀어준다. 위젯은 아이 2명 이상이면 인스턴스마다 "어느 아이 기준으로 보여줄지"를
+  // 따로 고르므로(선택 화면은 네이티브에서 처리), 선택된 아이 하나가 아니라 등록된
+  // 모든(잠기지 않은) 아이 각각의 요약을 함께 실어 보낸다. 앱을 켜거나, 준비물을
+  // 체크하거나, 날짜가 바뀌어 일정이 갱신될 때마다 최신 상태로 맞춘다.
   useEffect(() => {
     const widgetDateLabel = (iso: string) => {
       const d = parseISODate(iso);
       return `${d.getMonth() + 1}.${d.getDate()} (${WEEKDAY_KO[d.getDay()]})`;
     };
-    const tomorrowEvent = upcoming.secondaryEvents[0];
+
+    const summaries: Record<
+      string,
+      {
+        dateLabel: string;
+        dateISO: string;
+        todayEvents: { title: string; itemNames: string[]; allItemsDone: boolean }[];
+        tomorrow: { dateLabel: string; dateISO: string; title: string; itemCount: number } | null;
+      }
+    > = {};
+
+    for (const child of unlockedChildren) {
+      const childTodayEvents = events.filter((e) => e.childId === child.id && e.date === todayISO);
+      const tomorrowEvent = events.find((e) => e.childId === child.id && e.date === tomorrowISO);
+
+      summaries[child.id] = {
+        dateLabel: widgetDateLabel(todayISO),
+        dateISO: todayISO,
+        todayEvents: childTodayEvents.map((e) => {
+          const displayItems = getDisplayItems(e);
+          return {
+            title: e.title,
+            itemNames: displayItems.filter((i) => !i.completed).map((i) => i.name),
+            allItemsDone: displayItems.length > 0 && displayItems.every((i) => i.completed),
+          };
+        }),
+        tomorrow: tomorrowEvent
+          ? {
+              dateLabel: widgetDateLabel(tomorrowISO),
+              dateISO: tomorrowISO,
+              title: tomorrowEvent.title,
+              itemCount: getDisplayItems(tomorrowEvent).filter((i) => !i.completed).length,
+            }
+          : null,
+      };
+    }
 
     updateHomeWidget({
-      dateLabel: widgetDateLabel(todayISO),
-      dateISO: todayISO,
-      todayEvents: upcoming.mainEvents.map((e) => {
-        const displayItems = getDisplayItems(e);
-        return {
-          title: e.title,
-          itemNames: displayItems.filter((i) => !i.completed).map((i) => i.name),
-          allItemsDone: displayItems.length > 0 && displayItems.every((i) => i.completed),
-        };
-      }),
-      tomorrow: tomorrowEvent
-        ? {
-            dateLabel: widgetDateLabel(tomorrowISO),
-            dateISO: tomorrowISO,
-            title: tomorrowEvent.title,
-            itemCount: getDisplayItems(tomorrowEvent).filter((i) => !i.completed).length,
-          }
-        : null,
+      children: unlockedChildren.map((c) => ({
+        id: c.id,
+        name: c.givenName?.trim() || c.name || '아이',
+        photoUri: c.photoUri,
+        avatarEmoji: c.avatarEmoji,
+      })),
+      summaries,
     });
-  }, [upcoming.mainEvents, upcoming.secondaryEvents, todayISO, tomorrowISO]);
+  }, [events, unlockedChildren, todayISO, tomorrowISO]);
 
   // 준비물 체크 여부를 캘린더 화면과 같은 곳(event.items[].completed)에 저장해서,
   // 홈에서 체크해도 캘린더에 바로 반영되도록 한다.
