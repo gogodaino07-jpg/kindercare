@@ -19,7 +19,9 @@ interface NotificationCenterContextValue {
   notifications: NotificationCenterItem[];
   hasUnread: boolean;
   unreadCount: number;
-  addNotification: (input: Omit<NotificationCenterItem, 'id' | 'createdAt' | 'read'>) => void;
+  addNotification: (
+    input: Omit<NotificationCenterItem, 'id' | 'createdAt' | 'read'> & { id?: string }
+  ) => void;
   removeNotification: (id: string) => void;
   markRead: (id: string) => void;
   clearNotifications: () => void;
@@ -58,11 +60,17 @@ export function NotificationCenterProvider({ children }: { children: React.React
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(notifications)).catch(() => {});
   }, [notifications, loaded]);
 
+  // id를 넘기면(스누즈 알림처럼 OS 알림 identifier를 그대로 쓰는 경우) 같은 id가 이미
+  // 있을 때 중복 추가하지 않는다 — 포그라운드 수신 리스너와 탭 응답 리스너가 같은 알림에
+  // 대해 둘 다 호출될 수 있어서다.
   const addNotification: NotificationCenterContextValue['addNotification'] = (input) => {
-    setNotifications((prev) => [
-      { ...input, id: nextId(), read: false, createdAt: new Date().toISOString() },
-      ...prev,
-    ]);
+    setNotifications((prev) => {
+      if (input.id && prev.some((n) => n.id === input.id)) return prev;
+      return [
+        { ...input, id: input.id ?? nextId(), read: false, createdAt: new Date().toISOString() },
+        ...prev,
+      ];
+    });
   };
 
   const removeNotification = (id: string) => {

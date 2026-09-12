@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { Event, NotificationSettings, TimeOfDay } from '../types/models';
@@ -22,6 +23,23 @@ async function ensureAndroidChannel(): Promise<void> {
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
   });
+}
+
+export const SNOOZE_CATEGORY_ID = 'event-reminder-actions';
+export const SNOOZE_ACTION_ID = 'snooze';
+
+let snoozeCategoryRegistered = false;
+/** 알림에 "나중에 다시 알림" 액션 버튼을 붙이려면 이 카테고리를 스케줄 전에 등록해둬야 한다. */
+async function ensureSnoozeCategory(): Promise<void> {
+  if (snoozeCategoryRegistered) return;
+  snoozeCategoryRegistered = true;
+  await Notifications.setNotificationCategoryAsync(SNOOZE_CATEGORY_ID, [
+    {
+      identifier: SNOOZE_ACTION_ID,
+      buttonTitle: '나중에 다시 알림',
+      options: { opensAppToForeground: true },
+    },
+  ]);
 }
 
 function timeToHour24(time: TimeOfDay): number {
@@ -51,15 +69,28 @@ function summaryLine(event: Event): string {
 function buildNotificationContent(
   label: string,
   dateEvents: Event[]
-): { title: string; body: string; data: { date: string } } {
-  const data = { date: dateEvents[0].date };
+): {
+  title: string;
+  body: string;
+  data: { date: string; notifKey: string };
+  categoryIdentifier: string;
+} {
+  const date = dateEvents[0].date;
+  // 같은 알림에 스누즈를 여러 번 눌러도 항상 같은 예약을 가리키도록 날짜+라벨로 안정적인 키를 만든다.
+  const data = { date, notifKey: `${date}:${label}` };
   if (dateEvents.length === 1) {
-    return { title: `[${label}] ${dateEvents[0].title}`, body: summaryLine(dateEvents[0]), data };
+    return {
+      title: `[${label}] ${dateEvents[0].title}`,
+      body: summaryLine(dateEvents[0]),
+      data,
+      categoryIdentifier: SNOOZE_CATEGORY_ID,
+    };
   }
   return {
     title: `[${label}] 일정 ${dateEvents.length}건`,
     body: dateEvents.map((e) => `• ${e.title}`).join('\n'),
     data,
+    categoryIdentifier: SNOOZE_CATEGORY_ID,
   };
 }
 
@@ -102,6 +133,7 @@ async function runScheduleEventNotifications(
   if (status !== 'granted') return;
 
   await ensureAndroidChannel();
+  await ensureSnoozeCategory();
 
   const upcoming = events.filter((e) => !isPast(e.date) && hasNotifiableContent(e));
 
@@ -146,4 +178,55 @@ async function runScheduleEventNotifications(
       }
     }
   }
+}
+
+const SNOOZE_MAP_STORAGE_KEY = 'kindercare_snooze_map';
+
+async function loadSnoozeMap(): Promise<Record<string, string>> {
+  try {
+    const raw = await AsyncStorage.getItem(SNOOZE_MAP_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * 알림의 "나중에 다시 알림" 버튼을 눌렀을 때 같은 알림(notifKey)을 지정한 분(minutes) 뒤로
+ * 재예약한다. 같은 notifKey로 이미 잡혀 있는 이전 스누즈 예약이 있으면 먼저 취소해서, 스누즈를
+ * 여러 번 반복해도(15분 → 다시 30분 등) 중복으로 울리지 않고 항상 가장 최근 선택만 남는다.
+ */
+export async function snoozeNotification(
+  notifKey: string,
+  title: string,
+  body: string,
+  date: string,
+  minutes: number
+): Promise<void> {
+  await ensureAndroidChannel();
+  await ensureSnoozeCategory();
+
+  const map = await loadSnoozeMap();
+  const previousId = map[notifKey];
+  if (previousId) {
+    await Notifications.cancelScheduledNotificationAsync(previousId).catch(() => {});
+  }
+
+  const newId = await Notifications.scheduleNotificationAsync({
+    content: {
+      title,
+      body,
+      data: { date, notifKey, isSnooze: true },
+      categoryIdentifier: SNOOZE_CATEGORY_ID,
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: new Date(Date.now() + minutes * 60 * 1000),
+      channelId: ANDROID_CHANNEL_ID,
+    },
+  });
+
+  map[notifKey] = newId;
+  await AsyncStorage.setItem(SNOOZE_MAP_STORAGE_KEY, JSON.stringify(map)).catch(() => {});
 }

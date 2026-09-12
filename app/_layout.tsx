@@ -20,10 +20,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppLockScreen from '../components/AppLockScreen';
 import BootSplashOverlay from '../components/BootSplashOverlay';
 import { isExternalActionActive } from '../utils/externalAction';
-import { AlertProvider } from '../context/AlertContext';
+import { snoozeNotification, SNOOZE_ACTION_ID } from '../utils/notifications';
+import { AlertProvider, useAlert } from '../context/AlertContext';
 import { AppDataProvider, useAppData } from '../context/AppDataContext';
 import { AppLockProvider, useAppLock } from '../context/AppLockContext';
-import { NotificationCenterProvider } from '../context/NotificationCenterContext';
+import { NotificationCenterProvider, useNotificationCenter } from '../context/NotificationCenterContext';
 import { SubscriptionProvider } from '../context/SubscriptionContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
@@ -54,6 +55,14 @@ function ThemedNavigation() {
   const { onboardingLoaded } = useAppData();
   const router = useRouter();
   const lastBackPressRef = useRef(0);
+  const { showAlert } = useAlert();
+  const { addNotification, markRead } = useNotificationCenter();
+  // showAlert/addNotification/markRead는 매 렌더마다 새로 만들어지는 함수라, 알림
+  // 리스너 effect의 의존성으로 넣으면 알림센터 상태가 바뀔 때마다 리스너가 재등록되고
+  // getLastNotificationResponseAsync가 다시 실행돼 마지막 알림을 반복 처리하게 된다.
+  // ref로 최신 함수만 갈아끼우고 effect 자체는 재등록하지 않는다.
+  const notifHandlersRef = useRef({ showAlert, addNotification, markRead });
+  notifHandlersRef.current = { showAlert, addNotification, markRead };
 
   const splashOpacity = useRef(new Animated.Value(1)).current;
   const appOpacity = useRef(new Animated.Value(0)).current;
@@ -112,19 +121,75 @@ function ThemedNavigation() {
   // 푸시 알림을 탭했을 때 홈 화면이 아니라 그 알림이 알려준 일정 날짜의 캘린더로 바로 이동.
   // 앱이 이미 떠 있을 때(response listener)와, 완전히 종료된 상태에서 알림 탭으로 막 켜졌을 때
   // (getLastNotificationResponseAsync, cold start) 둘 다 처리해야 한다.
+  // "나중에 다시 알림" 액션 버튼을 눌렀을 때는 캘린더 이동 대신 스누즈 시간 선택 팝업을 띄운다.
   useEffect(() => {
     if (!isReady) return;
 
-    const navigateToDate = (response: Notifications.NotificationResponse | null) => {
-      const date = response?.notification.request.content.data?.date;
-      if (typeof date === 'string') {
-        router.push({ pathname: '/calendar', params: { date } });
+    type NotifData = { date?: string; notifKey?: string; isSnooze?: boolean };
+
+    const handleResponse = (response: Notifications.NotificationResponse | null) => {
+      if (!response) return;
+      const { addNotification, markRead, showAlert } = notifHandlersRef.current;
+      const content = response.notification.request.content;
+      const data = (content.data ?? {}) as NotifData;
+      const notificationId = response.notification.request.identifier;
+
+      // 스누즈로 재예약됐던 알림이 실제로 도착/탭된 시점에만 알림센터에 노출한다
+      // (기존 전날/당일 알림은 알림센터 연동 대상이 아니므로 그대로 둔다).
+      if (data.isSnooze) {
+        addNotification({
+          id: notificationId,
+          title: content.title ?? '',
+          body: content.body ?? '',
+          date: data.date,
+        });
+        markRead(notificationId);
+      }
+
+      if (response.actionIdentifier === SNOOZE_ACTION_ID) {
+        const { notifKey, date } = data;
+        if (!notifKey || !date) return;
+        const title = content.title ?? '';
+        const body = content.body ?? '';
+        showAlert({
+          title: '나중에 다시 알려드릴까요?',
+          message: '원하는 시간을 선택해주세요.',
+          buttons: [
+            { text: '15분 후', onPress: () => { snoozeNotification(notifKey, title, body, date, 15).catch(() => {}); } },
+            { text: '30분 후', onPress: () => { snoozeNotification(notifKey, title, body, date, 30).catch(() => {}); } },
+            { text: '1시간 후', onPress: () => { snoozeNotification(notifKey, title, body, date, 60).catch(() => {}); } },
+            { text: '취소', style: 'cancel' },
+          ],
+        });
+        return;
+      }
+
+      if (typeof data.date === 'string') {
+        router.push({ pathname: '/calendar', params: { date: data.date } });
       }
     };
 
-    Notifications.getLastNotificationResponseAsync().then(navigateToDate);
-    const subscription = Notifications.addNotificationResponseReceivedListener(navigateToDate);
-    return () => subscription.remove();
+    // 앱이 포그라운드/백그라운드에서 실행 중일 때 스누즈 알림이 도착하면(탭하기 전에도)
+    // 알림센터에 안읽음 상태로 바로 노출한다. 완전 종료 상태(cold start)에서는 이 리스너가
+    // 아예 실행되지 않으므로, 그 경우는 위 handleResponse의 탭 처리에서 추가해준다.
+    const handleReceived = (notification: Notifications.Notification) => {
+      const data = (notification.request.content.data ?? {}) as NotifData;
+      if (!data.isSnooze) return;
+      notifHandlersRef.current.addNotification({
+        id: notification.request.identifier,
+        title: notification.request.content.title ?? '',
+        body: notification.request.content.body ?? '',
+        date: data.date,
+      });
+    };
+
+    Notifications.getLastNotificationResponseAsync().then(handleResponse);
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
+    const receivedSubscription = Notifications.addNotificationReceivedListener(handleReceived);
+    return () => {
+      responseSubscription.remove();
+      receivedSubscription.remove();
+    };
   }, [isReady, router]);
 
   // Determine status bar style:
