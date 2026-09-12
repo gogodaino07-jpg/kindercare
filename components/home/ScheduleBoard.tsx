@@ -9,8 +9,10 @@ import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { EventDateGroup } from '../../hooks/useUpcomingEvents';
 import { Event, EventItem } from '../../types/models';
 import { formatMD, parseISODate, startOfDay, toISODate } from '../../utils/date';
+import { openCoupangSearch } from '../../utils/coupang';
 import { getSpecialEventTheme } from '../../utils/specialEventTheme';
 import Text from '../common/AppText';
+import TextInput from '../common/ClearableTextInput';
 import EventIcon from '../common/EventIcon';
 import PhotoViewerModal from '../common/PhotoViewerModal';
 
@@ -98,6 +100,7 @@ export default function ScheduleBoard({
   const isDark = resolvedScheme === 'dark';
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [viewerPhotos, setViewerPhotos] = useState<string[] | null>(null);
+  const [coupangQuery, setCoupangQuery] = useState('');
 
   const dayAfterTomorrowISO = useMemo(() => toISODate(new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)), []);
 
@@ -136,6 +139,12 @@ export default function ScheduleBoard({
   ];
 
   const isEmpty = filtered.length === 0;
+
+  const handleCoupangSearch = () => {
+    const query = coupangQuery.trim();
+    if (!query) return;
+    openCoupangSearch(query);
+  };
 
   return (
     <View style={styles.container}>
@@ -211,6 +220,26 @@ export default function ScheduleBoard({
             ))}
           </View>
         )}
+
+        <View style={styles.coupangSearchRow}>
+          <TextInput
+            style={styles.coupangSearchInput}
+            value={coupangQuery}
+            onChangeText={setCoupangQuery}
+            placeholder="필요한 준비물을 검색해서 쿠팡으로"
+            placeholderTextColor={colors.gray400}
+            returnKeyType="search"
+            onSubmitEditing={handleCoupangSearch}
+          />
+          <Pressable
+            style={[styles.coupangSearchButton, !coupangQuery.trim() && styles.coupangSearchButtonDisabled]}
+            onPress={handleCoupangSearch}
+            disabled={!coupangQuery.trim()}
+            hitSlop={6}
+          >
+            <Feather name="search" size={16} color="#FFFFFF" />
+          </Pressable>
+        </View>
       </View>
 
       <Pressable style={styles.seeAllRow} onPress={() => router.push('/calendar')}>
@@ -638,5 +667,31 @@ function createStyles(colors: ThemeColors, isDark: boolean) {
     },
     emptyScanButtonIcon: { fontSize: 14 },
     emptyScanButtonText: { fontSize: 13.5, fontWeight: '800', color: '#FFFFFF' },
+    coupangSearchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 14,
+    },
+    coupangSearchInput: {
+      flex: 1,
+      backgroundColor: colors.gray50,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      fontSize: 13,
+      color: colors.gray900,
+    },
+    coupangSearchButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: colors.gray900,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    coupangSearchButtonDisabled: { opacity: 0.4 },
   });
 }
