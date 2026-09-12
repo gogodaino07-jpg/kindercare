@@ -160,9 +160,7 @@ function EventDetailCard({
             <Text style={styles.itemsHint}>터치 시 완료</Text>
           </View>
 
-          {incompleteItems.length === 0 ? (
-            <Text style={styles.allDoneText}>🎉 모든 준비물을 차곡차곡 다 챙겼어요!</Text>
-          ) : (
+          {incompleteItems.length > 0 && (
             <View style={styles.itemList}>
               {incompleteItems.map((item) => {
                 const isBuy = isValidCoupangKeyword(item.name);
@@ -384,13 +382,6 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
     fontSize: 10.5,
     fontWeight: '600',
     color: t.textMuted,
-  },
-  allDoneText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: t.emeraldDeep,
-    textAlign: 'center',
-    paddingVertical: 14,
   },
   itemList: {
     gap: 8,
