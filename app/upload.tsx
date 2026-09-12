@@ -474,9 +474,9 @@ export default function UploadScreen() {
               <View style={styles.emptyStateFill}>
                 <DropzoneCard />
                 <ScanGuideCard />
-                <View style={[styles.emptyStateSpacer, { flex: 0.25 }]} />
+                <View style={styles.emptyStateSpacer} />
                 <TipBox />
-                <View style={[styles.emptyStateSpacer, { flex: 1.75 }]} />
+                <View style={styles.emptyStateSpacer} />
               </View>
             )}
           </ScrollView>
@@ -937,6 +937,7 @@ function createStyles(C: ScanColors) {
     borderColor: C.slate200,
     paddingVertical: 12,
     paddingHorizontal: 20,
+    marginHorizontal: -4,
     alignItems: 'center',
     gap: 3,
   },
@@ -968,6 +969,7 @@ function createStyles(C: ScanColors) {
     borderRadius: 16,
     paddingVertical: 12,
     paddingHorizontal: 16,
+    marginHorizontal: -4,
     marginTop: 4,
   },
   tipText: { flex: 1, fontSize: 12.5, color: C.slate700 },
