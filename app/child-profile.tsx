@@ -66,6 +66,14 @@ export default function ChildProfileScreen() {
 
   const scrollViewRef = useRef<ScrollView>(null);
   const classNameInputRef = useRef<TextInput>(null);
+  // 메인 아이는 삭제 링크가 없어 내용이 한 화면에 다 들어오지만, 메인이 아닌
+  // 아이는 "아이 프로필 삭제" 링크가 하나 더 붙어서 화면보다 길어질 수 있다.
+  // scrollEnabled를 무조건 false로 고정해두면 그 경우 삭제 링크가 화면 밖에
+  // 렌더링된 채 손으로 내려서 볼 방법이 없어진다 — 내용이 실제로 넘칠 때만
+  // 스크롤을 켠다(HomeEmptyContent.tsx와 같은 방식).
+  const [scrollContainerHeight, setScrollContainerHeight] = useState(0);
+  const [scrollContentHeight, setScrollContentHeight] = useState(0);
+  const canScrollContent = scrollContentHeight > scrollContainerHeight + 1;
   const scrollToEndOnFocus = () => {
     // 반 이름/알레르기 입력란은 폼 아래쪽 필드라, 정확한 좌표를 재는 것보다
     // 스크롤 끝으로 이동시키는 편이 New Architecture에서 더 안정적으로 동작함.
@@ -352,13 +360,15 @@ export default function ChildProfileScreen() {
         ref={scrollViewRef}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
-        // 이제 내용이 한 화면에 다 들어와서 손으로 끌어 스크롤할 필요가 없다.
-        // scrollEnabled=false는 터치 스크롤만 막고, 반 이름/알레르기 입력칸
-        // 포커스 시 scrollToEnd로 자동으로 올려주는 동작(scrollToEndOnFocus)은
-        // 그대로 동작한다(키보드가 떠서 내용이 가려질 때 대비).
-        scrollEnabled={false}
+        // 내용이 화면에 다 들어올 때는 스크롤을 막아 흔들림 없이 고정하고,
+        // (삭제 링크가 붙는 등) 화면보다 길어지는 경우에만 실제로 스크롤한다.
+        // scrollEnabled가 false여도 반 이름/알레르기 입력칸 포커스 시
+        // scrollToEnd로 자동으로 올려주는 동작(scrollToEndOnFocus)은 그대로 동작한다.
+        scrollEnabled={canScrollContent}
         bounces={false}
         overScrollMode="never"
+        onLayout={(e) => setScrollContainerHeight(e.nativeEvent.layout.height)}
+        onContentSizeChange={(_w, h) => setScrollContentHeight(h)}
       >
         <View style={styles.avatarWrap}>
           <LinearGradient colors={AVATAR_RING_GRADIENT} style={styles.avatarRing}>
@@ -523,8 +533,8 @@ export default function ChildProfileScreen() {
 
       {/* Floating Action Button (Save) - Positioned exactly like Calendar */}
       <View style={styles.fabContainer}>
-        {/* scrollEnabled=false라 스크롤로 내려서 볼 수 없는 영역이라, 안내 문구를
-            콘텐츠 쪽이 아니라 버튼 바로 위(고정 영역)에 둬야 안 잘리고 항상 보인다. */}
+        {/* 내용이 화면에 다 들어와 스크롤이 꺼져있는 경우에도 잘리지 않게, 안내
+            문구는 콘텐츠 쪽이 아니라 버튼 바로 위(항상 고정된 영역)에 둔다. */}
         {showErrors && <Text style={styles.fabErrorText}>이름, 나이, 반 이름을 모두 입력해주세요</Text>}
         <TouchableOpacity
           style={[styles.saveButton, (!canSave || isSaving) && styles.saveButtonDisabled]}
