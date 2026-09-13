@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   interpolate,
@@ -145,6 +145,32 @@ export default function HomeScreen() {
   const [bottomStackHeight, setBottomStackHeight] = useState(0);
   const isChildBirthdayToday = isBirthdayToday(selectedChild?.birthdate);
 
+  // 쿠팡 검색창(ScheduleBoard 맨 아래)이 키보드에 가려지는 문제 — 이 화면은
+  // targetSdk 36(엣지투엣지 강제 적용) 기기에서 windowSoftInputMode="adjustResize"만으론
+  // 스크롤 영역이 제대로 줄어들지 않아, scrollToEnd()를 호출해도 마지막 콘텐츠가
+  // 여전히 키보드 뒤에 남는다. 키보드 실제 높이만큼 스크롤 콘텐츠 하단에 여백을
+  // 직접 추가해서 스크롤이 그 여백까지 내려갈 수 있게 한다.
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const searchInputFocusedRef = useRef(false);
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+      if (searchInputFocusedRef.current) {
+        // 새로 생긴 하단 여백이 실제 레이아웃에 반영될 시간을 살짝 준 뒤 스크롤.
+        setTimeout(() => {
+          scrollRef.current?.scrollToEnd({ animated: true });
+        }, 50);
+      }
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   // 구독이 끝나 지금 선택된 아이가 잠기면(무료 한도 초과), 잠기지 않은 첫 아이로
   // 자동 전환한다 — 안 그러면 잠긴 아이의 일정/급식 등이 홈 화면에 계속 노출된다.
   useEffect(() => {
@@ -233,14 +259,20 @@ export default function HomeScreen() {
     scrollRef.current?.scrollTo({ y: Math.max(progressYRef.current - 8, 0), animated: true });
   }, []);
 
-  // 쿠팡 검색창(ScheduleBoard 맨 아래)에 포커스가 가면, 이 검색창이 홈 화면
-  // 스크롤의 마지막 콘텐츠라 화면 끝까지 스크롤해서 키보드에 가려지지 않게 한다.
-  // 키보드가 다 올라온 뒤 스크롤해야 어긋나지 않아, 온보딩 화면과 동일하게 짧은
-  // 지연을 둔다.
+  // 쿠팡 검색창(ScheduleBoard 맨 아래)에 포커스가 가 있는 동안엔, 키보드가 실제로
+  // 올라온 시점(keyboardDidShow)에 맞춰 화면 끝까지 스크롤한다 — 포커스 시점에
+  // 바로 스크롤하면 keyboardHeight 여백이 아직 반영되기 전이라 부족하게 스크롤될
+  // 수 있어, 실제 키보드 표시 이벤트를 기준으로 삼는다.
   const handleSearchInputFocus = useCallback(() => {
+    searchInputFocusedRef.current = true;
+    // 이미 키보드가 떠 있는 상태(예: 다른 입력에서 바로 이 입력으로 옮겨온 경우)엔
+    // keyboardDidShow가 다시 발생하지 않으므로, 포커스 시점에도 한 번 시도해둔다.
     setTimeout(() => {
       scrollRef.current?.scrollToEnd({ animated: true });
     }, 150);
+  }, []);
+  const handleSearchInputBlur = useCallback(() => {
+    searchInputFocusedRef.current = false;
   }, []);
 
   // 준비물 배너가 절반 이상 스크롤로 가려지면, 상단에 얇은 진행률 띠를 대신 보여준다.
@@ -425,7 +457,10 @@ export default function HomeScreen() {
               <Animated.ScrollView
                 ref={scrollRef}
                 style={styles.mainContainer}
-                contentContainerStyle={[styles.scrollContainer, { paddingBottom: bottomStackHeight + insets.bottom + 16 }]}
+                contentContainerStyle={[
+                  styles.scrollContainer,
+                  { paddingBottom: bottomStackHeight + insets.bottom + 16 + keyboardHeight },
+                ]}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="always"
                 onScroll={scrollHandler}
@@ -485,6 +520,7 @@ export default function HomeScreen() {
                 onToggleItem={handleToggleItem}
                 onToggleAll={handleToggleAll}
                 onSearchInputFocus={handleSearchInputFocus}
+                onSearchInputBlur={handleSearchInputBlur}
               />
               </Animated.ScrollView>
             </GestureDetector>

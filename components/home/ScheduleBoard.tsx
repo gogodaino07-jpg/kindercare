@@ -30,6 +30,9 @@ interface ScheduleBoardProps {
   /** 쿠팡 검색창에 포커스가 갔을 때 호출 — 이 검색창이 홈 화면 스크롤의 맨 마지막
    * 콘텐츠라, 키보드가 올라오면 입력창이 가려지지 않도록 화면을 끝까지 스크롤한다. */
   onSearchInputFocus?: () => void;
+  /** 쿠팡 검색창이 포커스를 잃었을 때 호출 — 다른 곳에서 키보드가 뜰 때 이 검색창
+   * 기준으로 스크롤하지 않도록 포커스 상태를 추적한다. */
+  onSearchInputBlur?: () => void;
 }
 
 /** Blends a hex color toward white by `amount` (0-1) to make it a paler shade. */
@@ -98,6 +101,7 @@ export default function ScheduleBoard({
   onToggleItem,
   onToggleAll,
   onSearchInputFocus,
+  onSearchInputBlur,
 }: ScheduleBoardProps) {
   const router = useRouter();
   const { colors, resolvedScheme } = useTheme();
@@ -235,6 +239,7 @@ export default function ScheduleBoard({
             returnKeyType="search"
             onSubmitEditing={handleCoupangSearch}
             onFocus={onSearchInputFocus}
+            onBlur={onSearchInputBlur}
           />
           <Pressable
             style={[styles.coupangSearchButton, !coupangQuery.trim() && styles.coupangSearchButtonDisabled]}
