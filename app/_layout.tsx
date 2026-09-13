@@ -151,13 +151,33 @@ function ThemedNavigation() {
         if (!notifKey || !date) return;
         const title = content.title ?? '';
         const body = content.body ?? '';
+        // 시간 선택 후에도 원래 알림이 알림창에 그대로 남아있어 새로 예약된 스누즈
+        // 알림과 헷갈릴 수 있으므로, 선택 시(취소 제외) 원래 알림을 지운다.
         showAlert({
           title: '나중에 다시 알려드릴까요?',
           message: '원하는 시간을 선택해주세요.',
           buttons: [
-            { text: '15분 후', onPress: () => { snoozeNotification(notifKey, title, body, date, 15).catch(() => {}); } },
-            { text: '30분 후', onPress: () => { snoozeNotification(notifKey, title, body, date, 30).catch(() => {}); } },
-            { text: '1시간 후', onPress: () => { snoozeNotification(notifKey, title, body, date, 60).catch(() => {}); } },
+            {
+              text: '15분 후',
+              onPress: () => {
+                snoozeNotification(notifKey, title, body, date, 15).catch(() => {});
+                Notifications.dismissNotificationAsync(notificationId).catch(() => {});
+              },
+            },
+            {
+              text: '30분 후',
+              onPress: () => {
+                snoozeNotification(notifKey, title, body, date, 30).catch(() => {});
+                Notifications.dismissNotificationAsync(notificationId).catch(() => {});
+              },
+            },
+            {
+              text: '1시간 후',
+              onPress: () => {
+                snoozeNotification(notifKey, title, body, date, 60).catch(() => {});
+                Notifications.dismissNotificationAsync(notificationId).catch(() => {});
+              },
+            },
             { text: '취소', style: 'cancel' },
           ],
         });
