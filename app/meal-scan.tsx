@@ -76,7 +76,12 @@ export default function MealScanScreen() {
     }
     if (!cameraRef.current) return;
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
+      // AI 가정통신문 스캔(업로드 화면)은 시스템 카메라 앱을 그대로 띄우는 방식이라
+      // 셔터음이 크지 않은데, 여긴 앱 안에 직접 그린 카메라 화면(expo-camera)이라
+      // 기본값이 켜진 셔터음이 재생돼 유독 크게 들렸다 — 꺼서 두 화면의 촬영 경험을
+      // 맞춘다. 다만 국내 일부 제조사는 규제상 셔터음을 강제로 켜기도 해서 기기에
+      // 따라 완전히 무음이 안 될 수 있다.
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.8, shutterSound: false });
       if (photo?.uri) {
         setDoc({ id: `meal-${Date.now()}`, uri: photo.uri, kind: 'image', pickSource: 'camera' });
       }
