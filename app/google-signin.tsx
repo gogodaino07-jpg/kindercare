@@ -14,6 +14,7 @@ import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useThemeColors } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
+import { HOME_TUTORIAL_KEY, markTutorialSeen } from '../utils/tutorialStorage';
 
 const BG_GRADIENT = STAMP_BOARD_THEMES.blue.bgGradient;
 
@@ -123,6 +124,12 @@ export default function GoogleSignInScreen() {
       // [Flow Logic]
       const hasOnboardedCloud = await checkOnboardingStatus(account.email);
       const hasCloudData = await checkCloudDataExists(account.email);
+      // 이미 온보딩을 마친 적 있는 계정(재설치+재로그인 포함)에는 홈 화면
+      // 코치마크 튜토리얼을 다시 보여줄 필요가 없다 — 로컬 저장값이 아니라
+      // 계정 자체의 이력으로 판단해야 앱 삭제 후 재설치해도 안 뜬다.
+      if (hasOnboardedCloud) {
+        markTutorialSeen(HOME_TUTORIAL_KEY).catch(() => {});
+      }
 
       // 1. Re-login Flow
       if (flow === 'relogin') {
@@ -297,6 +304,12 @@ export default function GoogleSignInScreen() {
       // [Flow Logic]
       const hasOnboardedCloud = await checkOnboardingStatus(account.email);
       const hasCloudData = await checkCloudDataExists(account.email);
+      // 이미 온보딩을 마친 적 있는 계정(재설치+재로그인 포함)에는 홈 화면
+      // 코치마크 튜토리얼을 다시 보여줄 필요가 없다 — 로컬 저장값이 아니라
+      // 계정 자체의 이력으로 판단해야 앱 삭제 후 재설치해도 안 뜬다.
+      if (hasOnboardedCloud) {
+        markTutorialSeen(HOME_TUTORIAL_KEY).catch(() => {});
+      }
 
       // 1. Re-login Flow
       if (flow === 'relogin') {

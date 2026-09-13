@@ -44,9 +44,7 @@ import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
 import { Event, EventItem } from '../types/models';
 import { isBirthdayToday, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
 import { updateHomeWidget } from '../utils/homeWidget';
-import { hasSeenTutorial, markTutorialSeen } from '../utils/tutorialStorage';
-
-const HOME_TUTORIAL_KEY = 'homeSchedule:v2';
+import { HOME_TUTORIAL_KEY, hasSeenTutorial, markTutorialSeen } from '../utils/tutorialStorage';
 
 // 앱 프로세스가 살아있는 동안 전면 광고는 한 번만 시도한다. 컴포넌트 스코프
 // ref로 관리하면 AI 스캔 후 홈으로 돌아오면서 화면이 다시 마운트될 때마다
