@@ -23,6 +23,8 @@ interface HomeHeroHeaderProps {
   onPressDate: (date: string) => void;
   /** 오늘 등록된 급식. 있으면 급식 카드에 메인 메뉴 + 나머지 반찬 목록을 보여줌. */
   todayMeal?: MealPlan;
+  /** 홈 화면 튜토리얼이 "오늘의 급식" 카드를 스포트라이트로 강조할 때 위치를 재기 위한 ref. */
+  mealCardRef?: React.RefObject<View | null>;
 }
 
 /** birthdate(YYYY-MM-DD)의 월-일이 오늘과 같으면 생일. */
@@ -42,6 +44,7 @@ export default function HomeHeroHeader({
   locationLabel,
   onPressDate,
   todayMeal,
+  mealCardRef,
 }: HomeHeroHeaderProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -98,11 +101,13 @@ export default function HomeHeroHeader({
         </LinearGradient>
       )}
 
-      <MealMenuCard
-        todayMeal={todayMeal}
-        onPressMeal={onPressMeal}
-        allergies={selectedChild?.allergies}
-      />
+      <View ref={mealCardRef} collapsable={false}>
+        <MealMenuCard
+          todayMeal={todayMeal}
+          onPressMeal={onPressMeal}
+          allergies={selectedChild?.allergies}
+        />
+      </View>
 
       {weatherExpanded && (
         <View style={styles.weatherMetaRow}>

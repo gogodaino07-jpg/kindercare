@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { Redirect, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { ActivityIndicator, Keyboard, Pressable, StyleSheet, View } from 'react-native';
@@ -21,7 +21,7 @@ import FamilyShareCard from '../components/home/FamilyShareCard';
 import HomeEmptyContent from '../components/home/HomeEmptyContent';
 import HomeHeroHeader from '../components/home/HomeHeroHeader';
 import HomeProfileBar from '../components/home/HomeProfileBar';
-import HomeTutorialOverlay, { HomeTutorialStep, MockPrepDemo, MockScheduleDemo } from '../components/home/HomeTutorialOverlay';
+import HomeTutorialOverlay, { HomeTutorialStep } from '../components/home/HomeTutorialOverlay';
 import MealPlanSheet from '../components/home/MealPlanSheet';
 import MultiChildPrepSummary from '../components/home/MultiChildPrepSummary';
 import NoticeBoardCard from '../components/home/NoticeBoardCard';
@@ -105,6 +105,7 @@ function createStyles(colors: ThemeColors) {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { replayTutorial } = useLocalSearchParams<{ replayTutorial?: string }>();
   const { hasOnboarded, children, selectedChild, selectChild, events, googleAccount, onboardingLoaded, mealPlans, updateEvent, isFamilyOwner, canEditFamilyData } = useAppData();
   const { isLocked } = useAppLock();
   const { isSubscribed, isReady: subscriptionReady } = useSubscription();
@@ -142,8 +143,10 @@ export default function HomeScreen() {
   const progressHeightRef = useRef(0);
   const [stickyVisible, setStickyVisible] = useState(false);
   const [birthdayBurstKey, setBirthdayBurstKey] = useState(0);
+  const profileSectionRef = useRef<View>(null);
+  const mealCardRef = useRef<View>(null);
   const prepSectionRef = useRef<View>(null);
-  const scheduleSectionRef = useRef<View>(null);
+  const scanButtonRef = useRef<View>(null);
   const [homeTutorialVisible, setHomeTutorialVisible] = useState(false);
   // 하단에 떠있는 공유배너/쿠팡배너 높이만큼만 스크롤 여백을 잡아준다 — 고정값을
   // 쓰면 오늘 일정이 짧아 스크롤 콘텐츠가 짧은 날 그 아래로 빈 여백이 크게 남았다.
@@ -400,12 +403,10 @@ export default function HomeScreen() {
     return () => clearTimeout(timeoutId);
   }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, subscriptionReady, isSubscribed, homeTutorialVisible]);
 
-  // 홈 화면 첫 진입 시 1회만 코치마크 튜토리얼을 보여준다. 일정이 없는 신규
-  // 가입자에게는 "가방에 쏙쏙"(준비물)과 "앞으로의 모험"(일정) 두 영역을 각각
-  // 스캔 전/후 2단계씩(총 4단계)으로 보여주고, 이미 일정이 있는 사용자에게는
-  // 실제 ScheduleBoard 영역만 1단계로 간단히 설명한다. 앱을 삭제 후 재설치하면
-  // 로컬 기록이 사라져 재설치+재로그인 시에도, 신규 가입자에게도 자연스럽게
-  // 다시 뜬다 (utils/tutorialStorage 참고).
+  // 홈 화면 첫 진입 시 1회만(신규 가입자 대상) 4단계 코치마크 투어를 보여준다.
+  // 이미 온보딩한 계정은 google-signin.tsx에서 로그인 시점에 시청 기록을
+  // 미리 남겨두므로 여기서는 걸러지고, 신규 가입자에게만 자연스럽게 뜬다
+  // (앱 삭제 후 재설치해도 다시 온보딩해야 하는 계정이 아니면 안 뜸).
   useEffect(() => {
     if (!onboardingLoaded || !hasOnboarded || !googleAccount || isLocked) return;
     let cancelled = false;
@@ -420,51 +421,48 @@ export default function HomeScreen() {
     };
   }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked]);
 
+  // 설정 화면 "온보딩 다시 보기"로 들어온 경우: 시청 기록과 무관하게 즉시 투어를
+  // 다시 띄운다. 한 번 처리한 뒤에는 파라미터를 지워서 이후 홈 재진입 시
+  // 또 뜨지 않게 한다.
+  useEffect(() => {
+    if (replayTutorial !== '1' || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked) return;
+    setHomeTutorialVisible(true);
+    router.setParams({ replayTutorial: undefined });
+  }, [replayTutorial, onboardingLoaded, hasOnboarded, googleAccount, isLocked, router]);
+
   const handleFinishHomeTutorial = useCallback(() => {
     setHomeTutorialVisible(false);
     markTutorialSeen(HOME_TUTORIAL_KEY).catch(() => {});
   }, []);
 
-  const homeTutorialSteps = useMemo<HomeTutorialStep[]>(() => {
-    if (upcoming.isEmpty) {
-      return [
-        {
-          key: 'prep-before',
-          targetRef: prepSectionRef,
-          title: '아직 챙길 물건이 없어요',
-          description: '여기에 오늘/이번주에 챙겨야 할 준비물이 정리돼요. 알림장을 스캔하면 자동으로 채워드려요!',
-        },
-        {
-          key: 'prep-after',
-          targetRef: prepSectionRef,
-          title: '스캔하면 이렇게 채워져요',
-          description: 'AI가 알림장에서 준비물을 찾아 체크리스트로 정리해드려요.',
-          renderDemo: MockPrepDemo,
-        },
-        {
-          key: 'schedule-before',
-          targetRef: scheduleSectionRef,
-          title: '오늘 · 내일 · 모레 일정도 여기서',
-          description: '탭으로 날짜를 바꿔가며 일정을 확인할 수 있어요. 아직은 등록된 일정이 없어요.',
-        },
-        {
-          key: 'schedule-after',
-          targetRef: scheduleSectionRef,
-          title: '스캔하면 일정도 자동 등록',
-          description: '알림장 속 소풍, 행사 같은 일정이 날짜별로 정리돼요.',
-          renderDemo: MockScheduleDemo,
-        },
-      ];
-    }
-    return [
-      {
-        key: 'schedule',
-        targetRef: scheduleSectionRef,
-        title: '오늘 · 내일 · 모레 일정을 한눈에',
-        description: '탭으로 날짜를 바꿔가며 일정과 준비물을 확인할 수 있어요.',
-      },
-    ];
-  }, [upcoming.isEmpty]);
+  // 순서 고정 4단계: 프로필/설정 → 오늘의 급식 → 가방에 쏙쏙(카드 전체) → AI 스캔 버튼.
+  // "앞으로의 모험"(일정) 영역은 이 투어 대상이 아니다.
+  const homeTutorialSteps = useMemo<HomeTutorialStep[]>(() => [
+    {
+      key: 'profile',
+      targetRef: profileSectionRef,
+      title: '프로필 및 설정',
+      description: '아이의 반 정보를 확인하고, 달력 일정과 앱 설정을 한곳에서 관리하세요.',
+    },
+    {
+      key: 'meal',
+      targetRef: mealCardRef,
+      title: '오늘의 급식',
+      description: '우리 아이가 오늘 원에서 어떤 음식을 먹는지 바로 확인할 수 있어요.',
+    },
+    {
+      key: 'prep',
+      targetRef: prepSectionRef,
+      title: '가방에 쏙쏙!',
+      description: '알림장을 스캔하면 아이가 챙겨야 할 준비물이 이곳에 자동으로 정리돼요.',
+    },
+    {
+      key: 'scan',
+      targetRef: scanButtonRef,
+      title: 'AI 준비물 스캐너',
+      description: '복잡한 알림장은 이제 그만! AI가 알림장을 읽고 꼭 필요한 준비물만 요약해서 알려줍니다.',
+    },
+  ], []);
 
   const handleEventPress = useCallback(
     (event: { date: string }) => router.push({ pathname: '/calendar', params: { date: event.date } }),
@@ -483,11 +481,13 @@ export default function HomeScreen() {
     <ScreenBackground showDots={false}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <TomorrowWeatherAlert weatherDays={weather.days} weatherLoading={weather.loading} />
-        <HomeProfileBar
-          selectedChild={selectedChild}
-          onPressChild={() => setSwitcherOpen(true)}
-          birthdayBurstKey={birthdayBurstKey}
-        />
+        <View ref={profileSectionRef} collapsable={false}>
+          <HomeProfileBar
+            selectedChild={selectedChild}
+            onPressChild={() => setSwitcherOpen(true)}
+            birthdayBurstKey={birthdayBurstKey}
+          />
+        </View>
         {!isFamilyOwner && (
           <View style={styles.familyBannerWrap}>
             <LinearGradient
@@ -522,8 +522,9 @@ export default function HomeScreen() {
             todayMeal={todayMeal}
             refreshing={refreshing}
             onRefresh={onRefresh}
-            scheduleSectionRef={scheduleSectionRef}
+            mealCardRef={mealCardRef}
             prepSectionRef={prepSectionRef}
+            scanButtonRef={scanButtonRef}
           />
         ) : (
           <>
@@ -558,6 +559,7 @@ export default function HomeScreen() {
                 locationLabel={weather.locationLabel}
                 onPressDate={onDatePress}
                 todayMeal={todayMeal}
+                mealCardRef={mealCardRef}
               />
               {noticeEvents.length > 0 && (
                 <NoticeBoardCard notices={noticeEvents} onPressNotice={handleEventPress} />
@@ -584,20 +586,18 @@ export default function HomeScreen() {
                   />
                 </Pressable>
               </View>
-              <View ref={scheduleSectionRef} collapsable={false}>
-                <ScheduleBoard
-                  mainEvents={upcoming.mainEvents}
-                  secondaryEvents={upcoming.secondaryEvents}
-                  laterGroups={upcoming.laterGroups}
-                  activeTab={activeTab}
-                  onChangeTab={setActiveTab}
-                  onEventPress={handleEventPress}
-                  onToggleItem={handleToggleItem}
-                  onToggleAll={handleToggleAll}
-                  onSearchInputFocus={handleSearchInputFocus}
-                  onSearchInputBlur={handleSearchInputBlur}
-                />
-              </View>
+              <ScheduleBoard
+                mainEvents={upcoming.mainEvents}
+                secondaryEvents={upcoming.secondaryEvents}
+                laterGroups={upcoming.laterGroups}
+                activeTab={activeTab}
+                onChangeTab={setActiveTab}
+                onEventPress={handleEventPress}
+                onToggleItem={handleToggleItem}
+                onToggleAll={handleToggleAll}
+                onSearchInputFocus={handleSearchInputFocus}
+                onSearchInputBlur={handleSearchInputBlur}
+              />
               </Animated.ScrollView>
             </GestureDetector>
           </>

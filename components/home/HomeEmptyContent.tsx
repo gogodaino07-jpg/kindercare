@@ -19,10 +19,12 @@ interface HomeEmptyContentProps {
   todayMeal?: MealPlan;
   refreshing?: boolean;
   onRefresh?: () => void;
-  /** 홈 화면 튜토리얼이 "앞으로의 모험" 일정 영역을 스포트라이트로 강조할 때 위치를 재기 위한 ref. */
-  scheduleSectionRef?: React.RefObject<View | null>;
+  /** 홈 화면 튜토리얼이 "오늘의 급식" 카드를 스포트라이트로 강조할 때 위치를 재기 위한 ref. */
+  mealCardRef?: React.RefObject<View | null>;
   /** 홈 화면 튜토리얼이 "가방에 쏙쏙" 준비물 영역을 스포트라이트로 강조할 때 위치를 재기 위한 ref. */
   prepSectionRef?: React.RefObject<View | null>;
+  /** 홈 화면 튜토리얼이 "✨ AI로 알림장 스캔하기" 버튼만 좁혀서 강조할 때 위치를 재기 위한 ref. */
+  scanButtonRef?: React.RefObject<View | null>;
 }
 
 export default function HomeEmptyContent({
@@ -35,8 +37,9 @@ export default function HomeEmptyContent({
   todayMeal,
   refreshing,
   onRefresh,
-  scheduleSectionRef,
+  mealCardRef,
   prepSectionRef,
+  scanButtonRef,
 }: HomeEmptyContentProps) {
   const router = useRouter();
   const colors = useThemeColors();
@@ -72,6 +75,7 @@ export default function HomeEmptyContent({
           locationLabel={locationLabel}
           onPressDate={onPressDate}
           todayMeal={todayMeal}
+          mealCardRef={mealCardRef}
         />
 
         <View ref={prepSectionRef} collapsable={false}>
@@ -84,20 +88,22 @@ export default function HomeEmptyContent({
             <Text style={styles.cardSubtitle}>
               알림장을 일일이 읽지 않아도 괜찮아요.{'\n'}AI가 똑똑하게 필요한 준비물을 찾아드릴게요!
             </Text>
-            <Pressable onPress={() => router.push('/upload')}>
-              <LinearGradient
-                colors={[colors.purple500, colors.purpleDeep]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.scanButton}
-              >
-                <Text style={styles.scanButtonText}>✨ AI로 알림장 스캔하기</Text>
-              </LinearGradient>
-            </Pressable>
+            <View ref={scanButtonRef} collapsable={false}>
+              <Pressable onPress={() => router.push('/upload')}>
+                <LinearGradient
+                  colors={[colors.purple500, colors.purpleDeep]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.scanButton}
+                >
+                  <Text style={styles.scanButtonText}>✨ AI로 알림장 스캔하기</Text>
+                </LinearGradient>
+              </Pressable>
+            </View>
           </View>
         </View>
 
-      <View ref={scheduleSectionRef} collapsable={false}>
+      <View>
         <SectionHeader emoji="🗺️" title="앞으로의 모험" />
         <View style={styles.card}>
           <View style={[styles.iconCircle, { backgroundColor: colors.lightBlueBg }]}>

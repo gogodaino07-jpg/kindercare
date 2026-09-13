@@ -29,3 +29,10 @@ export async function markTutorialSeen(key: string): Promise<void> {
     await AsyncStorage.setItem(PREFIX + key, 'true');
   } catch {}
 }
+
+/** 설정 화면의 "온보딩 다시 보기"처럼, 시청 기록을 지워 다음 진입 때 다시 뜨게 한다. */
+export async function resetTutorialSeen(key: string): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(PREFIX + key);
+  } catch {}
+}
