@@ -10,7 +10,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { withExternalAction } from '../../utils/externalAction';
-import { scheduleEventNotifications, sendTestSnoozeNotification } from '../../utils/notifications';
+import { scheduleEventNotifications } from '../../utils/notifications';
 
 export default function NotificationSettingsScreen() {
   const router = useRouter();
@@ -30,13 +30,6 @@ export default function NotificationSettingsScreen() {
       updateNotificationSettings(next);
       return next;
     });
-  };
-
-  // TODO(임시 테스트 기능): 배포 전 제거. 3초 뒤 스누즈 버튼이 포함된 알림을 띄워
-  // 실제 알림/스누즈 동작을 빠르게 확인하기 위한 용도.
-  const handleSendTestNotification = () => {
-    sendTestSnoozeNotification().catch(() => {});
-    showToast('3초 후 테스트 알림이 도착해요.');
   };
 
   const handleSave = async () => {
@@ -135,12 +128,6 @@ export default function NotificationSettingsScreen() {
                 )}
               </>
             )}
-
-            {/* TODO(임시 테스트 기능): 배포 전 제거. 알림/스누즈 동작 확인용 버튼. */}
-            <View style={styles.divider} />
-            <Pressable style={styles.testButtonRow} onPress={handleSendTestNotification}>
-              <Text style={styles.testButtonText}>🧪 테스트 알림 보내기 (3초 후)</Text>
-            </Pressable>
           </View>
         </ScrollView>
 
@@ -217,13 +204,6 @@ function createStyles(colors: ThemeColors) {
     previewTime: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
     previewTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 2 },
     previewBody: { fontSize: 12.5, fontWeight: '500', color: colors.textSecondary, lineHeight: 17 },
-    // TODO(임시 테스트 기능): 배포 전 제거.
-    testButtonRow: {
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-      alignItems: 'center',
-    },
-    testButtonText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
     buttonContainer: { position: 'absolute', left: 20, right: 20 },
     saveButton: {
       backgroundColor: colors.gray900,
