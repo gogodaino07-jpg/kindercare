@@ -21,6 +21,7 @@ import FamilyShareCard from '../components/home/FamilyShareCard';
 import HomeEmptyContent from '../components/home/HomeEmptyContent';
 import HomeHeroHeader from '../components/home/HomeHeroHeader';
 import HomeProfileBar from '../components/home/HomeProfileBar';
+import HomeScheduleTutorial from '../components/home/HomeScheduleTutorial';
 import MealPlanSheet from '../components/home/MealPlanSheet';
 import MultiChildPrepSummary from '../components/home/MultiChildPrepSummary';
 import NoticeBoardCard from '../components/home/NoticeBoardCard';
@@ -43,6 +44,9 @@ import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
 import { Event, EventItem } from '../types/models';
 import { isBirthdayToday, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
 import { updateHomeWidget } from '../utils/homeWidget';
+import { hasSeenTutorial, markTutorialSeen } from '../utils/tutorialStorage';
+
+const HOME_SCHEDULE_TUTORIAL_KEY = 'homeSchedule:v1';
 
 // 앱 프로세스가 살아있는 동안 전면 광고는 한 번만 시도한다. 컴포넌트 스코프
 // ref로 관리하면 AI 스캔 후 홈으로 돌아오면서 화면이 다시 마운트될 때마다
@@ -140,6 +144,8 @@ export default function HomeScreen() {
   const progressHeightRef = useRef(0);
   const [stickyVisible, setStickyVisible] = useState(false);
   const [birthdayBurstKey, setBirthdayBurstKey] = useState(0);
+  const scheduleSectionRef = useRef<View>(null);
+  const [scheduleTutorialVisible, setScheduleTutorialVisible] = useState(false);
   // 하단에 떠있는 공유배너/쿠팡배너 높이만큼만 스크롤 여백을 잡아준다 — 고정값을
   // 쓰면 오늘 일정이 짧아 스크롤 콘텐츠가 짧은 날 그 아래로 빈 여백이 크게 남았다.
   const [bottomStackHeight, setBottomStackHeight] = useState(0);
@@ -381,7 +387,8 @@ export default function HomeScreen() {
   useEffect(() => {
     // subscriptionReady를 기다리지 않으면, 프리미엄 구독자도 콜드 스타트 직후 RevenueCat
     // 조회가 끝나기 전엔 isSubscribed가 잠깐 false라 광고 팝업이 떠버린다.
-    if (hasAttemptedAdThisSession || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked || !subscriptionReady || isSubscribed) {
+    // 홈 화면 튜토리얼이 떠 있는 동안엔 광고 팝업이 그 위를 덮어버리지 않도록 미룬다.
+    if (hasAttemptedAdThisSession || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked || !subscriptionReady || isSubscribed || scheduleTutorialVisible) {
       return;
     }
 
@@ -392,7 +399,29 @@ export default function HomeScreen() {
     }, 500); // 0.5s delay for better UX
 
     return () => clearTimeout(timeoutId);
-  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, subscriptionReady, isSubscribed]);
+  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, subscriptionReady, isSubscribed, scheduleTutorialVisible]);
+
+  // 홈 화면 첫 진입 시 1회만 "오늘/내일/모레 일정" 영역을 강조하는 코치마크 튜토리얼을
+  // 보여준다. 앱을 삭제 후 재설치하면 로컬 기록이 사라져 재설치+재로그인 시에도,
+  // 신규 가입자에게도 자연스럽게 다시 뜬다 (utils/tutorialStorage 참고).
+  useEffect(() => {
+    if (!onboardingLoaded || !hasOnboarded || !googleAccount || isLocked) return;
+    let cancelled = false;
+    hasSeenTutorial(HOME_SCHEDULE_TUTORIAL_KEY).then((seen) => {
+      if (cancelled || seen) return;
+      setTimeout(() => {
+        if (!cancelled) setScheduleTutorialVisible(true);
+      }, 600);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked]);
+
+  const handleFinishScheduleTutorial = useCallback(() => {
+    setScheduleTutorialVisible(false);
+    markTutorialSeen(HOME_SCHEDULE_TUTORIAL_KEY).catch(() => {});
+  }, []);
 
   const handleEventPress = useCallback(
     (event: { date: string }) => router.push({ pathname: '/calendar', params: { date: event.date } }),
@@ -450,6 +479,7 @@ export default function HomeScreen() {
             todayMeal={todayMeal}
             refreshing={refreshing}
             onRefresh={onRefresh}
+            scheduleSectionRef={scheduleSectionRef}
           />
         ) : (
           <>
@@ -510,18 +540,20 @@ export default function HomeScreen() {
                   />
                 </Pressable>
               </View>
-              <ScheduleBoard
-                mainEvents={upcoming.mainEvents}
-                secondaryEvents={upcoming.secondaryEvents}
-                laterGroups={upcoming.laterGroups}
-                activeTab={activeTab}
-                onChangeTab={setActiveTab}
-                onEventPress={handleEventPress}
-                onToggleItem={handleToggleItem}
-                onToggleAll={handleToggleAll}
-                onSearchInputFocus={handleSearchInputFocus}
-                onSearchInputBlur={handleSearchInputBlur}
-              />
+              <View ref={scheduleSectionRef} collapsable={false}>
+                <ScheduleBoard
+                  mainEvents={upcoming.mainEvents}
+                  secondaryEvents={upcoming.secondaryEvents}
+                  laterGroups={upcoming.laterGroups}
+                  activeTab={activeTab}
+                  onChangeTab={setActiveTab}
+                  onEventPress={handleEventPress}
+                  onToggleItem={handleToggleItem}
+                  onToggleAll={handleToggleAll}
+                  onSearchInputFocus={handleSearchInputFocus}
+                  onSearchInputBlur={handleSearchInputBlur}
+                />
+              </View>
               </Animated.ScrollView>
             </GestureDetector>
           </>
@@ -543,6 +575,13 @@ export default function HomeScreen() {
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
       <MealPlanSheet visible={mealSheetOpen} onClose={() => setMealSheetOpen(false)} />
       {!isLocked && subscriptionReady && !isSubscribed && <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />}
+
+      <HomeScheduleTutorial
+        visible={scheduleTutorialVisible}
+        targetRef={scheduleSectionRef}
+        showMockDemo={upcoming.isEmpty}
+        onFinish={handleFinishScheduleTutorial}
+      />
     </ScreenBackground>
   );
 }

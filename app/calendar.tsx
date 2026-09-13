@@ -21,6 +21,7 @@ import CalendarHeader from '../components/calendar/CalendarHeader';
 import DayDetailSection from '../components/calendar/DayDetailSection';
 import EditEventModal from '../components/calendar/EditEventModal';
 import Text from '../components/common/AppText';
+import FirstVisitTip from '../components/common/FirstVisitTip';
 import { useAppData } from '../context/AppDataContext';
 import { getDisplayItems } from '../hooks/useLocalChecklist';
 import { Event, EventItem } from '../types/models';
@@ -273,6 +274,13 @@ export default function CalendarScreen() {
           percent={percent}
           selectedDateLabel={selectedDateLabel}
           onBack={() => router.back()}
+        />
+
+        <FirstVisitTip
+          tutorialKey="calendar:v1"
+          emoji="🗓️"
+          title="한 달 일정을 한눈에"
+          description="위쪽 달력을 접었다 펼치며 월간/주간 보기를 바꿀 수 있고, 날짜를 눌러 그날의 일정과 준비물을 확인할 수 있어요."
         />
 
         <CalendarAccordion

@@ -19,6 +19,8 @@ interface HomeEmptyContentProps {
   todayMeal?: MealPlan;
   refreshing?: boolean;
   onRefresh?: () => void;
+  /** 홈 화면 튜토리얼이 "앞으로의 모험" 일정 영역을 스포트라이트로 강조할 때 위치를 재기 위한 ref. */
+  scheduleSectionRef?: React.RefObject<View | null>;
 }
 
 export default function HomeEmptyContent({
@@ -31,6 +33,7 @@ export default function HomeEmptyContent({
   todayMeal,
   refreshing,
   onRefresh,
+  scheduleSectionRef,
 }: HomeEmptyContentProps) {
   const router = useRouter();
   const colors = useThemeColors();
@@ -89,13 +92,15 @@ export default function HomeEmptyContent({
         </Pressable>
       </View>
 
-      <SectionHeader emoji="🗺️" title="앞으로의 모험" />
-      <View style={styles.card}>
-        <View style={[styles.iconCircle, { backgroundColor: colors.lightBlueBg }]}>
-          <Text style={styles.iconCircleEmoji}>🏝️</Text>
+      <View ref={scheduleSectionRef} collapsable={false}>
+        <SectionHeader emoji="🗺️" title="앞으로의 모험" />
+        <View style={styles.card}>
+          <View style={[styles.iconCircle, { backgroundColor: colors.lightBlueBg }]}>
+            <Text style={styles.iconCircleEmoji}>🏝️</Text>
+          </View>
+          <Text style={styles.cardTitle}>이번 주는 특별한 일정이 없어요</Text>
+          <Text style={[styles.cardSubtitle, { marginBottom: 0 }]}>여유롭고 평화로운 한 주를 보내세요!</Text>
         </View>
-        <Text style={styles.cardTitle}>이번 주는 특별한 일정이 없어요</Text>
-        <Text style={[styles.cardSubtitle, { marginBottom: 0 }]}>여유롭고 평화로운 한 주를 보내세요!</Text>
       </View>
     </ScrollView>
   );

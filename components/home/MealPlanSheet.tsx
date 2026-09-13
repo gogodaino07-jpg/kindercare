@@ -10,6 +10,7 @@ import { useTodayISO } from '../../hooks/useTodayISO';
 import { isAllergyMatch } from '../../utils/allergy';
 import { formatMD, parseISODate, startOfDay, toISODate, WEEKDAY_KO } from '../../utils/date';
 import Text from '../common/AppText';
+import FirstVisitTip from '../common/FirstVisitTip';
 
 interface MealPlanSheetProps {
   visible: boolean;
@@ -148,6 +149,16 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
               <MaterialIcons name="close" size={22} color={colors.gray400} />
             </Pressable>
           </View>
+
+          {visible && (
+            <FirstVisitTip
+              tutorialKey="mealSheet:v1"
+              emoji="🍽️"
+              title="급식 메뉴도 자동으로 챙겨요"
+              description="AI 분석으로 급식표를 스캔하면 오늘 메뉴가 여기 자동으로 채워져요. 알레르기가 있으면 메뉴에 표시도 해드려요."
+              noHorizontalMargin
+            />
+          )}
 
           {todayMenu ? (
             <View style={styles.mealCard}>
