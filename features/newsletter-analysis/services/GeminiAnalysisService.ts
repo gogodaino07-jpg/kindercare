@@ -212,6 +212,10 @@ export const GeminiAnalysisService = {
       generation_config: {
         response_mime_type: 'application/json',
         response_schema: RESPONSE_SCHEMA,
+        // 같은 사진을 다시 분석해도 결과 건수가 달라지는 문제(애매한 경계선
+        // 항목 포함 여부가 매번 흔들림) — 추출은 창의성이 필요 없는 작업이라
+        // 온도를 0으로 고정해 최대한 같은 입력엔 같은 결과가 나오게 한다.
+        temperature: 0,
       },
     };
 

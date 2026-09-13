@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
@@ -24,10 +23,6 @@ interface HomeHeroHeaderProps {
   onPressDate: (date: string) => void;
   /** 오늘 등록된 급식. 있으면 급식 카드에 메인 메뉴 + 나머지 반찬 목록을 보여줌. */
   todayMeal?: MealPlan;
-  /** 이 아이 앞으로 급식표를 한 번이라도 등록한 적 있는지 — 없으면(막 가입한 신규
-   * 유저) 급식 스캔을 먼저 하라고 유도하는 CTA 버튼을 숨긴다. 신규 유저는 보통
-   * 가정통신문/일정부터 스캔하지 급식표부터 스캔하지 않는다. */
-  hasEverRegisteredMeal?: boolean;
 }
 
 /** birthdate(YYYY-MM-DD)의 월-일이 오늘과 같으면 생일. */
@@ -47,7 +42,6 @@ export default function HomeHeroHeader({
   locationLabel,
   onPressDate,
   todayMeal,
-  hasEverRegisteredMeal,
 }: HomeHeroHeaderProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -108,7 +102,6 @@ export default function HomeHeroHeader({
         todayMeal={todayMeal}
         onPressMeal={onPressMeal}
         allergies={selectedChild?.allergies}
-        hasEverRegisteredMeal={hasEverRegisteredMeal}
       />
 
       {weatherExpanded && (
@@ -403,16 +396,13 @@ function MealMenuCard({
   todayMeal,
   onPressMeal,
   allergies,
-  hasEverRegisteredMeal,
 }: {
   todayMeal?: MealPlan;
   onPressMeal: () => void;
   allergies?: string[];
-  hasEverRegisteredMeal?: boolean;
 }) {
   const colors = useThemeColors();
   const styles = useMemo(() => createMealCardStyles(colors), [colors]);
-  const router = useRouter();
 
   const mainText = todayMeal?.mainMenu?.trim() || todayMeal?.menu[0];
   const sideItems = useMemo(
@@ -444,12 +434,6 @@ function MealMenuCard({
             <View style={styles.emptyMainTextWrap} pointerEvents="none">
               <Text style={styles.emptyMainText}>오늘 등록된 급식 없음</Text>
             </View>
-            {hasEverRegisteredMeal !== false && (
-              <Pressable style={styles.scanButton} onPress={() => router.push('/meal-scan')} hitSlop={4}>
-                <Ionicons name="camera-outline" size={18} color="#FFFFFF" />
-                <Text style={styles.scanButtonText}>스캔하기</Text>
-              </Pressable>
-            )}
           </View>
         </View>
       </Pressable>
@@ -663,24 +647,6 @@ function createMealCardStyles(colors: ThemeColors) {
       fontSize: 16,
       fontWeight: '800',
       color: colors.gray900,
-    },
-    scanButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      backgroundColor: colors.pastelOrangeAccent,
-      borderRadius: 999,
-      paddingHorizontal: 16,
-      paddingVertical: 9,
-      ...SHADOW,
-      shadowOpacity: 0.12,
-      shadowColor: colors.peachOrangeDeep,
-      elevation: 2,
-    },
-    scanButtonText: {
-      fontSize: 13.5,
-      fontWeight: '800',
-      color: '#FFFFFF',
     },
   });
 }

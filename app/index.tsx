@@ -130,10 +130,6 @@ export default function HomeScreen() {
   const todayMeal = useMemo(() => {
     return mealPlans.find((m) => m.childId === selectedChild?.id && m.date === todayISO);
   }, [mealPlans, selectedChild, todayISO]);
-  const hasEverRegisteredMeal = useMemo(
-    () => mealPlans.some((m) => m.childId === selectedChild?.id),
-    [mealPlans, selectedChild]
-  );
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [mealSheetOpen, setMealSheetOpen] = useState(false);
   const [adPopupVisible, setAdPopupVisible] = useState(false);
@@ -410,7 +406,6 @@ export default function HomeScreen() {
             locationLabel={weather.locationLabel}
             onPressDate={onDatePress}
             todayMeal={todayMeal}
-            hasEverRegisteredMeal={hasEverRegisteredMeal}
             refreshing={refreshing}
             onRefresh={onRefresh}
           />
@@ -444,7 +439,6 @@ export default function HomeScreen() {
                 locationLabel={weather.locationLabel}
                 onPressDate={onDatePress}
                 todayMeal={todayMeal}
-                hasEverRegisteredMeal={hasEverRegisteredMeal}
               />
               {noticeEvents.length > 0 && (
                 <NoticeBoardCard notices={noticeEvents} onPressNotice={handleEventPress} />
