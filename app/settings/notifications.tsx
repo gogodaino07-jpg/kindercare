@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, View, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../../components/common/AppText';
@@ -10,7 +10,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { withExternalAction } from '../../utils/externalAction';
-import { scheduleEventNotifications } from '../../utils/notifications';
+import { scheduleEventNotifications, sendTestSnoozeNotification } from '../../utils/notifications';
 
 export default function NotificationSettingsScreen() {
   const router = useRouter();
@@ -30,6 +30,27 @@ export default function NotificationSettingsScreen() {
       updateNotificationSettings(next);
       return next;
     });
+  };
+
+  // 일반 사용자에게는 안 보이는 숨은 테스트 진입점 — 미리보기 카드를 빠르게 3번
+  // 연속으로 누르면 실제 알림/스누즈 동작을 확인할 수 있는 테스트 알림을 3초 뒤에
+  // 띄운다. 원래 있던 눈에 보이는 "테스트 알림 보내기" 버튼이 배포판에 그대로
+  // 노출된 적이 있어, 버튼 대신 이렇게 감춰둔다. 탭 사이 간격이 700ms를 넘으면
+  // (연속 탭이 아니라고 보고) 횟수를 리셋한다.
+  const previewTapCountRef = useRef(0);
+  const previewLastTapAtRef = useRef(0);
+  const handlePreviewTap = () => {
+    const now = Date.now();
+    if (now - previewLastTapAtRef.current > 700) {
+      previewTapCountRef.current = 0;
+    }
+    previewTapCountRef.current += 1;
+    previewLastTapAtRef.current = now;
+    if (previewTapCountRef.current >= 3) {
+      previewTapCountRef.current = 0;
+      sendTestSnoozeNotification().catch(() => {});
+      showToast('3초 후 테스트 알림이 도착해요.');
+    }
   };
 
   const handleSave = async () => {
@@ -72,7 +93,7 @@ export default function NotificationSettingsScreen() {
             {draft.enabled && (
               <>
                 <View style={styles.divider} />
-                <View style={styles.previewRow}>
+                <Pressable style={styles.previewRow} onPress={handlePreviewTap}>
                   <View style={styles.previewIconCircle}>
                     <MaterialCommunityIcons name="school-outline" size={15} color="#FFFFFF" />
                   </View>
@@ -84,7 +105,7 @@ export default function NotificationSettingsScreen() {
                     <Text style={styles.previewTitle} numberOfLines={1}>[내일] 소풍</Text>
                     <Text style={styles.previewBody} numberOfLines={1}>준비물: 물통, 도시락</Text>
                   </View>
-                </View>
+                </Pressable>
 
                 <View style={styles.divider} />
                 <View style={styles.sectionRow}>
