@@ -27,6 +27,9 @@ interface ScheduleBoardProps {
   onEventPress: (event: Event) => void;
   onToggleItem: (event: Event, item: EventItem) => void;
   onToggleAll: (event: Event, items: EventItem[], value: boolean) => void;
+  /** 쿠팡 검색창에 포커스가 갔을 때 호출 — 이 검색창이 홈 화면 스크롤의 맨 마지막
+   * 콘텐츠라, 키보드가 올라오면 입력창이 가려지지 않도록 화면을 끝까지 스크롤한다. */
+  onSearchInputFocus?: () => void;
 }
 
 /** Blends a hex color toward white by `amount` (0-1) to make it a paler shade. */
@@ -94,6 +97,7 @@ export default function ScheduleBoard({
   onEventPress,
   onToggleItem,
   onToggleAll,
+  onSearchInputFocus,
 }: ScheduleBoardProps) {
   const router = useRouter();
   const { colors, resolvedScheme } = useTheme();
@@ -230,6 +234,7 @@ export default function ScheduleBoard({
             placeholderTextColor={colors.gray400}
             returnKeyType="search"
             onSubmitEditing={handleCoupangSearch}
+            onFocus={onSearchInputFocus}
           />
           <Pressable
             style={[styles.coupangSearchButton, !coupangQuery.trim() && styles.coupangSearchButtonDisabled]}

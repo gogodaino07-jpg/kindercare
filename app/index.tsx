@@ -233,6 +233,16 @@ export default function HomeScreen() {
     scrollRef.current?.scrollTo({ y: Math.max(progressYRef.current - 8, 0), animated: true });
   }, []);
 
+  // 쿠팡 검색창(ScheduleBoard 맨 아래)에 포커스가 가면, 이 검색창이 홈 화면
+  // 스크롤의 마지막 콘텐츠라 화면 끝까지 스크롤해서 키보드에 가려지지 않게 한다.
+  // 키보드가 다 올라온 뒤 스크롤해야 어긋나지 않아, 온보딩 화면과 동일하게 짧은
+  // 지연을 둔다.
+  const handleSearchInputFocus = useCallback(() => {
+    setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 150);
+  }, []);
+
   // 준비물 배너가 절반 이상 스크롤로 가려지면, 상단에 얇은 진행률 띠를 대신 보여준다.
   const handleScroll = useCallback((y: number) => {
     const bannerHalfway = progressYRef.current + progressHeightRef.current / 2;
@@ -474,6 +484,7 @@ export default function HomeScreen() {
                 onEventPress={handleEventPress}
                 onToggleItem={handleToggleItem}
                 onToggleAll={handleToggleAll}
+                onSearchInputFocus={handleSearchInputFocus}
               />
               </Animated.ScrollView>
             </GestureDetector>
