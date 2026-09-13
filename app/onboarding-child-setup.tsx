@@ -513,15 +513,14 @@ const styles = StyleSheet.create({
       flexGrow: 1,
       paddingHorizontal: 24,
       paddingTop: 4,
-      paddingBottom: 20,
+      paddingBottom: 12,
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 2,
     },
     backButton: {
-      paddingVertical: 8,
+      paddingVertical: 6,
       paddingHorizontal: 4,
       marginLeft: -4,
     },
@@ -534,7 +533,7 @@ const styles = StyleSheet.create({
       flex: 1,
     },
     topSection: {
-      marginBottom: 10,
+      marginBottom: 6,
     },
     title: {
       fontSize: 22,
@@ -544,7 +543,7 @@ const styles = StyleSheet.create({
     },
     photoSection: {
       alignItems: 'center',
-      marginBottom: 16,
+      marginBottom: 10,
     },
     avatarWrap: {
       width: 104,
@@ -597,19 +596,19 @@ const styles = StyleSheet.create({
       width: '100%',
     },
     fieldGroup: {
-      marginBottom: 14,
+      marginBottom: 8,
     },
     labelRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      marginBottom: 6,
+      marginBottom: 4,
     },
     labelRowBetween: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 6,
+      marginBottom: 4,
     },
     label: {
       fontSize: 14,
@@ -643,7 +642,7 @@ const styles = StyleSheet.create({
     },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: {
-      paddingVertical: 10,
+      paddingVertical: 8,
       paddingHorizontal: 16,
       borderRadius: 999,
       backgroundColor: '#FFFFFF',
@@ -696,10 +695,10 @@ const styles = StyleSheet.create({
     // 아이 프로필 수정 화면의 "저장하기" 버튼과 같은 톤(진한 남색 단색)으로 맞춘다.
     completeButton: {
       marginHorizontal: 24,
-      marginBottom: 24,
+      marginBottom: 16,
       backgroundColor: INK,
       borderRadius: 18,
-      paddingVertical: 16,
+      paddingVertical: 13,
       alignItems: 'center',
       justifyContent: 'center',
       ...SHADOW,
