@@ -229,7 +229,6 @@ export default function OnboardingChildSetupScreen() {
 
         <View style={styles.topSection}>
           <Text style={styles.title}>새로운 아이 프로필 설정</Text>
-          <Text style={styles.subtitle}>우리 아이 정보를 알려주세요</Text>
         </View>
 
         <View style={styles.photoSection}>
@@ -513,13 +512,13 @@ const styles = StyleSheet.create({
     content: {
       flexGrow: 1,
       paddingHorizontal: 24,
-      paddingTop: 8,
+      paddingTop: 4,
       paddingBottom: 20,
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 8,
+      marginBottom: 2,
     },
     backButton: {
       paddingVertical: 8,
@@ -535,25 +534,17 @@ const styles = StyleSheet.create({
       flex: 1,
     },
     topSection: {
-      marginBottom: 32,
+      marginBottom: 10,
     },
     title: {
       fontSize: 22,
       fontWeight: '800',
       color: INK,
-      marginBottom: 8,
       textAlign: 'center',
-    },
-    subtitle: {
-      fontSize: 13,
-      color: GRAY,
-      lineHeight: 20,
-      textAlign: 'center',
-      fontWeight: '600',
     },
     photoSection: {
       alignItems: 'center',
-      marginBottom: 32,
+      marginBottom: 16,
     },
     avatarWrap: {
       width: 104,
