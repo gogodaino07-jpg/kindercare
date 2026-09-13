@@ -441,7 +441,12 @@ export default function UploadScreen() {
             showsVerticalScrollIndicator={false}
           >
             {showCreditCard ? (
-              <ScanCreditCard watching={watchingCredit} onWatchAd={handleWatchAdForCredit} adCredited={adCredited} />
+              <ScanCreditCard
+                watching={watchingCredit}
+                onWatchAd={handleWatchAdForCredit}
+                adCredited={adCredited}
+                hasSelectedFiles={docs.length > 0}
+              />
             ) : (
               <View style={styles.gaugeCard}>
                 <View style={styles.gaugeTextBlock}>
@@ -665,10 +670,16 @@ function ScanCreditCard({
   watching,
   onWatchAd,
   adCredited,
+  hasSelectedFiles,
 }: {
   watching: boolean;
   onWatchAd: () => void;
   adCredited: boolean;
+  /** 파일을 이미 선택해서 하단 "광고 보고 분석하기" 버튼이 떠 있는 상태인지.
+   * 그 버튼이 광고 시청+분석을 한 번에 처리하므로, 이 카드의 충전 버튼까지
+   * 같이 보이면 "광고 보는 버튼이 두 개"로 보여 혼란스럽다는 피드백으로
+   * 이 상태에선 충전 버튼을 숨기고 안내 문구만 보여준다. */
+  hasSelectedFiles: boolean;
 }) {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
@@ -729,18 +740,30 @@ function ScanCreditCard({
         />
       </View>
       {!adCredited && (
-        <Animated.View style={{ opacity: pulse, transform: [{ scale: pulseScale }] }}>
-          <Pressable style={styles.creditButton} onPress={onWatchAd} disabled={watching}>
-            {watching ? (
-              <ActivityIndicator color={C.violet700} />
-            ) : (
-              <>
-                <Ionicons name="play" size={15} color={C.violet700} />
-                <Text style={styles.creditButtonText}>광고 1개 시청하고 1회 충전하기</Text>
-              </>
-            )}
-          </Pressable>
-        </Animated.View>
+        hasSelectedFiles ? (
+          // 파일을 이미 골라 하단에 "광고 보고 분석하기" 버튼이 떠 있는 상태 —
+          // 거기서 광고 시청+분석이 한 번에 처리되므로, 여기 버튼까지 같이 보이면
+          // "광고 보는 버튼이 두 개"로 보인다는 피드백으로 버튼 대신 안내만 둔다.
+          // 카드 높이가 갑자기 바뀌어 보이지 않도록 버튼과 같은 padding/radius를 써서
+          // 자리 자체는 그대로 유지한다.
+          <View style={styles.creditHintRow}>
+            <Ionicons name="arrow-down-circle" size={15} color="rgba(255,255,255,0.9)" />
+            <Text style={styles.creditHintText}>아래 분석 버튼에서 광고 보고 바로 진행하세요</Text>
+          </View>
+        ) : (
+          <Animated.View style={{ opacity: pulse, transform: [{ scale: pulseScale }] }}>
+            <Pressable style={styles.creditButton} onPress={onWatchAd} disabled={watching}>
+              {watching ? (
+                <ActivityIndicator color={C.violet700} />
+              ) : (
+                <>
+                  <Ionicons name="play" size={15} color={C.violet700} />
+                  <Text style={styles.creditButtonText}>광고 1개 시청하고 1회 충전하기</Text>
+                </>
+              )}
+            </Pressable>
+          </Animated.View>
+        )
       )}
     </LinearGradient>
   );
@@ -1003,6 +1026,18 @@ function createStyles(C: ScanColors) {
     paddingVertical: 9,
   },
   creditButtonText: { fontSize: 12.5, fontWeight: '800', color: C.violet700 },
+  // creditButton과 같은 paddingVertical/borderRadius를 써서, 버튼 대신 이 안내가
+  // 보일 때도 카드 전체 높이가 그대로 유지되게 한다.
+  creditHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderRadius: 14,
+    paddingVertical: 9,
+  },
+  creditHintText: { fontSize: 12.5, fontWeight: '700', color: 'rgba(255,255,255,0.92)' },
   guideCard: {
     backgroundColor: C.surface,
     borderRadius: 22,
