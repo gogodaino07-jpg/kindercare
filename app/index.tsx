@@ -21,7 +21,7 @@ import FamilyShareCard from '../components/home/FamilyShareCard';
 import HomeEmptyContent from '../components/home/HomeEmptyContent';
 import HomeHeroHeader from '../components/home/HomeHeroHeader';
 import HomeProfileBar from '../components/home/HomeProfileBar';
-import HomeScheduleTutorial from '../components/home/HomeScheduleTutorial';
+import HomeTutorialOverlay, { HomeTutorialStep, MockPrepDemo, MockScheduleDemo } from '../components/home/HomeTutorialOverlay';
 import MealPlanSheet from '../components/home/MealPlanSheet';
 import MultiChildPrepSummary from '../components/home/MultiChildPrepSummary';
 import NoticeBoardCard from '../components/home/NoticeBoardCard';
@@ -46,7 +46,7 @@ import { isBirthdayToday, parseISODate, toISODate, WEEKDAY_KO } from '../utils/d
 import { updateHomeWidget } from '../utils/homeWidget';
 import { hasSeenTutorial, markTutorialSeen } from '../utils/tutorialStorage';
 
-const HOME_SCHEDULE_TUTORIAL_KEY = 'homeSchedule:v1';
+const HOME_TUTORIAL_KEY = 'homeSchedule:v2';
 
 // 앱 프로세스가 살아있는 동안 전면 광고는 한 번만 시도한다. 컴포넌트 스코프
 // ref로 관리하면 AI 스캔 후 홈으로 돌아오면서 화면이 다시 마운트될 때마다
@@ -144,8 +144,9 @@ export default function HomeScreen() {
   const progressHeightRef = useRef(0);
   const [stickyVisible, setStickyVisible] = useState(false);
   const [birthdayBurstKey, setBirthdayBurstKey] = useState(0);
+  const prepSectionRef = useRef<View>(null);
   const scheduleSectionRef = useRef<View>(null);
-  const [scheduleTutorialVisible, setScheduleTutorialVisible] = useState(false);
+  const [homeTutorialVisible, setHomeTutorialVisible] = useState(false);
   // 하단에 떠있는 공유배너/쿠팡배너 높이만큼만 스크롤 여백을 잡아준다 — 고정값을
   // 쓰면 오늘 일정이 짧아 스크롤 콘텐츠가 짧은 날 그 아래로 빈 여백이 크게 남았다.
   const [bottomStackHeight, setBottomStackHeight] = useState(0);
@@ -388,7 +389,7 @@ export default function HomeScreen() {
     // subscriptionReady를 기다리지 않으면, 프리미엄 구독자도 콜드 스타트 직후 RevenueCat
     // 조회가 끝나기 전엔 isSubscribed가 잠깐 false라 광고 팝업이 떠버린다.
     // 홈 화면 튜토리얼이 떠 있는 동안엔 광고 팝업이 그 위를 덮어버리지 않도록 미룬다.
-    if (hasAttemptedAdThisSession || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked || !subscriptionReady || isSubscribed || scheduleTutorialVisible) {
+    if (hasAttemptedAdThisSession || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked || !subscriptionReady || isSubscribed || homeTutorialVisible) {
       return;
     }
 
@@ -399,18 +400,21 @@ export default function HomeScreen() {
     }, 500); // 0.5s delay for better UX
 
     return () => clearTimeout(timeoutId);
-  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, subscriptionReady, isSubscribed, scheduleTutorialVisible]);
+  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, subscriptionReady, isSubscribed, homeTutorialVisible]);
 
-  // 홈 화면 첫 진입 시 1회만 "오늘/내일/모레 일정" 영역을 강조하는 코치마크 튜토리얼을
-  // 보여준다. 앱을 삭제 후 재설치하면 로컬 기록이 사라져 재설치+재로그인 시에도,
-  // 신규 가입자에게도 자연스럽게 다시 뜬다 (utils/tutorialStorage 참고).
+  // 홈 화면 첫 진입 시 1회만 코치마크 튜토리얼을 보여준다. 일정이 없는 신규
+  // 가입자에게는 "가방에 쏙쏙"(준비물)과 "앞으로의 모험"(일정) 두 영역을 각각
+  // 스캔 전/후 2단계씩(총 4단계)으로 보여주고, 이미 일정이 있는 사용자에게는
+  // 실제 ScheduleBoard 영역만 1단계로 간단히 설명한다. 앱을 삭제 후 재설치하면
+  // 로컬 기록이 사라져 재설치+재로그인 시에도, 신규 가입자에게도 자연스럽게
+  // 다시 뜬다 (utils/tutorialStorage 참고).
   useEffect(() => {
     if (!onboardingLoaded || !hasOnboarded || !googleAccount || isLocked) return;
     let cancelled = false;
-    hasSeenTutorial(HOME_SCHEDULE_TUTORIAL_KEY).then((seen) => {
+    hasSeenTutorial(HOME_TUTORIAL_KEY).then((seen) => {
       if (cancelled || seen) return;
       setTimeout(() => {
-        if (!cancelled) setScheduleTutorialVisible(true);
+        if (!cancelled) setHomeTutorialVisible(true);
       }, 600);
     });
     return () => {
@@ -418,10 +422,51 @@ export default function HomeScreen() {
     };
   }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked]);
 
-  const handleFinishScheduleTutorial = useCallback(() => {
-    setScheduleTutorialVisible(false);
-    markTutorialSeen(HOME_SCHEDULE_TUTORIAL_KEY).catch(() => {});
+  const handleFinishHomeTutorial = useCallback(() => {
+    setHomeTutorialVisible(false);
+    markTutorialSeen(HOME_TUTORIAL_KEY).catch(() => {});
   }, []);
+
+  const homeTutorialSteps = useMemo<HomeTutorialStep[]>(() => {
+    if (upcoming.isEmpty) {
+      return [
+        {
+          key: 'prep-before',
+          targetRef: prepSectionRef,
+          title: '아직 챙길 물건이 없어요',
+          description: '여기에 오늘/이번주에 챙겨야 할 준비물이 정리돼요. 알림장을 스캔하면 자동으로 채워드려요!',
+        },
+        {
+          key: 'prep-after',
+          targetRef: prepSectionRef,
+          title: '스캔하면 이렇게 채워져요',
+          description: 'AI가 알림장에서 준비물을 찾아 체크리스트로 정리해드려요.',
+          renderDemo: MockPrepDemo,
+        },
+        {
+          key: 'schedule-before',
+          targetRef: scheduleSectionRef,
+          title: '오늘 · 내일 · 모레 일정도 여기서',
+          description: '탭으로 날짜를 바꿔가며 일정을 확인할 수 있어요. 아직은 등록된 일정이 없어요.',
+        },
+        {
+          key: 'schedule-after',
+          targetRef: scheduleSectionRef,
+          title: '스캔하면 일정도 자동 등록',
+          description: '알림장 속 소풍, 행사 같은 일정이 날짜별로 정리돼요.',
+          renderDemo: MockScheduleDemo,
+        },
+      ];
+    }
+    return [
+      {
+        key: 'schedule',
+        targetRef: scheduleSectionRef,
+        title: '오늘 · 내일 · 모레 일정을 한눈에',
+        description: '탭으로 날짜를 바꿔가며 일정과 준비물을 확인할 수 있어요.',
+      },
+    ];
+  }, [upcoming.isEmpty]);
 
   const handleEventPress = useCallback(
     (event: { date: string }) => router.push({ pathname: '/calendar', params: { date: event.date } }),
@@ -480,6 +525,7 @@ export default function HomeScreen() {
             refreshing={refreshing}
             onRefresh={onRefresh}
             scheduleSectionRef={scheduleSectionRef}
+            prepSectionRef={prepSectionRef}
           />
         ) : (
           <>
@@ -576,11 +622,10 @@ export default function HomeScreen() {
       <MealPlanSheet visible={mealSheetOpen} onClose={() => setMealSheetOpen(false)} />
       {!isLocked && subscriptionReady && !isSubscribed && <AdPopupModal visible={adPopupVisible} onClose={() => setAdPopupVisible(false)} />}
 
-      <HomeScheduleTutorial
-        visible={scheduleTutorialVisible}
-        targetRef={scheduleSectionRef}
-        showMockDemo={upcoming.isEmpty}
-        onFinish={handleFinishScheduleTutorial}
+      <HomeTutorialOverlay
+        visible={homeTutorialVisible}
+        steps={homeTutorialSteps}
+        onFinish={handleFinishHomeTutorial}
       />
     </ScreenBackground>
   );

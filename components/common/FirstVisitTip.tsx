@@ -14,6 +14,8 @@ interface FirstVisitTipProps {
   emoji?: string;
   /** 모달/시트처럼 이미 좌우 여백이 있는 컨테이너 안에 넣을 때 marginHorizontal을 뺀다. */
   noHorizontalMargin?: boolean;
+  /** 이 팁이 보이기/사라지기 시작할 때 알려준다 — 부모가 배경을 같이 딤 처리하고 싶을 때 사용. */
+  onVisibleChange?: (visible: boolean) => void;
 }
 
 /**
@@ -21,7 +23,7 @@ interface FirstVisitTipProps {
  * 안내 배너. "확인"을 누르면 로컬에 기록해 다음부터는 다시 뜨지 않는다
  * (단, 앱 삭제 후 재설치하면 로컬 기록도 사라져 다시 뜬다).
  */
-export default function FirstVisitTip({ tutorialKey, title, description, emoji = '💡', noHorizontalMargin }: FirstVisitTipProps) {
+export default function FirstVisitTip({ tutorialKey, title, description, emoji = '💡', noHorizontalMargin, onVisibleChange }: FirstVisitTipProps) {
   const colors = useThemeColors();
   const styles = useMemoStyles(colors);
   const [visible, setVisible] = useState(false);
@@ -33,6 +35,7 @@ export default function FirstVisitTip({ tutorialKey, title, description, emoji =
     hasSeenTutorial(tutorialKey).then((seen) => {
       if (cancelled || seen) return;
       setVisible(true);
+      onVisibleChange?.(true);
       Animated.parallel([
         Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }),
         Animated.timing(translateY, { toValue: 0, duration: 250, useNativeDriver: true }),
@@ -46,6 +49,7 @@ export default function FirstVisitTip({ tutorialKey, title, description, emoji =
 
   const dismiss = () => {
     markTutorialSeen(tutorialKey).catch(() => {});
+    onVisibleChange?.(false);
     Animated.timing(opacity, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setVisible(false));
   };
 

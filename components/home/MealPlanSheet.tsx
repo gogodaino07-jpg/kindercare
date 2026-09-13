@@ -42,6 +42,7 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { mealPlans, selectedChild } = useAppData();
   const [expanded, setExpanded] = useState(false);
+  const [tipShowing, setTipShowing] = useState(false);
   // 0 = 이번주, +1 = 다음주 ... 유치원이 다음주 식단표를 며칠 전에 미리 공지하는
   // 경우가 흔해서, "이번주"에는 저장된 식단이 하나도 없는데 "다음주"에는 있으면
   // 스캔한 급식표가 안 보인다는 오해를 사기 쉽다 — 시트를 열 때 자동으로 데이터가
@@ -157,9 +158,11 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
               title="급식 메뉴도 자동으로 챙겨요"
               description="AI 분석으로 급식표를 스캔하면 오늘 메뉴가 여기 자동으로 채워져요. 알레르기가 있으면 메뉴에 표시도 해드려요."
               noHorizontalMargin
+              onVisibleChange={setTipShowing}
             />
           )}
 
+          <View style={styles.dimmableArea}>
           {todayMenu ? (
             <View style={styles.mealCard}>
               <View style={styles.mealCardTag}>
@@ -248,6 +251,8 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
               <Text style={styles.closeButtonText}>확인 완료</Text>
             </LinearGradient>
           </Pressable>
+          {tipShowing && <View pointerEvents="none" style={styles.dimOverlay} />}
+          </View>
         </Animated.View>
       </View>
     </Modal>
@@ -256,6 +261,18 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
+    dimmableArea: {
+      position: 'relative',
+    },
+    dimOverlay: {
+      position: 'absolute',
+      top: -4,
+      left: -4,
+      right: -4,
+      bottom: -4,
+      backgroundColor: 'rgba(15, 23, 42, 0.45)',
+      borderRadius: 12,
+    },
     overlay: {
       flex: 1,
       backgroundColor: 'rgba(0, 0, 0, 0.55)',

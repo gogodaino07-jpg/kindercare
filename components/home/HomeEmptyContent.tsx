@@ -21,6 +21,8 @@ interface HomeEmptyContentProps {
   onRefresh?: () => void;
   /** 홈 화면 튜토리얼이 "앞으로의 모험" 일정 영역을 스포트라이트로 강조할 때 위치를 재기 위한 ref. */
   scheduleSectionRef?: React.RefObject<View | null>;
+  /** 홈 화면 튜토리얼이 "가방에 쏙쏙" 준비물 영역을 스포트라이트로 강조할 때 위치를 재기 위한 ref. */
+  prepSectionRef?: React.RefObject<View | null>;
 }
 
 export default function HomeEmptyContent({
@@ -34,6 +36,7 @@ export default function HomeEmptyContent({
   refreshing,
   onRefresh,
   scheduleSectionRef,
+  prepSectionRef,
 }: HomeEmptyContentProps) {
   const router = useRouter();
   const colors = useThemeColors();
@@ -71,26 +74,28 @@ export default function HomeEmptyContent({
           todayMeal={todayMeal}
         />
 
-        <SectionHeader emoji="🎒" title="가방에 쏙쏙!" />
-      <View style={styles.card}>
-        <View style={[styles.iconCircle, { backgroundColor: colors.purpleBg }]}>
-          <Text style={styles.iconCircleEmoji}>🪄</Text>
+        <View ref={prepSectionRef} collapsable={false}>
+          <SectionHeader emoji="🎒" title="가방에 쏙쏙!" />
+          <View style={styles.card}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.purpleBg }]}>
+              <Text style={styles.iconCircleEmoji}>🪄</Text>
+            </View>
+            <Text style={styles.cardTitle}>앗, 아직 챙길 물건이 없네요!</Text>
+            <Text style={styles.cardSubtitle}>
+              알림장을 일일이 읽지 않아도 괜찮아요.{'\n'}AI가 똑똑하게 필요한 준비물을 찾아드릴게요!
+            </Text>
+            <Pressable onPress={() => router.push('/upload')}>
+              <LinearGradient
+                colors={[colors.purple500, colors.purpleDeep]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.scanButton}
+              >
+                <Text style={styles.scanButtonText}>✨ AI로 알림장 스캔하기</Text>
+              </LinearGradient>
+            </Pressable>
+          </View>
         </View>
-        <Text style={styles.cardTitle}>앗, 아직 챙길 물건이 없네요!</Text>
-        <Text style={styles.cardSubtitle}>
-          알림장을 일일이 읽지 않아도 괜찮아요.{'\n'}AI가 똑똑하게 필요한 준비물을 찾아드릴게요!
-        </Text>
-        <Pressable onPress={() => router.push('/upload')}>
-          <LinearGradient
-            colors={[colors.purple500, colors.purpleDeep]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.scanButton}
-          >
-            <Text style={styles.scanButtonText}>✨ AI로 알림장 스캔하기</Text>
-          </LinearGradient>
-        </Pressable>
-      </View>
 
       <View ref={scheduleSectionRef} collapsable={false}>
         <SectionHeader emoji="🗺️" title="앞으로의 모험" />
