@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, TextProps } from 'react-native';
+import { StyleSheet, Text, TextProps, TextStyle } from 'react-native';
 import { FONT_OPTIONS } from '../../constants/fontOptions';
 import { useAppData } from '../../context/AppDataContext';
 
@@ -21,12 +21,19 @@ export default function AppText({ style, ...rest }: TextProps) {
   const flat = StyleSheet.flatten(style);
   const globalFontFamily = FONT_OPTIONS.find((f) => f.id === fontChoiceId)?.fontFamily;
 
-  const overrides: { fontSize?: number; fontFamily?: string } = {};
+  const overrides: { fontSize?: number; fontFamily?: string; fontWeight?: TextStyle['fontWeight'] } = {};
   if (flat && typeof flat.fontSize === 'number' && fontScale !== 1) {
     overrides.fontSize = flat.fontSize * fontScale;
   }
   if (globalFontFamily && !flat?.fontFamily) {
     overrides.fontFamily = globalFontFamily;
+    // 구글 폰트로 불러온 손글씨체들은 대부분 Regular 굵기 하나만 제공한다.
+    // fontWeight를 bold 계열로 같이 주면 안드로이드가 해당 굵기의 타입페이스를
+    // 못 찾아 커스텀 폰트 자체를 무시하고 시스템 기본 폰트로 되돌아가버려서,
+    // 제목처럼 굵게 스타일링된 텍스트에만 폰트 설정이 안 먹는 것처럼 보였다.
+    if (flat?.fontWeight && flat.fontWeight !== 'normal') {
+      overrides.fontWeight = 'normal';
+    }
   }
 
   if (Object.keys(overrides).length === 0) {

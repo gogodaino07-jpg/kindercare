@@ -121,16 +121,18 @@ export default function AliExpressBanner({ style }: AliExpressBannerProps) {
         end={{ x: 1, y: 1 }}
         style={styles.banner}
       >
-        <Animated.View style={[styles.bannerContent, { opacity }]}>
-          <View style={styles.imageWrap}>
+        <View style={styles.bannerContent}>
+          <Animated.View style={[styles.imageWrap, { opacity }]}>
             <Image source={product.image} style={styles.image} resizeMode="cover" />
             <View style={styles.discountBadge}>
               <Text style={styles.discountText}>{product.discount}</Text>
             </View>
-          </View>
+          </Animated.View>
           <View style={styles.textCol}>
             <Text style={styles.brand}>알리익스프레스 특가</Text>
-            <Text style={styles.title} numberOfLines={2}>{product.title}</Text>
+            <Animated.View style={{ opacity }}>
+              <Text style={styles.title} numberOfLines={2}>{product.title}</Text>
+            </Animated.View>
             <View style={styles.priceRow}>
               <Text style={styles.price}>{product.price}</Text>
               <Text style={styles.originalPrice}>{product.originalPrice}</Text>
@@ -140,7 +142,7 @@ export default function AliExpressBanner({ style }: AliExpressBannerProps) {
             <Text style={styles.ctaText}>구매</Text>
             <Feather name="chevron-right" size={13} color="#FF3D00" />
           </View>
-        </Animated.View>
+        </View>
       </LinearGradient>
     </Pressable>
   );
@@ -169,9 +171,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   imageWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 14,
+    width: 76,
+    height: 76,
+    borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: 'rgba(255,255,255,0.25)',
   },
