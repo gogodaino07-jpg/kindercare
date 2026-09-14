@@ -1,8 +1,11 @@
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useMemo } from 'react';
-import { Image, Linking, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Image, Linking, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 import Text from './AppText';
+
+const ROTATE_INTERVAL_MS = 2000;
+const FADE_DURATION_MS = 250;
 
 export const ALIEXPRESS_LEGAL_DISCLOSURE_TEXT =
   '이 포스팅은 알리익스프레스 제휴 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.';
@@ -86,11 +89,25 @@ interface AliExpressBannerProps {
 /**
  * AliExpressBanner Component
  * 알리익스프레스는 쿠팡과 달리 실시간 위젯 스크립트가 없어, 직접 고른
- * 상품 목록 중 하나를 마운트 시 랜덤으로 노출하고 발급받은 트래킹
- * 링크로 연결하는 방식으로 구현했다.
+ * 상품 목록을 마운트 시 랜덤 순서로 섞은 뒤 일정 간격으로 자동 전환하며
+ * 노출하고, 클릭 시 현재 노출 중인 상품의 트래킹 링크로 연결한다.
  */
 export default function AliExpressBanner({ style }: AliExpressBannerProps) {
-  const product = useMemo(() => PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)], []);
+  const order = useRef(shuffle(PRODUCTS)).current;
+  const [index, setIndex] = useState(0);
+  const opacity = useRef(new Animated.Value(1)).current;
+  const product = order[index];
+
+  useEffect(() => {
+    if (order.length <= 1) return;
+    const timer = setInterval(() => {
+      Animated.timing(opacity, { toValue: 0, duration: FADE_DURATION_MS, useNativeDriver: true }).start(() => {
+        setIndex((prev) => (prev + 1) % order.length);
+        Animated.timing(opacity, { toValue: 1, duration: FADE_DURATION_MS, useNativeDriver: true }).start();
+      });
+    }, ROTATE_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [order, opacity]);
 
   const handlePress = () => {
     Linking.openURL(product.link).catch(() => {});
@@ -104,27 +121,38 @@ export default function AliExpressBanner({ style }: AliExpressBannerProps) {
         end={{ x: 1, y: 1 }}
         style={styles.banner}
       >
-        <View style={styles.imageWrap}>
-          <Image source={product.image} style={styles.image} resizeMode="cover" />
-          <View style={styles.discountBadge}>
-            <Text style={styles.discountText}>{product.discount}</Text>
+        <Animated.View style={[styles.bannerContent, { opacity }]}>
+          <View style={styles.imageWrap}>
+            <Image source={product.image} style={styles.image} resizeMode="cover" />
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountText}>{product.discount}</Text>
+            </View>
           </View>
-        </View>
-        <View style={styles.textCol}>
-          <Text style={styles.brand}>알리익스프레스 특가</Text>
-          <Text style={styles.title} numberOfLines={2}>{product.title}</Text>
-          <View style={styles.priceRow}>
-            <Text style={styles.price}>{product.price}</Text>
-            <Text style={styles.originalPrice}>{product.originalPrice}</Text>
+          <View style={styles.textCol}>
+            <Text style={styles.brand}>알리익스프레스 특가</Text>
+            <Text style={styles.title} numberOfLines={2}>{product.title}</Text>
+            <View style={styles.priceRow}>
+              <Text style={styles.price}>{product.price}</Text>
+              <Text style={styles.originalPrice}>{product.originalPrice}</Text>
+            </View>
           </View>
-        </View>
-        <View style={styles.ctaButton}>
-          <Text style={styles.ctaText}>구매</Text>
-          <Feather name="chevron-right" size={13} color="#FF3D00" />
-        </View>
+          <View style={styles.ctaButton}>
+            <Text style={styles.ctaText}>구매</Text>
+            <Feather name="chevron-right" size={13} color="#FF3D00" />
+          </View>
+        </Animated.View>
       </LinearGradient>
     </Pressable>
   );
+}
+
+function shuffle<T>(items: T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
 
 const styles = StyleSheet.create({
@@ -132,11 +160,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   banner: {
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+  },
+  bannerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
   },
   imageWrap: {
     width: 60,
