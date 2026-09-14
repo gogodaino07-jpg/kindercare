@@ -45,7 +45,7 @@ import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
 import { Event, EventItem } from '../types/models';
 import { isBirthdayToday, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
 import { updateHomeWidget } from '../utils/homeWidget';
-import { HOME_TUTORIAL_KEY, hasSeenTutorial, markTutorialSeen } from '../utils/tutorialStorage';
+import { HOME_TUTORIAL_KEY, hasSeenTutorial, markTutorialSeen, resetTutorialSeen } from '../utils/tutorialStorage';
 
 // 앱 프로세스가 살아있는 동안 전면 광고는 한 번만 시도한다. 컴포넌트 스코프
 // ref로 관리하면 AI 스캔 후 홈으로 돌아오면서 화면이 다시 마운트될 때마다
@@ -439,9 +439,13 @@ export default function HomeScreen() {
 
   // 개발/테스트용 숨은 진입점 — 삭제·재설치 없이 온보딩 튜토리얼을 바로 다시
   // 볼 수 있게, 프로필 영역의 "생후 N일째" 문구를 3번 연속 탭하면 실행된다.
+  // 홈 튜토리얼뿐 아니라 급식 시트/캘린더의 "처음 봤는지" 기록도 같이 지워서,
+  // 다음에 그 화면들에 들어갔을 때 첫 진입 안내 배너도 다시 뜨게 한다.
   const handleDaysOldTripleTap = useCallback(() => {
     setHomeTutorialVisible(true);
-    showToast('🎬 온보딩 튜토리얼을 다시 보여드릴게요.');
+    resetTutorialSeen('mealSheet:v1').catch(() => {});
+    resetTutorialSeen('calendar:v1').catch(() => {});
+    showToast('🎬 온보딩 튜토리얼을 다시 보여드릴게요. (급식/캘린더 안내도 초기화됨)');
   }, [showToast]);
 
   const handleFinishHomeTutorial = useCallback(() => {
