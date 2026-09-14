@@ -53,6 +53,30 @@ const PRODUCTS: AliExpressProduct[] = [
     discount: '65%',
     link: 'https://s.click.aliexpress.com/e/_c3kGJHYt',
   },
+  {
+    image: require('../../assets/images/aliexpress/product5.jpg'),
+    title: '점보 치즈 큐브 스트레스 볼 스퀴즈 장난감',
+    price: 'KRW 1,500',
+    originalPrice: 'KRW 4,397',
+    discount: '66%',
+    link: 'https://s.click.aliexpress.com/e/_c4WJ3reV',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product6.jpg'),
+    title: 'LED 귀 왁스 제거 핀셋 안전 귀 청소 도구',
+    price: 'KRW 1,500',
+    originalPrice: 'KRW 2,341',
+    discount: '36%',
+    link: 'https://s.click.aliexpress.com/e/_c3T2cdgv',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product7.jpg'),
+    title: '폼 비행기 발사기 야외 장난감',
+    price: 'KRW 1,500',
+    originalPrice: 'KRW 2,236',
+    discount: '33%',
+    link: 'https://s.click.aliexpress.com/e/_c3DVUtAH',
+  },
 ];
 
 interface AliExpressBannerProps {
