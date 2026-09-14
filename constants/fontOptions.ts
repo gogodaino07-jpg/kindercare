@@ -1,6 +1,5 @@
 export type FontChoiceId =
   | 'default'
-  | 'system'
   | 'Gaegu'
   | 'GamjaFlower'
   | 'HiMelody'
@@ -21,7 +20,7 @@ export interface FontOption {
 }
 
 export const FONT_OPTIONS: FontOption[] = [
-  { id: 'default', label: '기본 돋움체', vibe: '기본' },
+  { id: 'default', label: '기본', vibe: '기본' },
   { id: 'Gaegu', label: 'Gaegu', fontFamily: 'Gaegu_400Regular', vibe: '손글씨' },
   { id: 'GamjaFlower', label: 'Gamja Flower', fontFamily: 'GamjaFlower_400Regular', vibe: '귀여움' },
   { id: 'HiMelody', label: 'Hi Melody', fontFamily: 'HiMelody_400Regular', vibe: '아기자기' },
@@ -31,7 +30,6 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'YeonSung', label: 'Yeon Sung', fontFamily: 'YeonSung_400Regular', vibe: '단정함' },
   { id: 'Sunflower', label: 'Sunflower', fontFamily: 'Sunflower_500Medium', vibe: '깔끔함' },
   { id: 'EastSeaDokdo', label: 'East Sea Dokdo', fontFamily: 'EastSeaDokdo_400Regular', vibe: '개성있는' },
-  { id: 'system', label: '시스템 폰트', vibe: '심플' },
 ];
 
 export const DEFAULT_FONT_ID: FontChoiceId = 'default';

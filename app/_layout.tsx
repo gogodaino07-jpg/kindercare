@@ -266,8 +266,8 @@ function ThemedNavigation() {
               <Stack.Screen name="settings/subscription" options={{ title: '프리미엄 구독' }} />
               <Stack.Screen name="settings/family" options={{ title: '가족 계정' }} />
               <Stack.Screen name="settings/notifications" options={{ title: '알림 설정' }} />
-              <Stack.Screen name="settings/font" options={{ title: '글씨체' }} />
-              <Stack.Screen name="settings/font-size" options={{ title: '글자 크기' }} />
+              <Stack.Screen name="settings/font" options={{ title: '글꼴' }} />
+              <Stack.Screen name="settings/font-size" options={{ title: '글자 크기와 스타일' }} />
               <Stack.Screen name="settings/chalkboard-theme" options={{ title: '팝업 테마' }} />
               <Stack.Screen name="settings/theme" options={{ title: '테마' }} />
               <Stack.Screen name="settings/weather-region" options={{ title: '날씨 지역 설정' }} />

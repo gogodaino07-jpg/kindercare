@@ -2,22 +2,23 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { Stack, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Text from '../../components/common/AppText';
-import { FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
+import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
 import { useThemeColors } from '../../context/ThemeContext';
 
 export default function FontSizeSettingsScreen() {
   const router = useRouter();
-  const { fontSizeChoice, setFontSizeChoice } = useAppData();
+  const { fontSizeChoice, setFontSizeChoice, fontChoiceId } = useAppData();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const sliderIndex = FONT_SIZE_OPTIONS.findIndex((o) => o.id === fontSizeChoice);
   const activeOption = FONT_SIZE_OPTIONS[sliderIndex] ?? FONT_SIZE_OPTIONS[1];
+  const fontLabel = FONT_OPTIONS.find((o) => o.id === fontChoiceId)?.label ?? '기본';
 
   return (
     <View style={styles.screenBg}>
@@ -42,6 +43,16 @@ export default function FontSizeSettingsScreen() {
               7/20(월) 현장학습이 있어요
             </Text>
           </View>
+
+          <TouchableOpacity
+            style={styles.fontRow}
+            activeOpacity={0.7}
+            onPress={() => router.push('/settings/font')}
+          >
+            <Text style={styles.fontRowTitle}>글꼴</Text>
+            <Text style={styles.fontRowValue} numberOfLines={1}>{fontLabel}</Text>
+            <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
+          </TouchableOpacity>
 
           <View style={styles.sliderCard}>
             <View style={styles.currentLabelPill}>
@@ -108,6 +119,28 @@ function createStyles(colors: ThemeColors) {
     previewText: {
       color: colors.textPrimary,
       fontWeight: '600',
+    },
+    fontRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardWhite,
+      borderRadius: 16,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      marginBottom: 16,
+      ...SHADOW,
+    },
+    fontRowTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    fontRowValue: {
+      flex: 1,
+      textAlign: 'right',
+      marginRight: 8,
+      fontSize: 13,
+      color: colors.textSecondary,
     },
     sliderCard: {
       backgroundColor: colors.cardWhite,

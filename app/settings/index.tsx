@@ -87,7 +87,7 @@ export default function SettingsScreen() {
     };
   }, []);
 
-  const fontLabel = FONT_OPTIONS.find((o) => o.id === fontChoiceId)?.label ?? '기본 돋움체';
+  const fontLabel = FONT_OPTIONS.find((o) => o.id === fontChoiceId)?.label ?? '기본';
   const fontSizeOption = FONT_SIZE_OPTIONS.find((o) => o.id === fontSizeChoice) ?? FONT_SIZE_OPTIONS[2];
   const fontSizePx = Math.round(18 * fontSizeOption.scale);
 
@@ -353,20 +353,14 @@ export default function SettingsScreen() {
                 </View>
 
                 <View style={styles.divider} />
-                <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => router.push('/settings/font')}>
-                  <Text style={styles.rowTitle}>글씨체 설정</Text>
-                  <Text style={styles.rowValue} numberOfLines={1}>{fontLabel}</Text>
-                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
-                </TouchableOpacity>
-                <View style={styles.divider} />
                 <TouchableOpacity
                   style={styles.row}
                   activeOpacity={0.7}
                   onPress={() => router.push('/settings/font-size')}
                 >
-                  <Text style={styles.rowTitle}>글자 크기 설정</Text>
+                  <Text style={styles.rowTitle}>글자 크기와 스타일</Text>
                   <Text style={styles.rowValue} numberOfLines={1}>
-                    {fontSizeOption.label} ({fontSizePx}px)
+                    {fontLabel} · {fontSizeOption.label}
                   </Text>
                   <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
                 </TouchableOpacity>
