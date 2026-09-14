@@ -3,6 +3,7 @@ import { Dimensions, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   runOnJS,
+  useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -14,11 +15,21 @@ import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import Text from '../common/AppText';
 
+const AnimatedSvgRect = Animated.createAnimatedComponent(SvgRect);
+
 interface Rect {
   x: number;
   y: number;
   width: number;
   height: number;
+}
+
+interface Highlight {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+  radius: number;
 }
 
 export interface HomeTutorialStep {
@@ -38,8 +49,10 @@ interface HomeTutorialOverlayProps {
   /** 마지막 단계의 "시작하기" 또는 "건너뛰기"로 투어가 끝났을 때 호출된다. */
   onFinish: () => void;
   /** 각 단계를 측정하기 전에 호출 — 대상이 화면 밖(스크롤 아래)에 있을 수 있어,
-   * 먼저 그 위치로 스크롤한 뒤(애니메이션 종료까지 기다렸다가) resolve해야 한다. */
-  scrollIntoView?: (targetRef: React.RefObject<View | null>) => Promise<void>;
+   * 먼저 그 위치로 스크롤한 뒤(애니메이션 종료까지 기다렸다가) resolve해야 한다.
+   * 실제로 스크롤이 일어났는지(true/false)를 반환해야, 스크롤이 없었던 전환은
+   * 스포트라이트가 이전 위치에서 새 위치로 부드럽게 미끄러지듯 넘어가게 할 수 있다. */
+  scrollIntoView?: (targetRef: React.RefObject<View | null>) => Promise<boolean>;
 }
 
 const PAD = 3;
@@ -47,6 +60,23 @@ const RADIUS = 20;
 const TAIL_SIZE = 16;
 const START_BUTTON_COLOR = '#7C3AED';
 const NEXT_BUTTON_COLOR = '#18181B';
+const SLIDE = { duration: 380, easing: Easing.inOut(Easing.ease) };
+
+function clampHighlight(rect: Rect, screen: { width: number; height: number }, fullyRounded?: boolean): Highlight {
+  const top = Math.max(rect.y - PAD, 0);
+  const bottom = Math.min(rect.y + rect.height + PAD, screen.height);
+  const left = Math.max(rect.x - PAD, 0);
+  const right = Math.min(rect.x + rect.width + PAD, screen.width);
+  const width = right - left;
+  const height = Math.max(bottom - top, 0);
+  // AI 스캔 버튼처럼 양 끝이 완전한 반원인 대상은 고정 RADIUS(20)보다 실제
+  // 모서리가 훨씬 더 둥글어서(끝이 반원), 구멍이 버튼보다 덜 둥글면 그 사이로
+  // 카드의 흰 배경이 아주 살짝 삐져나와 보였다. fullyRounded 단계는 높이의
+  // 절반까지(완전한 캡슐 모양) 둥글리고, 나머지는 카드 모서리와 비슷한 고정
+  // RADIUS를 쓰되 대상이 그보다 작으면(작은 아이콘 등) 자동으로 더 둥글게 한다.
+  const radius = fullyRounded ? Math.min(width / 2, height / 2) : Math.min(RADIUS, width / 2, height / 2);
+  return { top, left, width, height, radius };
+}
 
 /**
  * 앱 첫 실행(온보딩 미완료) 시 홈 화면 주요 영역을 순서대로 스포트라이트로
@@ -59,10 +89,18 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
   const [rect, setRect] = useState<Rect | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const step = steps[stepIndex];
-  // 처음 뜰 때는 딱히 사라질 이전 내용이 없으니 바로 나타나고, 단계 이동일 때만
-  // 살짝 사라졌다가(딱딱한 점프 방지) 새 위치에서 다시 나타난다.
   const isFirstShowRef = useRef(true);
   const overlayOpacity = useSharedValue(0);
+  const tooltipOpacity = useSharedValue(1);
+
+  // 스포트라이트 실제 화면 위치/크기 — 스크롤이 필요 없는 전환에서는 이 값들을
+  // 이전 위치에서 새 위치로 애니메이션시켜(슬라이드) 자연스럽게 이어지고,
+  // 스크롤이 낀 전환에서는 그냥 즉시 새 값으로 맞춘다(그 동안은 딤 처리로 가려짐).
+  const hLeft = useSharedValue(0);
+  const hTop = useSharedValue(0);
+  const hWidth = useSharedValue(0);
+  const hHeight = useSharedValue(0);
+  const hRadius = useSharedValue(0);
 
   useEffect(() => {
     if (visible) {
@@ -78,16 +116,15 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
       return;
     }
     let cancelled = false;
+    const screen = Dimensions.get('window');
 
-    const measureAndReveal = () => {
+    const measure = (onDone: (r: Rect) => void) => {
       let attempts = 0;
       const tryMeasure = () => {
         step.targetRef.current?.measureInWindow((x, y, width, height) => {
           if (cancelled) return;
           if (width > 0 && height > 0) {
-            setRect({ x, y, width, height });
-            setTransitioning(false);
-            overlayOpacity.value = withTiming(1, { duration: 220, easing: Easing.out(Easing.ease) });
+            onDone({ x, y, width, height });
           } else if (attempts < 10) {
             attempts += 1;
             setTimeout(tryMeasure, 150);
@@ -97,30 +134,68 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
       tryMeasure();
     };
 
-    const afterFadeOut = () => {
+    const revealInstant = (r: Rect) => {
       if (cancelled) return;
-      (scrollIntoView ? scrollIntoView(step.targetRef) : Promise.resolve()).then(() => {
-        if (!cancelled) measureAndReveal();
-      });
+      const h = clampHighlight(r, screen, step.fullyRounded);
+      setRect(r);
+      hLeft.value = h.left;
+      hTop.value = h.top;
+      hWidth.value = h.width;
+      hHeight.value = h.height;
+      hRadius.value = h.radius;
+      tooltipOpacity.value = 1;
+      setTransitioning(false);
+      overlayOpacity.value = withTiming(1, { duration: 220, easing: Easing.out(Easing.ease) });
     };
 
-    if (isFirstShowRef.current) {
+    const revealSlide = (r: Rect) => {
+      if (cancelled) return;
+      const h = clampHighlight(r, screen, step.fullyRounded);
+      setRect(r);
+      hLeft.value = withTiming(h.left, SLIDE);
+      hTop.value = withTiming(h.top, SLIDE);
+      hWidth.value = withTiming(h.width, SLIDE);
+      hHeight.value = withTiming(h.height, SLIDE);
+      hRadius.value = withTiming(h.radius, SLIDE);
+      tooltipOpacity.value = withSequence(withTiming(0, { duration: 90 }), withTiming(1, { duration: 180 }));
+      setTransitioning(false);
+    };
+
+    const run = async () => {
+      const first = isFirstShowRef.current;
       isFirstShowRef.current = false;
-      afterFadeOut();
-    } else {
-      // setTimeout으로 페이드아웃 시간만큼 따로 기다리면 실제 UI 스레드
-      // 애니메이션 종료 시점과 살짝 어긋날 수 있어(오차가 곧 "버벅임"으로
-      // 느껴짐), 애니메이션 자체의 완료 콜백에서 다음 단계로 넘어가게 한다.
       setTransitioning(true);
-      overlayOpacity.value = withTiming(0, { duration: 130, easing: Easing.in(Easing.ease) }, (finished) => {
-        if (finished) runOnJS(afterFadeOut)();
-      });
-    }
+
+      const scrolled = scrollIntoView ? await scrollIntoView(step.targetRef) : false;
+      if (cancelled) return;
+
+      if (first) {
+        measure(revealInstant);
+        return;
+      }
+
+      if (scrolled) {
+        // 스크롤로 화면이 이미 크게 움직인 뒤라, 예전 위치에서 새 위치로 미끄러지듯
+        // 이어봐야 의미가 없다 — 살짝 사라졌다가(스크롤은 이미 끝난 뒤) 새 자리에서
+        // 다시 나타나는 편이 자연스럽다.
+        overlayOpacity.value = withTiming(0, { duration: 120, easing: Easing.in(Easing.ease) }, (finished) => {
+          if (finished) runOnJS(setTransitioning)(true);
+        });
+        await new Promise((resolve) => setTimeout(resolve, 120));
+        if (cancelled) return;
+        measure(revealInstant);
+      } else {
+        // 스크롤 없이 바로 옆/근처로 넘어가는 경우엔 화면을 가리지 않고, 스포트라이트
+        // 자체가 이전 위치에서 새 위치로 부드럽게 미끄러지듯 이동한다.
+        measure(revealSlide);
+      }
+    };
+    run();
 
     return () => {
       cancelled = true;
     };
-  }, [visible, step, scrollIntoView, overlayOpacity]);
+  }, [visible, step, scrollIntoView, overlayOpacity, hLeft, hTop, hWidth, hHeight, hRadius, tooltipOpacity]);
 
   const pulse = useSharedValue(0);
   useEffect(() => {
@@ -156,6 +231,29 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
     opacity: overlayOpacity.value,
   }));
 
+  const tooltipFadeStyle = useAnimatedStyle(() => ({
+    opacity: tooltipOpacity.value,
+  }));
+
+  // 스포트라이트(딤 구멍/링)의 실제 화면 위치 — 슬라이드 전환일 때는 이 값들이
+  // 이전 위치에서 새 위치까지 매 프레임 애니메이션되고, 그 값 그대로 딤 마스크의
+  // 구멍과 링 위치/크기에 반영된다.
+  const highlightStyle = useAnimatedStyle(() => ({
+    top: hTop.value,
+    left: hLeft.value,
+    width: hWidth.value,
+    height: hHeight.value,
+    borderRadius: hRadius.value,
+  }));
+
+  const maskRectProps = useAnimatedProps(() => ({
+    x: hLeft.value,
+    y: hTop.value,
+    width: hWidth.value,
+    height: hHeight.value,
+    rx: hRadius.value,
+  }));
+
   if (!visible || !step || !rect) return null;
 
   const isLastStep = stepIndex === steps.length - 1;
@@ -181,14 +279,6 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
   const targetCenterX = (left + right) / 2;
   const tooltipCardWidth = screen.width - 40;
   const tailLeft = Math.min(Math.max(targetCenterX - 20 - TAIL_SIZE / 2, 20), tooltipCardWidth - 20 - TAIL_SIZE);
-  // AI 스캔 버튼처럼 양 끝이 완전한 반원인 대상은 고정 RADIUS(20)보다 실제
-  // 모서리가 훨씬 더 둥글어서(끝이 반원), 구멍이 버튼보다 덜 둥글면 그 사이로
-  // 카드의 흰 배경이 아주 살짝 삐져나와 보였다. fullyRounded 단계는 높이의
-  // 절반까지(완전한 캡슐 모양) 둥글리고, 나머지는 카드 모서리와 비슷한 고정
-  // RADIUS를 쓰되 대상이 그보다 작으면(작은 아이콘 등) 자동으로 더 둥글게 한다.
-  const holeRadius = step.fullyRounded
-    ? Math.min((right - left) / 2, (bottom - top) / 2)
-    : Math.min(RADIUS, (right - left) / 2, (bottom - top) / 2);
 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, overlayFadeStyle]} pointerEvents={transitioning ? 'none' : 'box-none'}>
@@ -199,7 +289,7 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
         <Defs>
           <Mask id="tutorial-spotlight-mask">
             <SvgRect x={0} y={0} width={screen.width} height={screen.height} fill="#FFFFFF" />
-            <SvgRect x={left} y={top} width={right - left} height={Math.max(bottom - top, 0)} rx={holeRadius} fill="#000000" />
+            <AnimatedSvgRect animatedProps={maskRectProps} fill="#000000" />
           </Mask>
         </Defs>
         <SvgRect
@@ -214,20 +304,20 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
       {/* 배경/하이라이트 영역 전체의 터치를 삼켜서, 툴팁의 버튼 외에는 아무 동작도 하지 않게 한다. */}
       <Pressable style={StyleSheet.absoluteFill} onPress={() => {}} />
 
-      <View
+      <Animated.View
         pointerEvents="none"
-        style={[styles.ringBase, { top, left, width: right - left, height: bottom - top, borderColor: colors.accent, borderRadius: holeRadius }]}
+        style={[styles.ringBase, highlightStyle, { borderColor: colors.accent }]}
       />
       <Animated.View
         pointerEvents="none"
-        style={[styles.ringGlow, ringGlowStyle, { top, left, width: right - left, height: bottom - top, borderColor: colors.accent, borderRadius: holeRadius }]}
+        style={[styles.ringGlow, highlightStyle, ringGlowStyle, { borderColor: colors.accent }]}
       />
 
       <View
         pointerEvents="box-none"
         style={[styles.tooltipWrap, tooltipBelow ? { top: bottom + 14 } : { bottom: screen.height - top + 14 }]}
       >
-        <View style={[styles.tooltip, { backgroundColor: colors.cardWhite }]}>
+        <Animated.View style={[styles.tooltip, tooltipFadeStyle, { backgroundColor: colors.cardWhite }]}>
           <View
             style={[
               styles.tail,
@@ -271,7 +361,7 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
               </Pressable>
             </View>
           </View>
-        </View>
+        </Animated.View>
       </View>
     </Animated.View>
   );
@@ -281,12 +371,10 @@ const styles = StyleSheet.create({
   ringBase: {
     position: 'absolute',
     borderWidth: 3,
-    borderRadius: RADIUS,
   },
   ringGlow: {
     position: 'absolute',
     borderWidth: 8,
-    borderRadius: RADIUS,
   },
   tail: {
     position: 'absolute',

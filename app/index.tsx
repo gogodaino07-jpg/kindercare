@@ -453,7 +453,7 @@ export default function HomeScreen() {
   // 이 호출이 사실상 스크롤을 0으로 되돌리는 정도로만 작동하고, 급식/날씨/
   // 준비물/일정처럼 스크롤 안쪽에 있는 대상은 실제로 화면에 보이도록 스크롤해준다.
   const handleScrollTutorialTargetIntoView = useCallback(
-    (targetRef: React.RefObject<View | null>) => emptyContentRef.current?.scrollToTarget(targetRef) ?? Promise.resolve(),
+    (targetRef: React.RefObject<View | null>) => emptyContentRef.current?.scrollToTarget(targetRef) ?? Promise.resolve(false),
     []
   );
 

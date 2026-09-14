@@ -32,8 +32,11 @@ interface HomeEmptyContentProps {
 }
 
 export interface HomeEmptyContentHandle {
-  /** 튜토리얼 대상이 화면에 보이도록 스크롤한 뒤(애니메이션 종료까지 기다렸다가) resolve된다. */
-  scrollToTarget: (targetRef: React.RefObject<View | null>) => Promise<void>;
+  /** 튜토리얼 대상이 화면에 보이도록 스크롤한 뒤(애니메이션 종료까지 기다렸다가) resolve된다.
+   * 실제로 스크롤이 발생했으면 true, 이미 보이는 위치라 건너뛰었으면 false를 반환 —
+   * 호출부가 스크롤 없이 바로 이어지는 전환(부드러운 슬라이드)과 스크롤이 낀 전환을
+   * 구분해서 다르게 연출할 수 있게 한다. */
+  scrollToTarget: (targetRef: React.RefObject<View | null>) => Promise<boolean>;
 }
 
 const HomeEmptyContent = forwardRef<HomeEmptyContentHandle, HomeEmptyContentProps>(function HomeEmptyContent({
@@ -75,9 +78,9 @@ const HomeEmptyContent = forwardRef<HomeEmptyContentHandle, HomeEmptyContentProp
 
   useImperativeHandle(ref, () => ({
     scrollToTarget: (targetRef) =>
-      new Promise<void>((resolve) => {
+      new Promise<boolean>((resolve) => {
         if (!targetRef.current || !viewportRef.current || !scrollViewRef.current) {
-          resolve();
+          resolve(false);
           return;
         }
         targetRef.current.measureInWindow((_tx, ty) => {
@@ -88,11 +91,11 @@ const HomeEmptyContent = forwardRef<HomeEmptyContentHandle, HomeEmptyContentProp
             // 맨 위 근처의 카드) 스크롤을 건너뛰어 불필요한 380ms 대기와
             // 애니메이션 동작을 없앤다 — 전환이 매번 늘어져 보이는 원인이었다.
             if (Math.abs(newY - scrollYRef.current) < 20) {
-              resolve();
+              resolve(false);
               return;
             }
             scrollViewRef.current?.scrollTo({ y: newY, animated: true });
-            setTimeout(resolve, 380);
+            setTimeout(() => resolve(true), 380);
           });
         });
       }),
