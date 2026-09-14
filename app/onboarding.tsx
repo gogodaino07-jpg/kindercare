@@ -54,16 +54,8 @@ const SLIDES = [
     emoji: '🤖',
     badgeBg: GLASS_BG,
     badgeBorder: GLASS_BORDER,
-    title: 'AI가 우리 아이 나이에\n맞는 내용만 쏙쏙',
-    subtitle: '여러 아이를 등록해도\n각자에게 필요한 내용만 자동으로 나눠드려요',
-    ctaLabel: '다음',
-  },
-  {
-    emoji: '🔔',
-    badgeBg: GLASS_BG,
-    badgeBorder: GLASS_BORDER,
-    title: '놓치는 일정 없이\n알림까지 챙겨드려요',
-    subtitle: '준비물부터 일정까지,\n전날 저녁에 미리 알려드릴게요',
+    title: 'AI가 아이에 맞게 정리하고\n놓치기 전에 알려드려요',
+    subtitle: '여러 아이를 등록해도 각자 필요한 내용만 나눠서,\n준비물과 일정을 전날 저녁 미리 알려드릴게요',
     ctaLabel: '시작하기',
   },
 ];
