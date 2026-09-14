@@ -27,7 +27,7 @@ import { AppLockProvider, useAppLock } from '../context/AppLockContext';
 import { NotificationCenterProvider, useNotificationCenter } from '../context/NotificationCenterContext';
 import { SubscriptionProvider } from '../context/SubscriptionContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
-import { ToastProvider } from '../context/ToastContext';
+import { ToastProvider, useToast } from '../context/ToastContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -56,13 +56,15 @@ function ThemedNavigation() {
   const router = useRouter();
   const lastBackPressRef = useRef(0);
   const { showAlert } = useAlert();
+  const { showToast } = useToast();
   const { addNotification, markRead } = useNotificationCenter();
-  // showAlert/addNotification/markRead는 매 렌더마다 새로 만들어지는 함수라, 알림
-  // 리스너 effect의 의존성으로 넣으면 알림센터 상태가 바뀔 때마다 리스너가 재등록되고
-  // getLastNotificationResponseAsync가 다시 실행돼 마지막 알림을 반복 처리하게 된다.
-  // ref로 최신 함수만 갈아끼우고 effect 자체는 재등록하지 않는다.
-  const notifHandlersRef = useRef({ showAlert, addNotification, markRead });
-  notifHandlersRef.current = { showAlert, addNotification, markRead };
+  // showAlert/addNotification/markRead/showToast는 매 렌더마다 새로 만들어지는
+  // 함수라, 알림 리스너 effect의 의존성으로 넣으면 알림센터 상태가 바뀔 때마다
+  // 리스너가 재등록되고 getLastNotificationResponseAsync가 다시 실행돼 마지막
+  // 알림을 반복 처리하게 된다. ref로 최신 함수만 갈아끼우고 effect 자체는
+  // 재등록하지 않는다.
+  const notifHandlersRef = useRef({ showAlert, addNotification, markRead, showToast });
+  notifHandlersRef.current = { showAlert, addNotification, markRead, showToast };
 
   const splashOpacity = useRef(new Animated.Value(1)).current;
   const appOpacity = useRef(new Animated.Value(0)).current;
@@ -129,7 +131,7 @@ function ThemedNavigation() {
 
     const handleResponse = (response: Notifications.NotificationResponse | null) => {
       if (!response) return;
-      const { addNotification, markRead, showAlert } = notifHandlersRef.current;
+      const { addNotification, markRead, showAlert, showToast } = notifHandlersRef.current;
       const content = response.notification.request.content;
       const data = (content.data ?? {}) as NotifData;
       const notificationId = response.notification.request.identifier;
@@ -162,6 +164,7 @@ function ThemedNavigation() {
               onPress: () => {
                 snoozeNotification(notifKey, title, body, date, 15).catch(() => {});
                 Notifications.dismissNotificationAsync(notificationId).catch(() => {});
+                showToast('⏰ 15분 후 다시 알려드릴게요.');
               },
             },
             {
@@ -169,6 +172,7 @@ function ThemedNavigation() {
               onPress: () => {
                 snoozeNotification(notifKey, title, body, date, 30).catch(() => {});
                 Notifications.dismissNotificationAsync(notificationId).catch(() => {});
+                showToast('⏰ 30분 후 다시 알려드릴게요.');
               },
             },
             {
@@ -176,6 +180,7 @@ function ThemedNavigation() {
               onPress: () => {
                 snoozeNotification(notifKey, title, body, date, 60).catch(() => {});
                 Notifications.dismissNotificationAsync(notificationId).catch(() => {});
+                showToast('⏰ 1시간 후 다시 알려드릴게요.');
               },
             },
             { text: '취소', style: 'cancel' },
