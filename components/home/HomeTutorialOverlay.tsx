@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -93,20 +94,25 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
       tryMeasure();
     };
 
-    const run = async () => {
-      if (isFirstShowRef.current) {
-        isFirstShowRef.current = false;
-      } else {
-        setTransitioning(true);
-        overlayOpacity.value = withTiming(0, { duration: 150, easing: Easing.in(Easing.ease) });
-        await new Promise((resolve) => setTimeout(resolve, 150));
-      }
+    const afterFadeOut = () => {
       if (cancelled) return;
-      if (scrollIntoView) await scrollIntoView(step.targetRef);
-      if (cancelled) return;
-      measureAndReveal();
+      (scrollIntoView ? scrollIntoView(step.targetRef) : Promise.resolve()).then(() => {
+        if (!cancelled) measureAndReveal();
+      });
     };
-    run();
+
+    if (isFirstShowRef.current) {
+      isFirstShowRef.current = false;
+      afterFadeOut();
+    } else {
+      // setTimeout으로 페이드아웃 시간만큼 따로 기다리면 실제 UI 스레드
+      // 애니메이션 종료 시점과 살짝 어긋날 수 있어(오차가 곧 "버벅임"으로
+      // 느껴짐), 애니메이션 자체의 완료 콜백에서 다음 단계로 넘어가게 한다.
+      setTransitioning(true);
+      overlayOpacity.value = withTiming(0, { duration: 130, easing: Easing.in(Easing.ease) }, (finished) => {
+        if (finished) runOnJS(afterFadeOut)();
+      });
+    }
 
     return () => {
       cancelled = true;
