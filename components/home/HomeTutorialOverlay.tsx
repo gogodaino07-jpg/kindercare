@@ -116,6 +116,11 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
   const pulse = useSharedValue(0);
   useEffect(() => {
     if (!rect) return;
+    // 이전 단계에서 진행 중이던 값(0~1 사이 임의 지점)에서 그대로 이어받아
+    // withRepeat를 다시 걸면, 새 단계가 나타나는 첫 순간 그 값까지 순간
+    // 이동하듯 "팍" 튀어 보였다. 매번 0으로 확실히 되돌린 뒤 시작해야 항상
+    // 같은 자리에서 부드럽게 차오른다.
+    pulse.value = 0;
     pulse.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 700, easing: Easing.inOut(Easing.ease) }),
