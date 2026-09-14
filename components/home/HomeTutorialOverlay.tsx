@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -53,38 +53,65 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
   const colors = useThemeColors();
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
   const step = steps[stepIndex];
+  // 처음 뜰 때는 딱히 사라질 이전 내용이 없으니 바로 나타나고, 단계 이동일 때만
+  // 살짝 사라졌다가(딱딱한 점프 방지) 새 위치에서 다시 나타난다.
+  const isFirstShowRef = useRef(true);
+  const overlayOpacity = useSharedValue(0);
 
   useEffect(() => {
-    if (visible) setStepIndex(0);
+    if (visible) {
+      setStepIndex(0);
+      isFirstShowRef.current = true;
+    }
   }, [visible]);
 
   useEffect(() => {
     if (!visible || !step) {
       setRect(null);
+      overlayOpacity.value = 0;
       return;
     }
     let cancelled = false;
-    let attempts = 0;
-    setRect(null);
-    const tryMeasure = () => {
-      step.targetRef.current?.measureInWindow((x, y, width, height) => {
-        if (cancelled) return;
-        if (width > 0 && height > 0) {
-          setRect({ x, y, width, height });
-        } else if (attempts < 10) {
-          attempts += 1;
-          setTimeout(tryMeasure, 150);
-        }
-      });
+
+    const measureAndReveal = () => {
+      let attempts = 0;
+      const tryMeasure = () => {
+        step.targetRef.current?.measureInWindow((x, y, width, height) => {
+          if (cancelled) return;
+          if (width > 0 && height > 0) {
+            setRect({ x, y, width, height });
+            setTransitioning(false);
+            overlayOpacity.value = withTiming(1, { duration: 220, easing: Easing.out(Easing.ease) });
+          } else if (attempts < 10) {
+            attempts += 1;
+            setTimeout(tryMeasure, 150);
+          }
+        });
+      };
+      tryMeasure();
     };
-    (scrollIntoView ? scrollIntoView(step.targetRef) : Promise.resolve()).then(() => {
-      if (!cancelled) tryMeasure();
-    });
+
+    const run = async () => {
+      if (isFirstShowRef.current) {
+        isFirstShowRef.current = false;
+      } else {
+        setTransitioning(true);
+        overlayOpacity.value = withTiming(0, { duration: 150, easing: Easing.in(Easing.ease) });
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+      if (cancelled) return;
+      if (scrollIntoView) await scrollIntoView(step.targetRef);
+      if (cancelled) return;
+      measureAndReveal();
+    };
+    run();
+
     return () => {
       cancelled = true;
     };
-  }, [visible, step, scrollIntoView]);
+  }, [visible, step, scrollIntoView, overlayOpacity]);
 
   const pulse = useSharedValue(0);
   useEffect(() => {
@@ -107,17 +134,25 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
     borderWidth: 3 + pulse.value * 4,
   }));
 
+  const overlayFadeStyle = useAnimatedStyle(() => ({
+    opacity: overlayOpacity.value,
+  }));
+
   if (!visible || !step || !rect) return null;
 
   const isLastStep = stepIndex === steps.length - 1;
   const handleNext = () => {
+    if (transitioning) return;
     if (isLastStep) {
       onFinish();
     } else {
       setStepIndex((i) => i + 1);
     }
   };
-  const handleSkip = () => onFinish();
+  const handleSkip = () => {
+    if (transitioning) return;
+    onFinish();
+  };
 
   const screen = Dimensions.get('window');
   const top = Math.max(rect.y - PAD, 0);
@@ -130,7 +165,7 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
   const tailLeft = Math.min(Math.max(targetCenterX - 20 - TAIL_SIZE / 2, 20), tooltipCardWidth - 20 - TAIL_SIZE);
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    <Animated.View style={[StyleSheet.absoluteFill, overlayFadeStyle]} pointerEvents={transitioning ? 'none' : 'box-none'}>
       {/* 딤 배경에 하이라이트 영역만 둥근 모서리로 뚫어낸다 — 사각형 4개를 이어붙이면
           둥근 링과 딱 맞지 않아 모서리에 안 어두워진 조각이 남는 문제가 있어,
           SVG 마스크로 실제 구멍 자체를 둥글게 만든다. */}
@@ -208,7 +243,7 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
           </View>
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
