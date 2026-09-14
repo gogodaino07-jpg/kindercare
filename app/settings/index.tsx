@@ -26,7 +26,6 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import { THEME_MODE_LABELS, useTheme } from '../../context/ThemeContext';
 import { FREE_LIFETIME_LIMIT } from '../../features/newsletter-analysis';
 import { resolveCoords } from '../../hooks/useWeeklyWeather';
-import { HOME_TUTORIAL_KEY, resetTutorialSeen } from '../../utils/tutorialStorage';
 import { fetchWeatherPreview } from '../../utils/weatherPreviewFetch';
 
 const LOCK_METHOD_LABELS: Record<LockMethod, string> = {
@@ -381,18 +380,6 @@ export default function SettingsScreen() {
                 <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => router.push('/settings/app-lock')}>
                   <Text style={styles.rowTitle}>잠금화면</Text>
                   <Text style={styles.rowValue} numberOfLines={1}>{LOCK_METHOD_LABELS[method]}</Text>
-                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
-                </TouchableOpacity>
-                <View style={styles.divider} />
-                <TouchableOpacity
-                  style={styles.row}
-                  activeOpacity={0.7}
-                  onPress={async () => {
-                    await resetTutorialSeen(HOME_TUTORIAL_KEY);
-                    router.push({ pathname: '/', params: { replayTutorial: '1' } });
-                  }}
-                >
-                  <Text style={styles.rowTitle}>온보딩 다시 보기</Text>
                   <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
                 </TouchableOpacity>
               </View>
