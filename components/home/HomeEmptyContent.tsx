@@ -32,11 +32,12 @@ interface HomeEmptyContentProps {
 }
 
 export interface HomeEmptyContentHandle {
-  /** 튜토리얼 대상이 화면에 보이도록 스크롤한 뒤(애니메이션 종료까지 기다렸다가) resolve된다.
-   * 실제로 스크롤이 발생했으면 true, 이미 보이는 위치라 건너뛰었으면 false를 반환 —
-   * 호출부가 스크롤 없이 바로 이어지는 전환(부드러운 슬라이드)과 스크롤이 낀 전환을
-   * 구분해서 다르게 연출할 수 있게 한다. */
-  scrollToTarget: (targetRef: React.RefObject<View | null>) => Promise<boolean>;
+  /** 튜토리얼 대상이 화면에 보이도록 스크롤을 "시작"시키고(애니메이션이 끝나길
+   * 기다리지 않고) 바로 resolve된다. 실제로 스크롤했으면 scrolled:true와 함께
+   * 이동한 거리(deltaY)를 반환해, 호출부가 그 거리만큼 스포트라이트를 스크롤과
+   * 동시에 미리 움직이기 시작할 수 있게 한다. 스크롤이 필요 없었으면
+   * scrolled:false. */
+  scrollToTarget: (targetRef: React.RefObject<View | null>) => Promise<{ scrolled: boolean; deltaY: number }>;
 }
 
 const HomeEmptyContent = forwardRef<HomeEmptyContentHandle, HomeEmptyContentProps>(function HomeEmptyContent({
@@ -78,24 +79,30 @@ const HomeEmptyContent = forwardRef<HomeEmptyContentHandle, HomeEmptyContentProp
 
   useImperativeHandle(ref, () => ({
     scrollToTarget: (targetRef) =>
-      new Promise<boolean>((resolve) => {
+      new Promise<{ scrolled: boolean; deltaY: number }>((resolve) => {
         if (!targetRef.current || !viewportRef.current || !scrollViewRef.current) {
-          resolve(false);
+          resolve({ scrolled: false, deltaY: 0 });
           return;
         }
         targetRef.current.measureInWindow((_tx, ty) => {
           viewportRef.current?.measureInWindow((_vx, vy) => {
             const delta = ty - vy - SCROLL_TARGET_TOP_MARGIN;
-            const newY = Math.max(scrollYRef.current + delta, 0);
+            const prevY = scrollYRef.current;
+            const newY = Math.max(prevY + delta, 0);
+            const appliedDelta = newY - prevY;
             // 이미 대상이 충분히 보이는 위치라면(예: 상단 고정 헤더나 스크롤
-            // 맨 위 근처의 카드) 스크롤을 건너뛰어 불필요한 380ms 대기와
-            // 애니메이션 동작을 없앤다 — 전환이 매번 늘어져 보이는 원인이었다.
-            if (Math.abs(newY - scrollYRef.current) < 20) {
-              resolve(false);
+            // 맨 위 근처의 카드) 스크롤을 건너뛰어 불필요한 대기와 애니메이션
+            // 동작을 없앤다 — 전환이 매번 늘어져 보이는 원인이었다.
+            if (Math.abs(appliedDelta) < 20) {
+              resolve({ scrolled: false, deltaY: 0 });
               return;
             }
             scrollViewRef.current?.scrollTo({ y: newY, animated: true });
-            setTimeout(() => resolve(true), 380);
+            // 스크롤이 끝나길(380ms) 기다렸다가 resolve하지 않고 바로 반환한다 —
+            // 호출부(튜토리얼)가 실제로 이동한 거리(deltaY)를 받아 스크롤과
+            // 동시에 도착 예상 위치로 스포트라이트를 미리 움직이기 시작할 수
+            // 있게 하기 위함. "스크롤 끝나고 나서야 나타나는" 느낌을 없앤다.
+            resolve({ scrolled: true, deltaY: appliedDelta });
           });
         });
       }),

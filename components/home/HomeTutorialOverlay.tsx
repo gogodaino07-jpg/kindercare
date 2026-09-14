@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
-  runOnJS,
   useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
@@ -49,10 +48,10 @@ interface HomeTutorialOverlayProps {
   /** 마지막 단계의 "시작하기" 또는 "건너뛰기"로 투어가 끝났을 때 호출된다. */
   onFinish: () => void;
   /** 각 단계를 측정하기 전에 호출 — 대상이 화면 밖(스크롤 아래)에 있을 수 있어,
-   * 먼저 그 위치로 스크롤한 뒤(애니메이션 종료까지 기다렸다가) resolve해야 한다.
-   * 실제로 스크롤이 일어났는지(true/false)를 반환해야, 스크롤이 없었던 전환은
-   * 스포트라이트가 이전 위치에서 새 위치로 부드럽게 미끄러지듯 넘어가게 할 수 있다. */
-  scrollIntoView?: (targetRef: React.RefObject<View | null>) => Promise<boolean>;
+   * 필요하면 스크롤을 "시작"시키고 끝나길 기다리지 않고 바로 scrolled/deltaY를
+   * 반환해야 한다. 스크롤이 없었던 전환은 그 자리에서 바로 슬라이드하고, 스크롤이
+   * 있었던 전환은 deltaY만큼 스포트라이트를 스크롤과 동시에 미리 움직인다. */
+  scrollIntoView?: (targetRef: React.RefObject<View | null>) => Promise<{ scrolled: boolean; deltaY: number }>;
 }
 
 const PAD = 3;
@@ -148,16 +147,19 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
       overlayOpacity.value = withTiming(1, { duration: 220, easing: Easing.out(Easing.ease) });
     };
 
-    const revealSlide = (r: Rect) => {
+    const revealSlide = (r: Rect, duration: number = SLIDE.duration, fadeTooltip: boolean = true) => {
       if (cancelled) return;
       const h = clampHighlight(r, screen, step.fullyRounded);
       setRect(r);
-      hLeft.value = withTiming(h.left, SLIDE);
-      hTop.value = withTiming(h.top, SLIDE);
-      hWidth.value = withTiming(h.width, SLIDE);
-      hHeight.value = withTiming(h.height, SLIDE);
-      hRadius.value = withTiming(h.radius, SLIDE);
-      tooltipOpacity.value = withSequence(withTiming(0, { duration: 90 }), withTiming(1, { duration: 180 }));
+      const cfg = { duration, easing: SLIDE.easing };
+      hLeft.value = withTiming(h.left, cfg);
+      hTop.value = withTiming(h.top, cfg);
+      hWidth.value = withTiming(h.width, cfg);
+      hHeight.value = withTiming(h.height, cfg);
+      hRadius.value = withTiming(h.radius, cfg);
+      if (fadeTooltip) {
+        tooltipOpacity.value = withSequence(withTiming(0, { duration: 90 }), withTiming(1, { duration: 180 }));
+      }
       setTransitioning(false);
     };
 
@@ -166,29 +168,36 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
       isFirstShowRef.current = false;
       setTransitioning(true);
 
-      const scrolled = scrollIntoView ? await scrollIntoView(step.targetRef) : false;
-      if (cancelled) return;
-
       if (first) {
         measure(revealInstant);
         return;
       }
 
-      if (scrolled) {
-        // 스크롤로 화면이 이미 크게 움직인 뒤라, 예전 위치에서 새 위치로 미끄러지듯
-        // 이어봐야 의미가 없다 — 살짝 사라졌다가(스크롤은 이미 끝난 뒤) 새 자리에서
-        // 다시 나타나는 편이 자연스럽다.
-        overlayOpacity.value = withTiming(0, { duration: 120, easing: Easing.in(Easing.ease) }, (finished) => {
-          if (finished) runOnJS(setTransitioning)(true);
-        });
-        await new Promise((resolve) => setTimeout(resolve, 120));
+      // 넘어가기 전 위치를 먼저 재서, 스크롤이 필요하면 "스크롤이 끝난 뒤"가
+      // 아니라 스크롤과 동시에 도착 예상 위치로 스포트라이트가 미리 미끄러지기
+      // 시작하게 한다 — 스크롤이 끝나길 기다렸다가 팍 나타나던 버벅임을 없앤다.
+      measure((preRect) => {
         if (cancelled) return;
-        measure(revealInstant);
-      } else {
-        // 스크롤 없이 바로 옆/근처로 넘어가는 경우엔 화면을 가리지 않고, 스포트라이트
-        // 자체가 이전 위치에서 새 위치로 부드럽게 미끄러지듯 이동한다.
-        measure(revealSlide);
-      }
+        (scrollIntoView ? scrollIntoView(step.targetRef) : Promise.resolve({ scrolled: false, deltaY: 0 })).then(
+          ({ scrolled, deltaY }) => {
+            if (cancelled) return;
+            if (!scrolled) {
+              revealSlide(preRect);
+              return;
+            }
+            // 스크롤이 이동시킬 거리(deltaY)만큼 미리 빼서, 도착할 것으로 예상되는
+            // 화면 위치로 스크롤과 같은 속도로 미끄러지기 시작한다.
+            revealSlide({ ...preRect, y: preRect.y - deltaY }, 380);
+            // 스크롤 애니메이션이 실제로 끝날 때쯤, 정확한 최종 위치로 짧게
+            // 보정한다(당김 한계에 걸려 예측과 살짝 달라지는 경우 등을 대비) —
+            // 툴팁은 이미 위에서 한 번 갱신됐으니 다시 깜빡이지 않는다.
+            setTimeout(() => {
+              if (cancelled) return;
+              measure((finalRect) => revealSlide(finalRect, 140, false));
+            }, 380);
+          }
+        );
+      });
     };
     run();
 
