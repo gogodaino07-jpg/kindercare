@@ -167,6 +167,11 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
   const targetCenterX = (left + right) / 2;
   const tooltipCardWidth = screen.width - 40;
   const tailLeft = Math.min(Math.max(targetCenterX - 20 - TAIL_SIZE / 2, 20), tooltipCardWidth - 20 - TAIL_SIZE);
+  // AI 스캔 버튼처럼 좁고 완전히 둥근(pill 모양) 대상은 고정 RADIUS(20)보다
+  // 실제 모서리가 더 둥글어서, 구멍 모서리가 버튼보다 덜 둥글면 그 사이로
+  // 카드의 흰 배경이 삐져나와 보였다. 대상 크기의 절반을 넘지 않게 반지름을
+  // 제한해서 좁은 대상일수록 자동으로 더 둥글게(최대 캡슐 모양까지) 만든다.
+  const holeRadius = Math.min(RADIUS, (right - left) / 2, (bottom - top) / 2);
 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, overlayFadeStyle]} pointerEvents={transitioning ? 'none' : 'box-none'}>
@@ -177,7 +182,7 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
         <Defs>
           <Mask id="tutorial-spotlight-mask">
             <SvgRect x={0} y={0} width={screen.width} height={screen.height} fill="#FFFFFF" />
-            <SvgRect x={left} y={top} width={right - left} height={Math.max(bottom - top, 0)} rx={RADIUS} fill="#000000" />
+            <SvgRect x={left} y={top} width={right - left} height={Math.max(bottom - top, 0)} rx={holeRadius} fill="#000000" />
           </Mask>
         </Defs>
         <SvgRect
@@ -194,11 +199,11 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
 
       <View
         pointerEvents="none"
-        style={[styles.ringBase, { top, left, width: right - left, height: bottom - top, borderColor: colors.accent }]}
+        style={[styles.ringBase, { top, left, width: right - left, height: bottom - top, borderColor: colors.accent, borderRadius: holeRadius }]}
       />
       <Animated.View
         pointerEvents="none"
-        style={[styles.ringGlow, ringGlowStyle, { top, left, width: right - left, height: bottom - top, borderColor: colors.accent }]}
+        style={[styles.ringGlow, ringGlowStyle, { top, left, width: right - left, height: bottom - top, borderColor: colors.accent, borderRadius: holeRadius }]}
       />
 
       <View

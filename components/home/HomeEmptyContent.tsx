@@ -84,6 +84,13 @@ const HomeEmptyContent = forwardRef<HomeEmptyContentHandle, HomeEmptyContentProp
           viewportRef.current?.measureInWindow((_vx, vy) => {
             const delta = ty - vy - SCROLL_TARGET_TOP_MARGIN;
             const newY = Math.max(scrollYRef.current + delta, 0);
+            // 이미 대상이 충분히 보이는 위치라면(예: 상단 고정 헤더나 스크롤
+            // 맨 위 근처의 카드) 스크롤을 건너뛰어 불필요한 380ms 대기와
+            // 애니메이션 동작을 없앤다 — 전환이 매번 늘어져 보이는 원인이었다.
+            if (Math.abs(newY - scrollYRef.current) < 20) {
+              resolve();
+              return;
+            }
             scrollViewRef.current?.scrollTo({ y: newY, animated: true });
             setTimeout(resolve, 380);
           });
