@@ -465,7 +465,7 @@ export default function HomeScreen() {
       key: 'profile',
       targetRef: profileSectionRef,
       title: '프로필 및 설정',
-      description: '아이의 반 정보를 확인하고, 달력 일정과 앱 설정을 한곳에서 관리하세요.',
+      description: '아이 이름을 누르면 다른 아이로 전환할 수 있고, 반 정보도 바로 확인할 수 있어요.',
     },
     {
       key: 'calendar-icon',
@@ -507,7 +507,7 @@ export default function HomeScreen() {
       key: 'schedule',
       targetRef: scheduleSectionRef,
       title: '앞으로의 모험',
-      description: '다가오는 소풍, 행사 같은 일정이 여기 정리돼요. 알림장을 스캔하면 자동으로 채워드려요!',
+      description: '내일, 모레처럼 다가오는 일정을 미리 확인할 수 있어요. 알림장을 스캔하면 자동으로 채워드려요!',
     },
   ], []);
 
