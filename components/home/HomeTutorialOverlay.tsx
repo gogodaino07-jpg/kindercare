@@ -39,7 +39,7 @@ interface HomeTutorialOverlayProps {
   scrollIntoView?: (targetRef: React.RefObject<View | null>) => Promise<void>;
 }
 
-const PAD = 8;
+const PAD = 3;
 const RADIUS = 20;
 const TAIL_SIZE = 16;
 const START_BUTTON_COLOR = '#7C3AED';
