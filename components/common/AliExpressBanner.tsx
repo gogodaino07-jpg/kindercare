@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Image, Linking, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 import Text from './AppText';
 
-const ROTATE_INTERVAL_MS = 2000;
+const ROTATE_INTERVAL_MS = 3000;
 const FADE_DURATION_MS = 250;
 
 export const ALIEXPRESS_LEGAL_DISCLOSURE_TEXT =
@@ -334,13 +334,13 @@ export default function AliExpressBanner({ style }: AliExpressBannerProps) {
             <Text style={styles.brand}>알리익스프레스 특가</Text>
             <Animated.View style={{ opacity }}>
               <Text style={styles.title} numberOfLines={2}>{product.title}</Text>
+              <View style={styles.priceRow}>
+                <Text style={styles.price}>{product.price}</Text>
+                {product.discount !== '0%' && (
+                  <Text style={styles.originalPrice}>{product.originalPrice}</Text>
+                )}
+              </View>
             </Animated.View>
-            <View style={styles.priceRow}>
-              <Text style={styles.price}>{product.price}</Text>
-              {product.discount !== '0%' && (
-                <Text style={styles.originalPrice}>{product.originalPrice}</Text>
-              )}
-            </View>
           </View>
           <View style={styles.ctaButton}>
             <Text style={styles.ctaText}>구매</Text>
@@ -375,9 +375,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   imageWrap: {
-    width: 76,
-    height: 76,
-    borderRadius: 16,
+    width: 66,
+    height: 66,
+    borderRadius: 15,
     overflow: 'hidden',
     backgroundColor: 'rgba(255,255,255,0.25)',
   },
