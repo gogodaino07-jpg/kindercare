@@ -9,7 +9,6 @@ import {
   StyleSheet,
   Platform,
   Switch,
-  useWindowDimensions,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -17,7 +16,7 @@ import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatTimeOfDay } from '../../components/settings/TimeWheelPicker';
 import Text from '../../components/common/AppText';
-import CoupangBanner, { COUPANG_LEGAL_DISCLOSURE_TEXT } from '../../components/common/CoupangBanner';
+import AliExpressBanner, { ALIEXPRESS_LEGAL_DISCLOSURE_TEXT } from '../../components/common/AliExpressBanner';
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
@@ -29,10 +28,6 @@ import { FREE_LIFETIME_LIMIT } from '../../features/newsletter-analysis';
 import { resolveCoords } from '../../hooks/useWeeklyWeather';
 import { HOME_TUTORIAL_KEY, resetTutorialSeen } from '../../utils/tutorialStorage';
 import { fetchWeatherPreview } from '../../utils/weatherPreviewFetch';
-
-// 쿠팡 파트너스 "카테고리 배너 > 골드박스"의 자바스크립트 태그에서 받은 위젯 ID.
-// 정적 이미지가 아니라 실시간 위젯이라 카운트다운/상품 갱신이 그대로 따라온다.
-const COUPANG_GOLDBOX_BANNER_ID = 1026962;
 
 const LOCK_METHOD_LABELS: Record<LockMethod, string> = {
   none: '설정 안 함',
@@ -47,11 +42,6 @@ export default function SettingsScreen() {
   const { mode, setMode, colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { showAlert } = useAlert();
-  // 풀 와이드(좌우 여백 없이 화면 끝까지)로 보여주므로 화면 너비 그대로 쓴다.
-  // 골드박스 배너 원본 비율(728:90)로 높이를 맞춘다.
-  const { width: windowWidth } = useWindowDimensions();
-  const coupangBannerWidth = windowWidth;
-  const coupangBannerHeight = Math.round((coupangBannerWidth * 90) / 728);
   const {
     resetAllData,
     requestWithdrawal,
@@ -281,23 +271,13 @@ export default function SettingsScreen() {
                 </TouchableOpacity>
               </View>
 
-            {/* 쿠팡 파트너스 카테고리 배너 (골드박스) — 좌우 여백 없이 화면 끝까지 꽉 채우는
-                풀 와이드 형식. 화면 전체 스크롤 영역의 좌우 padding(scrollContent)을
-                음수 마진으로 상쇄해서 이 블록만 edge-to-edge로 늘린다.
-                법적 고지 문구는 카드 안에 넣지 않고 카드 바깥에 별도로 둔다(안 그러면
-                주황색 이미지가 카드 하단까지 못 채우고 그 밑에 흰 여백이 남아 보임). */}
+            {/* 알리익스프레스 제휴 배너 — 좌우 여백 없이 화면 끝까지 꽉 채우는 풀 와이드
+                형식. 화면 전체 스크롤 영역의 좌우 padding(scrollContent)을 음수
+                마진으로 상쇄해서 이 블록만 edge-to-edge로 늘린다. */}
             {!isSubscribed && (
-              <View style={styles.coupangBannerFullBleed}>
-                <CoupangBanner
-                  bannerId={COUPANG_GOLDBOX_BANNER_ID}
-                  template="banner"
-                  containerWidth={coupangBannerWidth}
-                  height={coupangBannerHeight}
-                  hideDividers
-                  hideLegalDisclosure
-                  style={styles.coupangBannerCard}
-                />
-                <Text style={styles.coupangLegalDisclosure}>{COUPANG_LEGAL_DISCLOSURE_TEXT}</Text>
+              <View style={styles.aliexpressBannerFullBleed}>
+                <AliExpressBanner style={styles.aliexpressBannerCard} />
+                <Text style={styles.aliexpressLegalDisclosure}>{ALIEXPRESS_LEGAL_DISCLOSURE_TEXT}</Text>
               </View>
             )}
 
@@ -599,13 +579,13 @@ function createStyles(colors: any) {
     legalLinkText: { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
     legalLinkTextEmphasis: { fontSize: 12, color: colors.textPrimary, fontWeight: '800' },
     legalLinkDivider: { fontSize: 12, color: colors.border },
-    coupangBannerFullBleed: {
+    aliexpressBannerFullBleed: {
       marginHorizontal: -16,
     },
-    coupangBannerCard: {
+    aliexpressBannerCard: {
       overflow: 'hidden',
     },
-    coupangLegalDisclosure: {
+    aliexpressLegalDisclosure: {
       fontSize: 8,
       color: colors.textSecondary,
       textAlign: 'center',
