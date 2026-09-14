@@ -127,11 +127,12 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
   }, [rect, pulse]);
 
   // scale로 링을 키우면 딤 배경에 뚫어둔 구멍(SVG 마스크, 크기 고정)보다 링이
-  // 커지는 순간 테두리가 그 경계를 넘어가 보이는 문제가 있었다. borderWidth는
-  // 박스 안쪽으로만 두꺼워지므로(RN 기본 border-box 모델) 이 문제가 없다.
+  // 커지는 순간 테두리가 그 경계를 넘어가 보이는 문제가 있었다. borderWidth
+  // 펄스도 시도해봤지만, 레이아웃에 영향을 주는 속성이라(transform/opacity와
+  // 달리 GPU 합성만으로 처리되지 않음) 계속 반복되는 동안 버벅임이 있었다.
+  // 두께는 고정하고 opacity(합성만으로 처리되는 안전한 속성)만으로 깜빡이게 한다.
   const ringStyle = useAnimatedStyle(() => ({
-    opacity: 0.5 + pulse.value * 0.5,
-    borderWidth: 3 + pulse.value * 4,
+    opacity: 0.45 + pulse.value * 0.55,
   }));
 
   const overlayFadeStyle = useAnimatedStyle(() => ({
@@ -250,7 +251,7 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
 const styles = StyleSheet.create({
   ring: {
     position: 'absolute',
-    borderWidth: 3,
+    borderWidth: 4,
     borderRadius: RADIUS,
   },
   tail: {
