@@ -8,6 +8,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import Svg, { Defs, Mask, Rect as SvgRect } from 'react-native-svg';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
 import Text from '../common/AppText';
@@ -122,13 +123,27 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish }: HomeTu
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      {/* 딤 배경에 하이라이트 영역만 둥근 모서리로 뚫어낸다 — 사각형 4개를 이어붙이면
+          둥근 링과 딱 맞지 않아 모서리에 안 어두워진 조각이 남는 문제가 있어,
+          SVG 마스크로 실제 구멍 자체를 둥글게 만든다. */}
+      <Svg pointerEvents="none" width={screen.width} height={screen.height} style={StyleSheet.absoluteFill}>
+        <Defs>
+          <Mask id="tutorial-spotlight-mask">
+            <SvgRect x={0} y={0} width={screen.width} height={screen.height} fill="#FFFFFF" />
+            <SvgRect x={left} y={top} width={right - left} height={Math.max(bottom - top, 0)} rx={RADIUS} fill="#000000" />
+          </Mask>
+        </Defs>
+        <SvgRect
+          x={0}
+          y={0}
+          width={screen.width}
+          height={screen.height}
+          fill="rgba(15, 23, 42, 0.62)"
+          mask="url(#tutorial-spotlight-mask)"
+        />
+      </Svg>
       {/* 배경/하이라이트 영역 전체의 터치를 삼켜서, 툴팁의 버튼 외에는 아무 동작도 하지 않게 한다. */}
-      <Pressable style={StyleSheet.absoluteFill} onPress={() => {}}>
-        <View style={[styles.dim, { top: 0, left: 0, right: 0, height: top }]} />
-        <View style={[styles.dim, { top: bottom, left: 0, right: 0, bottom: 0 }]} />
-        <View style={[styles.dim, { top, left: 0, width: left, height: Math.max(bottom - top, 0) }]} />
-        <View style={[styles.dim, { top, left: right, right: 0, height: Math.max(bottom - top, 0) }]} />
-      </Pressable>
+      <Pressable style={StyleSheet.absoluteFill} onPress={() => {}} />
 
       <Animated.View
         pointerEvents="none"
@@ -190,7 +205,6 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish }: HomeTu
 }
 
 const styles = StyleSheet.create({
-  dim: { position: 'absolute', backgroundColor: 'rgba(15, 23, 42, 0.62)' },
   ring: {
     position: 'absolute',
     borderWidth: 3,
