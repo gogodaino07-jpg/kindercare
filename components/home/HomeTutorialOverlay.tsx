@@ -48,10 +48,14 @@ interface HomeTutorialOverlayProps {
   /** 마지막 단계의 "시작하기" 또는 "건너뛰기"로 투어가 끝났을 때 호출된다. */
   onFinish: () => void;
   /** 각 단계를 측정하기 전에 호출 — 대상이 화면 밖(스크롤 아래)에 있을 수 있어,
-   * 필요하면 스크롤을 "시작"시키고 끝나길 기다리지 않고 바로 scrolled/deltaY를
-   * 반환해야 한다. 스크롤이 없었던 전환은 그 자리에서 바로 슬라이드하고, 스크롤이
-   * 있었던 전환은 deltaY만큼 스포트라이트를 스크롤과 동시에 미리 움직인다. */
-  scrollIntoView?: (targetRef: React.RefObject<View | null>) => Promise<{ scrolled: boolean; deltaY: number }>;
+   * 필요할 때만 스크롤을 "시작"시키고 끝나길 기다리지 않고 바로 scrolled를
+   * 반환해야 한다. 실제로 스크롤하기로 했으면 scrollTo를 부르는 바로 그 순간
+   * onWillScroll을 동기 호출해줘야, 스크롤되는 내용 위에 이전 스포트라이트가
+   * 잠깐 붕 떠 보이지 않도록 그 시점에 맞춰 숨길 수 있다. */
+  scrollIntoView?: (
+    targetRef: React.RefObject<View | null>,
+    onWillScroll?: () => void
+  ) => Promise<{ scrolled: boolean; deltaY: number }>;
 }
 
 const PAD = 3;
@@ -173,28 +177,31 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
         return;
       }
 
-      // 넘어가기 전 위치를 먼저 재서, 스크롤이 필요하면 "스크롤이 끝난 뒤"가
-      // 아니라 스크롤과 동시에 도착 예상 위치로 스포트라이트가 미리 미끄러지기
-      // 시작하게 한다 — 스크롤이 끝나길 기다렸다가 팍 나타나던 버벅임을 없앤다.
+      // 스크롤이 필요 없는 전환은 그 자리에서 바로 부드럽게 미끄러진다. 스크롤이
+      // 낀 전환은 살짝 사라졌다가 스크롤이 끝난 뒤 정확한 최종 위치에서 다시
+      // 나타나는데, 이때 딤 처리를 "await 이후"가 아니라 실제 scrollTo가 불리는
+      // 바로 그 순간(onWillScroll)에 맞춰 즉시 꺼야 한다 — 그 사이에 시차가
+      //있으면, 스크롤이 이미 시작된 내용 위에 이전 스포트라이트가 화면 고정
+      // 좌표에 잠깐 그대로 떠 있어서 "다른 곳을 가리키다 내려오는" 것처럼
+      // 보였다(실제로 그랬던 버그).
       measure((preRect) => {
         if (cancelled) return;
-        (scrollIntoView ? scrollIntoView(step.targetRef) : Promise.resolve({ scrolled: false, deltaY: 0 })).then(
-          ({ scrolled, deltaY }) => {
+        const onWillScroll = () => {
+          overlayOpacity.value = 0;
+        };
+        (scrollIntoView ? scrollIntoView(step.targetRef, onWillScroll) : Promise.resolve({ scrolled: false, deltaY: 0 })).then(
+          ({ scrolled }) => {
             if (cancelled) return;
             if (!scrolled) {
               revealSlide(preRect);
               return;
             }
-            // 스크롤이 이동시킬 거리(deltaY)만큼 미리 빼서, 도착할 것으로 예상되는
-            // 화면 위치로 스크롤과 같은 속도로 미끄러지기 시작한다.
-            revealSlide({ ...preRect, y: preRect.y - deltaY }, 380);
-            // 스크롤 애니메이션이 실제로 끝날 때쯤, 정확한 최종 위치로 짧게
-            // 보정한다(당김 한계에 걸려 예측과 살짝 달라지는 경우 등을 대비) —
-            // 툴팁은 이미 위에서 한 번 갱신됐으니 다시 깜빡이지 않는다.
+            // 네이티브 스크롤 애니메이션이 실제로 끝날 시간만큼 기다린 뒤 최종
+            // 위치를 재서 보여준다(딤은 onWillScroll에서 이미 꺼진 상태).
             setTimeout(() => {
               if (cancelled) return;
-              measure((finalRect) => revealSlide(finalRect, 140, false));
-            }, 380);
+              measure(revealInstant);
+            }, 300);
           }
         );
       });

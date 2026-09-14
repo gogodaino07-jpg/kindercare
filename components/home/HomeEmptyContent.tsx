@@ -32,12 +32,16 @@ interface HomeEmptyContentProps {
 }
 
 export interface HomeEmptyContentHandle {
-  /** 튜토리얼 대상이 화면에 보이도록 스크롤을 "시작"시키고(애니메이션이 끝나길
-   * 기다리지 않고) 바로 resolve된다. 실제로 스크롤했으면 scrolled:true와 함께
-   * 이동한 거리(deltaY)를 반환해, 호출부가 그 거리만큼 스포트라이트를 스크롤과
-   * 동시에 미리 움직이기 시작할 수 있게 한다. 스크롤이 필요 없었으면
-   * scrolled:false. */
-  scrollToTarget: (targetRef: React.RefObject<View | null>) => Promise<{ scrolled: boolean; deltaY: number }>;
+  /** 튜토리얼 대상이 화면에 보이도록 필요할 때만 스크롤한다(이미 화면에 충분히
+   * 보이면 건너뜀). 스크롤을 "시작"시키고(애니메이션이 끝나길 기다리지 않고)
+   * 바로 resolve된다. 실제로 스크롤하기로 했으면, 네이티브 scrollTo를 호출하는
+   * 바로 그 순간(동기적으로) onWillScroll을 호출해준다 — 호출부가 그 순간에
+   * 맞춰 스포트라이트를 즉시 숨겨서 스크롤되는 내용 위에 이전 위치가 잠깐
+   * 떠 있는 것처럼 보이지 않게 할 수 있다. */
+  scrollToTarget: (
+    targetRef: React.RefObject<View | null>,
+    onWillScroll?: () => void
+  ) => Promise<{ scrolled: boolean; deltaY: number }>;
 }
 
 const HomeEmptyContent = forwardRef<HomeEmptyContentHandle, HomeEmptyContentProps>(function HomeEmptyContent({
@@ -75,33 +79,50 @@ const HomeEmptyContent = forwardRef<HomeEmptyContentHandle, HomeEmptyContentProp
   const viewportRef = useRef<View>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollYRef = useRef(0);
-  const SCROLL_TARGET_TOP_MARGIN = 30;
+  const SCROLL_MARGIN = 24;
 
   useImperativeHandle(ref, () => ({
-    scrollToTarget: (targetRef) =>
+    scrollToTarget: (targetRef, onWillScroll) =>
       new Promise<{ scrolled: boolean; deltaY: number }>((resolve) => {
         if (!targetRef.current || !viewportRef.current || !scrollViewRef.current) {
           resolve({ scrolled: false, deltaY: 0 });
           return;
         }
-        targetRef.current.measureInWindow((_tx, ty) => {
-          viewportRef.current?.measureInWindow((_vx, vy) => {
-            const delta = ty - vy - SCROLL_TARGET_TOP_MARGIN;
+        targetRef.current.measureInWindow((_tx, ty, _tw, th) => {
+          viewportRef.current?.measureInWindow((_vx, vy, _vw, vh) => {
+            const viewTop = vy;
+            const viewBottom = vy + vh;
+            const targetTop = ty;
+            const targetBottom = ty + th;
+
+            // 대상이 이미 여백을 두고 화면에 온전히 보이면 스크롤을 아예 건너뛴다
+            // (예: 같은 카드 안의 버튼처럼 이미 보이는 대상을 매번 화면 맨 위로
+            // 재정렬하려다 보니, 필요 없는 미세한 스크롤이 "튕기는" 것처럼
+            // 보이는 원인이었다). 필요할 때만, 딱 필요한 만큼만 스크롤한다.
+            let adjust = 0;
+            if (targetTop < viewTop + SCROLL_MARGIN) {
+              adjust = targetTop - (viewTop + SCROLL_MARGIN);
+            } else if (targetBottom > viewBottom - SCROLL_MARGIN) {
+              adjust = targetBottom - (viewBottom - SCROLL_MARGIN);
+            }
+
+            if (Math.abs(adjust) < 20) {
+              resolve({ scrolled: false, deltaY: 0 });
+              return;
+            }
+
             const prevY = scrollYRef.current;
-            const newY = Math.max(prevY + delta, 0);
+            const newY = Math.max(prevY + adjust, 0);
             const appliedDelta = newY - prevY;
-            // 이미 대상이 충분히 보이는 위치라면(예: 상단 고정 헤더나 스크롤
-            // 맨 위 근처의 카드) 스크롤을 건너뛰어 불필요한 대기와 애니메이션
-            // 동작을 없앤다 — 전환이 매번 늘어져 보이는 원인이었다.
             if (Math.abs(appliedDelta) < 20) {
               resolve({ scrolled: false, deltaY: 0 });
               return;
             }
+            // scrollTo를 부르는 바로 이 순간 onWillScroll을 동기 호출한다 —
+            // 호출부가 이 시점에 맞춰 스포트라이트를 즉시 숨겨야, 스크롤되는
+            // 내용 위에 이전 위치가 잠깐 붕 떠 있는 것처럼 보이지 않는다.
+            onWillScroll?.();
             scrollViewRef.current?.scrollTo({ y: newY, animated: true });
-            // 스크롤이 끝나길(380ms) 기다렸다가 resolve하지 않고 바로 반환한다 —
-            // 호출부(튜토리얼)가 실제로 이동한 거리(deltaY)를 받아 스크롤과
-            // 동시에 도착 예상 위치로 스포트라이트를 미리 움직이기 시작할 수
-            // 있게 하기 위함. "스크롤 끝나고 나서야 나타나는" 느낌을 없앤다.
             resolve({ scrolled: true, deltaY: appliedDelta });
           });
         });
