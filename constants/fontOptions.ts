@@ -2,7 +2,6 @@ export type FontChoiceId =
   | 'default'
   | 'Gaegu'
   | 'GamjaFlower'
-  | 'HiMelody'
   | 'PoorStory'
   | 'Jua'
   | 'Dongle'
@@ -27,7 +26,6 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'default', label: '기본', vibe: '기본' },
   { id: 'Gaegu', label: 'Gaegu', fontFamily: 'Gaegu_400Regular', sizeBoost: 1.25, vibe: '손글씨' },
   { id: 'GamjaFlower', label: 'Gamja Flower', fontFamily: 'GamjaFlower_400Regular', sizeBoost: 1.2, vibe: '귀여움' },
-  { id: 'HiMelody', label: 'Hi Melody', fontFamily: 'HiMelody_400Regular', sizeBoost: 1.15, vibe: '아기자기' },
   { id: 'PoorStory', label: 'Poor Story', fontFamily: 'PoorStory_400Regular', sizeBoost: 1.15, vibe: '자연스러운' },
   { id: 'Jua', label: 'Jua', fontFamily: 'Jua_400Regular', sizeBoost: 1.1, vibe: '동글동글' },
   { id: 'Dongle', label: 'Dongle', fontFamily: 'Dongle_400Regular', sizeBoost: 1.3, vibe: '발랄함' },

@@ -1,7 +1,6 @@
 import { Dongle_400Regular, Dongle_700Bold } from '@expo-google-fonts/dongle';
 import { GamjaFlower_400Regular } from '@expo-google-fonts/gamja-flower';
 import { Gaegu_400Regular } from '@expo-google-fonts/gaegu';
-import { HiMelody_400Regular } from '@expo-google-fonts/hi-melody';
 import { Jua_400Regular } from '@expo-google-fonts/jua';
 import { PoorStory_400Regular } from '@expo-google-fonts/poor-story';
 import { Sunflower_500Medium } from '@expo-google-fonts/sunflower';
@@ -302,7 +301,6 @@ export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Gaegu_400Regular,
     GamjaFlower_400Regular,
-    HiMelody_400Regular,
     PoorStory_400Regular,
     Jua_400Regular,
     Dongle_400Regular,
