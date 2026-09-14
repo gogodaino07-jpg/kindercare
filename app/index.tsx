@@ -37,6 +37,7 @@ import { isChildLocked, useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useThemeColors } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import { getDisplayItems } from '../hooks/useLocalChecklist';
 import { useTodayISO } from '../hooks/useTodayISO';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
@@ -109,6 +110,7 @@ export default function HomeScreen() {
   const { hasOnboarded, children, selectedChild, selectChild, events, googleAccount, onboardingLoaded, mealPlans, updateEvent, isFamilyOwner, canEditFamilyData } = useAppData();
   const { isLocked } = useAppLock();
   const { isSubscribed, isReady: subscriptionReady } = useSubscription();
+  const { showToast } = useToast();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(
@@ -430,6 +432,13 @@ export default function HomeScreen() {
     router.setParams({ replayTutorial: undefined });
   }, [replayTutorial, onboardingLoaded, hasOnboarded, googleAccount, isLocked, router]);
 
+  // 개발/테스트용 숨은 진입점 — 삭제·재설치 없이 온보딩 튜토리얼을 바로 다시
+  // 볼 수 있게, 프로필 영역의 "생후 N일째" 문구를 3번 연속 탭하면 실행된다.
+  const handleDaysOldTripleTap = useCallback(() => {
+    setHomeTutorialVisible(true);
+    showToast('🎬 온보딩 튜토리얼을 다시 보여드릴게요.');
+  }, [showToast]);
+
   const handleFinishHomeTutorial = useCallback(() => {
     setHomeTutorialVisible(false);
     markTutorialSeen(HOME_TUTORIAL_KEY).catch(() => {});
@@ -486,6 +495,7 @@ export default function HomeScreen() {
             selectedChild={selectedChild}
             onPressChild={() => setSwitcherOpen(true)}
             birthdayBurstKey={birthdayBurstKey}
+            onDaysOldTripleTap={handleDaysOldTripleTap}
           />
         </View>
         {!isFamilyOwner && (
