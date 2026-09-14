@@ -21,10 +21,14 @@ interface HomeEmptyContentProps {
   onRefresh?: () => void;
   /** 홈 화면 튜토리얼이 "오늘의 급식" 카드를 스포트라이트로 강조할 때 위치를 재기 위한 ref. */
   mealCardRef?: React.RefObject<View | null>;
+  /** 홈 화면 튜토리얼이 날씨 영역을 스포트라이트로 강조할 때 위치를 재기 위한 ref. */
+  weatherSectionRef?: React.RefObject<View | null>;
   /** 홈 화면 튜토리얼이 "가방에 쏙쏙" 준비물 영역을 스포트라이트로 강조할 때 위치를 재기 위한 ref. */
   prepSectionRef?: React.RefObject<View | null>;
   /** 홈 화면 튜토리얼이 "✨ AI로 알림장 스캔하기" 버튼만 좁혀서 강조할 때 위치를 재기 위한 ref. */
   scanButtonRef?: React.RefObject<View | null>;
+  /** 홈 화면 튜토리얼이 "앞으로의 모험" 일정 영역을 스포트라이트로 강조할 때 위치를 재기 위한 ref. */
+  scheduleSectionRef?: React.RefObject<View | null>;
 }
 
 export default function HomeEmptyContent({
@@ -38,8 +42,10 @@ export default function HomeEmptyContent({
   refreshing,
   onRefresh,
   mealCardRef,
+  weatherSectionRef,
   prepSectionRef,
   scanButtonRef,
+  scheduleSectionRef,
 }: HomeEmptyContentProps) {
   const router = useRouter();
   const colors = useThemeColors();
@@ -76,6 +82,7 @@ export default function HomeEmptyContent({
           onPressDate={onPressDate}
           todayMeal={todayMeal}
           mealCardRef={mealCardRef}
+          weatherSectionRef={weatherSectionRef}
         />
 
         <View ref={prepSectionRef} collapsable={false}>
@@ -103,7 +110,7 @@ export default function HomeEmptyContent({
           </View>
         </View>
 
-      <View>
+      <View ref={scheduleSectionRef} collapsable={false}>
         <SectionHeader emoji="🗺️" title="앞으로의 모험" />
         <View style={styles.card}>
           <View style={[styles.iconCircle, { backgroundColor: colors.lightBlueBg }]}>

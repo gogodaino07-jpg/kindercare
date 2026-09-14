@@ -26,6 +26,10 @@ interface HomeProfileBarProps {
   birthdayBurstKey?: number;
   /** "생후 N일째" 문구를 빠르게 3번 연속 탭하면 호출되는 숨은 테스트 진입점(온보딩 튜토리얼 다시 보기 등). */
   onDaysOldTripleTap?: () => void;
+  /** 홈 화면 튜토리얼이 캘린더 아이콘만 좁혀서 강조할 때 위치를 재기 위한 ref. */
+  calendarIconRef?: React.RefObject<View | null>;
+  /** 홈 화면 튜토리얼이 설정 아이콘만 좁혀서 강조할 때 위치를 재기 위한 ref. */
+  settingsIconRef?: React.RefObject<View | null>;
 }
 
 /** "햇살" -> "햇살반" / "햇살반" -> "햇살반" 그대로. */
@@ -127,7 +131,7 @@ const confettiStyles = StyleSheet.create({
 });
 
 /** 홈 화면 최상단 아이 프로필 행 — 스크롤해도 화면 상단에 고정되는 헤더로 app/index.tsx에서 ScrollView 바깥에 렌더링된다. */
-export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBurstKey, onDaysOldTripleTap }: HomeProfileBarProps) {
+export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBurstKey, onDaysOldTripleTap, calendarIconRef, settingsIconRef }: HomeProfileBarProps) {
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -212,17 +216,21 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
             {unreadCount > 0 && <View style={styles.bellDot} />}
           </Pressable>
         )}
-        <Pressable style={styles.iconButton} onPress={() => router.push('/calendar')}>
-          <CalendarIcon size={24} color={colors.gray600} />
-        </Pressable>
+        <View ref={calendarIconRef} collapsable={false}>
+          <Pressable style={styles.iconButton} onPress={() => router.push('/calendar')}>
+            <CalendarIcon size={24} color={colors.gray600} />
+          </Pressable>
+        </View>
         {SHOW_STAMP_BOARD_ICON && (
           <Pressable style={styles.iconButton} onPress={() => router.push('/stamp-board')}>
             <StampIcon size={24} color={colors.gray600} />
           </Pressable>
         )}
-        <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
-          <SettingsIcon size={24} color={colors.gray600} />
-        </Pressable>
+        <View ref={settingsIconRef} collapsable={false}>
+          <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
+            <SettingsIcon size={24} color={colors.gray600} />
+          </Pressable>
+        </View>
       </View>
 
       <NotificationCenterModal visible={notifVisible} onClose={() => setNotifVisible(false)} />

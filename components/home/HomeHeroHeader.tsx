@@ -25,6 +25,8 @@ interface HomeHeroHeaderProps {
   todayMeal?: MealPlan;
   /** 홈 화면 튜토리얼이 "오늘의 급식" 카드를 스포트라이트로 강조할 때 위치를 재기 위한 ref. */
   mealCardRef?: React.RefObject<View | null>;
+  /** 홈 화면 튜토리얼이 날씨 영역(펼침/접힘 상태 모두)을 스포트라이트로 강조할 때 위치를 재기 위한 ref. */
+  weatherSectionRef?: React.RefObject<View | null>;
 }
 
 /** birthdate(YYYY-MM-DD)의 월-일이 오늘과 같으면 생일. */
@@ -45,6 +47,7 @@ export default function HomeHeroHeader({
   onPressDate,
   todayMeal,
   mealCardRef,
+  weatherSectionRef,
 }: HomeHeroHeaderProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -109,6 +112,7 @@ export default function HomeHeroHeader({
         />
       </View>
 
+      <View ref={weatherSectionRef} collapsable={false}>
       {weatherExpanded && (
         <View style={styles.weatherMetaRow}>
           {locationLabel ? (
@@ -215,6 +219,7 @@ export default function HomeHeroHeader({
           </LinearGradient>
         </Pressable>
       )}
+      </View>
     </View>
   );
 }

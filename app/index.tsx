@@ -146,9 +146,13 @@ export default function HomeScreen() {
   const [stickyVisible, setStickyVisible] = useState(false);
   const [birthdayBurstKey, setBirthdayBurstKey] = useState(0);
   const profileSectionRef = useRef<View>(null);
+  const calendarIconRef = useRef<View>(null);
+  const settingsIconRef = useRef<View>(null);
   const mealCardRef = useRef<View>(null);
+  const weatherSectionRef = useRef<View>(null);
   const prepSectionRef = useRef<View>(null);
   const scanButtonRef = useRef<View>(null);
+  const scheduleSectionRef = useRef<View>(null);
   const [homeTutorialVisible, setHomeTutorialVisible] = useState(false);
   // 하단에 떠있는 공유배너/쿠팡배너 높이만큼만 스크롤 여백을 잡아준다 — 고정값을
   // 쓰면 오늘 일정이 짧아 스크롤 콘텐츠가 짧은 날 그 아래로 빈 여백이 크게 남았다.
@@ -444,8 +448,9 @@ export default function HomeScreen() {
     markTutorialSeen(HOME_TUTORIAL_KEY).catch(() => {});
   }, []);
 
-  // 순서 고정 4단계: 프로필/설정 → 오늘의 급식 → 가방에 쏙쏙(카드 전체) → AI 스캔 버튼.
-  // "앞으로의 모험"(일정) 영역은 이 투어 대상이 아니다.
+  // 순서 고정: 프로필 → 캘린더 아이콘 → 설정 아이콘 → 오늘의 급식 → 오늘의 날씨
+  // → 가방에 쏙쏙(카드 전체) → AI 스캔 버튼 → 앞으로의 모험. 화면에 위에서
+  // 아래로 나오는 순서와 같게 맞춰뒀다.
   const homeTutorialSteps = useMemo<HomeTutorialStep[]>(() => [
     {
       key: 'profile',
@@ -454,10 +459,28 @@ export default function HomeScreen() {
       description: '아이의 반 정보를 확인하고, 달력 일정과 앱 설정을 한곳에서 관리하세요.',
     },
     {
+      key: 'calendar-icon',
+      targetRef: calendarIconRef,
+      title: '캘린더',
+      description: '전체 일정을 달력으로 한눈에 볼 수 있어요.',
+    },
+    {
+      key: 'settings-icon',
+      targetRef: settingsIconRef,
+      title: '설정',
+      description: '테마, 알림, 잠금화면 등 앱 설정을 관리할 수 있어요.',
+    },
+    {
       key: 'meal',
       targetRef: mealCardRef,
       title: '오늘의 급식',
       description: '우리 아이가 오늘 원에서 어떤 음식을 먹는지 바로 확인할 수 있어요.',
+    },
+    {
+      key: 'weather',
+      targetRef: weatherSectionRef,
+      title: '오늘의 날씨',
+      description: '오늘·내일·모레 날씨와 준비물 팁을 확인할 수 있어요. 우산이 필요한 날엔 미리 알려드려요.',
     },
     {
       key: 'prep',
@@ -470,6 +493,12 @@ export default function HomeScreen() {
       targetRef: scanButtonRef,
       title: 'AI 준비물 스캐너',
       description: '복잡한 알림장은 이제 그만! AI가 알림장을 읽고 꼭 필요한 준비물만 요약해서 알려줍니다.',
+    },
+    {
+      key: 'schedule',
+      targetRef: scheduleSectionRef,
+      title: '앞으로의 모험',
+      description: '다가오는 소풍, 행사 같은 일정이 여기 정리돼요. 알림장을 스캔하면 자동으로 채워드려요!',
     },
   ], []);
 
@@ -496,6 +525,8 @@ export default function HomeScreen() {
             onPressChild={() => setSwitcherOpen(true)}
             birthdayBurstKey={birthdayBurstKey}
             onDaysOldTripleTap={handleDaysOldTripleTap}
+            calendarIconRef={calendarIconRef}
+            settingsIconRef={settingsIconRef}
           />
         </View>
         {!isFamilyOwner && (
@@ -533,8 +564,10 @@ export default function HomeScreen() {
             refreshing={refreshing}
             onRefresh={onRefresh}
             mealCardRef={mealCardRef}
+            weatherSectionRef={weatherSectionRef}
             prepSectionRef={prepSectionRef}
             scanButtonRef={scanButtonRef}
+            scheduleSectionRef={scheduleSectionRef}
           />
         ) : (
           <>
@@ -570,6 +603,7 @@ export default function HomeScreen() {
                 onPressDate={onDatePress}
                 todayMeal={todayMeal}
                 mealCardRef={mealCardRef}
+                weatherSectionRef={weatherSectionRef}
               />
               {noticeEvents.length > 0 && (
                 <NoticeBoardCard notices={noticeEvents} onPressNotice={handleEventPress} />

@@ -95,8 +95,9 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish }: HomeTu
   }, [rect, pulse]);
 
   const ringStyle = useAnimatedStyle(() => ({
-    opacity: 0.6 + pulse.value * 0.4,
-    transform: [{ scale: 1 + pulse.value * 0.015 }],
+    opacity: 0.5 + pulse.value * 0.5,
+    borderWidth: 3 + pulse.value * 3,
+    transform: [{ scale: 1 + pulse.value * 0.05 }],
   }));
 
   if (!visible || !step || !rect) return null;
