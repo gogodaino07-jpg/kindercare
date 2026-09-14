@@ -18,7 +18,7 @@ import AdPopupModal from '../components/home/AdPopupModal';
 import BirthdayCenterConfetti from '../components/home/BirthdayCenterConfetti';
 import ChildSwitcherSheet from '../components/home/ChildSwitcherSheet';
 import FamilyShareCard from '../components/home/FamilyShareCard';
-import HomeEmptyContent from '../components/home/HomeEmptyContent';
+import HomeEmptyContent, { HomeEmptyContentHandle } from '../components/home/HomeEmptyContent';
 import HomeHeroHeader from '../components/home/HomeHeroHeader';
 import HomeProfileBar from '../components/home/HomeProfileBar';
 import HomeTutorialOverlay, { HomeTutorialStep } from '../components/home/HomeTutorialOverlay';
@@ -153,6 +153,7 @@ export default function HomeScreen() {
   const prepSectionRef = useRef<View>(null);
   const scanButtonRef = useRef<View>(null);
   const scheduleSectionRef = useRef<View>(null);
+  const emptyContentRef = useRef<HomeEmptyContentHandle>(null);
   const [homeTutorialVisible, setHomeTutorialVisible] = useState(false);
   // 하단에 떠있는 공유배너/쿠팡배너 높이만큼만 스크롤 여백을 잡아준다 — 고정값을
   // 쓰면 오늘 일정이 짧아 스크롤 콘텐츠가 짧은 날 그 아래로 빈 여백이 크게 남았다.
@@ -448,6 +449,14 @@ export default function HomeScreen() {
     markTutorialSeen(HOME_TUTORIAL_KEY).catch(() => {});
   }, []);
 
+  // 프로필/캘린더/설정 아이콘은 스크롤 영역 밖(항상 보이는 고정 헤더)이라
+  // 이 호출이 사실상 스크롤을 0으로 되돌리는 정도로만 작동하고, 급식/날씨/
+  // 준비물/일정처럼 스크롤 안쪽에 있는 대상은 실제로 화면에 보이도록 스크롤해준다.
+  const handleScrollTutorialTargetIntoView = useCallback(
+    (targetRef: React.RefObject<View | null>) => emptyContentRef.current?.scrollToTarget(targetRef) ?? Promise.resolve(),
+    []
+  );
+
   // 순서 고정: 프로필 → 캘린더 아이콘 → 설정 아이콘 → 오늘의 급식 → 오늘의 날씨
   // → 가방에 쏙쏙(카드 전체) → AI 스캔 버튼 → 앞으로의 모험. 화면에 위에서
   // 아래로 나오는 순서와 같게 맞춰뒀다.
@@ -554,6 +563,7 @@ export default function HomeScreen() {
         )}
         {upcoming.isEmpty ? (
           <HomeEmptyContent
+            ref={emptyContentRef}
             selectedChild={selectedChild}
             onPressMeal={() => setMealSheetOpen(true)}
             weatherDays={weather.days}
@@ -668,6 +678,7 @@ export default function HomeScreen() {
         visible={homeTutorialVisible}
         steps={homeTutorialSteps}
         onFinish={handleFinishHomeTutorial}
+        scrollIntoView={handleScrollTutorialTargetIntoView}
       />
     </ScreenBackground>
   );

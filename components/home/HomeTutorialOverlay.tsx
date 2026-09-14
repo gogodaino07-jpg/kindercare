@@ -33,6 +33,9 @@ interface HomeTutorialOverlayProps {
   steps: HomeTutorialStep[];
   /** 마지막 단계의 "시작하기" 또는 "건너뛰기"로 투어가 끝났을 때 호출된다. */
   onFinish: () => void;
+  /** 각 단계를 측정하기 전에 호출 — 대상이 화면 밖(스크롤 아래)에 있을 수 있어,
+   * 먼저 그 위치로 스크롤한 뒤(애니메이션 종료까지 기다렸다가) resolve해야 한다. */
+  scrollIntoView?: (targetRef: React.RefObject<View | null>) => Promise<void>;
 }
 
 const PAD = 8;
@@ -46,7 +49,7 @@ const NEXT_BUTTON_COLOR = '#18181B';
  * 강조하는 코치마크 투어. 배경/하이라이트 영역을 탭해도 아무 동작이 없고,
  * 오직 툴팁 안의 "다음/시작하기"·"건너뛰기" 버튼으로만 진행/종료된다.
  */
-export default function HomeTutorialOverlay({ visible, steps, onFinish }: HomeTutorialOverlayProps) {
+export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIntoView }: HomeTutorialOverlayProps) {
   const colors = useThemeColors();
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
@@ -75,11 +78,13 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish }: HomeTu
         }
       });
     };
-    tryMeasure();
+    (scrollIntoView ? scrollIntoView(step.targetRef) : Promise.resolve()).then(() => {
+      if (!cancelled) tryMeasure();
+    });
     return () => {
       cancelled = true;
     };
-  }, [visible, step]);
+  }, [visible, step, scrollIntoView]);
 
   const pulse = useSharedValue(0);
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
@@ -31,7 +31,12 @@ interface HomeEmptyContentProps {
   scheduleSectionRef?: React.RefObject<View | null>;
 }
 
-export default function HomeEmptyContent({
+export interface HomeEmptyContentHandle {
+  /** 튜토리얼 대상이 화면에 보이도록 스크롤한 뒤(애니메이션 종료까지 기다렸다가) resolve된다. */
+  scrollToTarget: (targetRef: React.RefObject<View | null>) => Promise<void>;
+}
+
+const HomeEmptyContent = forwardRef<HomeEmptyContentHandle, HomeEmptyContentProps>(function HomeEmptyContent({
   selectedChild,
   onPressMeal,
   weatherDays,
@@ -46,7 +51,7 @@ export default function HomeEmptyContent({
   prepSectionRef,
   scanButtonRef,
   scheduleSectionRef,
-}: HomeEmptyContentProps) {
+}, ref) {
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -59,8 +64,37 @@ export default function HomeEmptyContent({
   const [contentHeight, setContentHeight] = useState(0);
   const canScroll = contentHeight > containerHeight + 1;
 
+  // 튜토리얼이 "앞으로의 모험"처럼 아래쪽 영역을 강조할 때, 스크롤을 처음 위치
+  // 그대로 둔 채 스포트라이트만 띄우면 대상이 화면 밖이라 안 보인다 — 대상이
+  // 화면에 들어오도록 먼저 스크롤한 뒤에 스포트라이트를 그리도록 부모(홈
+  // 화면 튜토리얼)가 호출할 수 있는 메서드를 ref로 노출한다.
+  const viewportRef = useRef<View>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollYRef = useRef(0);
+  const SCROLL_TARGET_TOP_MARGIN = 30;
+
+  useImperativeHandle(ref, () => ({
+    scrollToTarget: (targetRef) =>
+      new Promise<void>((resolve) => {
+        if (!targetRef.current || !viewportRef.current || !scrollViewRef.current) {
+          resolve();
+          return;
+        }
+        targetRef.current.measureInWindow((_tx, ty) => {
+          viewportRef.current?.measureInWindow((_vx, vy) => {
+            const delta = ty - vy - SCROLL_TARGET_TOP_MARGIN;
+            const newY = Math.max(scrollYRef.current + delta, 0);
+            scrollViewRef.current?.scrollTo({ y: newY, animated: true });
+            setTimeout(resolve, 380);
+          });
+        });
+      }),
+  }));
+
   return (
+    <View ref={viewportRef} collapsable={false} style={styles.flexFill}>
       <ScrollView
+        ref={scrollViewRef}
         style={styles.flexFill}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -69,6 +103,8 @@ export default function HomeEmptyContent({
         scrollEnabled={canScroll}
         onLayout={(e) => setContainerHeight(e.nativeEvent.layout.height)}
         onContentSizeChange={(_w, h) => setContentHeight(h)}
+        onScroll={(e) => { scrollYRef.current = e.nativeEvent.contentOffset.y; }}
+        scrollEventThrottle={16}
         refreshControl={
           onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} /> : undefined
         }
@@ -120,9 +156,12 @@ export default function HomeEmptyContent({
           <Text style={[styles.cardSubtitle, { marginBottom: 0 }]}>여유롭고 평화로운 한 주를 보내세요!</Text>
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
-}
+});
+
+export default HomeEmptyContent;
 
 function SectionHeader({ emoji, title }: { emoji: string; title: string }) {
   const colors = useThemeColors();
