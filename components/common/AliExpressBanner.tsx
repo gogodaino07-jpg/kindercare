@@ -80,6 +80,206 @@ const PRODUCTS: AliExpressProduct[] = [
     discount: '33%',
     link: 'https://s.click.aliexpress.com/e/_c3DVUtAH',
   },
+  {
+    image: require('../../assets/images/aliexpress/product8.jpg'),
+    title: '어린이 집중력 훈련 미로 게임북 (32페이지)',
+    price: 'KRW 1,500',
+    originalPrice: 'KRW 1,829',
+    discount: '18%',
+    link: 'https://s.click.aliexpress.com/e/_c3Deoy5X',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product9.jpg'),
+    title: 'LED 키보드 키체인 피젯 스트레스 해소 장난감',
+    price: 'KRW 1,500',
+    originalPrice: 'KRW 2,434',
+    discount: '38%',
+    link: 'https://s.click.aliexpress.com/e/_c3lu8IhJ',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product10.jpg'),
+    title: '스파이더맨 니트 방한 장갑',
+    price: 'KRW 1,173',
+    originalPrice: 'KRW 4,333',
+    discount: '73%',
+    link: 'https://s.click.aliexpress.com/e/_c3SSWBwH',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product11.jpg'),
+    title: '크리스마스 롤 스티커 320개',
+    price: 'KRW 1,500',
+    originalPrice: 'KRW 2,467',
+    discount: '39%',
+    link: 'https://s.click.aliexpress.com/e/_c2QVxJsZ',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product12.jpg'),
+    title: '스마트 그리기 로봇 (유아 지능 조기교육)',
+    price: 'KRW 41,994',
+    originalPrice: 'KRW 90,989',
+    discount: '54%',
+    link: 'https://s.click.aliexpress.com/e/_c4OpLVI9',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product13.jpg'),
+    title: '만화 미니 풀백 크롤링 자동차 장난감',
+    price: 'KRW 3,580',
+    originalPrice: 'KRW 3,580',
+    discount: '0%',
+    link: 'https://s.click.aliexpress.com/e/_c4LMeaKD',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product14.jpg'),
+    title: '키즈 알파카 라마 동물 후드 점프수트',
+    price: 'KRW 28,650',
+    originalPrice: 'KRW 59,687',
+    discount: '52%',
+    link: 'https://s.click.aliexpress.com/e/_c4UPoKtX',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product15.jpg'),
+    title: '몬테소리 감각 활동 바쁜책 (스티커북)',
+    price: 'KRW 17,150',
+    originalPrice: 'KRW 34,300',
+    discount: '50%',
+    link: 'https://s.click.aliexpress.com/e/_c3cO58Hn',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product16.jpg'),
+    title: '몬테소리 기하학 모양 분류 나무 퍼즐',
+    price: 'KRW 1,500',
+    originalPrice: 'KRW 1,500',
+    discount: '0%',
+    link: 'https://s.click.aliexpress.com/e/_c3llcwGz',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product17.jpg'),
+    title: '스퀴시 슬로우 리바운드 도넛 냉장고 자석',
+    price: 'KRW 2,600',
+    originalPrice: 'KRW 5,652',
+    discount: '54%',
+    link: 'https://s.click.aliexpress.com/e/_c38VqgP7',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product18.jpg'),
+    title: '아기 발 측정기 (신발 사이즈 측정)',
+    price: 'KRW 2,340',
+    originalPrice: 'KRW 4,875',
+    discount: '52%',
+    link: 'https://s.click.aliexpress.com/e/_c4EEvqTT',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product19.jpg'),
+    title: '만화 자동차 어린이 훈련용 젓가락',
+    price: 'KRW 1,500',
+    originalPrice: 'KRW 5,061',
+    discount: '70%',
+    link: 'https://s.click.aliexpress.com/e/_c3ypocXx',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product20.jpg'),
+    title: '아기 과일 푸드 피더 & 아이스크림 몰드',
+    price: 'KRW 6,970',
+    originalPrice: 'KRW 15,152',
+    discount: '54%',
+    link: 'https://s.click.aliexpress.com/e/_c4pBRmTb',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product21.jpg'),
+    title: '아기 과일 실리콘 공급기 젖꼭지',
+    price: 'KRW 3,380',
+    originalPrice: 'KRW 7,511',
+    discount: '55%',
+    link: 'https://s.click.aliexpress.com/e/_c4berwS1',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product22.jpg'),
+    title: '베이비 실리콘 흡착 식판 그릇',
+    price: 'KRW 2,900',
+    originalPrice: 'KRW 9,062',
+    discount: '68%',
+    link: 'https://s.click.aliexpress.com/e/_c3us4ZRB',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product23.jpg'),
+    title: '카시트용 방수 어린이 식사 트레이',
+    price: 'KRW 13,959',
+    originalPrice: 'KRW 34,918',
+    discount: '60%',
+    link: 'https://s.click.aliexpress.com/e/_c4t75m33',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product24.jpg'),
+    title: '어린이 헤어 왁스 스틱 (잔머리 정리)',
+    price: 'KRW 3,220',
+    originalPrice: 'KRW 7,156',
+    discount: '55%',
+    link: 'https://s.click.aliexpress.com/e/_c3QbTse1',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product25.jpg'),
+    title: '어린이용 접이식 여행 카트 보행기',
+    price: 'KRW 22,492',
+    originalPrice: 'KRW 29,204',
+    discount: '23%',
+    link: 'https://s.click.aliexpress.com/e/_c4SjaAbx',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product26.jpg'),
+    title: '1-12 숫자 따라쓰기 연습장 (32페이지)',
+    price: 'KRW 1,500',
+    originalPrice: 'KRW 3,150',
+    discount: '52%',
+    link: 'https://s.click.aliexpress.com/e/_c3TMr1zL',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product27.jpg'),
+    title: '자동차 안전벨트 클립 연장 플러그',
+    price: 'KRW 3,000',
+    originalPrice: 'KRW 6,519',
+    discount: '54%',
+    link: 'https://s.click.aliexpress.com/e/_c3gQGtlb',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product28.jpg'),
+    title: '리얼리스틱 헤어메트 크랩 피규어',
+    price: 'KRW 1,500',
+    originalPrice: 'KRW 3,323',
+    discount: '55%',
+    link: 'https://s.click.aliexpress.com/e/_c3QH8SbL',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product29.jpg'),
+    title: '전면 장착형 자전거 어린이 안전 시트',
+    price: 'KRW 85,842',
+    originalPrice: 'KRW 99,267',
+    discount: '14%',
+    link: 'https://s.click.aliexpress.com/e/_c3iKxMjb',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product30.jpg'),
+    title: '어린이 차량 색칠 공부책 (48페이지)',
+    price: 'KRW 1,500',
+    originalPrice: 'KRW 3,726',
+    discount: '60%',
+    link: 'https://s.click.aliexpress.com/e/_c3Fxzivn',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product31.jpg'),
+    title: '아기 젖꼭지 클립 (이름 각인 가능)',
+    price: 'KRW 6,940',
+    originalPrice: 'KRW 7,225',
+    discount: '4%',
+    link: 'https://s.click.aliexpress.com/e/_c358RD3X',
+  },
+  {
+    image: require('../../assets/images/aliexpress/product32.jpg'),
+    title: '아기 머리끈 100~200개 세트 (면 소재)',
+    price: 'KRW 1,500',
+    originalPrice: 'KRW 4,122',
+    discount: '64%',
+    link: 'https://s.click.aliexpress.com/e/_c4cq5Wr7',
+  },
 ];
 
 interface AliExpressBannerProps {
@@ -124,9 +324,11 @@ export default function AliExpressBanner({ style }: AliExpressBannerProps) {
         <View style={styles.bannerContent}>
           <Animated.View style={[styles.imageWrap, { opacity }]}>
             <Image source={product.image} style={styles.image} resizeMode="cover" />
-            <View style={styles.discountBadge}>
-              <Text style={styles.discountText}>{product.discount}</Text>
-            </View>
+            {product.discount !== '0%' && (
+              <View style={styles.discountBadge}>
+                <Text style={styles.discountText}>{product.discount}</Text>
+              </View>
+            )}
           </Animated.View>
           <View style={styles.textCol}>
             <Text style={styles.brand}>알리익스프레스 특가</Text>
@@ -135,7 +337,9 @@ export default function AliExpressBanner({ style }: AliExpressBannerProps) {
             </Animated.View>
             <View style={styles.priceRow}>
               <Text style={styles.price}>{product.price}</Text>
-              <Text style={styles.originalPrice}>{product.originalPrice}</Text>
+              {product.discount !== '0%' && (
+                <Text style={styles.originalPrice}>{product.originalPrice}</Text>
+              )}
             </View>
           </View>
           <View style={styles.ctaButton}>
