@@ -94,10 +94,12 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish }: HomeTu
     );
   }, [rect, pulse]);
 
+  // scale로 링을 키우면 딤 배경에 뚫어둔 구멍(SVG 마스크, 크기 고정)보다 링이
+  // 커지는 순간 테두리가 그 경계를 넘어가 보이는 문제가 있었다. borderWidth는
+  // 박스 안쪽으로만 두꺼워지므로(RN 기본 border-box 모델) 이 문제가 없다.
   const ringStyle = useAnimatedStyle(() => ({
     opacity: 0.5 + pulse.value * 0.5,
-    borderWidth: 3 + pulse.value * 3,
-    transform: [{ scale: 1 + pulse.value * 0.05 }],
+    borderWidth: 3 + pulse.value * 4,
   }));
 
   if (!visible || !step || !rect) return null;
