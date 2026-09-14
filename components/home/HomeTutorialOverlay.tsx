@@ -130,9 +130,12 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
   // 커지는 순간 테두리가 그 경계를 넘어가 보이는 문제가 있었다. borderWidth
   // 펄스도 시도해봤지만, 레이아웃에 영향을 주는 속성이라(transform/opacity와
   // 달리 GPU 합성만으로 처리되지 않음) 계속 반복되는 동안 버벅임이 있었다.
-  // 두께는 고정하고 opacity(합성만으로 처리되는 안전한 속성)만으로 깜빡이게 한다.
-  const ringStyle = useAnimatedStyle(() => ({
-    opacity: 0.45 + pulse.value * 0.55,
+  // "두꺼워졌다 얇아졌다"하는 느낌은 살리되 성능 문제는 피하려고, 얇은 링
+  // (고정, 항상 표시) 위에 두꺼운 링(고정, opacity만 pulse)을 겹쳐 그린다 —
+  // 둘 다 바깥 경계는 같아서 두꺼운 쪽이 진해질수록 안쪽으로 굵어 보이는
+  // 착시가 생기고, 실제로 바뀌는 건 opacity뿐이라 레이아웃 재계산이 없다.
+  const ringGlowStyle = useAnimatedStyle(() => ({
+    opacity: pulse.value * 0.9,
   }));
 
   const overlayFadeStyle = useAnimatedStyle(() => ({
@@ -189,9 +192,13 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
       {/* 배경/하이라이트 영역 전체의 터치를 삼켜서, 툴팁의 버튼 외에는 아무 동작도 하지 않게 한다. */}
       <Pressable style={StyleSheet.absoluteFill} onPress={() => {}} />
 
+      <View
+        pointerEvents="none"
+        style={[styles.ringBase, { top, left, width: right - left, height: bottom - top, borderColor: colors.accent }]}
+      />
       <Animated.View
         pointerEvents="none"
-        style={[styles.ring, ringStyle, { top, left, width: right - left, height: bottom - top, borderColor: colors.accent }]}
+        style={[styles.ringGlow, ringGlowStyle, { top, left, width: right - left, height: bottom - top, borderColor: colors.accent }]}
       />
 
       <View
@@ -249,9 +256,14 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
 }
 
 const styles = StyleSheet.create({
-  ring: {
+  ringBase: {
     position: 'absolute',
-    borderWidth: 4,
+    borderWidth: 3,
+    borderRadius: RADIUS,
+  },
+  ringGlow: {
+    position: 'absolute',
+    borderWidth: 8,
     borderRadius: RADIUS,
   },
   tail: {
