@@ -502,6 +502,7 @@ export default function HomeScreen() {
       targetRef: scanButtonRef,
       title: 'AI 준비물 스캐너',
       description: '복잡한 알림장은 이제 그만! AI가 알림장을 읽고 꼭 필요한 준비물만 요약해서 알려줍니다.',
+      fullyRounded: true,
     },
     {
       key: 'schedule',

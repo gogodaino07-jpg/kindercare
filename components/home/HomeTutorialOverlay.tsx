@@ -27,6 +27,9 @@ export interface HomeTutorialStep {
   targetRef: React.RefObject<View | null>;
   title: string;
   description: string;
+  /** AI 스캔 버튼처럼 양 끝이 완전한 반원인 알약(pill) 모양 대상일 때 true —
+   * 고정 반지름 대신 높이의 절반까지 둥글려서 실제 모양과 정확히 맞춘다. */
+  fullyRounded?: boolean;
 }
 
 interface HomeTutorialOverlayProps {
@@ -178,11 +181,14 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
   const targetCenterX = (left + right) / 2;
   const tooltipCardWidth = screen.width - 40;
   const tailLeft = Math.min(Math.max(targetCenterX - 20 - TAIL_SIZE / 2, 20), tooltipCardWidth - 20 - TAIL_SIZE);
-  // AI 스캔 버튼처럼 좁고 완전히 둥근(pill 모양) 대상은 고정 RADIUS(20)보다
-  // 실제 모서리가 더 둥글어서, 구멍 모서리가 버튼보다 덜 둥글면 그 사이로
-  // 카드의 흰 배경이 삐져나와 보였다. 대상 크기의 절반을 넘지 않게 반지름을
-  // 제한해서 좁은 대상일수록 자동으로 더 둥글게(최대 캡슐 모양까지) 만든다.
-  const holeRadius = Math.min(RADIUS, (right - left) / 2, (bottom - top) / 2);
+  // AI 스캔 버튼처럼 양 끝이 완전한 반원인 대상은 고정 RADIUS(20)보다 실제
+  // 모서리가 훨씬 더 둥글어서(끝이 반원), 구멍이 버튼보다 덜 둥글면 그 사이로
+  // 카드의 흰 배경이 아주 살짝 삐져나와 보였다. fullyRounded 단계는 높이의
+  // 절반까지(완전한 캡슐 모양) 둥글리고, 나머지는 카드 모서리와 비슷한 고정
+  // RADIUS를 쓰되 대상이 그보다 작으면(작은 아이콘 등) 자동으로 더 둥글게 한다.
+  const holeRadius = step.fullyRounded
+    ? Math.min((right - left) / 2, (bottom - top) / 2)
+    : Math.min(RADIUS, (right - left) / 2, (bottom - top) / 2);
 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, overlayFadeStyle]} pointerEvents={transitioning ? 'none' : 'box-none'}>
