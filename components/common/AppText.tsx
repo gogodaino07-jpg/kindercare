@@ -19,11 +19,13 @@ import { useAppData } from '../../context/AppDataContext';
 export default function AppText({ style, ...rest }: TextProps) {
   const { fontScale, fontChoiceId } = useAppData();
   const flat = StyleSheet.flatten(style);
-  const globalFontFamily = FONT_OPTIONS.find((f) => f.id === fontChoiceId)?.fontFamily;
+  const fontOption = FONT_OPTIONS.find((f) => f.id === fontChoiceId);
+  const globalFontFamily = fontOption?.fontFamily;
 
   const overrides: { fontSize?: number; fontFamily?: string; fontWeight?: TextStyle['fontWeight'] } = {};
-  if (flat && typeof flat.fontSize === 'number' && fontScale !== 1) {
-    overrides.fontSize = flat.fontSize * fontScale;
+  if (flat && typeof flat.fontSize === 'number' && (fontScale !== 1 || (globalFontFamily && !flat?.fontFamily && fontOption?.sizeBoost))) {
+    const boost = globalFontFamily && !flat?.fontFamily ? (fontOption?.sizeBoost ?? 1) : 1;
+    overrides.fontSize = flat.fontSize * fontScale * boost;
   }
   if (globalFontFamily && !flat?.fontFamily) {
     overrides.fontFamily = globalFontFamily;

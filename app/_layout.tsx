@@ -1,12 +1,10 @@
 import { Dongle_400Regular, Dongle_700Bold } from '@expo-google-fonts/dongle';
-import { EastSeaDokdo_400Regular } from '@expo-google-fonts/east-sea-dokdo';
 import { GamjaFlower_400Regular } from '@expo-google-fonts/gamja-flower';
 import { Gaegu_400Regular } from '@expo-google-fonts/gaegu';
 import { HiMelody_400Regular } from '@expo-google-fonts/hi-melody';
 import { Jua_400Regular } from '@expo-google-fonts/jua';
 import { PoorStory_400Regular } from '@expo-google-fonts/poor-story';
 import { Sunflower_500Medium } from '@expo-google-fonts/sunflower';
-import { YeonSung_400Regular } from '@expo-google-fonts/yeon-sung';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
 import { Stack, useRouter } from 'expo-router';
@@ -309,9 +307,7 @@ export default function RootLayout() {
     Jua_400Regular,
     Dongle_400Regular,
     Dongle_700Bold,
-    YeonSung_400Regular,
     Sunflower_500Medium,
-    EastSeaDokdo_400Regular,
   });
 
   useEffect(() => {
