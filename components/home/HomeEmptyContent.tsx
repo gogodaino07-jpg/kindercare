@@ -186,7 +186,7 @@ const HomeEmptyContent = forwardRef<HomeEmptyContentHandle, HomeEmptyContentProp
 
       <View ref={scheduleSectionRef} collapsable={false}>
         <SectionHeader emoji="🗺️" title="앞으로의 모험" />
-        <View style={styles.card}>
+        <View style={[styles.card, styles.scheduleCard]}>
           <View style={[styles.iconCircle, { backgroundColor: colors.lightBlueBg }]}>
             <Text style={styles.iconCircleEmoji}>🏝️</Text>
           </View>
@@ -230,6 +230,10 @@ function createStyles(colors: ThemeColors) {
       ...SHADOW,
       shadowOpacity: 0.06,
       elevation: 2,
+    },
+    // 화면 하단에 남는 여백을 채우도록 "앞으로의 모험" 카드만 세로로 조금 더 키운다.
+    scheduleCard: {
+      paddingVertical: 34,
     },
     iconCircle: {
       width: 48,
