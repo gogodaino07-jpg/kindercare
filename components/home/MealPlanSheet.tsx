@@ -278,14 +278,16 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 12,
     },
     // 헤더는 그 자체로 카드 모양이 아니라서(아이콘+텍스트가 자유롭게 떠 있는 형태),
-    // dimOverlay처럼 둥근 테두리+bleed를 주면 오히려 "박스가 하나 더 생긴" 것처럼
-    // 어색해 보였다 — 여백 없이 딱 맞는 사각형으로 은은하게만 가린다.
+    // dimOverlay처럼 둥근 테두리를 주면 오히려 "박스가 하나 더 생긴" 것처럼 어색해
+    // 보였다 — 테두리 없는 사각형을 쓰되, headerRow의 marginBottom(16)과 팁의
+    // marginTop(10)만큼 아래로 bleed시켜서 팁 바로 위까지 이음새 없이 딤이 닿게 한다
+    // (안 그러면 그 26px 틈에 흰 여백이 남아 딤 영역이 별개 박스처럼 떠 보였다).
     dimOverlayFlush: {
       position: 'absolute',
       top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
+      left: -4,
+      right: -4,
+      bottom: -26,
       backgroundColor: 'rgba(15, 23, 42, 0.45)',
     },
     overlay: {
