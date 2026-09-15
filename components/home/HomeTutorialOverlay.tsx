@@ -154,7 +154,6 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
     const revealSlide = (r: Rect, duration: number = SLIDE.duration, fadeTooltip: boolean = true) => {
       if (cancelled) return;
       const h = clampHighlight(r, screen, step.fullyRounded);
-      setRect(r);
       const cfg = { duration, easing: SLIDE.easing };
       hLeft.value = withTiming(h.left, cfg);
       hTop.value = withTiming(h.top, cfg);
@@ -162,7 +161,16 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
       hHeight.value = withTiming(h.height, cfg);
       hRadius.value = withTiming(h.radius, cfg);
       if (fadeTooltip) {
+        // rect를 여기서 바로 바꾸면 툴팁 위치(위/아래 배치, 꼬리 위치)가 페이드아웃이
+        // 끝나기도 전에 새 단계 위치로 순간 이동해버려서, 아직 다 투명해지지 않은
+        // 툴팁이 잠깐 "튀는" 것처럼 보였다. 페이드아웃(90ms)이 끝나 안 보이게 된
+        // 뒤에야 위치를 바꾸고 페이드인해야 이 점프가 감춰진다.
         tooltipOpacity.value = withSequence(withTiming(0, { duration: 90 }), withTiming(1, { duration: 180 }));
+        setTimeout(() => {
+          if (!cancelled) setRect(r);
+        }, 90);
+      } else {
+        setRect(r);
       }
       setTransitioning(false);
     };
