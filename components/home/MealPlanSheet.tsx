@@ -10,7 +10,6 @@ import { useTodayISO } from '../../hooks/useTodayISO';
 import { isAllergyMatch } from '../../utils/allergy';
 import { formatMD, parseISODate, startOfDay, toISODate, WEEKDAY_KO } from '../../utils/date';
 import Text from '../common/AppText';
-import FirstVisitTip from '../common/FirstVisitTip';
 
 interface MealPlanSheetProps {
   visible: boolean;
@@ -42,7 +41,6 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { mealPlans, selectedChild } = useAppData();
   const [expanded, setExpanded] = useState(false);
-  const [tipShowing, setTipShowing] = useState(false);
   // 0 = 이번주, +1 = 다음주 ... 유치원이 다음주 식단표를 며칠 전에 미리 공지하는
   // 경우가 흔해서, "이번주"에는 저장된 식단이 하나도 없는데 "다음주"에는 있으면
   // 스캔한 급식표가 안 보인다는 오해를 사기 쉽다 — 시트를 열 때 자동으로 데이터가
@@ -131,42 +129,26 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
         <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
 
         <Animated.View style={[styles.sheet, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]}>
-          <View style={styles.dimmableArea}>
-            <View style={styles.headerRow}>
-              <View style={styles.headerLeft}>
-                <View style={styles.headerIconCircle}>
-                  <Text style={styles.headerIconEmoji}>🍴</Text>
-                </View>
-                <View style={styles.headerTextCol}>
-                  <View style={styles.titleRow}>
-                    <Text style={styles.title}>오늘의 급식 메뉴</Text>
-                    <Pressable style={styles.aiPillButton} onPress={handleAiScan} hitSlop={4}>
-                      <Text style={styles.aiPillButtonText}>AI 분석</Text>
-                    </Pressable>
-                  </View>
-                  <Text style={styles.dateSubtitle}>{todayDateLabel}</Text>
-                </View>
+          <View style={styles.headerRow}>
+            <View style={styles.headerLeft}>
+              <View style={styles.headerIconCircle}>
+                <Text style={styles.headerIconEmoji}>🍴</Text>
               </View>
-              <Pressable hitSlop={8} onPress={handleClose}>
-                <MaterialIcons name="close" size={22} color={colors.gray400} />
-              </Pressable>
+              <View style={styles.headerTextCol}>
+                <View style={styles.titleRow}>
+                  <Text style={styles.title}>오늘의 급식 메뉴</Text>
+                  <Pressable style={styles.aiPillButton} onPress={handleAiScan} hitSlop={4}>
+                    <Text style={styles.aiPillButtonText}>AI 분석</Text>
+                  </Pressable>
+                </View>
+                <Text style={styles.dateSubtitle}>{todayDateLabel}</Text>
+              </View>
             </View>
-            {tipShowing && <View pointerEvents="none" style={styles.dimOverlayFlush} />}
+            <Pressable hitSlop={8} onPress={handleClose}>
+              <MaterialIcons name="close" size={22} color={colors.gray400} />
+            </Pressable>
           </View>
 
-          {visible && (
-            <FirstVisitTip
-              tutorialKey="mealSheet:v1"
-              emoji="🍽️"
-              title="급식 메뉴도 자동으로 챙겨요"
-              description="AI 분석으로 급식표를 스캔하면 오늘 메뉴가 여기 자동으로 채워져요. 알레르기가 있으면 메뉴에 표시도 해드려요."
-              noHorizontalMargin
-              compact
-              onVisibleChange={setTipShowing}
-            />
-          )}
-
-          <View style={styles.dimmableArea}>
           {todayMenu ? (
             <View style={styles.mealCard}>
               <View style={styles.mealCardTag}>
@@ -255,8 +237,6 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
               <Text style={styles.closeButtonText}>확인 완료</Text>
             </LinearGradient>
           </Pressable>
-          {tipShowing && <View pointerEvents="none" style={styles.dimOverlay} />}
-          </View>
         </Animated.View>
       </View>
     </Modal>
@@ -265,31 +245,6 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    dimmableArea: {
-      position: 'relative',
-    },
-    dimOverlay: {
-      position: 'absolute',
-      top: -4,
-      left: -4,
-      right: -4,
-      bottom: -4,
-      backgroundColor: 'rgba(15, 23, 42, 0.45)',
-      borderRadius: 12,
-    },
-    // 헤더는 그 자체로 카드 모양이 아니라서(아이콘+텍스트가 자유롭게 떠 있는 형태),
-    // dimOverlay처럼 둥근 테두리를 주면 오히려 "박스가 하나 더 생긴" 것처럼 어색해
-    // 보였다 — 테두리 없는 사각형을 쓰되, headerRow의 marginBottom(16)과 팁의
-    // marginTop(10)만큼 아래로 bleed시켜서 팁 바로 위까지 이음새 없이 딤이 닿게 한다
-    // (안 그러면 그 26px 틈에 흰 여백이 남아 딤 영역이 별개 박스처럼 떠 보였다).
-    dimOverlayFlush: {
-      position: 'absolute',
-      top: 0,
-      left: -4,
-      right: -4,
-      bottom: -26,
-      backgroundColor: 'rgba(15, 23, 42, 0.45)',
-    },
     overlay: {
       flex: 1,
       backgroundColor: 'rgba(0, 0, 0, 0.55)',
