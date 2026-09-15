@@ -63,7 +63,7 @@ const RADIUS = 20;
 const TAIL_SIZE = 16;
 const START_BUTTON_COLOR = '#7C3AED';
 const NEXT_BUTTON_COLOR = '#18181B';
-const SLIDE = { duration: 380, easing: Easing.inOut(Easing.ease) };
+const SLIDE = { duration: 280, easing: Easing.inOut(Easing.ease) };
 
 function clampHighlight(rect: Rect, screen: { width: number; height: number }, fullyRounded?: boolean): Highlight {
   const top = Math.max(rect.y - PAD, 0);
