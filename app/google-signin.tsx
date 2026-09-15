@@ -47,6 +47,7 @@ export default function GoogleSignInScreen() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [loading, setLoading] = useState(false);
+  const [activeProvider, setActiveProvider] = useState<'google' | 'kakao' | null>(null);
   const [toastActive, setToastActive] = useState(false);
 
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -97,6 +98,7 @@ export default function GoogleSignInScreen() {
 
   const handleGoogleSignIn = async () => {
     if (loading || toastActive) return;
+    setActiveProvider('google');
     setLoading(true);
     try {
       const account = await signInWithGoogle();
@@ -275,11 +277,13 @@ export default function GoogleSignInScreen() {
       }
     } finally {
       setLoading(false);
+      setActiveProvider(null);
     }
   };
 
   const handleKakaoSignIn = async () => {
     if (loading || toastActive) return;
+    setActiveProvider('kakao');
     setLoading(true);
     try {
       const account = await signInWithKakao();
@@ -432,6 +436,7 @@ export default function GoogleSignInScreen() {
       }
     } finally {
       setLoading(false);
+      setActiveProvider(null);
     }
   };
 
@@ -475,7 +480,7 @@ export default function GoogleSignInScreen() {
             onPress={handleGoogleSignIn}
             disabled={loading || toastActive}
           >
-            {loading ? (
+            {activeProvider === 'google' ? (
               <ActivityIndicator color="#3C4043" />
             ) : (
               <View style={styles.btnInner}>
@@ -494,7 +499,7 @@ export default function GoogleSignInScreen() {
             onPress={handleKakaoSignIn}
             disabled={loading || toastActive}
           >
-            {loading ? (
+            {activeProvider === 'kakao' ? (
               <ActivityIndicator color="#3C1E1E" />
             ) : (
               <View style={styles.btnInner}>
