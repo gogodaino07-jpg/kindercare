@@ -439,7 +439,6 @@ function MealMenuCard({
               <View style={styles.miniTag}>
                 <Text style={styles.miniTagText}>점심</Text>
               </View>
-              <Text style={styles.unregisteredText}>미등록</Text>
             </View>
             <View style={styles.emptyMainTextWrap} pointerEvents="none">
               <Text style={styles.emptyMainText}>오늘 등록된 급식 없음</Text>
@@ -647,11 +646,6 @@ function createMealCardStyles(colors: ThemeColors) {
       fontSize: 12,
       fontWeight: '800',
       color: '#FFFFFF',
-    },
-    unregisteredText: {
-      fontSize: 12.5,
-      fontWeight: '600',
-      color: colors.gray500,
     },
     emptyMainText: {
       fontSize: 16,
