@@ -104,7 +104,7 @@ export default function HomeHeroHeader({
         </LinearGradient>
       )}
 
-      <View ref={mealCardRef} collapsable={false}>
+      <View ref={mealCardRef} collapsable={false} style={styles.mealCardInset}>
         <MealMenuCard
           todayMeal={todayMeal}
           onPressMeal={onPressMeal}
@@ -509,7 +509,6 @@ function createMealCardStyles(colors: ThemeColors) {
   return StyleSheet.create({
     card: {
       backgroundColor: colors.cardWhite,
-      marginHorizontal: 20,
       marginTop: 10,
       marginBottom: 14,
       borderRadius: 18,
@@ -659,6 +658,12 @@ const TODAY_CARD_HEIGHT = 148;
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
+    // marginHorizontal을 MealMenuCard 안쪽 card 스타일 대신 여기(mealCardRef가 달린
+    // 바깥 View)로 옮김 — weatherCollapsedInset과 같은 이유(주석 참고)로, 안쪽에만
+    // 있으면 튜토리얼 스포트라이트가 실제 카드보다 화면 끝까지 넓게 잡혔다.
+    mealCardInset: {
+      marginHorizontal: 20,
+    },
     birthdayBanner: {
       marginHorizontal: 20,
       marginTop: 10,
