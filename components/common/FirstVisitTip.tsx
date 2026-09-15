@@ -99,7 +99,7 @@ export default function FirstVisitTip({ tutorialKey, title, description, emoji =
           <Feather name="x" size={16} color={colors.gray400} />
         </Pressable>
 
-        <View style={styles.headerRow}>
+        <View style={[styles.headerRow, compact && styles.headerRowCompact]}>
           <Animated.View style={[styles.iconBadgeWrap, { transform: [{ translateY: iconBounce }, { rotate: iconRotate }] }]}>
             <LinearGradient
               colors={[colors.purple500, colors.purpleDeep]}
@@ -115,9 +115,9 @@ export default function FirstVisitTip({ tutorialKey, title, description, emoji =
               <View style={styles.tipPill}>
                 <Text style={styles.tipPillText}>TIP</Text>
               </View>
-              <Text style={styles.title} numberOfLines={2}>{title}</Text>
+              <Text style={[styles.title, compact && styles.titleCompact]} numberOfLines={2}>{title}</Text>
             </View>
-            <Text style={styles.description}>{description}</Text>
+            <Text style={[styles.description, compact && styles.descriptionCompact]}>{description}</Text>
           </View>
         </View>
 
@@ -172,8 +172,8 @@ function createStyles(colors: ThemeColors) {
       elevation: 4,
     },
     cardCompact: {
-      paddingVertical: 12,
-      paddingHorizontal: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 10,
     },
     closeButton: {
       position: 'absolute',
@@ -188,6 +188,9 @@ function createStyles(colors: ThemeColors) {
       gap: 12,
       paddingRight: 18,
     },
+    headerRowCompact: {
+      gap: 8,
+    },
     iconBadgeWrap: {},
     iconBadge: {
       width: 40,
@@ -201,12 +204,12 @@ function createStyles(colors: ThemeColors) {
       elevation: 3,
     },
     iconBadgeCompact: {
-      width: 32,
-      height: 32,
-      borderRadius: 11,
+      width: 28,
+      height: 28,
+      borderRadius: 10,
     },
     emoji: { fontSize: 19 },
-    emojiCompact: { fontSize: 15 },
+    emojiCompact: { fontSize: 13 },
     textCol: { flex: 1, minWidth: 0 },
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' },
     tipPill: {
@@ -217,14 +220,16 @@ function createStyles(colors: ThemeColors) {
     },
     tipPillText: { fontSize: 10, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.5 },
     title: { fontSize: 14, fontWeight: '800', color: colors.gray900, flexShrink: 1 },
+    titleCompact: { fontSize: 13 },
     description: { fontSize: 12.5, fontWeight: '600', color: colors.gray500, lineHeight: 18 },
+    descriptionCompact: { fontSize: 11.5, lineHeight: 16 },
     ctaWrap: {
       marginTop: 14,
       borderRadius: 999,
       alignSelf: 'stretch',
     },
     ctaWrapCompact: {
-      marginTop: 10,
+      marginTop: 8,
     },
     ctaWrapPressed: { opacity: 0.85 },
     cta: {
@@ -233,7 +238,7 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
     },
     ctaCompact: {
-      paddingVertical: 9,
+      paddingVertical: 8,
     },
     ctaText: { fontSize: 13.5, fontWeight: '800', color: '#FFFFFF' },
   });

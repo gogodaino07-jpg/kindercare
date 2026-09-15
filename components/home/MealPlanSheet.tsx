@@ -151,7 +151,7 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
                 <MaterialIcons name="close" size={22} color={colors.gray400} />
               </Pressable>
             </View>
-            {tipShowing && <View pointerEvents="none" style={styles.dimOverlay} />}
+            {tipShowing && <View pointerEvents="none" style={styles.dimOverlayFlush} />}
           </View>
 
           {visible && (
@@ -276,6 +276,17 @@ function createStyles(colors: ThemeColors) {
       bottom: -4,
       backgroundColor: 'rgba(15, 23, 42, 0.45)',
       borderRadius: 12,
+    },
+    // 헤더는 그 자체로 카드 모양이 아니라서(아이콘+텍스트가 자유롭게 떠 있는 형태),
+    // dimOverlay처럼 둥근 테두리+bleed를 주면 오히려 "박스가 하나 더 생긴" 것처럼
+    // 어색해 보였다 — 여백 없이 딱 맞는 사각형으로 은은하게만 가린다.
+    dimOverlayFlush: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(15, 23, 42, 0.45)',
     },
     overlay: {
       flex: 1,
