@@ -34,6 +34,7 @@ export default function CalendarScreen() {
   const { events, selectedChild, updateEvent } = useAppData();
   const t = useCalendarTheme();
   const styles = useMemo(() => createStyles(t), [t]);
+  const [tipShowing, setTipShowing] = useState(false);
 
   const todayISO = useMemo(() => toISODate(new Date()), []);
   // 홈 화면에서 특정 날짜의 일정을 탭해서 들어온 경우, 그 날짜에 포커스한 채로 시작한다.
@@ -281,54 +282,58 @@ export default function CalendarScreen() {
           emoji="🗓️"
           title="한 달 일정을 한눈에"
           description="위쪽 달력을 접었다 펼치며 월간/주간 보기를 바꿀 수 있고, 날짜를 눌러 그날의 일정과 준비물을 확인할 수 있어요."
+          onVisibleChange={setTipShowing}
         />
 
-        <CalendarAccordion
-          monthCursor={monthCursor}
-          selectedDate={selectedDate}
-          todayISO={todayISO}
-          eventsByDate={eventsByDate}
-          onSelectDate={setSelectedDate}
-          onPrevMonth={onPrevMonth}
-          onNextMonth={onNextMonth}
-          expandedProgress={expandedProgress}
-          isExpanded={isExpanded}
-          setExpanded={setExpanded}
-          onOpenAddEvent={() => setAddEventVisible(true)}
-        />
+        <View style={styles.dimmableArea}>
+          <CalendarAccordion
+            monthCursor={monthCursor}
+            selectedDate={selectedDate}
+            todayISO={todayISO}
+            eventsByDate={eventsByDate}
+            onSelectDate={setSelectedDate}
+            onPrevMonth={onPrevMonth}
+            onNextMonth={onNextMonth}
+            expandedProgress={expandedProgress}
+            isExpanded={isExpanded}
+            setExpanded={setExpanded}
+            onOpenAddEvent={() => setAddEventVisible(true)}
+          />
 
-        <GestureDetector gesture={listGesture}>
-          <Animated.ScrollView
-            ref={scrollRef}
-            style={styles.scrollFlex}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            onScroll={scrollHandler}
-            scrollEventThrottle={16}
-            overScrollMode="always"
-            refreshControl={
-              isExpanded ? (
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={onRefresh}
-                  tintColor={t.textSecondary}
-                  colors={[t.textSecondary]}
-                  progressBackgroundColor={t.cardWhite}
-                />
-              ) : undefined
-            }
-          >
-            <DayDetailSection
-              selectedDate={selectedDate}
-              events={selectedDateEvents}
-              todayISO={todayISO}
-              onAddEvent={() => setAddEventVisible(true)}
-              onPressEvent={setEditingEvent}
-              onToggleItem={handleToggleItem}
-              onOpenBuy={handleOpenBuy}
-            />
-          </Animated.ScrollView>
-        </GestureDetector>
+          <GestureDetector gesture={listGesture}>
+            <Animated.ScrollView
+              ref={scrollRef}
+              style={styles.scrollFlex}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+              onScroll={scrollHandler}
+              scrollEventThrottle={16}
+              overScrollMode="always"
+              refreshControl={
+                isExpanded ? (
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    tintColor={t.textSecondary}
+                    colors={[t.textSecondary]}
+                    progressBackgroundColor={t.cardWhite}
+                  />
+                ) : undefined
+              }
+            >
+              <DayDetailSection
+                selectedDate={selectedDate}
+                events={selectedDateEvents}
+                todayISO={todayISO}
+                onAddEvent={() => setAddEventVisible(true)}
+                onPressEvent={setEditingEvent}
+                onToggleItem={handleToggleItem}
+                onOpenBuy={handleOpenBuy}
+              />
+            </Animated.ScrollView>
+          </GestureDetector>
+          {tipShowing && <View pointerEvents="none" style={styles.dimOverlay} />}
+        </View>
       </SafeAreaView>
 
       <View pointerEvents="box-none" style={[styles.todayFloatingWrap, { bottom: 20 + insets.bottom }]}>
@@ -372,6 +377,18 @@ function createStyles(t: import('../components/calendar/calendarTheme').Calendar
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 40,
+  },
+  dimmableArea: {
+    flex: 1,
+    position: 'relative',
+  },
+  dimOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
   },
   todayFloatingWrap: {
     position: 'absolute',
