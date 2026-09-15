@@ -25,6 +25,7 @@ import { withExternalAction } from '../utils/externalAction';
 import { getDb, getFirebaseAuth, getFunctions } from '../utils/firebase';
 import { deleteChildProfilePhoto, downloadChildProfilePhoto, uploadChildProfilePhoto } from '../utils/childProfilePhoto';
 import { scheduleEventNotifications } from '../utils/notifications';
+import { HOME_TUTORIAL_KEY, resetTutorialSeen } from '../utils/tutorialStorage';
 import { sanitizeData } from '../utils/validation';
 import { AIUsageLimitService } from '../features/newsletter-analysis';
 
@@ -1470,6 +1471,11 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     ];
     if (!options?.preserveAccount) keysToRemove.push(GOOGLE_ACCOUNT_KEY);
     await AsyncStorage.multiRemove(keysToRemove).catch(() => {});
+    // HAS_ONBOARDED_KEY와 같은 조건(계정 전환/회원탈퇴)에서 홈 코치마크 튜토리얼의
+    // "봤음" 플래그도 함께 지워야 한다 — 안 지우면 탈퇴 후 같은 기기에서(재설치 없이)
+    // 재가입해도 예전에 저장된 로컬 플래그가 남아 신규 가입인데 튜토리얼이 안 뜨는
+    // 문제가 있었다.
+    if (!options?.preserveOnboarded) await resetTutorialSeen(HOME_TUTORIAL_KEY);
     if (googleAccount?.email) {
       await AIUsageLimitService.resetUsage(googleAccount.email);
       await AIUsageLimitService.resetUsage(googleAccount.email, 'meal');
