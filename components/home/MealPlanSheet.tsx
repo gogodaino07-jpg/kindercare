@@ -131,24 +131,27 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
         <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
 
         <Animated.View style={[styles.sheet, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerLeft}>
-              <View style={styles.headerIconCircle}>
-                <Text style={styles.headerIconEmoji}>🍴</Text>
-              </View>
-              <View style={styles.headerTextCol}>
-                <View style={styles.titleRow}>
-                  <Text style={styles.title}>오늘의 급식 메뉴</Text>
-                  <Pressable style={styles.aiPillButton} onPress={handleAiScan} hitSlop={4}>
-                    <Text style={styles.aiPillButtonText}>AI 분석</Text>
-                  </Pressable>
+          <View style={styles.dimmableArea}>
+            <View style={styles.headerRow}>
+              <View style={styles.headerLeft}>
+                <View style={styles.headerIconCircle}>
+                  <Text style={styles.headerIconEmoji}>🍴</Text>
                 </View>
-                <Text style={styles.dateSubtitle}>{todayDateLabel}</Text>
+                <View style={styles.headerTextCol}>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.title}>오늘의 급식 메뉴</Text>
+                    <Pressable style={styles.aiPillButton} onPress={handleAiScan} hitSlop={4}>
+                      <Text style={styles.aiPillButtonText}>AI 분석</Text>
+                    </Pressable>
+                  </View>
+                  <Text style={styles.dateSubtitle}>{todayDateLabel}</Text>
+                </View>
               </View>
+              <Pressable hitSlop={8} onPress={handleClose}>
+                <MaterialIcons name="close" size={22} color={colors.gray400} />
+              </Pressable>
             </View>
-            <Pressable hitSlop={8} onPress={handleClose}>
-              <MaterialIcons name="close" size={22} color={colors.gray400} />
-            </Pressable>
+            {tipShowing && <View pointerEvents="none" style={styles.dimOverlay} />}
           </View>
 
           {visible && (
@@ -158,6 +161,7 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
               title="급식 메뉴도 자동으로 챙겨요"
               description="AI 분석으로 급식표를 스캔하면 오늘 메뉴가 여기 자동으로 채워져요. 알레르기가 있으면 메뉴에 표시도 해드려요."
               noHorizontalMargin
+              compact
               onVisibleChange={setTipShowing}
             />
           )}

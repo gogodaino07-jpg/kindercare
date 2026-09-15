@@ -17,6 +17,8 @@ interface FirstVisitTipProps {
   noHorizontalMargin?: boolean;
   /** 이 팁이 보이기/사라지기 시작할 때 알려준다 — 부모가 배경을 같이 딤 처리하고 싶을 때 사용. */
   onVisibleChange?: (visible: boolean) => void;
+  /** 급식 시트처럼 공간이 좁은 곳에서 카드 여백/아이콘을 한 단계 줄인다. */
+  compact?: boolean;
 }
 
 /**
@@ -26,7 +28,7 @@ interface FirstVisitTipProps {
  * 로컬에 기록해 다음부터는 다시 뜨지 않는다(단, 앱 삭제 후 재설치하면 로컬
  * 기록도 사라져 다시 뜬다).
  */
-export default function FirstVisitTip({ tutorialKey, title, description, emoji = '💡', noHorizontalMargin, onVisibleChange }: FirstVisitTipProps) {
+export default function FirstVisitTip({ tutorialKey, title, description, emoji = '💡', noHorizontalMargin, onVisibleChange, compact }: FirstVisitTipProps) {
   const colors = useThemeColors();
   const styles = useMemoStyles(colors);
   const [visible, setVisible] = useState(false);
@@ -92,7 +94,7 @@ export default function FirstVisitTip({ tutorialKey, title, description, emoji =
         style={[styles.glow, { opacity: glowOpacity, transform: [{ scale: glowScale }] }]}
       />
 
-      <View style={styles.card}>
+      <View style={[styles.card, compact && styles.cardCompact]}>
         <Pressable onPress={dismiss} hitSlop={8} style={styles.closeButton}>
           <Feather name="x" size={16} color={colors.gray400} />
         </Pressable>
@@ -103,9 +105,9 @@ export default function FirstVisitTip({ tutorialKey, title, description, emoji =
               colors={[colors.purple500, colors.purpleDeep]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.iconBadge}
+              style={[styles.iconBadge, compact && styles.iconBadgeCompact]}
             >
-              <Text style={styles.emoji}>{emoji}</Text>
+              <Text style={[styles.emoji, compact && styles.emojiCompact]}>{emoji}</Text>
             </LinearGradient>
           </Animated.View>
           <View style={styles.textCol}>
@@ -119,12 +121,12 @@ export default function FirstVisitTip({ tutorialKey, title, description, emoji =
           </View>
         </View>
 
-        <Pressable onPress={dismiss} style={({ pressed }) => [styles.ctaWrap, pressed && styles.ctaWrapPressed]}>
+        <Pressable onPress={dismiss} style={({ pressed }) => [styles.ctaWrap, compact && styles.ctaWrapCompact, pressed && styles.ctaWrapPressed]}>
           <LinearGradient
             colors={[colors.purple500, colors.purpleDeep]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={styles.cta}
+            style={[styles.cta, compact && styles.ctaCompact]}
           >
             <Text style={styles.ctaText}>알겠어요!</Text>
           </LinearGradient>
@@ -169,6 +171,10 @@ function createStyles(colors: ThemeColors) {
       shadowColor: colors.purpleDeep,
       elevation: 4,
     },
+    cardCompact: {
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+    },
     closeButton: {
       position: 'absolute',
       top: 10,
@@ -194,7 +200,13 @@ function createStyles(colors: ThemeColors) {
       shadowColor: colors.purpleDeep,
       elevation: 3,
     },
+    iconBadgeCompact: {
+      width: 32,
+      height: 32,
+      borderRadius: 11,
+    },
     emoji: { fontSize: 19 },
+    emojiCompact: { fontSize: 15 },
     textCol: { flex: 1, minWidth: 0 },
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' },
     tipPill: {
@@ -211,11 +223,17 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 999,
       alignSelf: 'stretch',
     },
+    ctaWrapCompact: {
+      marginTop: 10,
+    },
     ctaWrapPressed: { opacity: 0.85 },
     cta: {
       paddingVertical: 11,
       borderRadius: 999,
       alignItems: 'center',
+    },
+    ctaCompact: {
+      paddingVertical: 9,
     },
     ctaText: { fontSize: 13.5, fontWeight: '800', color: '#FFFFFF' },
   });
