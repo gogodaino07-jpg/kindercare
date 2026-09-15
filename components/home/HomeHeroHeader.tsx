@@ -112,7 +112,7 @@ export default function HomeHeroHeader({
         />
       </View>
 
-      <View ref={weatherSectionRef} collapsable={false}>
+      <View ref={weatherSectionRef} collapsable={false} style={!weatherExpanded ? styles.weatherCollapsedInset : undefined}>
       {weatherExpanded && (
         <View style={styles.weatherMetaRow}>
           {locationLabel ? (
@@ -704,8 +704,13 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '700',
       color: colors.gray400,
     },
-    weatherCollapsedWrap: {
+    // marginHorizontal은 weatherCollapsedInset으로 옮김 — 튜토리얼이 weatherSectionRef를
+    // measureInWindow로 재는데, 이 여백이 안쪽 자식(여기)에만 있으면 부모 View는 (stretch
+    // 레이아웃 때문에) 화면 전체 폭으로 측정돼 스포트라이트가 실제 카드보다 넓게 잡혔다.
+    weatherCollapsedInset: {
       marginHorizontal: 20,
+    },
+    weatherCollapsedWrap: {
       marginBottom: 16,
     },
     weatherCollapsedBanner: {
