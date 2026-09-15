@@ -192,7 +192,7 @@ export default function HomeHeroHeader({
           </View>
         </View>
       ) : (
-        <Pressable style={styles.weatherCollapsedWrap} onPress={() => setWeatherExpanded(true)}>
+        <Pressable onPress={() => setWeatherExpanded(true)}>
           <LinearGradient
             colors={weatherLoading && !today ? ['#E2E8F0', '#E2E8F0'] : getWeatherGradient(today?.label ?? '')}
             start={{ x: 0, y: 0 }}
@@ -509,8 +509,6 @@ function createMealCardStyles(colors: ThemeColors) {
   return StyleSheet.create({
     card: {
       backgroundColor: colors.cardWhite,
-      marginTop: 10,
-      marginBottom: 14,
       borderRadius: 18,
       borderWidth: 1,
       borderColor: colors.pastelOrange,
@@ -658,11 +656,13 @@ const TODAY_CARD_HEIGHT = 148;
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    // marginHorizontal을 MealMenuCard 안쪽 card 스타일 대신 여기(mealCardRef가 달린
-    // 바깥 View)로 옮김 — weatherCollapsedInset과 같은 이유(주석 참고)로, 안쪽에만
-    // 있으면 튜토리얼 스포트라이트가 실제 카드보다 화면 끝까지 넓게 잡혔다.
+    // marginHorizontal/marginTop/marginBottom을 MealMenuCard 안쪽 card 스타일 대신
+    // 여기(mealCardRef가 달린 바깥 View)로 옮김 — weatherCollapsedInset과 같은 이유로,
+    // 안쪽에만 있으면 튜토리얼 스포트라이트가 실제 카드 경계를 벗어나 잡혔다.
     mealCardInset: {
       marginHorizontal: 20,
+      marginTop: 10,
+      marginBottom: 14,
     },
     birthdayBanner: {
       marginHorizontal: 20,
@@ -709,13 +709,13 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '700',
       color: colors.gray400,
     },
-    // marginHorizontal은 weatherCollapsedInset으로 옮김 — 튜토리얼이 weatherSectionRef를
-    // measureInWindow로 재는데, 이 여백이 안쪽 자식(여기)에만 있으면 부모 View는 (stretch
-    // 레이아웃 때문에) 화면 전체 폭으로 측정돼 스포트라이트가 실제 카드보다 넓게 잡혔다.
+    // marginHorizontal/marginBottom은 weatherCollapsedInset으로 옮김 — 튜토리얼이
+    // weatherSectionRef를 measureInWindow로 재는데, 이 여백이 안쪽 자식(weatherCollapsedWrap)에만
+    // 있으면 부모 View의 auto 높이/너비 계산에 그 마진까지 포함돼(가로는 stretch 때문에
+    // 화면 전체 폭으로, 세로는 marginBottom만큼 카드보다 더 크게) 스포트라이트가 실제
+    // 카드 경계를 벗어나 잡혔다(세로 쪽은 카드 밑에 흰 배경이 같이 보이는 것으로 나타남).
     weatherCollapsedInset: {
       marginHorizontal: 20,
-    },
-    weatherCollapsedWrap: {
       marginBottom: 16,
     },
     weatherCollapsedBanner: {
