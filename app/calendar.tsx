@@ -266,16 +266,19 @@ export default function CalendarScreen() {
       <SafeAreaView style={styles.safeArea}>
         <Stack.Screen options={{ headerShown: false }} />
 
-        <CalendarHeader
-          childName={selectedChild?.givenName?.trim() || selectedChild?.name || '우리 아이'}
-          age={selectedChild?.age}
-          className={selectedChild?.className}
-          photoUri={selectedChild?.photoUri}
-          avatarEmoji={selectedChild?.avatarEmoji}
-          percent={percent}
-          selectedDateLabel={selectedDateLabel}
-          onBack={() => router.back()}
-        />
+        <View style={styles.dimmableArea}>
+          <CalendarHeader
+            childName={selectedChild?.givenName?.trim() || selectedChild?.name || '우리 아이'}
+            age={selectedChild?.age}
+            className={selectedChild?.className}
+            photoUri={selectedChild?.photoUri}
+            avatarEmoji={selectedChild?.avatarEmoji}
+            percent={percent}
+            selectedDateLabel={selectedDateLabel}
+            onBack={() => router.back()}
+          />
+          {tipShowing && <View pointerEvents="none" style={styles.dimOverlay} />}
+        </View>
 
         <FirstVisitTip
           tutorialKey="calendar:v1"
@@ -285,7 +288,7 @@ export default function CalendarScreen() {
           onVisibleChange={setTipShowing}
         />
 
-        <View style={styles.dimmableArea}>
+        <View style={styles.dimmableAreaFlex}>
           <CalendarAccordion
             monthCursor={monthCursor}
             selectedDate={selectedDate}
@@ -379,6 +382,9 @@ function createStyles(t: import('../components/calendar/calendarTheme').Calendar
     paddingBottom: 40,
   },
   dimmableArea: {
+    position: 'relative',
+  },
+  dimmableAreaFlex: {
     flex: 1,
     position: 'relative',
   },
