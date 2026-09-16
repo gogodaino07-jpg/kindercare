@@ -88,7 +88,9 @@ export const SCAN_COLORS_DARK = {
   appBg: '#0A0A0A',
   surface: '#181818',
   border: '#333333',
-  ink: '#0F172A',
+  // 라이트모드의 ink(#0F172A)를 다크모드에 그대로 쓰면 남색이 튀어 보여서
+  // (원본 스캔본 미리보기 패널, 확대보기 "닫기" 버튼 등) 무채색 검정으로 교체.
+  ink: '#000000',
 } as const;
 
 export type ScanColors = { [K in keyof typeof SCAN_COLORS]: string };
