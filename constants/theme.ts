@@ -105,9 +105,13 @@ export const LIGHT_COLORS: ThemeColors = {
 };
 
 export const DARK_COLORS: ThemeColors = {
-  skyBackground: '#0F1720',
-  cloud: '#1C2733',
-  cardWhite: '#1B242E',
+  // 이전엔 남색(#0F1720 등)에 가까워 "다크모드인데 파란기가 돈다"는 피드백이 있었음.
+  // 채도를 완전히 빼고 순수 무채색 계열로 통일 + 배경/카드 사이 명도 차를 키워서
+  // (기존엔 페이지 배경과 카드 배경이 거의 같은 값이라 카드 경계가 안 보였음) 카드·버튼이
+  // 배경 위에서 뚜렷이 분리돼 보이도록 함.
+  skyBackground: '#0A0A0A',
+  cloud: '#141414',
+  cardWhite: '#181818',
   textPrimary: '#EDF2F7',
   textSecondary: '#93A4B3',
   tomorrowRed: '#FF7A6E',
@@ -116,7 +120,7 @@ export const DARK_COLORS: ThemeColors = {
   chalkboardSage: '#4A6259',
   chalkboardText: '#F5F1E6',
   accent: '#5B9EE6',
-  border: '#2A3744',
+  border: '#333333',
   creamBeige: '#FFFFFF',
   creamBeigeCard: '#2C2419',
   peachOrange: '#E69968', // Slightly desaturated for dark mode
@@ -126,8 +130,8 @@ export const DARK_COLORS: ThemeColors = {
   // Fallback for dark mode — 400→900는 라이트 모드와 반대로 "숫자가 클수록 밝아짐"으로
   // 반전해야 어두운 배경 위에서 읽힘(800/900은 원래 반전돼 있었는데 400~600만 빠져서,
   // 배경과 거의 구분 안 되는 어두운 회색이라 아이콘·보조 텍스트가 안 보이던 버그가 있었음).
-  gray50: '#1C2733',
-  gray100: '#2A3744',
+  gray50: '#0A0A0A',
+  gray100: '#242424',
   gray400: '#718096',
   gray500: '#8B9DB0',
   gray600: '#AEBBC9',

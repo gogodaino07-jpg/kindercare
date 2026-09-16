@@ -71,9 +71,9 @@ export const calendarTheme: CalendarTheme = {
 
 export const calendarThemeDark: CalendarTheme = {
   ...calendarTheme,
-  bg: '#0F1720',
-  cardWhite: '#1B242E',
-  border: '#2A3744',
+  bg: '#0A0A0A',
+  cardWhite: '#181818',
+  border: '#333333',
 
   textPrimary: '#EDF2F7',
   textSecondary: '#AEBBC9',
@@ -88,8 +88,8 @@ export const calendarThemeDark: CalendarTheme = {
   violetBg: '#2A2145',
   skyBg: '#132A3D',
 
-  gray50: '#1C2733',
-  gray100: '#2A3744',
-  gray200: '#334155',
+  gray50: '#0A0A0A',
+  gray100: '#242424',
+  gray200: '#333333',
   gray400: '#718096',
 };

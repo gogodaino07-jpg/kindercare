@@ -41,7 +41,7 @@ LogBox.ignoreLogs([
 const EXIT_CONFIRM_WINDOW_MS = 2000;
 // App-wide header colors - now reactive to theme
 const getHeaderColors = (scheme: 'light' | 'dark') => ({
-  bg: scheme === 'dark' ? '#1B242E' : '#EAF5F9',
+  bg: scheme === 'dark' ? '#181818' : '#EAF5F9',
   text: scheme === 'dark' ? '#EDF2F7' : '#1E293B',
 });
 
