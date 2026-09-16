@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
-import { useThemeColors } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 import { Event } from '../../types/models';
 import { formatMD } from '../../utils/date';
 import Text from '../common/AppText';
@@ -46,8 +46,9 @@ function NoticeRow({
  * 아예 렌더링하지 않으므로, 여기서는 notices가 항상 1건 이상이라고 가정한다.
  */
 export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardCardProps) {
-  const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { colors, resolvedScheme } = useTheme();
+  const isDark = resolvedScheme === 'dark';
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [showAll, setShowAll] = useState(false);
   const [detailNotice, setDetailNotice] = useState<Event | null>(null);
 
@@ -149,7 +150,12 @@ export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardC
   );
 }
 
-function createStyles(colors: ThemeColors) {
+function createStyles(colors: ThemeColors, isDark: boolean) {
+  // blue100/blue500 조합은 다크모드에서 배경(#2C5282)과 글자(#4299E1)의 명도 차가
+  // 너무 작아 "9/17(목)" 같은 날짜 배지 글자가 잘 안 보였다. 다크모드에서만 배경을
+  // 더 짙게(pastelBlue와 동일 톤), 글자를 더 밝게 바꿔 대비를 확실히 키운다.
+  const dateBadgeBg = isDark ? '#1E3A5F' : colors.blue100;
+  const dateBadgeText = isDark ? '#93C5FD' : colors.blue500;
   return StyleSheet.create({
     container: {
       marginTop: 16,
@@ -212,7 +218,7 @@ function createStyles(colors: ThemeColors) {
       borderBottomColor: colors.border,
     },
     rowDateBadge: {
-      backgroundColor: colors.blue100,
+      backgroundColor: dateBadgeBg,
       borderRadius: 8,
       paddingHorizontal: 8,
       paddingVertical: 4,
@@ -220,7 +226,7 @@ function createStyles(colors: ThemeColors) {
     rowDate: {
       fontSize: 11.5,
       fontWeight: '800',
-      color: colors.blue500,
+      color: dateBadgeText,
     },
     rowText: {
       flex: 1,
@@ -267,7 +273,7 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 14,
     },
     detailDateBadge: {
-      backgroundColor: colors.blue100,
+      backgroundColor: dateBadgeBg,
       borderRadius: 8,
       paddingHorizontal: 8,
       paddingVertical: 4,

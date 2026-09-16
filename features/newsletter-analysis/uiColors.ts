@@ -63,10 +63,12 @@ export const SCAN_COLORS_DARK = {
   slate600: '#94A3B8',
   slate500: '#94A3B8',
   slate400: '#64748B',
-  slate200: '#334155',
+  slate200: '#333333',
   slate300: '#3F4C5F',
-  slate100: '#1C2733',
-  slate50: '#141B24',
+  // 앱 공통 다크 팔레트(constants/theme.ts DARK_COLORS)와 톤을 맞춰 남색이 아닌
+  // 순수 그레이스케일로 통일 — appBg/surface와 명도 차를 키운 것도 동일한 이유.
+  slate100: '#242424',
+  slate50: '#121212',
   white: '#FFFFFF',
   amber50: '#2C1D0D',
   amber100: '#3A2814',
@@ -83,9 +85,9 @@ export const SCAN_COLORS_DARK = {
   rose700: '#FDA4AF',
   blue100: '#1E3A5F',
   blue700: '#60A5FA',
-  appBg: '#0F1720',
-  surface: '#1B242E',
-  border: '#2A3744',
+  appBg: '#0A0A0A',
+  surface: '#181818',
+  border: '#333333',
   ink: '#0F172A',
 } as const;
 
