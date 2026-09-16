@@ -30,7 +30,7 @@ function NoticeRow({
   return (
     <Pressable style={[styles.row, showDivider && styles.rowDivider]} onPress={onPress}>
       <View style={styles.rowDateBadge}>
-        <Text style={styles.rowDate}>{formatMD(event.date).split('(')[0]}</Text>
+        <Text style={styles.rowDate}>{formatMD(event.date)}</Text>
       </View>
       <Text style={styles.rowText} numberOfLines={1}>
         {event.noticeText || event.title}
@@ -127,7 +127,7 @@ export default function NoticeBoardCard({ notices, onPressNotice }: NoticeBoardC
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderLeft}>
                 <View style={styles.detailDateBadge}>
-                  <Text style={styles.rowDate}>{detailNotice ? formatMD(detailNotice.date).split('(')[0] : ''}</Text>
+                  <Text style={styles.rowDate}>{detailNotice ? formatMD(detailNotice.date) : ''}</Text>
                 </View>
                 <Text style={styles.modalHeaderText} numberOfLines={1}>
                   {detailNotice?.title || '공지사항'}
