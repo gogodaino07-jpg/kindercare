@@ -9,7 +9,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, Image, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
-import CoupangBanner from '../components/common/CoupangBanner';
+import { BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
 import Text from '../components/common/AppText';
 import { isAdTestAccount } from '../constants/adTestAccounts';
 import { useAlert } from '../context/AlertContext';
@@ -30,6 +30,8 @@ import { ScanColors, useScanColors } from '../features/newsletter-analysis/uiCol
 import { useScanRewardedAd } from '../hooks/useScanRewardedAd';
 import { Event, MealPlan, UploadedDoc } from '../types/models';
 import { toISODate } from '../utils/date';
+
+const UPLOAD_BANNER_AD_UNIT_ID = process.env.EXPO_PUBLIC_AD_UPLOAD_BANNER_ID || null;
 
 // 광고 시청으로 미리 충전해둔 스캔권 1회는 이번 분석에 쓰일 때까지 화면을 나갔다 와도
 // 유지돼야 한다(사용자가 광고를 보고 받은 걸 화면 재진입만으로 잃으면 안 됨) — 계정별로
@@ -550,7 +552,14 @@ export default function UploadScreen() {
             )}
           </View>
 
-          {subscriptionReady && !isSubscribed && <CoupangBanner style={{ paddingBottom: insets.bottom }} />}
+          {subscriptionReady && !isSubscribed && UPLOAD_BANNER_AD_UNIT_ID && (
+            <View style={{ alignItems: 'center', paddingBottom: insets.bottom, backgroundColor: '#FFFFFF' }}>
+              <BannerAd
+                unitId={UPLOAD_BANNER_AD_UNIT_ID}
+                size={BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER}
+              />
+            </View>
+          )}
         </>
       )}
     </SafeAreaView>
