@@ -11,7 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Defs, Mask, Rect as SvgRect } from 'react-native-svg';
 import { SHADOW, ThemeColors } from '../../constants/theme';
-import { useThemeColors } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 import Text from '../common/AppText';
 
 const AnimatedSvgRect = Animated.createAnimatedComponent(SvgRect);
@@ -87,7 +87,12 @@ function clampHighlight(rect: Rect, screen: { width: number; height: number }, f
  * 오직 툴팁 안의 "다음/시작하기"·"건너뛰기" 버튼으로만 진행/종료된다.
  */
 export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIntoView }: HomeTutorialOverlayProps) {
-  const colors = useThemeColors();
+  const { colors, resolvedScheme } = useTheme();
+  // 다크모드에서는 카드 배경(cardWhite, 거의 검정)이 뒤의 어두운 딤 배경과
+  // 명도 차이가 작아 툴팁 경계가 흐릿하게 보였다 — 테두리를 더해 경계를
+  // 또렷하게 하고, 대비가 약했던 보조 텍스트(건너뛰기/단계 카운터)도 밝게 올린다.
+  const isDark = resolvedScheme === 'dark';
+  const mutedTextColor = isDark ? colors.gray500 : colors.gray400;
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const [transitioning, setTransitioning] = useState(false);
@@ -341,7 +346,14 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
         pointerEvents="box-none"
         style={[styles.tooltipWrap, tooltipBelow ? { top: bottom + 14 } : { bottom: screen.height - top + 14 }]}
       >
-        <Animated.View style={[styles.tooltip, tooltipFadeStyle, { backgroundColor: colors.cardWhite }]}>
+        <Animated.View
+          style={[
+            styles.tooltip,
+            tooltipFadeStyle,
+            { backgroundColor: colors.cardWhite },
+            isDark && { borderWidth: 1, borderColor: colors.border },
+          ]}
+        >
           <View
             style={[
               styles.tail,
@@ -351,7 +363,7 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
           />
           <View style={styles.tooltipHeaderRow}>
             <Text style={[styles.tooltipTitle, { color: colors.gray900 }]}>{step.title}</Text>
-            <Text style={[styles.stepCounter, { color: colors.gray400 }]}>
+            <Text style={[styles.stepCounter, { color: mutedTextColor }]}>
               {stepIndex + 1}/{steps.length}
             </Text>
           </View>
@@ -371,7 +383,7 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
             </View>
             <View style={styles.footerButtonsRow}>
               <Pressable onPress={handleSkip} hitSlop={8} style={styles.skipButton}>
-                <Text style={[styles.skipButtonText, { color: colors.gray400 }]}>건너뛰기</Text>
+                <Text style={[styles.skipButtonText, { color: mutedTextColor }]}>건너뛰기</Text>
               </Pressable>
               <Pressable
                 onPress={handleNext}

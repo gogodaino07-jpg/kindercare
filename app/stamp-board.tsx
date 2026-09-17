@@ -23,7 +23,9 @@ export default function StampBoardScreen() {
 
         <View style={styles.content} />
 
-        {isReady && !isSubscribed && <CoupangBanner style={{ paddingBottom: insets.bottom }} />}
+        {isReady && !isSubscribed && (
+          <CoupangBanner style={{ paddingBottom: insets.bottom }} forceLight />
+        )}
       </SafeAreaView>
     </View>
   );

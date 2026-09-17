@@ -6,6 +6,7 @@ import Text from '../common/AppText';
 import TextInput from '../common/ClearableTextInput';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
+import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { useCalendarAddEventInterstitialAd } from '../../hooks/useCalendarAddEventInterstitialAd';
 import { EventItem } from '../../types/models';
@@ -30,7 +31,9 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
   const { showAlert } = useAlert();
   const { showIfEligible: showAddEventAd } = useCalendarAddEventInterstitialAd();
   const t = useCalendarTheme();
-  const styles = useMemo(() => createStyles(t), [t]);
+  const { resolvedScheme } = useTheme();
+  const isDark = resolvedScheme === 'dark';
+  const styles = useMemo(() => createStyles(t, isDark), [t, isDark]);
 
   const [date, setDate] = useState(() => parseISODate(initialDateISO));
   const [showPicker, setShowPicker] = useState(false);
@@ -233,7 +236,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
   );
 }
 
-function createStyles(t: import('./calendarTheme').CalendarTheme) {
+function createStyles(t: import('./calendarTheme').CalendarTheme, isDark: boolean) {
   return StyleSheet.create({
   overlay: {
     flex: 1,
@@ -249,6 +252,8 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
     backgroundColor: t.cardWhite,
     borderRadius: 24,
     padding: 22,
+    // 다크모드에서는 카드 배경이 거의 검정이라 딤 배경과 구분이 흐려져 옅은 테두리로 경계를 준다.
+    ...(isDark && { borderWidth: 1, borderColor: t.border }),
   },
   headerRow: {
     flexDirection: 'row',

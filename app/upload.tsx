@@ -560,9 +560,9 @@ export default function UploadScreen() {
                 minHeight: 50 + 6 + insets.bottom + 6,
                 paddingVertical: 6,
                 paddingBottom: insets.bottom + 6,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: C.surface,
                 borderTopWidth: 1,
-                borderTopColor: '#DCE8F0',
+                borderTopColor: C.border,
               }}
             >
               <BannerAd unitId={UPLOAD_BANNER_AD_UNIT_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />

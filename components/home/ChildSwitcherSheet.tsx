@@ -15,7 +15,7 @@ import { useAlert } from '../../context/AlertContext';
 import { FREE_CHILD_LIMIT, isChildLocked, useAppData } from '../../context/AppDataContext';
 import { useAppLock } from '../../context/AppLockContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { useThemeColors } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 import Text from '../common/AppText';
 
 interface ChildSwitcherSheetProps {
@@ -32,8 +32,9 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
   const { isLocked } = useAppLock();
   const { isSubscribed } = useSubscription();
   const { showAlert } = useAlert();
-  const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
+  const { colors, resolvedScheme } = useTheme();
+  const isDark = resolvedScheme === 'dark';
+  const styles = useMemo(() => createStyles(colors, insets.bottom, isDark), [colors, insets.bottom, isDark]);
 
   // Initial hidden position is fully below the screen
   const translateY = useSharedValue(SCREEN_HEIGHT);
@@ -222,7 +223,7 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
   );
 }
 
-function createStyles(colors: ThemeColors, bottomInset: number) {
+function createStyles(colors: ThemeColors, bottomInset: number, isDark: boolean) {
   return StyleSheet.create({
     overlayContainer: {
       flex: 1,
@@ -243,6 +244,9 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       padding: 22,
       paddingTop: 12,
       paddingBottom: 16 + bottomInset,
+      // 다크모드에서는 시트 배경이 거의 검정이라 뒤의 딤 배경과 경계가 흐려져,
+      // 위쪽 모서리에 옅은 테두리를 더해 시트 영역을 또렷하게 구분한다.
+      ...(isDark && { borderTopWidth: 1, borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.border }),
       ...SHADOW,
     },
     dragHandle: {
@@ -275,6 +279,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       borderRadius: 18,
       marginBottom: 12,
       paddingRight: 14,
+      ...(isDark && { borderWidth: 1, borderColor: colors.border }),
       ...SHADOW,
     },
     cardSelected: {

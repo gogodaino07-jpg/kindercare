@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Linking, PixelRatio, StyleSheet, View, ViewStyle, useWindowDimensions, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useAppData } from '../../context/AppDataContext';
+import { useTheme } from '../../context/ThemeContext';
 import Text from './AppText';
 
 export const COUPANG_LEGAL_DISCLOSURE_TEXT =
@@ -22,12 +23,17 @@ interface CoupangBannerProps {
   /** 배너를 둥근 사각형 카드로 감싸 이미지가 카드 전체를 꽉 채우게 할 때, 카드 안에 문구가
    *  섞이지 않도록 내부 법적 고지 문구를 숨긴다. 이 경우 호출부에서 카드 바깥에 별도로 렌더링해야 한다. */
   hideLegalDisclosure?: boolean;
+  /** 스탬프보드처럼 앱 전체 다크모드 설정과 무관하게 화면 자체를 항상 라이트로 고정해둔
+   *  곳에서 쓸 때 true — 이 배너만 다크로 바뀌어 주변과 안 맞는 것을 방지한다. */
+  forceLight?: boolean;
 }
 
 /**
  * CoupangBanner Component
  * Uses official Coupang Partners script via WebView for maximum stability and correct tracking.
- * 다크모드와 무관하게 항상 라이트 톤으로 고정한다.
+ * 위젯 자체(쿠팡 스크립트가 그리는 상품 썸네일 영역)는 항상 흰 배경으로 고정이지만
+ * (외부 스크립트라 색을 바꿀 수 없음), 그 바깥 테두리·구분선·법적 고지 문구는
+ * 다크모드에 맞춰 톤을 바꿔서 흰 배경이 화면에 덜 튀게 한다.
  */
 export default function CoupangBanner({
   style,
@@ -37,10 +43,13 @@ export default function CoupangBanner({
   height = 50,
   hideDividers = false,
   hideLegalDisclosure = false,
+  forceLight = false,
 }: CoupangBannerProps) {
   const { width: windowWidth } = useWindowDimensions();
   const effectiveWidth = containerWidth ?? windowWidth;
   const { googleAccount } = useAppData();
+  const { colors, resolvedScheme } = useTheme();
+  const isDark = !forceLight && resolvedScheme === 'dark';
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -101,9 +110,9 @@ export default function CoupangBanner({
   `;
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, isDark && { backgroundColor: colors.cardWhite }, style]}>
       {/* Top Border Line */}
-      {!hideDividers && <View style={styles.topLine} />}
+      {!hideDividers && <View style={[styles.topLine, isDark && { backgroundColor: colors.border }]} />}
 
       <View style={[styles.contentWrapper, hideLegalDisclosure && styles.contentWrapperNoDisclosure]}>
         <View style={[styles.webviewContainer, { height: bannerHeight }]}>
@@ -149,16 +158,18 @@ export default function CoupangBanner({
         </View>
 
         {!hideLegalDisclosure && (
-          <Text style={styles.legalDisclosure}>{COUPANG_LEGAL_DISCLOSURE_TEXT}</Text>
+          <Text style={[styles.legalDisclosure, isDark && { color: colors.textSecondary }]}>
+            {COUPANG_LEGAL_DISCLOSURE_TEXT}
+          </Text>
         )}
       </View>
 
-      {!hideDividers && <View style={styles.bottomLine} />}
+      {!hideDividers && <View style={[styles.bottomLine, isDark && { backgroundColor: colors.border }]} />}
     </View>
   );
 }
 
-// 광고 배너는 다크모드와 무관하게 항상 라이트 톤(테마 색상 미사용)으로 고정한다.
+// 기본값은 라이트 톤 — 다크모드 값은 위 렌더링에서 isDark일 때 인라인으로 덮어쓴다.
 const styles = StyleSheet.create({
   container: {
     width: '100%',
