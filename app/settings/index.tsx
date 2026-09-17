@@ -1,5 +1,6 @@
-import { Stack, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { NavigationBar } from 'expo-navigation-bar';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -38,6 +39,19 @@ const LOCK_METHOD_LABELS: Record<LockMethod, string> = {
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  // 설정 화면에서는 앱 전체의 몰입형(내비게이션 바 숨김) 모드를 잠시 풀어
+  // 시스템 하단 바가 항상 보이게 한다. 화면을 벗어나면 다시 숨김으로 복원.
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android') return;
+      NavigationBar.setHidden(false);
+      return () => {
+        NavigationBar.setHidden(true);
+      };
+    }, [])
+  );
+
   const { mode, setMode, colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { showAlert } = useAlert();

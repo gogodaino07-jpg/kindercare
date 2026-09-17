@@ -673,7 +673,7 @@ export default function HomeScreen() {
         {SHOW_FAMILY_SHARE_CARD && !upcoming.isEmpty && (
           <FamilyShareCard events={activeDayEvents} dayLabel={activeDayLabel} dateISO={activeDayISO} />
         )}
-        {subscriptionReady && !isSubscribed && <CoupangBanner />}
+        {subscriptionReady && !isSubscribed && <CoupangBanner height={68} />}
       </View>
 
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
