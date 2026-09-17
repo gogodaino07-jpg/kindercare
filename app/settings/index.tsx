@@ -45,8 +45,15 @@ export default function SettingsScreen() {
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS !== 'android') return;
-      NavigationBar.setHidden(false);
+      // 화면 전환 애니메이션이 끝나 안드로이드가 이 창에 내비게이션 바 제어권을
+      // 완전히 넘겨주기 전에 show()를 호출하면 시스템은 "보임"으로 기록만 하고
+      // 실제로는 그려주지 않는 경우가 있어(전환 트랜지션과의 타이밍 경합), 애니메이션
+      // 시간만큼 살짝 늦춰서 호출한다.
+      const t = setTimeout(() => {
+        NavigationBar.setHidden(false);
+      }, 400);
       return () => {
+        clearTimeout(t);
         NavigationBar.setHidden(true);
       };
     }, [])

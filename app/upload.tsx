@@ -565,7 +565,7 @@ export default function UploadScreen() {
                 borderTopColor: '#DCE8F0',
               }}
             >
-              <BannerAd unitId={UPLOAD_BANNER_AD_UNIT_ID} size={BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER} />
+              <BannerAd unitId={UPLOAD_BANNER_AD_UNIT_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />
             </View>
           )}
         </>
