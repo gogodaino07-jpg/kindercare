@@ -556,8 +556,9 @@ export default function UploadScreen() {
             <View
               style={{
                 alignItems: 'center',
-                paddingTop: 6,
-                paddingBottom: insets.bottom + 6,
+                justifyContent: 'center',
+                height: 50 + 6 + insets.bottom + 6,
+                paddingBottom: insets.bottom,
                 backgroundColor: '#FFFFFF',
                 borderTopWidth: 1,
                 borderTopColor: '#DCE8F0',
