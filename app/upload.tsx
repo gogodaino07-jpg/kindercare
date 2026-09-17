@@ -553,11 +553,17 @@ export default function UploadScreen() {
           </View>
 
           {subscriptionReady && !isSubscribed && UPLOAD_BANNER_AD_UNIT_ID && (
-            <View style={{ alignItems: 'center', paddingBottom: insets.bottom, backgroundColor: '#FFFFFF' }}>
-              <BannerAd
-                unitId={UPLOAD_BANNER_AD_UNIT_ID}
-                size={BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER}
-              />
+            <View
+              style={{
+                alignItems: 'center',
+                paddingTop: 6,
+                paddingBottom: insets.bottom + 6,
+                backgroundColor: '#FFFFFF',
+                borderTopWidth: 1,
+                borderTopColor: '#DCE8F0',
+              }}
+            >
+              <BannerAd unitId={UPLOAD_BANNER_AD_UNIT_ID} size={BannerAdSize.BANNER} />
             </View>
           )}
         </>

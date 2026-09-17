@@ -2,13 +2,13 @@ import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-si
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, View, TouchableOpacity, Animated } from 'react-native';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import { ActivityIndicator, Image, Pressable, StyleSheet, View, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import OnboardingBackground from '../components/onboarding/OnboardingBackground';
 import GoogleLogo from '../components/common/GoogleLogo';
 import Text from '../components/common/AppText';
-import { SHADOW, ThemeColors } from '../constants/theme';
+import { ThemeColors } from '../constants/theme';
 import { STAMP_BOARD_THEMES } from '../constants/stampBoardThemes';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
@@ -25,8 +25,6 @@ export default function GoogleSignInScreen() {
     completeOnboarding,
     signInWithGoogle,
     signOutGoogle,
-    signInWithKakao,
-    signOutKakao,
     children,
     dataOwnerEmail,
     resetAllData,
@@ -47,7 +45,7 @@ export default function GoogleSignInScreen() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [loading, setLoading] = useState(false);
-  const [activeProvider, setActiveProvider] = useState<'google' | 'kakao' | null>(null);
+  const [activeProvider, setActiveProvider] = useState<'google' | null>(null);
   const [toastActive, setToastActive] = useState(false);
 
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -281,165 +279,6 @@ export default function GoogleSignInScreen() {
     }
   };
 
-  const handleKakaoSignIn = async () => {
-    if (loading || toastActive) return;
-    setActiveProvider('kakao');
-    setLoading(true);
-    try {
-      const account = await signInWithKakao();
-
-      // [Withdrawal Check]
-      const withdrawalDateStr = await checkWithdrawalStatus(account.email);
-      if (withdrawalDateStr) {
-        setLoading(true);
-        await purgeCloudData(account.email);
-        console.log('🗑️ Legacy withdrawal data found (Kakao). Cloud data purged.');
-      }
-
-      // [Device Ownership Check]
-      // Local data is just a device-level cache for whoever was last signed in.
-      // Switching to a different account silently clears it — see the Google
-      // handler above for the full reasoning.
-      if (dataOwnerEmail && account.email !== dataOwnerEmail) {
-        setLoading(true);
-        await resetAllData({ preserveAccount: true });
-      }
-
-      // [Flow Logic]
-      const hasOnboardedCloud = await checkOnboardingStatus(account.email);
-      const hasCloudData = await checkCloudDataExists(account.email);
-      // 이미 온보딩을 마친 적 있는 계정(재설치+재로그인 포함)에는 홈 화면
-      // 코치마크 튜토리얼을 다시 보여줄 필요가 없다 — 로컬 저장값이 아니라
-      // 계정 자체의 이력으로 판단해야 앱 삭제 후 재설치해도 안 뜬다.
-      if (hasOnboardedCloud) {
-        markTutorialSeen(HOME_TUTORIAL_KEY).catch(() => {});
-      }
-
-      // 1. Re-login Flow
-      if (flow === 'relogin') {
-        // 초대 코드로 합류해둔 가족이 있는지 먼저 확인 — 이 계정이 합류하기 전에
-        // 독자적으로 온보딩을 마친 이력이 있으면 아래 hasCloudData 분기가 그 예전
-        // 데이터부터 복원해버려서, 로그아웃 후 재로그인할 때마다 가족 공유 데이터
-        // 대신 자기 자신의 옛 데이터가 보이는 문제로 이어진다.
-        const memberOwnerEmail = await checkFamilyOwnerEmail(account.email);
-        if (memberOwnerEmail) {
-          await restoreFamilyMembership(memberOwnerEmail);
-          completeOnboarding();
-          showToast('👋 다시 오신 걸 환영해요!');
-          setTimeout(() => { router.dismissAll(); router.replace('/'); }, 100);
-          return;
-        }
-
-        if (hasCloudData) {
-          if (hasOnboardedCloud) {
-            try {
-              setLoading(true);
-              await restoreDataFromCloud(account.email);
-              showToast('👋 다시 오신 걸 환영해요!');
-              setTimeout(() => { router.dismissAll(); router.replace('/'); }, 100);
-              return;
-            } catch (err) {
-              console.error('Auto Restore Error:', err);
-            }
-          }
-
-          const restored = await new Promise<boolean>((resolve) => {
-            showAlert({
-              title: '기존 데이터 불러오기',
-              message: '클라우드에 저장된 아이 정보와 캘린더 일정이 있습니다. 지금 불러오시겠습니까?',
-              buttons: [
-                { text: '아니요', style: 'cancel', onPress: () => resolve(false) },
-                { text: '예', onPress: async () => {
-                  try {
-                    setLoading(true);
-                    await restoreDataFromCloud(account.email);
-                    resolve(true);
-                  } catch (err) {
-                    showToast('❌ 데이터 복구 중 오류가 발생했습니다.');
-                    resolve(false);
-                  }
-                }},
-              ],
-            });
-          });
-
-          if (restored) {
-            showToast('👋 데이터를 성공적으로 복구했어요!');
-            setTimeout(() => { router.dismissAll(); router.replace('/'); }, 100);
-            return;
-          }
-        }
-
-        const hasChild = (children?.length ?? 0) > 0;
-        if (hasChild) {
-          completeOnboarding();
-          router.replace('/');
-          return;
-        }
-
-        // 이미 계정이 있는 경로(relogin)로 들어왔는데 데이터가 없는 신규/탈퇴 계정이면,
-        // "로그인하기"로 들어온 사람이 자기 계정이 아닌 걸 눌렀을 가능성이 커서
-        // 다른 화면으로 이동시키지 않고 에러만 띄운 뒤 로그인 화면에 그대로
-        // 머무르게 한다 — 다른 계정으로 다시 시도할 수 있도록.
-        if (!hasCloudData && !hasChild) {
-          showToast('가입한 계정이 아니에요. 다른 계정으로 다시 시도해주세요.');
-          await signOutKakao();
-          setLoading(false);
-          return;
-        }
-
-        router.push('/onboarding-child-setup');
-        return;
-      }
-
-      // 2. New Group Creation Flow
-      if (flow === 'create') {
-        const newKey = regenerateFamilyKey();
-        await createFamilyInvite(newKey);
-        router.push('/family-create');
-        return;
-      }
-
-      // 3. Join with Code Flow
-      if (flow === 'join') {
-        const joined = !!code && (await joinFamilyByCode(code, account));
-        if (!joined) {
-          showToast('❌ 유효하지 않은 초대 코드예요. 다시 시도해 주세요.');
-          router.replace('/family-group-start');
-          return;
-        }
-        // 공유된 가족 데이터를 그대로 쓰므로 아이 등록 화면은 건너뛰고, 역할(엄마/아빠/할머니 등)만 고른다.
-        router.push({ pathname: '/family-role-select' });
-        return;
-      }
-
-      // 4. Default Fallback
-      const hasChild = (children?.length ?? 0) > 0;
-      if (hasChild) {
-        completeOnboarding();
-        router.replace('/');
-      } else {
-        router.push('/onboarding-child-setup');
-      }
-
-    } catch (e: any) {
-      // Kakao specific cancel codes or generic errors
-      const errorMessage = String(e?.message || '').toLowerCase();
-      if (!errorMessage.includes('cancel') && !errorMessage.includes('user_cancelled')) {
-        const friendlyMessage =
-          e?.code === 'auth/account-exists-with-different-credential' && e?.message
-            ? `❌ ${e.message}`
-            : `❌ 카카오 로그인 오류 (${e?.code || 'unknown'}): 다시 시도해 주세요.`;
-        showToast(friendlyMessage);
-        setToastActive(true);
-        setTimeout(() => setToastActive(false), 2500);
-      }
-    } finally {
-      setLoading(false);
-      setActiveProvider(null);
-    }
-  };
-
   const handleProviderLogin = (provider: string) => {
     showToast(`${provider === 'naver' ? '네이버' : '카카오톡'} 로그인은 준비 중입니다. 구글 로그인을 이용해 주세요.`);
   };
@@ -472,42 +311,25 @@ export default function GoogleSignInScreen() {
 
         <View style={styles.btnStack}>
           <Pressable
-            style={[
-              styles.btn,
+            style={({ pressed }) => [
               styles.btnGoogle,
-              (loading || toastActive) && styles.googleButtonDisabled
+              (loading || toastActive) && styles.googleButtonDisabled,
+              pressed && styles.btnGooglePressed,
             ]}
             onPress={handleGoogleSignIn}
             disabled={loading || toastActive}
           >
             {activeProvider === 'google' ? (
-              <ActivityIndicator color="#3C4043" />
+              <ActivityIndicator color="#FFFFFF" />
             ) : (
               <View style={styles.btnInner}>
-                <GoogleLogo size={20} />
-                <Text style={styles.btnTextDark}>구글로 시작하기</Text>
+                <View style={styles.googleLogoBadge}>
+                  <GoogleLogo size={18} />
+                </View>
+                <Text style={styles.btnTextLight}>Google로 시작하기</Text>
               </View>
             )}
           </Pressable>
-
-          <TouchableOpacity
-            style={[
-              styles.btn,
-              styles.btnKakao,
-              (loading || toastActive) && styles.googleButtonDisabled
-            ]}
-            onPress={handleKakaoSignIn}
-            disabled={loading || toastActive}
-          >
-            {activeProvider === 'kakao' ? (
-              <ActivityIndicator color="#3C1E1E" />
-            ) : (
-              <View style={styles.btnInner}>
-                <FontAwesome name="comment" size={20} color="#3C1E1E" style={styles.btnIcon} />
-                <Text style={styles.btnTextKakao}>카카오톡으로 시작하기</Text>
-              </View>
-            )}
-          </TouchableOpacity>
         </View>
 
         <Text style={styles.disclaimer}>
@@ -569,45 +391,43 @@ function createStyles(colors: ThemeColors) {
       gap: 12,
       marginBottom: 24,
     },
-    btn: {
-      width: '100%',
-      height: 56,
-      borderRadius: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
-      ...SHADOW,
-    },
     btnInner: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
     },
-    btnIcon: {
-      marginRight: 10,
-    },
     btnGoogle: {
-      backgroundColor: '#FFFFFF',
+      width: '100%',
+      height: 60,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#1C2331',
       borderWidth: 1,
-      borderColor: '#E4E4E7',
+      borderColor: 'rgba(255,255,255,0.08)',
+      shadowColor: '#0B1220',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.28,
+      shadowRadius: 16,
+      elevation: 8,
     },
-    btnKakao: {
-      backgroundColor: '#FEE500',
+    btnGooglePressed: {
+      backgroundColor: '#151B27',
     },
-    btnTextDark: {
-      color: '#3C4043',
-      fontSize: 15,
-      fontWeight: '700',
-      marginLeft: 10,
+    googleLogoBadge: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
     },
     btnTextLight: {
       color: '#FFFFFF',
-      fontSize: 15,
+      fontSize: 16,
       fontWeight: '700',
-    },
-    btnTextKakao: {
-      color: '#3C1E1E',
-      fontSize: 15,
-      fontWeight: '700',
+      letterSpacing: 0.2,
     },
     googleButtonDisabled: {
       opacity: 0.7,
