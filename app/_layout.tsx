@@ -5,6 +5,7 @@ import { Jua_400Regular } from '@expo-google-fonts/jua';
 import { PoorStory_400Regular } from '@expo-google-fonts/poor-story';
 import { Sunflower_500Medium } from '@expo-google-fonts/sunflower';
 import { useFonts } from 'expo-font';
+import { NavigationBar } from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
 import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -307,6 +308,21 @@ export default function RootLayout() {
     Dongle_700Bold,
     Sunflower_500Medium,
   });
+
+  useEffect(() => {
+    // 내비게이션 바(소프트키)를 평소엔 숨겨두고, 화면 아래에서 위로 스와이프할 때만
+    // 잠깐 나타나는 몰입형 모드로 전환한다(안드로이드 전용, 앱 전체 공통 적용).
+    // 카메라/공유 시트 등 다른 액티비티를 거쳐 돌아오면 시스템이 내비게이션 바를
+    // 다시 보여주는 경우가 있어, 포그라운드로 돌아올 때마다 재적용한다.
+    if (Platform.OS !== 'android') return;
+    NavigationBar.setHidden(true);
+    const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (nextState === 'active') {
+        NavigationBar.setHidden(true);
+      }
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     // 이 앱은 부모(성인)가 아이 일정/가정통신문을 관리하는 용도이며 아동이 직접 쓰는

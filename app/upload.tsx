@@ -557,14 +557,15 @@ export default function UploadScreen() {
               style={{
                 alignItems: 'center',
                 justifyContent: 'center',
-                height: 50 + 6 + insets.bottom + 6,
-                paddingBottom: insets.bottom,
+                minHeight: 50 + 6 + insets.bottom + 6,
+                paddingVertical: 6,
+                paddingBottom: insets.bottom + 6,
                 backgroundColor: '#FFFFFF',
                 borderTopWidth: 1,
                 borderTopColor: '#DCE8F0',
               }}
             >
-              <BannerAd unitId={UPLOAD_BANNER_AD_UNIT_ID} size={BannerAdSize.BANNER} />
+              <BannerAd unitId={UPLOAD_BANNER_AD_UNIT_ID} size={BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER} />
             </View>
           )}
         </>
