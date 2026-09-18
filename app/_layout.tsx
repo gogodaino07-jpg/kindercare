@@ -316,12 +316,23 @@ export default function RootLayout() {
     // 다시 보여주는 경우가 있어, 포그라운드로 돌아올 때마다 재적용한다.
     if (Platform.OS !== 'android') return;
     NavigationBar.setHidden(true);
+    let resumeTimer: ReturnType<typeof setTimeout> | null = null;
     const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
       if (nextState === 'active') {
-        NavigationBar.setHidden(true);
+        // 구글 로그인 등 다른 액티비티(계정 선택 팝업 등)를 거쳐 즉시 돌아온 시점에
+        // 바로 호출하면 시스템 쪽 창 크기 재계산과 경합해 화면이 순간적으로
+        // 리사이즈되면서 중앙 정렬된 콘텐츠(로그인 화면 로고 등)가 튀어 보인다.
+        // 다른 화면 전환과 동일하게 짧게 지연 후 호출해 경합을 피한다.
+        if (resumeTimer) clearTimeout(resumeTimer);
+        resumeTimer = setTimeout(() => {
+          NavigationBar.setHidden(true);
+        }, 400);
       }
     });
-    return () => subscription.remove();
+    return () => {
+      subscription.remove();
+      if (resumeTimer) clearTimeout(resumeTimer);
+    };
   }, []);
 
   useEffect(() => {
