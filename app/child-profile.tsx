@@ -184,6 +184,38 @@ export default function ChildProfileScreen() {
   // 수정하기 전까지는 계속 최신 이름 기준으로 갱신되도록 별도 플래그로 추적.
   // 기존 아이를 수정하는 경우엔 이미 등록된 애칭을 덮어쓰면 안 되므로 true로 시작.
   const givenNameTouchedRef = useRef(!!editingChild?.givenName);
+
+  // 위 useState 초기값들은 마운트 시점에 한 번만 계산되는데, children 목록이 아직
+  // 컨텍스트에서 로딩되기 전에 이 화면이 먼저 렌더되면(editingChild가 처음엔
+  // undefined) 그 뒤 children이 채워져도 name 등 입력값이 계속 빈 값으로 남는
+  // 문제가 있었다("이름 수정 시 자동입력 안됨"). childId별로 한 번만 다시
+  // 채워주되, 사용자가 이미 입력을 시작한 뒤에는(같은 아이 기준으로 재실행되어
+  // 입력 중인 내용을 덮어쓰지 않도록) 다시 실행하지 않는다.
+  const prefilledForRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (childId && !editingChild) return; // children 로딩 대기
+    const key = childId ?? '__new__';
+    if (prefilledForRef.current === key) return; // 이미 이 아이 기준으로 채웠음 — 입력 중인 내용 유지
+    prefilledForRef.current = key;
+    setPhotoUri(editingChild?.photoUri ?? null);
+    setName(editingChild?.name ?? '');
+    setGivenName(editingChild?.givenName ?? '');
+    givenNameTouchedRef.current = !!editingChild?.givenName;
+    setBirthdate(editingChild?.birthdate ? parseISODate(editingChild.birthdate) : null);
+    setAge(editingChild?.age ?? null);
+    setClassName(editingChild ? editingChild.className ?? '없음' : '');
+    setHasNoClass(editingChild ? !editingChild.className : false);
+    setAllergiesText(editingChild?.allergies?.join(', ') ?? '');
+    initialSnapshot.name = editingChild?.name ?? '';
+    initialSnapshot.givenName = editingChild?.givenName ?? '';
+    initialSnapshot.className = editingChild ? editingChild.className ?? '없음' : '';
+    initialSnapshot.age = editingChild?.age ?? null;
+    initialSnapshot.birthdate = editingChild?.birthdate ?? null;
+    initialSnapshot.photoUri = editingChild?.photoUri ?? null;
+    initialSnapshot.allergiesText = editingChild?.allergies?.join(', ') ?? '';
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [childId, editingChild]);
+
   const handleNameChange = (t: string) => {
     const cleaned = stripInvalidCharacters(t);
     setName(cleaned);
