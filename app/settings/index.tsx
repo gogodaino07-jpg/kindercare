@@ -1,6 +1,5 @@
-import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import { NavigationBar } from 'expo-navigation-bar';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -40,24 +39,8 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // 설정 화면에서는 앱 전체의 몰입형(내비게이션 바 숨김) 모드를 잠시 풀어
-  // 시스템 하단 바가 항상 보이게 한다. 화면을 벗어나면 다시 숨김으로 복원.
-  useFocusEffect(
-    useCallback(() => {
-      if (Platform.OS !== 'android') return;
-      // 화면 전환 애니메이션이 끝나 안드로이드가 이 창에 내비게이션 바 제어권을
-      // 완전히 넘겨주기 전에 show()를 호출하면 시스템은 "보임"으로 기록만 하고
-      // 실제로는 그려주지 않는 경우가 있어(전환 트랜지션과의 타이밍 경합), 애니메이션
-      // 시간만큼 살짝 늦춰서 호출한다.
-      const t = setTimeout(() => {
-        NavigationBar.setHidden(false);
-      }, 400);
-      return () => {
-        clearTimeout(t);
-        NavigationBar.setHidden(true);
-      };
-    }, [])
-  );
+  // 내비게이션 바 표시 여부는 app/_layout.tsx에서 현재 경로 기준으로 전역 관리한다
+  // (홈 화면만 숨김, 나머지는 표시) — 이 화면에서 개별로 제어하지 않는다.
 
   const { mode, setMode, colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);

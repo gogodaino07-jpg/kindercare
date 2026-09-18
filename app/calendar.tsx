@@ -1,7 +1,6 @@
-import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { NavigationBar } from 'expo-navigation-bar';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { Platform, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -35,21 +34,8 @@ export default function CalendarScreen() {
   const t = useCalendarTheme();
   const styles = useMemo(() => createStyles(t), [t]);
 
-  // 캘린더 화면에서도 설정 화면과 동일하게 몰입형 모드를 잠시 풀어
-  // 시스템 내비게이션 바가 항상 보이게 한다. 화면을 벗어나면 다시 숨김으로 복원.
-  useFocusEffect(
-    useCallback(() => {
-      if (Platform.OS !== 'android') return;
-      // 설정 화면과 동일한 이유로 화면 전환 애니메이션 시간만큼 살짝 늦춰서 호출한다.
-      const t = setTimeout(() => {
-        NavigationBar.setHidden(false);
-      }, 400);
-      return () => {
-        clearTimeout(t);
-        NavigationBar.setHidden(true);
-      };
-    }, [])
-  );
+  // 내비게이션 바 표시 여부는 app/_layout.tsx에서 현재 경로 기준으로 전역 관리한다
+  // (홈 화면만 숨김, 나머지는 표시) — 이 화면에서 개별로 제어하지 않는다.
 
   const todayISO = useMemo(() => toISODate(new Date()), []);
   // 홈 화면에서 특정 날짜의 일정을 탭해서 들어온 경우, 그 날짜에 포커스한 채로 시작한다.

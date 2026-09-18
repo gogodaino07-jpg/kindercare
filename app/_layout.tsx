@@ -7,7 +7,7 @@ import { Sunflower_500Medium } from '@expo-google-fonts/sunflower';
 import { useFonts } from 'expo-font';
 import { NavigationBar } from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
@@ -309,31 +309,46 @@ export default function RootLayout() {
     Sunflower_500Medium,
   });
 
+  const pathname = usePathname();
+  const isHomeScreen = pathname === '/' || pathname === '/index';
+
   useEffect(() => {
-    // 내비게이션 바(소프트키)를 평소엔 숨겨두고, 화면 아래에서 위로 스와이프할 때만
-    // 잠깐 나타나는 몰입형 모드로 전환한다(안드로이드 전용, 앱 전체 공통 적용).
-    // 카메라/공유 시트 등 다른 액티비티를 거쳐 돌아오면 시스템이 내비게이션 바를
-    // 다시 보여주는 경우가 있어, 포그라운드로 돌아올 때마다 재적용한다.
+    // 내비게이션 바(소프트키)는 홈 화면에서만 숨겨서 몰입형(스와이프로 잠깐 노출)으로
+    // 쓰고, 그 외 모든 화면(설정과 그 하위 화면, 캘린더 등)에서는 항상 보이게 한다
+    // (안드로이드 전용). 예전엔 화면마다 개별적으로 보임/숨김을 관리해서, 그 처리가
+    // 없는 설정 하위 화면(글자 크기, 날짜/지역 설정 등)에 들어가면 계속 숨김 상태로
+    // 남는 문제가 있었다 — 여기서 현재 경로 하나만 보고 전역으로 결정한다.
     if (Platform.OS !== 'android') return;
-    NavigationBar.setHidden(true);
-    let resumeTimer: ReturnType<typeof setTimeout> | null = null;
-    const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
-      if (nextState === 'active') {
-        // 구글 로그인 등 다른 액티비티(계정 선택 팝업 등)를 거쳐 즉시 돌아온 시점에
-        // 바로 호출하면 시스템 쪽 창 크기 재계산과 경합해 화면이 순간적으로
-        // 리사이즈되면서 중앙 정렬된 콘텐츠(로그인 화면 로고 등)가 튀어 보인다.
-        // 다른 화면 전환과 동일하게 짧게 지연 후 호출해 경합을 피한다.
-        if (resumeTimer) clearTimeout(resumeTimer);
-        resumeTimer = setTimeout(() => {
-          NavigationBar.setHidden(true);
+    let showTimer: ReturnType<typeof setTimeout> | null = null;
+    const apply = () => {
+      if (showTimer) {
+        clearTimeout(showTimer);
+        showTimer = null;
+      }
+      if (isHomeScreen) {
+        NavigationBar.setHidden(true);
+      } else {
+        // 화면 전환 애니메이션이 끝나기 전에, 혹은 구글 로그인 계정 선택 팝업 등
+        // 다른 액티비티를 거쳐 돌아온 직후 바로 show()를 호출하면 시스템은 "보임"으로
+        // 기록만 하고 실제로는 그려주지 않거나(타이밍 경합), 화면이 순간 리사이즈되며
+        // 콘텐츠가 튀어 보이는 경우가 있어 애니메이션 시간만큼 살짝 늦춰서 호출한다.
+        showTimer = setTimeout(() => {
+          NavigationBar.setHidden(false);
         }, 400);
       }
+    };
+    apply();
+    // 카메라/공유 시트/구글 로그인 계정 선택 등 다른 액티비티를 거쳐 돌아오면
+    // 시스템이 내비게이션 바 상태를 임의로 바꿔놓는 경우가 있어, 포그라운드로
+    // 돌아올 때마다 현재 화면 기준으로 재적용한다.
+    const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (nextState === 'active') apply();
     });
     return () => {
       subscription.remove();
-      if (resumeTimer) clearTimeout(resumeTimer);
+      if (showTimer) clearTimeout(showTimer);
     };
-  }, []);
+  }, [isHomeScreen]);
 
   useEffect(() => {
     // 이 앱은 부모(성인)가 아이 일정/가정통신문을 관리하는 용도이며 아동이 직접 쓰는
