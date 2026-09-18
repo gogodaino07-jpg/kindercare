@@ -15,6 +15,8 @@ import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import {
+  AI_ANALYSIS_MAINTENANCE_MESSAGE,
+  AI_ANALYSIS_MAINTENANCE_MODE,
   AIUsageLimitService,
   AnalysisResultStore,
   FREE_LIFETIME_LIMIT,
@@ -133,6 +135,10 @@ export default function MealScanScreen() {
   };
 
   const handleAnalyze = async () => {
+    if (AI_ANALYSIS_MAINTENANCE_MODE) {
+      showAlert({ title: '점검 중', message: AI_ANALYSIS_MAINTENANCE_MESSAGE, icon: '🛠️' });
+      return;
+    }
     if (!doc) {
       showAlert({ title: '알림', message: '먼저 급식표 사진이나 파일을 올려주세요' });
       return;
