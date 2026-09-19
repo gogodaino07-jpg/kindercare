@@ -418,7 +418,9 @@ export default function HomeScreen() {
   // 미리 남겨두므로 여기서는 걸러지고, 신규 가입자에게만 자연스럽게 뜬다
   // (앱 삭제 후 재설치해도 다시 온보딩해야 하는 계정이 아니면 안 뜸).
   useEffect(() => {
-    if (!onboardingLoaded || !hasOnboarded || !googleAccount || isLocked) return;
+    // 로그인 없이 온보딩만 마친 게스트에게도 튜토리얼이 떠야 하므로
+    // googleAccount는 조건에서 뺐다.
+    if (!onboardingLoaded || !hasOnboarded || isLocked) return;
     let cancelled = false;
     hasSeenTutorial(HOME_TUTORIAL_KEY).then((seen) => {
       if (cancelled || seen) return;
@@ -429,16 +431,16 @@ export default function HomeScreen() {
     return () => {
       cancelled = true;
     };
-  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked]);
+  }, [onboardingLoaded, hasOnboarded, isLocked]);
 
   // 설정 화면 "온보딩 다시 보기"로 들어온 경우: 시청 기록과 무관하게 즉시 투어를
   // 다시 띄운다. 한 번 처리한 뒤에는 파라미터를 지워서 이후 홈 재진입 시
   // 또 뜨지 않게 한다.
   useEffect(() => {
-    if (replayTutorial !== '1' || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked) return;
+    if (replayTutorial !== '1' || !onboardingLoaded || !hasOnboarded || isLocked) return;
     setHomeTutorialVisible(true);
     router.setParams({ replayTutorial: undefined });
-  }, [replayTutorial, onboardingLoaded, hasOnboarded, googleAccount, isLocked, router]);
+  }, [replayTutorial, onboardingLoaded, hasOnboarded, isLocked, router]);
 
   // 개발/테스트용 숨은 진입점 — 삭제·재설치 없이 온보딩 튜토리얼을 바로 다시
   // 볼 수 있게, 프로필 영역의 "생후 N일째" 문구를 3번 연속 탭하면 실행된다.
@@ -529,7 +531,10 @@ export default function HomeScreen() {
     return null;
   }
 
-  if (!hasOnboarded || !googleAccount) {
+  // 로그인 없이 온보딩만 마친 게스트도 홈 화면을 쓸 수 있어야 하므로
+  // googleAccount는 더 이상 조건에 넣지 않는다(AI 스캔 등 계정이 꼭
+  // 필요한 동작은 GuestLoginGateContext가 그 시점에 따로 로그인을 요구한다).
+  if (!hasOnboarded) {
     return <Redirect href="/splash" />;
   }
 

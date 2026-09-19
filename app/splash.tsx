@@ -13,7 +13,7 @@ const BG_GRADIENT = STAMP_BOARD_THEMES.blue.bgGradient;
 
 export default function SplashPage() {
   const router = useRouter();
-  const { hasOnboarded, googleAccount, onboardingLoaded } = useAppData();
+  const { hasOnboarded, onboardingLoaded } = useAppData();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -65,12 +65,14 @@ export default function SplashPage() {
     if (!onboardingLoaded) return;
 
     // onboardingLoaded가 완료되면 즉시 분기 처리합니다.
-    if (hasOnboarded && googleAccount) {
+    // 로그인 없이 온보딩만 마친 게스트도 홈으로 보내야 하므로 googleAccount는
+    // 조건에서 뺀다 — 계정이 꼭 필요한 동작은 그 시점에 따로 로그인을 요구한다.
+    if (hasOnboarded) {
       router.replace('/');
     } else {
       router.replace('/onboarding');
     }
-  }, [router, onboardingLoaded, hasOnboarded, googleAccount]);
+  }, [router, onboardingLoaded, hasOnboarded]);
 
   return (
     <SafeAreaView style={styles.container}>

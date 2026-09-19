@@ -192,13 +192,17 @@ function Onboarding(props: { onFinish: () => void }) {
 // ---------- 최상위 컴포넌트 ----------
 export default function OnboardingToLogin() {
   const router = useRouter();
+  const { completeOnboarding } = useAppData();
 
   const handleFinishOnboarding = () => {
-    // 신규 사용자는 로그인 없이 바로 아이 등록 → 홈 화면으로 보내고, 실제로
-    // AI 스캔처럼 계정이 필요한 동작을 할 때만 그 시점에 로그인을 요구한다
-    // (GuestLoginGateContext). 초대 코드로 참여하거나 이미 계정이 있는
-    // 사람은 onboarding-child-setup 화면 상단의 링크로 family-group-start로 갈 수 있다.
-    router.push('/onboarding-child-setup');
+    // 신규 사용자는 로그인은 물론 아이 등록 화면도 거치지 않고 바로 홈 화면
+    // (튜토리얼 포함)으로 보낸다. 아이 등록은 홈 화면의 기존 "아이 추가"
+    // 동작(아이 전환 시트 → child-profile)으로 하면 된다 — 홈 화면은 이미
+    // selectedChild가 없는 상태를 지원한다. 계정이 꼭 필요한 동작(AI 스캔
+    // 등)은 그 시점에 GuestLoginGateContext가 따로 로그인을 요구한다.
+    completeOnboarding();
+    router.dismissAll();
+    router.replace('/');
   };
 
   return (
