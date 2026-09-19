@@ -17,15 +17,24 @@ const GEMINI_MODEL = 'gemini-3.6-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 /**
- * 앱(AIUsageLimitService)이 관리하는 무료(평생 5회 공유 풀)/프리미엄(주간·월간) 한도는
+ * 앱(AIUsageLimitService)이 관리하는 무료(평생 스캔 풀)/프리미엄(주간·월간) 한도는
  * 클라이언트에서만 체크되므로, Firestore 문서를 직접 조작하거나 앱을 거치지 않고 이 함수를
  * 반복 호출하면 우회될 수 있다. 여기서는 실제 요금제를 서버가 알 방법이 없어 정확한
- * 무료/프리미엄 한도를 그대로 재현하진 않지만, 프리미엄 최대 한도(월 기준)를 절대 상한으로
- * 걸어 정상 이용자는 걸리지 않으면서 Gemini 비용이 무한정 새는 것만은 막는 최종 방어선이다.
+ * 무료/프리미엄 한도를 그대로 재현하진 않지만, 이 절대 상한을 걸어 정상 이용자는
+ * 걸리지 않으면서 Gemini 비용이 무한정 새는 것만은 막는 최종 방어선이다.
  * 클라이언트가 관리하는 aiUsage/mealAiUsage/aiUsageFreeLifetime 문서와는 별도 문서에
  * 서버가 직접 카운트한다.
+ *
+ * 2026-09-19: 원래 프리미엄 월간 약속 한도(newsletter 50 / meal 15)와 똑같이 맞춰뒀었는데,
+ * 실사용량(28일 전체 사용자 합계 100건 안팎)에 비해 봇 계정 1개당 허용치가 너무 높았다.
+ * 지금은 유료 구독자가 아직 한 명도 없어서 당장은 안전하게 낮출 수 있지만,
+ * ⚠️ 첫 구독자가 생기면 이 값이 features/newsletter-analysis/services/AIUsageLimitService.ts의
+ * PREMIUM_MONTHLY_LIMIT(50)/PREMIUM_MEAL_MONTHLY_LIMIT(15)보다 낮아서 구독자가 자기
+ * 약속된 한도를 다 쓰기도 전에 서버가 먼저 막아버리는 문제가 생긴다 — 그때는 구독
+ * 상태를 서버가 알 수 있게(RevenueCat 서버 동기화 등) 만들어서 구독자만 더 높은
+ * 한도를 적용하도록 반드시 다시 손볼 것.
  */
-const HARD_MONTHLY_LIMIT_BY_TYPE = { newsletter: 50, meal: 15 };
+const HARD_MONTHLY_LIMIT_BY_TYPE = { newsletter: 15, meal: 5 };
 
 async function assertUnderHardLimit(email, usageType) {
   const limit = HARD_MONTHLY_LIMIT_BY_TYPE[usageType];
