@@ -729,66 +729,59 @@ function ScanCreditCard({
   }, [pulse, adCredited]);
 
   return (
-    <LinearGradient
-      colors={[C.violet600, C.indigo600]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.creditCard}
-    >
+    <View style={styles.creditCard}>
       <View style={styles.creditTopRow}>
         <View style={styles.creditTextBlock}>
-          <View style={styles.creditBadge}>
-            <Ionicons name="flash" size={13} color="#FCD34D" />
-            <Text style={styles.creditBadgeText}>무료 이용권 모두 소진</Text>
+          <View style={styles.creditTitleRow}>
+            <View style={styles.creditBadge}>
+              <Text style={styles.creditBadgeText}>REWARD</Text>
+            </View>
+            <Text style={styles.creditHeadline} numberOfLines={1}>
+              {adCredited ? '스캔권 충전 완료!' : '무료 스캔 찬스'}
+            </Text>
           </View>
-          <Text style={styles.creditHeadline}>
-            {adCredited ? '스캔권 충전 완료!' : '광고 1개 보고 스캔권 충전하기'}
-          </Text>
-          <Text style={styles.creditSubtitle}>
-            {adCredited ? (
-              '지금 알림장을 추가해 바로 분석해보세요'
-            ) : (
-              <>짧은 광고 시청 시 <Text style={styles.creditSubtitleEm}>1회 즉시 충전</Text></>
-            )}
+          <Text style={styles.creditSubtitle} numberOfLines={2}>
+            {adCredited ? '지금 알림장을 추가해 바로 분석해보세요' : '짧은 광고 시청하고 스캔 1회를 충전하세요.'}
           </Text>
         </View>
-        <CircularGauge
-          value={adCredited ? 1 : 0}
-          max={1}
-          unit="회"
-          trackColor="rgba(255,255,255,0.25)"
-          fillColor="#FCD34D"
-          textColor="#FFFFFF"
-          subTextColor="rgba(255,255,255,0.85)"
-        />
-      </View>
-      {!adCredited && (
-        hasSelectedFiles ? (
-          // 파일을 이미 골라 하단에 "광고 보고 분석하기" 버튼이 떠 있는 상태 —
-          // 거기서 광고 시청+분석이 한 번에 처리되므로, 여기 버튼까지 같이 보이면
-          // "광고 보는 버튼이 두 개"로 보인다는 피드백으로 버튼 대신 안내만 둔다.
-          // 카드 높이가 갑자기 바뀌어 보이지 않도록 버튼과 같은 padding/radius를 써서
-          // 자리 자체는 그대로 유지한다.
-          <View style={styles.creditHintRow}>
-            <Ionicons name="arrow-down-circle" size={15} color="rgba(255,255,255,0.9)" />
-            <Text style={styles.creditHintText}>아래 분석 버튼에서 광고 보고 바로 진행하세요</Text>
+        {adCredited ? (
+          <View style={styles.creditDoneBadge}>
+            <Ionicons name="checkmark" size={18} color={C.violet700} />
           </View>
         ) : (
-          <Animated.View style={{ opacity: pulse, transform: [{ scale: pulseScale }] }}>
-            <Pressable style={styles.creditButton} onPress={onWatchAd} disabled={watching}>
-              {watching ? (
-                <ActivityIndicator color={C.violet700} />
-              ) : (
-                <>
-                  <Ionicons name="play" size={15} color={C.violet700} />
-                  <Text style={styles.creditButtonText}>광고 1개 시청하고 1회 충전하기</Text>
-                </>
-              )}
-            </Pressable>
-          </Animated.View>
-        )
+          !hasSelectedFiles && (
+            <Animated.View style={{ opacity: pulse, transform: [{ scale: pulseScale }] }}>
+              <Pressable onPress={onWatchAd} disabled={watching} style={styles.creditButtonWrap}>
+                <LinearGradient
+                  colors={[C.violet600, C.indigo600]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.creditButton}
+                >
+                  {watching ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="play" size={13} color="#FFFFFF" />
+                      <Text style={styles.creditButtonText}>무료충전</Text>
+                    </>
+                  )}
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
+          )
+        )}
+      </View>
+      {!adCredited && hasSelectedFiles && (
+        // 파일을 이미 골라 하단에 "광고 보고 분석하기" 버튼이 떠 있는 상태 —
+        // 거기서 광고 시청+분석이 한 번에 처리되므로, 여기 버튼까지 같이 보이면
+        // "광고 보는 버튼이 두 개"로 보인다는 피드백으로 버튼 대신 안내만 둔다.
+        <View style={styles.creditHintRow}>
+          <Ionicons name="arrow-down-circle" size={15} color={C.violet600} />
+          <Text style={styles.creditHintText}>아래 분석 버튼에서 광고 보고 바로 진행하세요</Text>
+        </View>
       )}
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -1019,48 +1012,60 @@ function createStyles(C: ScanColors) {
   tipText: { flex: 1, fontSize: 12.5, color: C.slate700 },
   tipBold: { fontWeight: '600', color: C.amber700 },
   creditCard: {
-    borderRadius: 24,
-    padding: 12,
-    gap: 5,
+    backgroundColor: C.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.violet100,
+    padding: 14,
+    gap: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  creditTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+  creditTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   creditTextBlock: { flex: 1, gap: 4 },
+  creditTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   creditBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: C.violet100,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
   },
-  creditBadgeText: { fontSize: 11.5, fontWeight: '800', color: '#FFFFFF' },
-  creditHeadline: { fontSize: 19, fontWeight: '700', color: '#FFFFFF' },
-  creditSubtitle: { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
-  creditSubtitleEm: { fontWeight: '600', color: '#FCD34D', textDecorationLine: 'underline' },
+  creditBadgeText: { fontSize: 10.5, fontWeight: '800', color: C.violet700, letterSpacing: 0.3 },
+  creditHeadline: { flexShrink: 1, fontSize: 16, fontWeight: '800', color: C.slate900 },
+  creditSubtitle: { fontSize: 12.5, fontWeight: '500', color: C.slate500 },
+  creditButtonWrap: { borderRadius: 999, overflow: 'hidden' },
   creditButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    paddingVertical: 9,
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
   },
-  creditButtonText: { fontSize: 12.5, fontWeight: '800', color: C.violet700 },
-  // creditButton과 같은 paddingVertical/borderRadius를 써서, 버튼 대신 이 안내가
-  // 보일 때도 카드 전체 높이가 그대로 유지되게 한다.
+  creditButtonText: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
+  creditDoneBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: C.violet100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // 카드 배경이 밝은 톤으로 바뀌어 기존 반투명 흰색 오버레이 대신 옅은 바이올렛
+  // 배경을 쓴다.
   creditHintRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: C.violet50,
     borderRadius: 14,
     paddingVertical: 9,
   },
-  creditHintText: { fontSize: 12.5, fontWeight: '700', color: 'rgba(255,255,255,0.92)' },
+  creditHintText: { fontSize: 12.5, fontWeight: '700', color: C.violet700 },
   guideCard: {
     backgroundColor: C.surface,
     borderRadius: 22,
