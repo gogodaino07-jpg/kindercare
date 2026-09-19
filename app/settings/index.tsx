@@ -200,8 +200,13 @@ export default function SettingsScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* 계정 카드 */}
-            <View style={[styles.card, styles.profileCard]}>
+            {/* 계정 카드 — 로그인 없이 온보딩만 마친 게스트는 탭해서 바로
+                로그인/초대코드 참여 화면으로 갈 수 있다. */}
+            <Pressable
+              style={[styles.card, styles.profileCard]}
+              disabled={!!googleAccount}
+              onPress={() => router.push('/family-group-start')}
+            >
                 <View style={styles.avatarCircle}>
                   <Text style={styles.avatarInitial}>
                     {(googleAccount?.name ?? '?').trim().charAt(0) || '?'}
@@ -219,13 +224,17 @@ export default function SettingsScreen() {
                       </View>
                     )}
                   </View>
-                  {!!googleAccount?.email && (
+                  {googleAccount?.email ? (
                     <Text style={styles.profileEmail} numberOfLines={1}>
                       {googleAccount.email}
                     </Text>
+                  ) : (
+                    <Text style={styles.profileEmail} numberOfLines={1}>
+                      탭해서 로그인하거나 초대 코드로 참여하기
+                    </Text>
                   )}
                 </View>
-              </View>
+              </Pressable>
 
             {/* 알림 설정 / 가족 키 공유 위젯 카드 */}
               <View style={styles.quickRow}>
