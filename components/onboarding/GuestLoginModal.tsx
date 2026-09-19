@@ -58,7 +58,7 @@ export default function GuestLoginModal({ visible, onClose, onSuccess }: GuestLo
               <Text style={styles.icon}>🔒</Text>
               <Text style={styles.title}>로그인하고 계속하기</Text>
               <Text style={styles.subtitle}>
-                AI 분석 결과를 안전하게 보관하고{'\n'}다른 기기에서도 이어보려면 로그인이 필요해요
+                AI 분석은 로그인 후 이용할 수 있어요{'\n'}로그인하면 분석 결과도 안전하게 보관돼요
               </Text>
 
               <Pressable style={styles.googleButton} onPress={handleGoogleSignIn} disabled={loading}>
