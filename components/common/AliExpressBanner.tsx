@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   banner: {
-    paddingVertical: 14,
+    paddingVertical: 17,
     paddingHorizontal: 14,
   },
   bannerContent: {
@@ -375,9 +375,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   imageWrap: {
-    width: 66,
-    height: 66,
-    borderRadius: 15,
+    width: 72,
+    height: 72,
+    borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: 'rgba(255,255,255,0.25)',
   },

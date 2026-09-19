@@ -235,7 +235,7 @@ function createStyles(colors: ThemeColors) {
     },
     // 화면 하단에 남는 여백을 채우도록 "앞으로의 모험" 카드만 세로로 조금 더 키운다.
     scheduleCard: {
-      paddingVertical: 34,
+      paddingVertical: 38,
     },
     iconCircle: {
       width: 48,
