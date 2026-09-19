@@ -138,7 +138,9 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
                 <View style={styles.titleRow}>
                   <Text style={styles.title}>오늘의 급식 메뉴</Text>
                   <Pressable style={styles.aiPillButton} onPress={handleAiScan} hitSlop={4}>
+                    <MaterialIcons name="photo-camera" size={11} color={AMBER_DEEP} />
                     <Text style={styles.aiPillButtonText}>AI 분석</Text>
+                    <MaterialIcons name="chevron-right" size={13} color={AMBER_DEEP} />
                   </Pressable>
                 </View>
                 <Text style={styles.dateSubtitle}>{todayDateLabel}</Text>
