@@ -233,6 +233,11 @@ export default function OnboardingChildSetupScreen() {
           )}
         </View>
 
+        {/* 아래 폼 내용이 화면보다 짧을 때 위쪽에만 다 붙어버리고 버튼 위로
+            여백만 휑하게 남는 문제 — 아래 spacer 하나와 짝을 맞춰 남는
+            공간을 위아래로 고르게 나눠서 폼 전체를 화면 가운데로 내린다. */}
+        <View style={styles.spacer} />
+
         <View style={styles.topSection}>
           <Text style={styles.title}>새로운 아이 프로필 설정</Text>
         </View>
@@ -431,7 +436,6 @@ export default function OnboardingChildSetupScreen() {
           </View>
         </View>
 
-        <View style={styles.spacer} />
         <View style={styles.spacer} />
       </ScrollView>
 
