@@ -4,12 +4,14 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
+import { useRequireLogin } from '../../context/GuestLoginGateContext';
 import Text from '../common/AppText';
 
 export default function AiScanSection() {
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const requireLogin = useRequireLogin();
 
   return (
     <View style={styles.container}>
@@ -29,7 +31,7 @@ export default function AiScanSection() {
 
         <Pressable
           style={styles.uploadButton}
-          onPress={() => router.push('/upload')}
+          onPress={() => requireLogin(() => router.push('/upload'))}
         >
           <MaterialIcons name="cloud-upload" size={24} color={colors.orange500} />
           <Text style={styles.uploadButtonText}>업로드</Text>

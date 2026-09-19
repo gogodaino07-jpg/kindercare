@@ -397,7 +397,10 @@ export default function HomeScreen() {
     // subscriptionReady를 기다리지 않으면, 프리미엄 구독자도 콜드 스타트 직후 RevenueCat
     // 조회가 끝나기 전엔 isSubscribed가 잠깐 false라 광고 팝업이 떠버린다.
     // 홈 화면 튜토리얼이 떠 있는 동안엔 광고 팝업이 그 위를 덮어버리지 않도록 미룬다.
-    if (hasAttemptedAdThisSession || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked || !subscriptionReady || isSubscribed || homeTutorialVisible) {
+    // 로그인 없이 온보딩만 마친 게스트에게도 이 팝업은 그대로 노출한다 —
+    // 게스트 여부와 무관하게 비구독 사용자 전체에게 적용되는 광고라 googleAccount는
+    // 더 이상 조건에 넣지 않는다.
+    if (hasAttemptedAdThisSession || !onboardingLoaded || !hasOnboarded || isLocked || !subscriptionReady || isSubscribed || homeTutorialVisible) {
       return;
     }
 
@@ -408,7 +411,7 @@ export default function HomeScreen() {
     }, 500); // 0.5s delay for better UX
 
     return () => clearTimeout(timeoutId);
-  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, subscriptionReady, isSubscribed, homeTutorialVisible]);
+  }, [onboardingLoaded, hasOnboarded, isLocked, subscriptionReady, isSubscribed, homeTutorialVisible]);
 
   // 홈 화면 첫 진입 시 1회만(신규 가입자 대상) 4단계 코치마크 투어를 보여준다.
   // 이미 온보딩한 계정은 google-signin.tsx에서 로그인 시점에 시청 기록을

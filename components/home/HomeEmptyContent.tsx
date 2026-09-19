@@ -4,6 +4,7 @@ import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } fro
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
+import { useRequireLogin } from '../../context/GuestLoginGateContext';
 import { WeatherDay } from '../../hooks/useWeeklyWeather';
 import { Child, MealPlan } from '../../types/models';
 import Text from '../common/AppText';
@@ -62,6 +63,7 @@ const HomeEmptyContent = forwardRef<HomeEmptyContentHandle, HomeEmptyContentProp
 }, ref) {
   const router = useRouter();
   const colors = useThemeColors();
+  const requireLogin = useRequireLogin();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   // 컨텐츠가 화면에 다 들어갈 때는 스크롤을 아예 막아서(살짝 흔들리는 것 포함)
@@ -170,7 +172,7 @@ const HomeEmptyContent = forwardRef<HomeEmptyContentHandle, HomeEmptyContentProp
               알림장을 일일이 읽지 않아도 괜찮아요.{'\n'}AI가 똑똑하게 필요한 준비물을 찾아드릴게요!
             </Text>
             <View ref={scanButtonRef} collapsable={false}>
-              <Pressable onPress={() => router.push('/upload')}>
+              <Pressable onPress={() => requireLogin(() => router.push('/upload'))}>
                 <LinearGradient
                   colors={[colors.purple500, colors.purpleDeep]}
                   start={{ x: 0, y: 0 }}

@@ -194,6 +194,9 @@ interface AppDataContextValue {
   googleAccount: GoogleAccount | null;
   signInWithGoogle: () => Promise<GoogleAccount>;
   signOutGoogle: () => void;
+  /** 로그인 없이 온보딩을 마친 게스트가 나중에 로그인할 때, 그때까지 로컬에만
+   *  있던 아이/일정/식단 데이터를 이 계정 소유로 클라우드에 올려준다. */
+  adoptGuestDataToAccount: (email: string) => Promise<void>;
 
   // Kakao sign-in
   signInWithKakao: () => Promise<GoogleAccount>;
@@ -793,6 +796,16 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     } catch (error) {
       console.error('❌ Firestore Push Meal Plan Error:', error);
     }
+  };
+
+  // 로그인 없이 온보딩만 마친 게스트는 아이/일정/식단이 전부 로컬에만 있고
+  // 클라우드엔 하나도 안 올라가 있다(각 add* 함수가 그 시점에 계정이 없으면
+  // 푸시를 건너뛰기 때문). 이 게스트가 나중에(예: AI 스캔을 쓰려다) 로그인하면,
+  // 그 시점까지 쌓인 로컬 데이터를 한 번에 이 계정 소유로 올려준다.
+  const adoptGuestDataToAccount = async (email: string) => {
+    await Promise.all(childProfiles.map((child) => pushChildToCloud(email, child, undefined)));
+    await Promise.all(events.map((event) => pushEventToCloud(email, event)));
+    await Promise.all(mealPlans.map((mealPlan) => pushMealPlanToCloud(email, mealPlan)));
   };
 
   const deleteChildFromCloud = async (email: string, childId: string) => {
@@ -1728,6 +1741,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     googleAccount,
     signInWithGoogle,
     signOutGoogle,
+    adoptGuestDataToAccount,
 
     signInWithKakao,
     signOutKakao,

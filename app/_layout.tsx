@@ -21,6 +21,7 @@ import { isExternalActionActive } from '../utils/externalAction';
 import { snoozeNotification, SNOOZE_ACTION_ID } from '../utils/notifications';
 import { AlertProvider, useAlert } from '../context/AlertContext';
 import { AppDataProvider, useAppData } from '../context/AppDataContext';
+import { GuestLoginGateProvider } from '../context/GuestLoginGateContext';
 import { AppLockProvider, useAppLock } from '../context/AppLockContext';
 import { NotificationCenterProvider, useNotificationCenter } from '../context/NotificationCenterContext';
 import { SubscriptionProvider } from '../context/SubscriptionContext';
@@ -384,7 +385,9 @@ export default function RootLayout() {
                 <ToastProvider>
                   <AlertProvider>
                     <AppLockProvider>
-                      <ThemedNavigation />
+                      <GuestLoginGateProvider>
+                        <ThemedNavigation />
+                      </GuestLoginGateProvider>
                     </AppLockProvider>
                   </AlertProvider>
                 </ToastProvider>

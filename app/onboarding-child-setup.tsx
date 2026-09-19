@@ -47,7 +47,7 @@ function formatBirthdate(date: Date): string {
 
 export default function OnboardingChildSetupScreen() {
   const router = useRouter();
-  const { addChild, completeOnboarding } = useAppData();
+  const { addChild, completeOnboarding, googleAccount } = useAppData();
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
 
@@ -225,6 +225,12 @@ export default function OnboardingChildSetupScreen() {
           <Pressable style={styles.backButton} hitSlop={8} onPress={() => router.back()}>
             <Text style={styles.backText}>뒤로가기</Text>
           </Pressable>
+          <View style={styles.spacer} />
+          {!googleAccount && (
+            <Pressable hitSlop={8} onPress={() => router.push('/family-group-start')}>
+              <Text style={styles.familyLinkText}>초대 코드가 있거나 계정이 있나요?</Text>
+            </Pressable>
+          )}
         </View>
 
         <View style={styles.topSection}>
@@ -528,6 +534,12 @@ const styles = StyleSheet.create({
       fontSize: 15,
       fontWeight: '600',
       color: GRAY,
+    },
+    familyLinkText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: ACCENT_BLUE,
+      textDecorationLine: 'underline',
     },
     spacer: {
       flex: 1,

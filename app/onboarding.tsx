@@ -194,8 +194,11 @@ export default function OnboardingToLogin() {
   const router = useRouter();
 
   const handleFinishOnboarding = () => {
-    // Navigate to the selection screen instead of showing login buttons here
-    router.push('/family-group-start');
+    // 신규 사용자는 로그인 없이 바로 아이 등록 → 홈 화면으로 보내고, 실제로
+    // AI 스캔처럼 계정이 필요한 동작을 할 때만 그 시점에 로그인을 요구한다
+    // (GuestLoginGateContext). 초대 코드로 참여하거나 이미 계정이 있는
+    // 사람은 onboarding-child-setup 화면 상단의 링크로 family-group-start로 갈 수 있다.
+    router.push('/onboarding-child-setup');
   };
 
   return (
