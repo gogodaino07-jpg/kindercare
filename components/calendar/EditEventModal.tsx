@@ -54,7 +54,7 @@ export default function EditEventModal({ visible, event, onClose }: EditEventMod
     // 그려져 루트 토스트가 가려짐)로, 모달이 안 닫히고 멈추는 검증 실패
     // 케이스는 토스트 대신 alert를 쓴다.
     if (!title.trim()) {
-      showAlert({ title: '알림', message: '일정 제목을 입력해 주세요.' });
+      showAlert({ title: '일정 제목이 필요해요', message: '일정 제목을 입력해 주세요.', icon: '📝' });
       return;
     }
 

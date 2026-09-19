@@ -388,7 +388,7 @@ export default function UploadScreen() {
       return;
     }
     if (docs.length === 0) {
-      showAlert({ title: '알림', message: '먼저 사진이나 파일을 올려주세요' });
+      showAlert({ title: '파일을 선택해주세요', message: '먼저 사진이나 파일을 올려주세요', icon: '📎' });
       return;
     }
     if (isSubscribed && remainingAnalyses !== null && remainingAnalyses <= 0) {
@@ -400,7 +400,7 @@ export default function UploadScreen() {
       return;
     }
     if (!selectedChild) {
-      showAlert({ title: '알림', message: '아이를 먼저 선택해주세요' });
+      showAlert({ title: '아이를 선택해주세요', message: '아이를 먼저 선택해주세요', icon: '👶' });
       return;
     }
 

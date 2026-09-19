@@ -140,11 +140,11 @@ export default function MealScanScreen() {
       return;
     }
     if (!doc) {
-      showAlert({ title: '알림', message: '먼저 급식표 사진이나 파일을 올려주세요' });
+      showAlert({ title: '사진을 선택해주세요', message: '먼저 급식표 사진이나 파일을 올려주세요', icon: '📷' });
       return;
     }
     if (!selectedChild) {
-      showAlert({ title: '알림', message: '아이를 먼저 선택해주세요' });
+      showAlert({ title: '아이를 선택해주세요', message: '아이를 먼저 선택해주세요', icon: '👶' });
       return;
     }
 

@@ -81,7 +81,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
     // 안 보인다(모달을 닫지 않고 검증 실패로 여기서 멈추는 경우). 모달과
     // 같은 방식(별도 Modal)으로 뜨는 alert를 대신 써서 항상 위에 보이게 한다.
     if (!title.trim()) {
-      showAlert({ title: '알림', message: '일정 제목을 입력해 주세요.' });
+      showAlert({ title: '일정 제목이 필요해요', message: '일정 제목을 입력해 주세요.', icon: '📝' });
       return;
     }
     if (!selectedChild) {
