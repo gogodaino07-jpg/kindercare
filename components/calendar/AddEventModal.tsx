@@ -86,8 +86,9 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
     }
     if (!selectedChild) {
       showAlert({
-        title: '알림',
-        message: '등록된 아이 정보가 없습니다.',
+        title: '아이 정보가 필요해요',
+        message: '일정을 등록하려면 먼저 아이 프로필을 등록해주세요.',
+        icon: '👶',
         buttons: [
           { text: '취소', style: 'cancel' },
           {
