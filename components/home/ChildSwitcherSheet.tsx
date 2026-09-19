@@ -241,9 +241,12 @@ function createStyles(colors: ThemeColors, bottomInset: number, isDark: boolean)
       backgroundColor: colors.skyBackground,
       borderTopLeftRadius: 28,
       borderTopRightRadius: 28,
+      // 아이가 한두 명뿐이면 시트가 너무 낮아 보인다는 피드백으로 화면 높이의
+      // 일정 비율만큼은 항상 확보한다.
+      minHeight: SCREEN_HEIGHT * 0.42,
       padding: 22,
-      paddingTop: 12,
-      paddingBottom: 16 + bottomInset,
+      paddingTop: 16,
+      paddingBottom: 24 + bottomInset,
       // 다크모드에서는 시트 배경이 거의 검정이라 뒤의 딤 배경과 경계가 흐려져,
       // 위쪽 모서리에 옅은 테두리를 더해 시트 영역을 또렷하게 구분한다.
       ...(isDark && { borderTopWidth: 1, borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.border }),
