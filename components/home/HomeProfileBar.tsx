@@ -6,7 +6,7 @@ import { ThemeColors } from '../../constants/theme';
 import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Child } from '../../types/models';
-import { parseISODate } from '../../utils/date';
+import { daysSinceBirth } from '../../utils/date';
 import Text from '../common/AppText';
 import CalendarIcon from '../common/CalendarIcon';
 import SettingsIcon from '../common/SettingsIcon';
@@ -37,16 +37,6 @@ function formatClassName(className?: string): string | undefined {
   const trimmed = className?.trim();
   if (!trimmed) return undefined;
   return trimmed.endsWith('반') ? trimmed : `${trimmed}반`;
-}
-
-/** 생일 당일을 "생후 1일째"로 세는 방식(자정 기준 날짜 차이 + 1). */
-function daysSinceBirth(birthdate?: string): number | undefined {
-  if (!birthdate) return undefined;
-  const birth = parseISODate(birthdate);
-  birth.setHours(0, 0, 0, 0);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.floor((today.getTime() - birth.getTime()) / 86400000) + 1;
 }
 
 const AVATAR_SMALL_SIZE = 56;

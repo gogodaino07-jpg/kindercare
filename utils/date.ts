@@ -68,3 +68,32 @@ export function isBirthdayToday(birthdate?: string): boolean {
   return monthDay === todayMonthDay;
 }
 
+/** 생일 당일을 "생후 1일째"로 세는 방식(자정 기준 날짜 차이 + 1). */
+export function daysSinceBirth(birthdate?: string, on: Date = new Date()): number | undefined {
+  if (!birthdate) return undefined;
+  const birth = parseISODate(birthdate);
+  birth.setHours(0, 0, 0, 0);
+  const day = new Date(on);
+  day.setHours(0, 0, 0, 0);
+  return Math.floor((day.getTime() - birth.getTime()) / 86400000) + 1;
+}
+
+/** 생후 일수가 100의 배수(100일, 200일, 300일…)인 날인지 — 무한정 계속 적용된다. */
+export function isBirthMilestoneToday(birthdate?: string): boolean {
+  const days = daysSinceBirth(birthdate);
+  return !!days && days > 0 && days % 100 === 0;
+}
+
+/** birthdate 기준으로 from 이후(오늘 자체가 기념일이면 그다음 것) 가장 가까운 생후
+ *  100일 단위 기념일의 날짜를 반환한다 — 알림 예약용. 100/200/300…으로 무한정 이어진다. */
+export function nextBirthMilestoneDate(birthdate?: string, from: Date = new Date()): Date | undefined {
+  const daysSoFar = daysSinceBirth(birthdate, from);
+  if (daysSoFar === undefined || daysSoFar < 1) return undefined;
+  const nextMultiple = daysSoFar % 100 === 0 ? daysSoFar + 100 : Math.ceil(daysSoFar / 100) * 100;
+  const birth = parseISODate(birthdate!);
+  birth.setHours(0, 0, 0, 0);
+  const target = new Date(birth);
+  target.setDate(target.getDate() + (nextMultiple - 1));
+  return target;
+}
+

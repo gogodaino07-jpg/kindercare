@@ -43,7 +43,7 @@ import { useTodayISO } from '../hooks/useTodayISO';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
 import { Event, EventItem } from '../types/models';
-import { isBirthdayToday, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
+import { isBirthdayToday, isBirthMilestoneToday, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
 import { updateHomeWidget } from '../utils/homeWidget';
 import { HOME_TUTORIAL_KEY, hasSeenTutorial, markTutorialSeen, resetTutorialSeen } from '../utils/tutorialStorage';
 
@@ -159,6 +159,8 @@ export default function HomeScreen() {
   // 쓰면 오늘 일정이 짧아 스크롤 콘텐츠가 짧은 날 그 아래로 빈 여백이 크게 남았다.
   const [bottomStackHeight, setBottomStackHeight] = useState(0);
   const isChildBirthdayToday = isBirthdayToday(selectedChild?.birthdate);
+  // 생일(연 1회)과 별개로 생후 100/200/300…일 단위 기념일에도 같은 축하 효과를 띄운다.
+  const isChildBirthMilestoneToday = isBirthMilestoneToday(selectedChild?.birthdate);
 
   // 쿠팡 검색창(ScheduleBoard 맨 아래)이 키보드에 가려지는 문제 — 이 화면은
   // targetSdk 36(엣지투엣지 강제 적용) 기기에서 windowSoftInputMode="adjustResize"만으론
@@ -265,9 +267,9 @@ export default function HomeScreen() {
       await weather.retry();
     } finally {
       setRefreshing(false);
-      if (isChildBirthdayToday) setBirthdayBurstKey((k) => k + 1);
+      if (isChildBirthdayToday || isChildBirthMilestoneToday) setBirthdayBurstKey((k) => k + 1);
     }
-  }, [weather, isChildBirthdayToday]);
+  }, [weather, isChildBirthdayToday, isChildBirthMilestoneToday]);
 
   // "오늘 등원 준비물 챙기기" 배너를 누르면 그 배너가 화면 상단(고정 프로필 헤더 바로 아래)으로 오도록 스크롤.
   const scrollToProgress = useCallback(() => {

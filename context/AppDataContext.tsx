@@ -1654,17 +1654,18 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
-  // Whenever the event list or the notification schedule preferences change,
-  // re-schedule the day-before/same-day local notifications so newly
-  // added/edited events actually get a reminder without the user having to
-  // separately revisit the notification settings screen.
+  // Whenever the event list, notification schedule preferences, or the
+  // children list change, re-schedule the day-before/same-day local event
+  // notifications (and the next 100-day birth-milestone notification per
+  // child) so they stay up to date without the user having to separately
+  // revisit the notification settings screen.
   useEffect(() => {
     // The permission prompt this may trigger briefly blips AppState on some
     // platforms — suppress the lock/splash replay that would otherwise fire.
-    withExternalAction(() => scheduleEventNotifications(events, notificationSettings)).catch(
+    withExternalAction(() => scheduleEventNotifications(events, notificationSettings, childProfiles)).catch(
       () => {}
     );
-  }, [events, notificationSettings]);
+  }, [events, notificationSettings, childProfiles]);
 
   // 원본 스캔 사진(photoUris)을 events 상태와 분리해서 관리하는 이유는
   // photoUrisByEventId 선언부 주석 참고 — 실제로 앱 전체에 노출되는 시점에 여기서 합친다.
