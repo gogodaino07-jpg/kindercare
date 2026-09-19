@@ -1,5 +1,6 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Text from '../common/AppText';
@@ -26,6 +27,7 @@ function newItemId(): string {
 }
 
 export default function AddEventModal({ visible, initialDateISO, onClose }: AddEventModalProps) {
+  const router = useRouter();
   const { selectedChild, addEvent } = useAppData();
   const { showToast } = useToast();
   const { showAlert } = useAlert();
@@ -83,7 +85,20 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
       return;
     }
     if (!selectedChild) {
-      showAlert({ title: '알림', message: '등록된 아이 정보가 없습니다.' });
+      showAlert({
+        title: '알림',
+        message: '등록된 아이 정보가 없습니다.',
+        buttons: [
+          { text: '취소', style: 'cancel' },
+          {
+            text: '아이 정보 등록하러가기',
+            onPress: () => {
+              onClose();
+              router.push('/child-profile');
+            },
+          },
+        ],
+      });
       return;
     }
 
