@@ -8,6 +8,11 @@ import { getDb } from '../../../utils/firebase';
  *  어뷰징의 진입 장벽이 너무 낮았다(가짜 계정 166개 발견) — 0으로 낮춰서 첫 스캔부터
  *  광고 시청을 요구하게 함. */
 export const FREE_LIFETIME_LIMIT = 0;
+/** 무료 사용자가 광고를 보고 계속 이용할 수 있는 한도를 "무제한"에서 "월 2회"로 낮춘다
+ *  (2026-09-19) — 광고 시청만 하면 스캔이 무제한으로 계속 가능했는데, 스캔 1회마다 실제
+ *  Gemini API 비용이 나가서 사용자가 늘면 그만큼 비용이 무한정 늘어날 수 있었다.
+ *  알림장/급식표를 구분하지 않는 공유 풀이며, 매월 초기화된다. */
+export const FREE_MONTHLY_LIMIT = 2;
 /** 탈퇴 후 같은 이메일로 재가입했을 때, 무료 스캔 횟수를 다시 2회로 리셋해주기까지
  *  기다리는 기간. 탈퇴 즉시 리셋해주면 탈퇴+재가입을 반복해 무료 스캔을 무한정
  *  받아가는 어뷰징이 가능해서 텀을 둔다. */
@@ -58,6 +63,9 @@ interface PremiumUsageRecord {
 
 interface FreeLifetimeRecord {
   totalCount: number;
+  /** 광고 시청 후 스캔한 횟수의 월간 카운터(FREE_MONTHLY_LIMIT 적용 대상). */
+  monthStart?: string; // YYYY-MM
+  monthCount?: number;
 }
 
 function getMondayISO(date: Date): string {
@@ -116,10 +124,25 @@ export const AIUsageLimitService = {
     return remainingForPremium(usage, type);
   },
 
+  /** 무료 사용자가 광고 시청 후 이번 달에 몇 회 더 스캔할 수 있는지(FREE_MONTHLY_LIMIT
+   *  기준). 구독자에게는 의미 없는 값이라 항상 호출 전에 isSubscribed부터 확인할 것. */
+  async getFreeMonthlyRemaining(userId?: string): Promise<number> {
+    const usage = await this.readFreeLifetimeUsage(userId);
+    const thisMonth = currentMonthStart();
+    const monthCount = usage.monthStart === thisMonth ? (usage.monthCount ?? 0) : 0;
+    return Math.max(0, FREE_MONTHLY_LIMIT - monthCount);
+  },
+
   async consume(userId?: string, isSubscribed = false, type: AIUsageType = 'newsletter'): Promise<number> {
     if (!isSubscribed) {
       const usage = await this.readFreeLifetimeUsage(userId);
-      const nextRecord: FreeLifetimeRecord = { totalCount: usage.totalCount + 1 };
+      const thisMonth = currentMonthStart();
+      const monthCount = usage.monthStart === thisMonth ? (usage.monthCount ?? 0) : 0;
+      const nextRecord: FreeLifetimeRecord = {
+        totalCount: usage.totalCount + 1,
+        monthStart: thisMonth,
+        monthCount: monthCount + 1,
+      };
       await this.writeFreeLifetimeUsage(userId, nextRecord);
       return Math.max(0, FREE_LIFETIME_LIMIT - nextRecord.totalCount);
     }
