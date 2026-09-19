@@ -374,7 +374,10 @@ function createStyles(colors: any) {
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     container: { flex: 1 },
-    scrollContent: { paddingTop: 8, paddingHorizontal: 16, flexGrow: 1 },
+    // flexGrow:1이 있으면 내용이 화면보다 짧을 때(카드 몇 개 줄인 뒤로 더
+    // 자주 그럼) 그 차이만큼 억지로 늘어나 하단에 여백만 남는다 — 내용
+    // 높이 그대로 두고 자연스럽게 짧아지게 둔다.
+    scrollContent: { paddingTop: 8, paddingHorizontal: 16 },
     securePill: {
       flexDirection: 'row',
       alignItems: 'center',
