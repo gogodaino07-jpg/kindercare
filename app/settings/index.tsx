@@ -24,7 +24,6 @@ import { LockMethod, useAppLock } from '../../context/AppLockContext';
 import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { THEME_MODE_LABELS, useTheme } from '../../context/ThemeContext';
-import { FREE_LIFETIME_LIMIT } from '../../features/newsletter-analysis';
 import { resolveCoords } from '../../hooks/useWeeklyWeather';
 import { fetchWeatherPreview } from '../../utils/weatherPreviewFetch';
 
@@ -197,9 +196,13 @@ export default function SettingsScreen() {
               onPress={() => requireLogin(() => {})}
             >
                 <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarInitial}>
-                    {(googleAccount?.name ?? '?').trim().charAt(0) || '?'}
-                  </Text>
+                  {googleAccount ? (
+                    <Text style={styles.avatarInitial}>
+                      {(googleAccount.name ?? '').trim().charAt(0) || '?'}
+                    </Text>
+                  ) : (
+                    <MaterialCommunityIcons name="account-outline" size={20} color={colors.accent} />
+                  )}
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={styles.profileNameRow}>
@@ -225,34 +228,6 @@ export default function SettingsScreen() {
                 </View>
               </Pressable>
 
-            {/* 알림 설정 — 가족 키 공유 위젯은 당분간 숨김(거의 안 쓰여서) */}
-              <View style={styles.quickRow}>
-                <TouchableOpacity
-                  style={[styles.card, styles.quickCard, { flex: 1 }]}
-                  activeOpacity={0.85}
-                  onPress={() => router.push('/settings/notifications')}
-                >
-                  <View style={styles.quickCardTopRow}>
-                    <View style={[styles.rowIconBadge, { backgroundColor: colors.orangeLight1 }]}>
-                      <MaterialCommunityIcons name="bell-outline" size={18} color={colors.orange500} />
-                    </View>
-                    <Switch
-                      style={styles.notifSwitch}
-                      value={notificationSettings.enabled}
-                      onValueChange={(v) => updateNotificationSettings({ ...notificationSettings, enabled: v })}
-                      trackColor={{ true: colors.accent, false: colors.border }}
-                      thumbColor={colors.cardWhite}
-                    />
-                  </View>
-                  <Text style={styles.quickCardTitle}>알림 설정</Text>
-                  <Text style={styles.quickCardSubtitle} numberOfLines={1}>
-                    {notificationSettings.enabled
-                      ? `${formatTimeOfDay(notificationSettings.dayBeforeTime)} 켜짐`
-                      : '꺼짐'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
             {/* 알리익스프레스 제휴 배너 — 좌우 여백 없이 화면 끝까지 꽉 채우는 풀 와이드
                 형식. 화면 전체 스크롤 영역의 좌우 padding(scrollContent)을 음수
                 마진으로 상쇄해서 이 블록만 edge-to-edge로 늘린다. */}
@@ -263,28 +238,33 @@ export default function SettingsScreen() {
               </View>
             )}
 
-            {/* 멤버십 + 가족 계정 */}
+            {/* 알림 설정 + 멤버십 — 가족 키 공유/구성원 관리는 당분간 숨김(거의 안 쓰여서) */}
               <View style={styles.card}>
                 <TouchableOpacity
                   style={[styles.row, styles.rowSpaceBetween]}
                   activeOpacity={0.7}
-                  onPress={() => router.push('/settings/subscription')}
+                  onPress={() => router.push('/settings/notifications')}
                 >
                   <View style={styles.rowLeftGroup}>
                     <View style={[styles.rowIconBadge, { backgroundColor: colors.orangeLight1 }]}>
-                      <MaterialCommunityIcons name="creation" size={17} color={colors.orange500} />
+                      <MaterialCommunityIcons name="bell-outline" size={17} color={colors.orange500} />
                     </View>
                     <View>
-                      <Text style={styles.rowTitle}>프리미엄 구독</Text>
-                      <Text
-                        style={[styles.rowSubtitleInline, isSubscribed && { color: colors.accent }]}
-                        numberOfLines={1}
-                      >
-                        {isSubscribed ? '구독 중' : `무료 ${FREE_LIFETIME_LIMIT}회, 이후 광고 시청 시 계속 이용`}
+                      <Text style={styles.rowTitle}>알림 설정</Text>
+                      <Text style={styles.rowSubtitleInline} numberOfLines={1}>
+                        {notificationSettings.enabled
+                          ? `${formatTimeOfDay(notificationSettings.dayBeforeTime)} 켜짐`
+                          : '꺼짐'}
                       </Text>
                     </View>
                   </View>
-                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
+                  <Switch
+                    style={styles.notifSwitch}
+                    value={notificationSettings.enabled}
+                    onValueChange={(v) => updateNotificationSettings({ ...notificationSettings, enabled: v })}
+                    trackColor={{ true: colors.accent, false: colors.border }}
+                    thumbColor={colors.cardWhite}
+                  />
                 </TouchableOpacity>
               </View>
 
@@ -447,20 +427,7 @@ function createStyles(colors: any) {
     },
     proBadgeText: { fontSize: 10, fontWeight: '800', color: colors.orange500 },
     profileEmail: { fontSize: 11.5, color: colors.textSecondary, fontWeight: '500' },
-    quickRow: { flexDirection: 'row', gap: 12 },
-    quickCard: { flex: 1, padding: 14 },
-    quickCardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
     notifSwitch: { transform: [{ scaleX: 1.18 }, { scaleY: 1.05 }] },
-    quickCardTitle: { fontSize: 13.5, fontWeight: '800', color: colors.textPrimary, marginBottom: 2 },
-    quickCardSubtitle: { fontSize: 11.5, color: colors.textSecondary, fontWeight: '600' },
-    quickCardKey: { fontSize: 15, fontWeight: '800', color: colors.accent, letterSpacing: 0.5 },
-    copyPill: {
-      backgroundColor: colors.gray100,
-      borderRadius: 999,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-    },
-    copyPillText: { fontSize: 10.5, fontWeight: '700', color: colors.textSecondary },
     rowIconBadge: {
       width: 34,
       height: 34,
