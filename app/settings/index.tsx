@@ -11,7 +11,6 @@ import {
   Switch,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatTimeOfDay } from '../../components/settings/TimeWheelPicker';
@@ -20,6 +19,7 @@ import AliExpressBanner, { ALIEXPRESS_LEGAL_DISCLOSURE_TEXT } from '../../compon
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
+import { useRequireLogin } from '../../context/GuestLoginGateContext';
 import { LockMethod, useAppLock } from '../../context/AppLockContext';
 import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
@@ -45,13 +45,12 @@ export default function SettingsScreen() {
   const { mode, setMode, colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { showAlert } = useAlert();
+  const requireLogin = useRequireLogin();
   const {
     resetAllData,
     requestWithdrawal,
     googleAccount,
     signOutGoogle,
-    familyKey,
-    familyMembers,
     notificationSettings,
     updateNotificationSettings,
     fontChoiceId,
@@ -63,7 +62,6 @@ export default function SettingsScreen() {
 
   const appVersion = Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.0';
 
-  const [copied, setCopied] = useState(false);
   const [weatherLabel, setWeatherLabel] = useState('내 지역');
   const [weatherPreview, setWeatherPreview] = useState<{ emoji: string; tempC: number } | null>(null);
 
@@ -94,16 +92,6 @@ export default function SettingsScreen() {
   const fontSizeOption = FONT_SIZE_OPTIONS.find((o) => o.id === fontSizeChoice) ?? FONT_SIZE_OPTIONS[2];
   const fontSizePx = Math.round(18 * fontSizeOption.scale);
 
-  const handleCopyFamilyKey = async () => {
-    try {
-      await Clipboard.setStringAsync(familyKey);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      showAlert({ title: '복사에 실패했어요', message: '잠시 후 다시 시도해주세요.' });
-    }
-  };
-
   const handleLogout = () => {
     showAlert({
       title: '로그아웃',
@@ -114,9 +102,11 @@ export default function SettingsScreen() {
           text: '로그아웃',
           style: 'destructive',
           onPress: async () => {
+            // 로그아웃하면 계정만 빠지고 게스트 상태로 남는다 — 가족 그룹
+            // 선택 화면 대신 바로 홈으로 보낸다(홈은 이미 게스트를 지원).
             await signOutGoogle();
             router.dismissAll();
-            router.replace('/family-group-start');
+            router.replace('/');
           },
         },
       ],
@@ -200,12 +190,11 @@ export default function SettingsScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* 계정 카드 — 로그인 없이 온보딩만 마친 게스트는 탭해서 바로
-                로그인/초대코드 참여 화면으로 갈 수 있다. */}
+            {/* 계정 카드 — 로그인 없이 온보딩만 마친 게스트는 탭해서 바로 로그인할 수 있다. */}
             <Pressable
               style={[styles.card, styles.profileCard]}
               disabled={!!googleAccount}
-              onPress={() => router.push('/family-group-start')}
+              onPress={() => requireLogin(() => {})}
             >
                 <View style={styles.avatarCircle}>
                   <Text style={styles.avatarInitial}>
@@ -230,16 +219,16 @@ export default function SettingsScreen() {
                     </Text>
                   ) : (
                     <Text style={styles.profileEmail} numberOfLines={1}>
-                      탭해서 로그인하거나 초대 코드로 참여하기
+                      탭해서 로그인하기
                     </Text>
                   )}
                 </View>
               </Pressable>
 
-            {/* 알림 설정 / 가족 키 공유 위젯 카드 */}
+            {/* 알림 설정 — 가족 키 공유 위젯은 당분간 숨김(거의 안 쓰여서) */}
               <View style={styles.quickRow}>
                 <TouchableOpacity
-                  style={[styles.card, styles.quickCard]}
+                  style={[styles.card, styles.quickCard, { flex: 1 }]}
                   activeOpacity={0.85}
                   onPress={() => router.push('/settings/notifications')}
                 >
@@ -260,25 +249,6 @@ export default function SettingsScreen() {
                     {notificationSettings.enabled
                       ? `${formatTimeOfDay(notificationSettings.dayBeforeTime)} 켜짐`
                       : '꺼짐'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.card, styles.quickCard]}
-                  activeOpacity={0.85}
-                  onPress={() => router.push({ pathname: '/settings/family', params: { title: '키 공유 / 재발급' } })}
-                >
-                  <View style={styles.quickCardTopRow}>
-                    <View style={[styles.rowIconBadge, { backgroundColor: colors.lightBlueBg }]}>
-                      <MaterialCommunityIcons name="key-variant" size={18} color={colors.accent} />
-                    </View>
-                    <Pressable onPress={handleCopyFamilyKey} hitSlop={6} style={styles.copyPill}>
-                      <Text style={styles.copyPillText}>{copied ? '복사됨' : '복사'}</Text>
-                    </Pressable>
-                  </View>
-                  <Text style={styles.quickCardTitle}>가족 키 공유</Text>
-                  <Text style={styles.quickCardKey} numberOfLines={1}>
-                    {familyKey}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -315,25 +285,6 @@ export default function SettingsScreen() {
                     </View>
                   </View>
                   <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
-                </TouchableOpacity>
-                <View style={styles.divider} />
-                <TouchableOpacity
-                  style={[styles.row, styles.rowSpaceBetween]}
-                  activeOpacity={0.7}
-                  onPress={() => router.push({ pathname: '/settings/family', params: { title: '구성원 관리' } })}
-                >
-                  <View style={styles.rowLeftGroup}>
-                    <View style={[styles.rowIconBadge, { backgroundColor: colors.lightBlueBg }]}>
-                      <MaterialCommunityIcons name="account-group-outline" size={17} color={colors.accent} />
-                    </View>
-                    <Text style={[styles.rowTitle, { flex: 0 }]}>구성원 관리</Text>
-                  </View>
-                  <View style={styles.rowRightGroup}>
-                    <View style={styles.countPill}>
-                      <Text style={styles.countPillText}>{familyMembers.length}명</Text>
-                    </View>
-                    <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
-                  </View>
                 </TouchableOpacity>
               </View>
 
