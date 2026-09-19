@@ -151,7 +151,7 @@ export default function UploadScreen() {
   const gaugeSubtitle = !isSubscribed && !hasFreeCredit
     ? adCredited
       ? '스캔권 1회 충전 완료 · 지금 분석을 진행해보세요'
-      : `무료 ${maxCredits}회를 모두 사용했어요 · 광고 시청 후 계속 이용 가능`
+      : '짧은 광고 시청 후 스캔할 수 있어요'
     : `총 ${maxCredits}회 중 ${remainingAnalyses ?? 0}회 남음 · 1건당 1회 차감`;
 
   // Prevent accidental navigation during analysis
