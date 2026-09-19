@@ -164,58 +164,78 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
               </Pressable>
             </View>
 
-            {sortedChildren.map((child) => {
-              const isSelected = child.id === selectedChild?.id;
-              const locked = isChildLocked(children, child.id, isSubscribed);
-              const label = [child.name, `${child.age}세`, child.className]
-                .filter(Boolean)
-                .join(' · ');
-              return (
-                <View
-                  key={child.id}
-                  style={[styles.card, isSelected && styles.cardSelected, locked && styles.cardLocked]}
-                >
-                  <Pressable
-                    style={styles.cardMain}
-                    onPress={() => {
-                      if (locked) {
-                        handleLockedChildPress();
-                        return;
-                      }
-                      selectChild(child.id);
-                      handleClose();
-                    }}
-                  >
-                    {child.photoUri ? (
-                      <Image source={{ uri: child.photoUri }} style={[styles.avatar, locked && styles.avatarLocked]} />
-                    ) : (
-                      <View style={styles.avatarPlaceholder}>
-                        <Text style={styles.avatarIcon}>{child.avatarEmoji ?? '🧒'}</Text>
-                      </View>
-                    )}
-                    <Text style={[styles.cardLabel, locked && styles.cardLabelLocked]}>{label}</Text>
-                    {locked && <Text style={styles.lockIcon}>🔒</Text>}
-                  </Pressable>
-                  <Pressable
-                    style={styles.editButton}
-                    onPress={() => {
-                      if (locked) {
-                        handleLockedChildPress();
-                        return;
-                      }
-                      handleClose();
-                      router.push({ pathname: '/child-profile', params: { childId: child.id } });
-                    }}
-                    accessibilityLabel={locked ? '잠긴 프로필' : '프로필 수정'}
-                  >
-                    <Text style={styles.editButtonText}>{locked ? '잠김' : '수정'}</Text>
-                  </Pressable>
+            {sortedChildren.length === 0 ? (
+              // 아이가 하나도 없을 때(신규 게스트 등) — 시트에 확보해둔 최소 높이
+              // 안에서 그냥 방치되던 넓은 빈 공간 대신, 가운데 정렬된 안내와
+              // 눈에 띄는 채워진 버튼으로 첫 아이 등록을 유도한다.
+              <View style={styles.emptyState}>
+                <View style={styles.emptyIconCircle}>
+                  <Text style={styles.emptyIconText}>🧒</Text>
                 </View>
-              );
-            })}
-            <Pressable style={styles.addButton} onPress={handleAddChild}>
-              <Text style={styles.addButtonText}>+ 아이 추가</Text>
-            </Pressable>
+                <Text style={styles.emptyTitle}>아직 등록된 아이가 없어요</Text>
+                <Text style={styles.emptySubtitle}>
+                  아이를 등록하면 일정과 준비물을{'\n'}스마트하게 챙길 수 있어요
+                </Text>
+                <Pressable style={styles.emptyAddButton} onPress={handleAddChild}>
+                  <Text style={styles.emptyAddButtonText}>+ 아이 추가하기</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                {sortedChildren.map((child) => {
+                  const isSelected = child.id === selectedChild?.id;
+                  const locked = isChildLocked(children, child.id, isSubscribed);
+                  const label = [child.name, `${child.age}세`, child.className]
+                    .filter(Boolean)
+                    .join(' · ');
+                  return (
+                    <View
+                      key={child.id}
+                      style={[styles.card, isSelected && styles.cardSelected, locked && styles.cardLocked]}
+                    >
+                      <Pressable
+                        style={styles.cardMain}
+                        onPress={() => {
+                          if (locked) {
+                            handleLockedChildPress();
+                            return;
+                          }
+                          selectChild(child.id);
+                          handleClose();
+                        }}
+                      >
+                        {child.photoUri ? (
+                          <Image source={{ uri: child.photoUri }} style={[styles.avatar, locked && styles.avatarLocked]} />
+                        ) : (
+                          <View style={styles.avatarPlaceholder}>
+                            <Text style={styles.avatarIcon}>{child.avatarEmoji ?? '🧒'}</Text>
+                          </View>
+                        )}
+                        <Text style={[styles.cardLabel, locked && styles.cardLabelLocked]}>{label}</Text>
+                        {locked && <Text style={styles.lockIcon}>🔒</Text>}
+                      </Pressable>
+                      <Pressable
+                        style={styles.editButton}
+                        onPress={() => {
+                          if (locked) {
+                            handleLockedChildPress();
+                            return;
+                          }
+                          handleClose();
+                          router.push({ pathname: '/child-profile', params: { childId: child.id } });
+                        }}
+                        accessibilityLabel={locked ? '잠긴 프로필' : '프로필 수정'}
+                      >
+                        <Text style={styles.editButtonText}>{locked ? '잠김' : '수정'}</Text>
+                      </Pressable>
+                    </View>
+                  );
+                })}
+                <Pressable style={styles.addButton} onPress={handleAddChild}>
+                  <Text style={styles.addButtonText}>+ 아이 추가</Text>
+                </Pressable>
+              </>
+            )}
           </Animated.View>
         </GestureDetector>
       </GestureHandlerRootView>
@@ -356,6 +376,52 @@ function createStyles(colors: ThemeColors, bottomInset: number, isDark: boolean)
       fontSize: 14,
       fontWeight: '700',
       color: colors.accent,
+    },
+    emptyState: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 20,
+    },
+    emptyIconCircle: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: colors.lightBlueBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
+    emptyIconText: { fontSize: 34 },
+    emptyTitle: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.gray900,
+      marginBottom: 6,
+    },
+    emptySubtitle: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 19,
+      marginBottom: 24,
+    },
+    emptyAddButton: {
+      backgroundColor: colors.accent,
+      borderRadius: 999,
+      paddingVertical: 15,
+      paddingHorizontal: 32,
+      ...SHADOW,
+      shadowColor: colors.accent,
+      shadowOpacity: 0.28,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 3,
+    },
+    emptyAddButtonText: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: '#FFFFFF',
     },
   });
 }
