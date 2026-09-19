@@ -552,7 +552,11 @@ export default function HomeScreen() {
             settingsIconRef={settingsIconRef}
           />
         </View>
-        {!isFamilyOwner && (
+        {/* 로그인 안 한 게스트는 애초에 남의 가족 데이터를 보고 있을 수 없으니
+            (전부 로컬 개인 데이터) 이 배너 대상이 아니다. isFamilyOwner는
+            "계정이 있고 + 그 계정이 소유자"일 때만 true라, 계정이 아예 없는
+            게스트는 항상 false로 나와서 배너가 잘못 뜨는 문제가 있었다. */}
+        {!!googleAccount && !isFamilyOwner && (
           <View style={styles.familyBannerWrap}>
             <LinearGradient
               colors={canEditFamilyData ? ['#34D399', '#10B981'] : ['#CBD5E1', '#94A3B8']}
