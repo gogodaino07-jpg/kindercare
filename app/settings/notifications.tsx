@@ -89,10 +89,11 @@ export default function NotificationSettingsScreen() {
                 thumbColor={colors.cardWhite}
               />
             </View>
+          </View>
 
-            {draft.enabled && (
-              <>
-                <View style={styles.divider} />
+          {draft.enabled && (
+            <>
+              <View style={styles.card}>
                 <Pressable style={styles.previewRow} onPress={handlePreviewTap}>
                   <View style={styles.previewIconCircle}>
                     <MaterialCommunityIcons name="school-outline" size={15} color="#FFFFFF" />
@@ -106,8 +107,9 @@ export default function NotificationSettingsScreen() {
                     <Text style={styles.previewBody} numberOfLines={1}>준비물: 물통, 도시락</Text>
                   </View>
                 </Pressable>
+              </View>
 
-                <View style={styles.divider} />
+              <View style={styles.card}>
                 <View style={styles.sectionRow}>
                   <Text style={styles.sectionLabel}>전날 알림 시간</Text>
                   <Text style={styles.sectionValue}>{formatTimeOfDay(draft.dayBeforeTime)}</Text>
@@ -118,8 +120,9 @@ export default function NotificationSettingsScreen() {
                     onChange={(dayBeforeTime) => setDraft((prev) => ({ ...prev, dayBeforeTime }))}
                   />
                 </View>
+              </View>
 
-                <View style={styles.divider} />
+              <View style={styles.card}>
                 <View style={styles.row}>
                   <Text style={styles.rowLabel}>당일 아침 알림 추가</Text>
                   <Switch
@@ -147,9 +150,9 @@ export default function NotificationSettingsScreen() {
                     </View>
                   </>
                 )}
-              </>
-            )}
-          </View>
+              </View>
+            </>
+          )}
         </ScrollView>
 
         {/* Absolute positioned button to match Upload screen layout */}
@@ -177,6 +180,7 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.cardWhite,
       borderRadius: 16,
       overflow: 'hidden',
+      marginBottom: 14,
       ...SHADOW,
     },
     row: {
