@@ -332,6 +332,18 @@ export default function SettingsScreen() {
                   <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
                 </TouchableOpacity>
                 <View style={styles.divider} />
+                <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => router.push('/settings/app-lock')}>
+                  <Text style={styles.rowTitle}>잠금화면</Text>
+                  <Text style={styles.rowValue} numberOfLines={1}>{LOCK_METHOD_LABELS[method]}</Text>
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
+                </TouchableOpacity>
+              </View>
+
+            {/* 유틸리티 설정 */}
+              <View style={styles.card}>
+                <View style={styles.cardHeaderRow}>
+                  <Text style={styles.cardHeaderTitle}>유틸리티 설정</Text>
+                </View>
                 <TouchableOpacity
                   style={styles.row}
                   activeOpacity={0.7}
@@ -342,12 +354,6 @@ export default function SettingsScreen() {
                     {weatherLabel}
                     {weatherPreview ? ` ${weatherPreview.emoji} ${weatherPreview.tempC}°` : ''}
                   </Text>
-                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
-                </TouchableOpacity>
-                <View style={styles.divider} />
-                <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => router.push('/settings/app-lock')}>
-                  <Text style={styles.rowTitle}>잠금화면</Text>
-                  <Text style={styles.rowValue} numberOfLines={1}>{LOCK_METHOD_LABELS[method]}</Text>
                   <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
                 </TouchableOpacity>
               </View>
