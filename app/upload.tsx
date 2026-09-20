@@ -102,6 +102,7 @@ export default function UploadScreen() {
   // 다음 분석 시 광고를 다시 요구하지 않고, 분석에 성공하면 소모돼 다시 false로 돌아간다.
   const [adCredited, setAdCredited] = useState(false);
   const [watchingCredit, setWatchingCredit] = useState(false);
+  const [freeMonthlyRemaining, setFreeMonthlyRemaining] = useState<number | null>(null);
 
   const maxCredits = isSubscribed ? PREMIUM_WEEKLY_LIMIT : FREE_LIFETIME_LIMIT;
   const skipAd = isAdTestAccount(googleAccount?.email);
@@ -203,6 +204,18 @@ export default function UploadScreen() {
   useEffect(() => {
     AIUsageLimitService.getRemainingCount(googleAccount?.email, isSubscribed).then(setRemainingAnalyses);
   }, [googleAccount?.email, isSubscribed]);
+
+  // 이번 달 광고 시청 스캔 잔여 횟수 — 화면 진입 시점 값이 스캔 완료 후 소모돼 바뀌므로,
+  // 화면에 다시 포커스될 때마다(분석 후 돌아왔을 때 포함) 다시 읽어온다.
+  useEffect(() => {
+    if (isSubscribed) return;
+    const loadFreeMonthlyRemaining = () => {
+      AIUsageLimitService.getFreeMonthlyRemaining(googleAccount?.email).then(setFreeMonthlyRemaining);
+    };
+    loadFreeMonthlyRemaining();
+    const unsub = navigation.addListener('focus', loadFreeMonthlyRemaining);
+    return unsub;
+  }, [navigation, googleAccount?.email, isSubscribed]);
 
   useEffect(() => {
     AsyncStorage.getItem(adCreditStorageKey(googleAccount?.email)).then((value) => {
@@ -470,6 +483,7 @@ export default function UploadScreen() {
                 onWatchAd={handleWatchAdForCredit}
                 adCredited={adCredited}
                 hasSelectedFiles={docs.length > 0}
+                freeMonthlyRemaining={freeMonthlyRemaining}
               />
             ) : (
               <View style={styles.gaugeCard}>
@@ -710,6 +724,7 @@ function ScanCreditCard({
   onWatchAd,
   adCredited,
   hasSelectedFiles,
+  freeMonthlyRemaining,
 }: {
   watching: boolean;
   onWatchAd: () => void;
@@ -719,6 +734,9 @@ function ScanCreditCard({
    * 같이 보이면 "광고 보는 버튼이 두 개"로 보여 혼란스럽다는 피드백으로
    * 이 상태에선 충전 버튼을 숨기고 안내 문구만 보여준다. */
   hasSelectedFiles: boolean;
+  /** 이번 달 광고 시청 스캔 잔여 횟수 — 한도(FREE_MONTHLY_LIMIT)를 다 쓰기 전까지
+   * 사용자가 전혀 모르고 있다가 막힐 때 알림으로만 알게 되던 문제로 미리 고지한다. */
+  freeMonthlyRemaining: number | null;
 }) {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
@@ -759,6 +777,11 @@ function ScanCreditCard({
           <Text style={styles.creditSubtitle} numberOfLines={2}>
             {adCredited ? '지금 알림장을 추가해 바로 분석해보세요' : '짧은 광고 시청하고 스캔 1회를 충전하세요.'}
           </Text>
+          {freeMonthlyRemaining !== null && (
+            <Text style={styles.creditMonthlyText}>
+              이번 달 {freeMonthlyRemaining}/{FREE_MONTHLY_LIMIT}회 남음
+            </Text>
+          )}
         </View>
         {adCredited ? (
           <View style={styles.creditDoneBadge}>
@@ -1052,6 +1075,7 @@ function createStyles(C: ScanColors) {
   creditBadgeText: { fontSize: 10.5, fontWeight: '800', color: C.violet700, letterSpacing: 0.3 },
   creditHeadline: { flexShrink: 1, fontSize: 16, fontWeight: '800', color: C.slate900 },
   creditSubtitle: { fontSize: 12.5, fontWeight: '500', color: C.slate500 },
+  creditMonthlyText: { fontSize: 11.5, fontWeight: '600', color: C.violet700, marginTop: 2 },
   creditButtonWrap: { borderRadius: 999, overflow: 'hidden' },
   creditButton: {
     flexDirection: 'row',
