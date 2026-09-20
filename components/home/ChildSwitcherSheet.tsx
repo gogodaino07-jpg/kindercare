@@ -262,8 +262,9 @@ function createStyles(colors: ThemeColors, bottomInset: number, isDark: boolean)
       borderTopLeftRadius: 28,
       borderTopRightRadius: 28,
       // 아이가 한두 명뿐이면 시트가 너무 낮아 보인다는 피드백으로 화면 높이의
-      // 일정 비율만큼은 항상 확보한다.
-      minHeight: SCREEN_HEIGHT * 0.42,
+      // 일정 비율만큼은 항상 확보한다. (0.42는 아이 1명일 때 하단 여백이
+      // 과했다는 피드백으로 축소함)
+      minHeight: SCREEN_HEIGHT * 0.32,
       padding: 22,
       paddingTop: 16,
       paddingBottom: 24 + bottomInset,
