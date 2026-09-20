@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   banner: {
-    paddingVertical: 17,
+    paddingVertical: 20,
     paddingHorizontal: 14,
   },
   bannerContent: {
@@ -375,9 +375,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   imageWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 16,
+    width: 78,
+    height: 78,
+    borderRadius: 17,
     overflow: 'hidden',
     backgroundColor: 'rgba(255,255,255,0.25)',
   },
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 999,
     paddingHorizontal: 11,
-    paddingVertical: 8,
+    paddingVertical: 9,
   },
   ctaText: { fontSize: 12.5, fontWeight: '800', color: '#FF3D00' },
 });
