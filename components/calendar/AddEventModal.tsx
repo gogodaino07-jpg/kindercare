@@ -93,7 +93,11 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
           { text: '취소', style: 'cancel' },
           {
             text: '아이 정보 등록하러가기',
-            onPress: () => {
+            onPress: async () => {
+              // 아이 등록 화면으로 넘어가기 전에 전면 광고를 먼저 보여준다 — 별도
+              // 광고 단위를 새로 만들지 않고 이 모달의 일정 추가 완료용 전면
+              // 광고 단위를 재사용한다(쿨다운도 공유).
+              await showAddEventAd();
               onClose();
               router.push('/child-profile');
             },
