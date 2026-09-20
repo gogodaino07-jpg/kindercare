@@ -214,9 +214,11 @@ exports.deleteAccount = onCall(
 /** 하루에 같은 사람이 너무 많이 보내는 걸 막는 최소한의 방어선(스팸/오남용 방지). */
 const SUPPORT_EMAIL_DAILY_LIMIT = 10;
 
-async function assertUnderSupportEmailLimit(uid) {
+// 로그인 없이도(게스트 모드) 문의를 보낼 수 있어야 하므로, 로그인 상태면
+// uid로, 아니면 사용자가 입력한 답변받을 이메일로 한도를 구분한다.
+async function assertUnderSupportEmailLimit(limitKey) {
   const todayKey = toISODateUTC(new Date());
-  const guardRef = getFirestore().collection('users').doc(uid).collection('serverGuard').doc('supportEmail');
+  const guardRef = getFirestore().collection('supportEmailGuard').doc(limitKey);
 
   await getFirestore().runTransaction(async (tx) => {
     const snap = await tx.get(guardRef);
@@ -249,10 +251,6 @@ exports.sendSupportEmail = onCall(
     timeoutSeconds: 30,
   },
   async (request) => {
-    if (!request.auth) {
-      throw new HttpsError('unauthenticated', '로그인이 필요합니다.');
-    }
-
     const replyEmail = request.data?.replyEmail;
     const content = request.data?.content;
     if (!replyEmail || typeof replyEmail !== 'string' || !EMAIL_PATTERN.test(replyEmail)) {
@@ -262,7 +260,8 @@ exports.sendSupportEmail = onCall(
       throw new HttpsError('invalid-argument', '문의 내용이 올바르지 않습니다.');
     }
 
-    await assertUnderSupportEmailLimit(request.auth.uid);
+    const limitKey = request.auth ? `uid:${request.auth.uid}` : `email:${replyEmail.trim().toLowerCase()}`;
+    await assertUnderSupportEmailLimit(limitKey);
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
