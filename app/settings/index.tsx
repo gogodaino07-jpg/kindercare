@@ -226,7 +226,7 @@ export default function SettingsScreen() {
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={styles.profileNameRow}>
                     <Text style={styles.profileName} numberOfLines={1}>
-                      {googleAccount ? googleAccount.name : '연동된 계정 없음'}
+                      {googleAccount ? googleAccount.name : '계정 연동이 필요합니다'}
                     </Text>
                     {!googleAccount && (
                       <Pressable onPress={handleShowAccountInfo} hitSlop={8}>
@@ -246,7 +246,7 @@ export default function SettingsScreen() {
                     </Text>
                   ) : (
                     <Text style={styles.profileEmail} numberOfLines={1}>
-                      탭해서 로그인하기
+                      로그인하고 나만의 설정을 동기화하세요
                     </Text>
                   )}
                 </View>
