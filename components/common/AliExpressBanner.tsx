@@ -343,7 +343,7 @@ export default function AliExpressBanner({ style }: AliExpressBannerProps) {
             </Animated.View>
           </View>
           <View style={styles.ctaButton}>
-            <Text style={styles.ctaText}>구매</Text>
+            <Text style={styles.ctaText}>구매하기</Text>
             <Feather name="chevron-right" size={13} color="#FF3D00" />
           </View>
         </View>
