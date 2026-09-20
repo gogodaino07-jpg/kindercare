@@ -112,6 +112,22 @@ export default function SettingsScreen() {
     });
   };
 
+  const handleShowAccountInfo = () => {
+    showAlert({
+      title: '계정을 연동하면 좋은 점',
+      icon: '💡',
+      message:
+        '로그인하면 아이 프로필과 일정·급식 정보가 클라우드에 저장돼요.\n\n' +
+        '· 다른 기기에서도 같은 정보를 이어서 볼 수 있어요\n' +
+        '· 로그아웃 후 다시 로그인해도 정보가 그대로 남아있어요\n\n' +
+        '로그인 없이도 앱은 그대로 쓸 수 있지만, 이 기기에서 앱을 지우면 그동안의 정보는 사라져요.',
+      buttons: [
+        { text: '확인', style: 'cancel' },
+        { text: '로그인하기', onPress: () => requireLogin(() => {}) },
+      ],
+    });
+  };
+
   const handleWithdraw = () => {
     showAlert({
       title: '회원탈퇴',
@@ -212,6 +228,11 @@ export default function SettingsScreen() {
                     <Text style={styles.profileName} numberOfLines={1}>
                       {googleAccount ? googleAccount.name : '연동된 계정 없음'}
                     </Text>
+                    {!googleAccount && (
+                      <Pressable onPress={handleShowAccountInfo} hitSlop={8}>
+                        <MaterialCommunityIcons name="alert-circle-outline" size={15} color={colors.gray400} />
+                      </Pressable>
+                    )}
                     {isSubscribed && (
                       <View style={styles.proBadge}>
                         <MaterialCommunityIcons name="lightning-bolt" size={11} color={colors.orange500} />
