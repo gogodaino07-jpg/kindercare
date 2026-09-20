@@ -188,6 +188,9 @@ export default function SettingsScreen() {
             contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + insets.bottom }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            scrollEnabled={false}
+            bounces={false}
+            overScrollMode="never"
           >
             {/* 계정 카드 — 로그인 없이 온보딩만 마친 게스트는 탭해서 바로 로그인할 수 있다. */}
             <Pressable
