@@ -201,7 +201,7 @@ export default function SettingsScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <ScrollView
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + insets.bottom }]}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: 56 + insets.bottom }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             scrollEnabled={false}
