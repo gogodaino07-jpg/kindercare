@@ -29,7 +29,7 @@ export const PREMIUM_MEAL_MONTHLY_LIMIT = 15;
 /** 2026-09 서울 리전(asia-northeast3) Cloud Build/Artifact Registry/Cloud Run 장애로
  *  analyzeNewsletter 함수가 응답하지 못하는 동안, 사용자가 광고까지 보고도 "분석 실패"만
  *  받는 걸 막기 위한 임시 점검 모드. 구글 쪽 복구(또는 리전 이전) 확인되면 false로 되돌릴 것. */
-export const AI_ANALYSIS_MAINTENANCE_MODE = true;
+export const AI_ANALYSIS_MAINTENANCE_MODE = false;
 export const AI_ANALYSIS_MAINTENANCE_MESSAGE =
   '서버 점검 중이라 AI 분석을 잠시 사용할 수 없어요. 곧 복구할 예정이니 조금만 기다려주세요 🙏';
 
