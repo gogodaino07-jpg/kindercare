@@ -42,7 +42,7 @@ import { getDisplayItems } from '../hooks/useLocalChecklist';
 import { useTodayISO } from '../hooks/useTodayISO';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
-import { Event, EventItem } from '../types/models';
+import { Event, EventItem, NO_CHILD_ID } from '../types/models';
 import { isBirthdayToday, isBirthMilestoneToday, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
 import { updateHomeWidget } from '../utils/homeWidget';
 import { HOME_TUTORIAL_KEY, hasSeenTutorial, markTutorialSeen, resetTutorialSeen } from '../utils/tutorialStorage';
@@ -129,7 +129,7 @@ export default function HomeScreen() {
     // 과거 공지가 홈 화면에 계속 노출되지 않도록 오늘 이후의 공지만 보여준다.
     // 단, 오늘 날짜인 공지는 "오늘 일정"(D-DAY 배지)에 이미 노출되므로 중복을 피하기 위해 내일 이후만 보여준다.
     return events
-      .filter((e) => e.category === '공지' && e.childId === selectedChild?.id && e.date > todayISO)
+      .filter((e) => e.category === '공지' && e.childId === (selectedChild?.id ?? NO_CHILD_ID) && e.date > todayISO)
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [events, selectedChild, todayISO]);
   const todayMeal = useMemo(() => {

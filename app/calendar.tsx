@@ -23,7 +23,7 @@ import EditEventModal from '../components/calendar/EditEventModal';
 import Text from '../components/common/AppText';
 import { useAppData } from '../context/AppDataContext';
 import { getDisplayItems } from '../hooks/useLocalChecklist';
-import { Event, EventItem } from '../types/models';
+import { Event, EventItem, NO_CHILD_ID } from '../types/models';
 import { parseISODate, toISODate } from '../utils/date';
 
 export default function CalendarScreen() {
@@ -161,7 +161,7 @@ export default function CalendarScreen() {
   }, [selectedDate, scrollRef]);
 
   const childEvents = useMemo(
-    () => events.filter((e) => e.childId === selectedChild?.id),
+    () => events.filter((e) => e.childId === (selectedChild?.id ?? NO_CHILD_ID)),
     [events, selectedChild]
   );
 

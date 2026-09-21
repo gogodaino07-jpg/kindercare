@@ -1,6 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Text from '../common/AppText';
@@ -10,7 +9,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { useCalendarAddEventInterstitialAd } from '../../hooks/useCalendarAddEventInterstitialAd';
-import { EventItem } from '../../types/models';
+import { EventItem, NO_CHILD_ID } from '../../types/models';
 import { parseISODate, toISODate, WEEKDAY_KO } from '../../utils/date';
 import { stripInvalidCharacters } from '../../utils/validation';
 import { useCalendarTheme } from './useCalendarTheme';
@@ -27,7 +26,6 @@ function newItemId(): string {
 }
 
 export default function AddEventModal({ visible, initialDateISO, onClose }: AddEventModalProps) {
-  const router = useRouter();
   const { selectedChild, addEvent } = useAppData();
   const { showToast } = useToast();
   const { showAlert } = useAlert();
@@ -84,29 +82,8 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
       showAlert({ title: '일정 제목이 필요해요', message: '일정 제목을 입력해 주세요.', icon: '📝' });
       return;
     }
-    if (!selectedChild) {
-      showAlert({
-        title: '아이 정보가 필요해요',
-        message: '일정을 등록하려면 먼저 아이 프로필을 등록해주세요.',
-        icon: '👶',
-        buttons: [
-          { text: '취소', style: 'cancel' },
-          {
-            text: '아이 정보 등록하러가기',
-            onPress: async () => {
-              // 아이 등록 화면으로 넘어가기 전에 전면 광고를 먼저 보여준다 — 별도
-              // 광고 단위를 새로 만들지 않고 이 모달의 일정 추가 완료용 전면
-              // 광고 단위를 재사용한다(쿨다운도 공유).
-              await showAddEventAd();
-              onClose();
-              router.push('/child-profile');
-            },
-          },
-        ],
-      });
-      return;
-    }
-
+    // 아이가 없어도 일정은 등록할 수 있다 — 그런 일정은 NO_CHILD_ID로 저장돼 있다가,
+    // 첫 아이를 등록하는 순간 그 아이의 일정으로 귀속된다(AppDataContext.addChild).
     setIsSaving(true);
     await showAddEventAd();
 
@@ -124,7 +101,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
       noticeText: noticeText.trim() || undefined,
       category: '원내 활동',
       notifyDayBefore: true,
-      childId: selectedChild.id,
+      childId: selectedChild?.id ?? NO_CHILD_ID,
       source: 'manual',
       icon: '📌',
     });

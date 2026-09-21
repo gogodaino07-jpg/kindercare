@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useAppData } from '../context/AppDataContext';
-import { Event } from '../types/models';
+import { Event, NO_CHILD_ID } from '../types/models';
 import { isPast, isTomorrow, parseISODate, toISODate } from '../utils/date';
 import { useTodayISO } from './useTodayISO';
 
@@ -36,7 +36,7 @@ export function useUpcomingEvents(): UpcomingEvents {
     const weekLaterISO = toISODate(weekLaterDate);
 
     const upcoming = events
-      .filter((e) => e.childId === selectedChild?.id && e.date >= todayISO && e.date < weekLaterISO)
+      .filter((e) => e.childId === (selectedChild?.id ?? NO_CHILD_ID) && e.date >= todayISO && e.date < weekLaterISO)
       .sort((a, b) => a.date.localeCompare(b.date));
 
     const mainEvents = upcoming.filter((e) => e.date === todayISO);

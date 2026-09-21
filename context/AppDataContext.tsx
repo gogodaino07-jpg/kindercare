@@ -19,7 +19,7 @@ import {
   seedNotificationSettings,
 } from '../data/seed';
 import { isSimilarEvent } from '../data/mockAIResult';
-import { Child, Event, FamilyInvite, FamilyMember, FamilyMembership, GoogleAccount, MealPlan, NotificationSettings } from '../types/models';
+import { Child, Event, FamilyInvite, FamilyMember, FamilyMembership, GoogleAccount, MealPlan, NO_CHILD_ID, NotificationSettings } from '../types/models';
 import { toISODate } from '../utils/date';
 import { withExternalAction } from '../utils/externalAction';
 import { getDb, getFirebaseAuth, getFunctions } from '../utils/firebase';
@@ -1085,10 +1085,21 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
   const addChild = (input: Omit<Child, 'id'>) => {
     const newChild: Child = { ...input, id: nextChildId() };
+    // 아이가 없을 때 캘린더에서 직접 등록한 일정(NO_CHILD_ID)은 첫 아이가 생기는 순간
+    // 그 아이의 일정이 된다 — 안 그러면 아이를 등록한 뒤 캘린더에서 사라져 보인다.
+    const adoptedEvents =
+      childProfiles.length === 0
+        ? events.filter((e) => e.childId === NO_CHILD_ID).map((e) => ({ ...e, childId: newChild.id }))
+        : [];
     setChildProfiles((prev) => [...prev, newChild]);
     setSelectedChildId(newChild.id);
+    if (adoptedEvents.length > 0) {
+      const adoptedIds = new Set(adoptedEvents.map((e) => e.id));
+      setEvents((prev) => prev.map((e) => (adoptedIds.has(e.id) ? { ...e, childId: newChild.id } : e)));
+    }
     if (effectiveFamilyOwnerEmail) {
       pushChildToCloud(effectiveFamilyOwnerEmail, newChild, undefined);
+      adoptedEvents.forEach((e) => pushEventToCloud(effectiveFamilyOwnerEmail, e));
     }
   };
 
