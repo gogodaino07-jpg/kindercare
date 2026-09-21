@@ -73,6 +73,8 @@ export interface Event {
   photoUris?: string[];
   needsReview?: boolean;
   reviewReason?: string;
+  /** 마지막 아이를 "아이만 삭제"할 때 남겨둔 일정 표시 — 다음에 아이를 등록할 때 이어받을지 묻는 대상. */
+  keptFromDeletedChild?: boolean;
 }
 
 export interface MealPlan {
@@ -85,6 +87,8 @@ export interface MealPlan {
   mainMenu?: string;
   /** Event처럼 아이(=소속 기관) 기준으로 스코프 */
   childId: string;
+  /** Event.keptFromDeletedChild와 같은 뜻 — 아이만 삭제할 때 남겨둔 급식표 표시. */
+  keptFromDeletedChild?: boolean;
 }
 
 export interface FamilyMember {

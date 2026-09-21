@@ -53,7 +53,7 @@ function formatBirthdate(date: Date): string {
 export default function ChildProfileScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const { children, addChild, updateChild, deleteChild } = useAppData();
+  const { children, addChild, updateChild, deleteChild, hasKeptDataFromDeletedChild } = useAppData();
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
   const { showToast } = useToast();
@@ -307,7 +307,28 @@ export default function ChildProfileScreen() {
   // 2번째 아이부터는 등록 전에 리워드 광고를 끝까지 봐야 한다 — 첫 아이는 무료.
   // 두 경우 모두 광고를 먼저 다 보여준 뒤에야 실제로 등록하도록 순서를 맞춘다
   // (저장부터 해놓고 광고를 나중에 띄우면, 광고가 끝났을 때 이미 화면이 넘어가 있어 어색하다).
-  const handleConfirmCreate = async () => {
+  const handleConfirmCreate = () => {
+    // 이전에 "아이만 삭제"로 남겨둔 일정/급식표가 있으면, 같은 아이를 다시 등록하는 건지
+    // 다른 아이인지 앱이 알 수 없으니 등록하기 전에 이어받을지 직접 고르게 한다.
+    if (hasKeptDataFromDeletedChild) {
+      showAlert({
+        title: '이전 일정을 이어받을까요?',
+        message:
+          '이전 아이를 삭제하면서 일정과 급식표를 남겨두었어요.\n\n' +
+          '· 이어받기: 이 아이의 일정으로 이어져요.\n' +
+          '· 초기화하고 시작: 남은 일정과 급식표를 지우고 새로 시작해요.',
+        dismissible: true,
+        buttons: [
+          { text: '이어받기', onPress: () => createChild(false) },
+          { text: '초기화하고 시작', style: 'destructive', onPress: () => createChild(true) },
+        ],
+      });
+      return;
+    }
+    createChild(false);
+  };
+
+  const createChild = async (discardKeptData: boolean) => {
     setIsSaving(true);
     const isAdditionalChild = children.length >= 1;
     if (isAdditionalChild) {
@@ -323,7 +344,7 @@ export default function ChildProfileScreen() {
     } else {
       await showChildSaveAd();
     }
-    addChild(buildInput());
+    addChild(buildInput(), { discardKeptData });
     justSavedRef.current = true;
     setShowSuccessModal(false);
     showToast('저장이 완료되었습니다.');
