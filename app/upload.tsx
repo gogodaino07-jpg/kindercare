@@ -762,6 +762,12 @@ function ScanCreditCard({
     return () => loop.stop();
   }, [pulse, adCredited]);
 
+  // 월간 카운트는 분석에 성공해 실제 소모될 때 올라가므로, 충전만 해둔 상태에선 그대로다.
+  // 충전한 1회는 이미 예약된 것이라 충전 완료 상태에선 그만큼 미리 차감해서 보여준다
+  // (분석 후 실제 카운트가 올라가면 adCredited가 꺼지므로 표시값이 그대로 이어진다).
+  const displayMonthlyRemaining =
+    freeMonthlyRemaining === null ? null : Math.max(0, freeMonthlyRemaining - (adCredited ? 1 : 0));
+
   return (
     <View style={styles.creditCard}>
       <View style={styles.creditTopRow}>
@@ -777,9 +783,9 @@ function ScanCreditCard({
           <Text style={styles.creditSubtitle} numberOfLines={2}>
             {adCredited ? '지금 알림장을 추가해 바로 분석해보세요' : '짧은 광고 시청하고 스캔 1회를 충전하세요.'}
           </Text>
-          {freeMonthlyRemaining !== null && (
+          {displayMonthlyRemaining !== null && (
             <Text style={styles.creditMonthlyText}>
-              이번 달 {freeMonthlyRemaining}/{FREE_MONTHLY_LIMIT}회 남음
+              이번 달 {displayMonthlyRemaining}/{FREE_MONTHLY_LIMIT}회 남음
             </Text>
           )}
         </View>
