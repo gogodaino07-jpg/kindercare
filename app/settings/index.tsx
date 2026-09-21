@@ -64,13 +64,6 @@ export default function SettingsScreen() {
   const [weatherLabel, setWeatherLabel] = useState('내 지역');
   const [weatherPreview, setWeatherPreview] = useState<{ emoji: string; tempC: number } | null>(null);
 
-  // 손으로 끌어 스크롤되는 걸 막아뒀는데, 카드가 늘어나 내용이 화면보다 길어지면
-  // 아래쪽(로그아웃/약관 링크 등)이 스크롤할 방법 없이 통째로 가려지는 문제가
-  // 있었다 — 내용이 실제로 화면을 넘칠 때만 스크롤을 켠다(HomeEmptyContent.tsx와 같은 방식).
-  const [scrollContainerHeight, setScrollContainerHeight] = useState(0);
-  const [scrollContentHeight, setScrollContentHeight] = useState(0);
-  const canScrollContent = scrollContentHeight > scrollContainerHeight + 1;
-
   // resolveCoords()가 처음 위치 권한을 요청할 때 뜨는 시스템 권한 팝업이
   // 앱을 잠깐 백그라운드로 보내서, 잠금을 이미 풀고 설정 화면에 들어왔는데도
   // 다시 잠겨버리는 버그가 있었다 — 갤러리/카메라 선택기와 똑같이 외부 동작
@@ -211,11 +204,9 @@ export default function SettingsScreen() {
             contentContainerStyle={[styles.scrollContent, { paddingBottom: 56 + insets.bottom }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            scrollEnabled={canScrollContent}
+            scrollEnabled={false}
             bounces={false}
             overScrollMode="never"
-            onLayout={(e) => setScrollContainerHeight(e.nativeEvent.layout.height)}
-            onContentSizeChange={(_w, h) => setScrollContentHeight(h)}
           >
             {/* 계정 카드 — 로그인 없이 온보딩만 마친 게스트는 탭해서 바로 로그인할 수 있다. */}
             <Pressable
@@ -529,7 +520,7 @@ function createStyles(colors: any) {
     footerLinkText: { fontSize: 13, color: colors.textSecondary, fontWeight: '700' },
     footerLinkTextMuted: { fontSize: 12, color: colors.gray400, fontWeight: '500' },
     footerLinkDivider: { fontSize: 13, color: colors.border, fontWeight: '400' },
-    legalLinkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingBottom: 18, flexWrap: 'wrap' },
+    legalLinkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6, paddingBottom: 18, flexWrap: 'wrap' },
     legalLinkText: { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
     legalLinkTextEmphasis: { fontSize: 12, color: colors.textPrimary, fontWeight: '800' },
     legalLinkDivider: { fontSize: 12, color: colors.border },
