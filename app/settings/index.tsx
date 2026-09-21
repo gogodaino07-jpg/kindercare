@@ -205,11 +205,10 @@ export default function SettingsScreen() {
       />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
-          {/* 카드 영역만 스크롤 대상 — 큰 화면에선 내용 높이만큼만 차지해 스크롤이 생기지 않고,
-              작은 화면에서 넘칠 때만 이 영역 안에서 스크롤된다(푸터는 아래에 고정). */}
+          {/* 푸터까지 전부 스크롤 영역 안 — 내용이 화면에 다 들어가면 스크롤이 안 되고,
+              넘칠 때만 스크롤돼 푸터가 잘리지 않고 끝까지 볼 수 있다. */}
           <ScrollView
-            style={styles.cardScroll}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: 56 + insets.bottom }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             scrollEnabled={canScrollContent}
@@ -367,9 +366,7 @@ export default function SettingsScreen() {
                   <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
                 </TouchableOpacity>
               </View>
-          </ScrollView>
 
-          <View style={[styles.footerArea, { paddingBottom: 56 + insets.bottom }]}>
             <View style={styles.versionContainer}>
               <Text style={styles.versionText}>버전 정보 v{appVersion}</Text>
             </View>
@@ -403,7 +400,7 @@ export default function SettingsScreen() {
                 <Text style={styles.legalLinkText}>문의하기</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </ScrollView>
         </View>
       </SafeAreaView>
     </View>
@@ -419,11 +416,7 @@ function createStyles(colors: any) {
     // flexGrow:1이 있으면 내용이 화면보다 짧을 때(카드 몇 개 줄인 뒤로 더
     // 자주 그럼) 그 차이만큼 억지로 늘어나 하단에 여백만 남는다 — 내용
     // 높이 그대로 두고 자연스럽게 짧아지게 둔다.
-    // RN ScrollView 기본값이 flexGrow: 1이라 그대로 두면 푸터가 화면 맨 아래로 밀려난다 —
-    // 0으로 눌러 카드 높이만큼만 차지하고, 넘칠 때만 flexShrink로 줄어들게 한다.
-    cardScroll: { flexGrow: 0, flexShrink: 1 },
     scrollContent: { paddingTop: 8, paddingHorizontal: 16 },
-    footerArea: { paddingHorizontal: 16 },
     securePill: {
       flexDirection: 'row',
       alignItems: 'center',
