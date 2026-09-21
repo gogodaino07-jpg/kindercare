@@ -345,20 +345,36 @@ export default function ChildProfileScreen() {
 
   const handleDelete = () => {
     if (!editingChild) return;
+    const finishDelete = (keepData: boolean) => {
+      deleteChild(editingChild.id, { keepData });
+      justSavedRef.current = true;
+      router.back();
+    };
+
+    // 마지막 남은 아이를 지울 때만 일정/급식표를 남길지 고르게 한다 — 다른 아이가 남아
+    // 있으면 그 일정을 붙여줄 곳이 없어서 함께 지워진다(AppDataContext.deleteChild).
+    if (children.length === 1) {
+      showAlert({
+        title: '아이 프로필 삭제',
+        message:
+          `${editingChild.name} 프로필을 삭제해요.\n\n` +
+          '· 아이만 삭제: 일정·급식표는 남겨두고, 다음에 아이를 등록하면 이어져요.\n' +
+          '· 모두 초기화: 일정·급식표도 함께 삭제해요.',
+        dismissible: true,
+        buttons: [
+          { text: '아이만 삭제', onPress: () => finishDelete(true) },
+          { text: '모두 초기화', style: 'destructive', onPress: () => finishDelete(false) },
+        ],
+      });
+      return;
+    }
+
     showAlert({
       title: '아이 프로필 삭제',
-      message: `정말 이 아이 프로필을 삭제하시겠습니까?\n${editingChild.name}`,
+      message: `정말 이 아이 프로필을 삭제하시겠습니까?\n${editingChild.name}\n\n이 아이의 일정과 급식표도 함께 삭제돼요.`,
       buttons: [
         { text: '취소', style: 'cancel' },
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: () => {
-            deleteChild(editingChild.id);
-            justSavedRef.current = true;
-            router.back();
-          },
-        },
+        { text: '삭제', style: 'destructive', onPress: () => finishDelete(false) },
       ],
     });
   };

@@ -144,7 +144,7 @@ interface AppDataContextValue {
   selectChild: (id: string) => void;
   addChild: (input: Omit<Child, 'id'>) => void;
   updateChild: (id: string, input: Omit<Child, 'id'>) => void;
-  deleteChild: (id: string) => void;
+  deleteChild: (id: string, options?: { keepData?: boolean }) => void;
 
   // Events
   events: Event[];
@@ -819,6 +819,14 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
+  const deleteMealPlanFromCloud = async (email: string, mealPlanId: string) => {
+    try {
+      await getDb().collection('users').doc(email).collection('mealPlans').doc(mealPlanId).delete();
+    } catch (error) {
+      console.error('❌ Firestore Delete Meal Plan Error:', error);
+    }
+  };
+
   const deleteEventFromCloud = async (email: string, eventId: string) => {
     try {
       console.log('📡 Deleting event from cloud:', eventId);
@@ -1091,15 +1099,24 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       childProfiles.length === 0
         ? events.filter((e) => e.childId === NO_CHILD_ID).map((e) => ({ ...e, childId: newChild.id }))
         : [];
+    const adoptedMealPlans =
+      childProfiles.length === 0
+        ? mealPlans.filter((m) => m.childId === NO_CHILD_ID).map((m) => ({ ...m, childId: newChild.id }))
+        : [];
     setChildProfiles((prev) => [...prev, newChild]);
     setSelectedChildId(newChild.id);
     if (adoptedEvents.length > 0) {
       const adoptedIds = new Set(adoptedEvents.map((e) => e.id));
       setEvents((prev) => prev.map((e) => (adoptedIds.has(e.id) ? { ...e, childId: newChild.id } : e)));
     }
+    if (adoptedMealPlans.length > 0) {
+      const adoptedMealIds = new Set(adoptedMealPlans.map((m) => m.id));
+      setMealPlans((prev) => prev.map((m) => (adoptedMealIds.has(m.id) ? { ...m, childId: newChild.id } : m)));
+    }
     if (effectiveFamilyOwnerEmail) {
       pushChildToCloud(effectiveFamilyOwnerEmail, newChild, undefined);
       adoptedEvents.forEach((e) => pushEventToCloud(effectiveFamilyOwnerEmail, e));
+      adoptedMealPlans.forEach((m) => pushMealPlanToCloud(effectiveFamilyOwnerEmail, m));
     }
   };
 
@@ -1114,7 +1131,34 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
-  const deleteChild = (id: string) => {
+  /**
+   * 아이 프로필 삭제. 그 아이의 일정/급식표는 함께 지우는 게 기본이고, 마지막 남은 아이를
+   * 지울 때만 keepData로 "정보는 남기고 아이만 삭제"를 고를 수 있다 — 이 경우 일정/급식표는
+   * NO_CHILD_ID로 남아 있다가 다음에 아이를 등록하면 그 아이에게 귀속된다(addChild).
+   * 다른 아이가 남아 있으면 일정을 붙여줄 곳이 없어 keepData는 무시하고 함께 지운다.
+   */
+  const deleteChild = (id: string, options?: { keepData?: boolean }) => {
+    const isLastChild = childProfiles.length === 1 && childProfiles[0]?.id === id;
+    const keepData = !!options?.keepData && isLastChild;
+    const childEvents = events.filter((e) => e.childId === id);
+    const childMealPlans = mealPlans.filter((m) => m.childId === id);
+    if (keepData) {
+      setEvents((prev) => prev.map((e) => (e.childId === id ? { ...e, childId: NO_CHILD_ID } : e)));
+      setMealPlans((prev) => prev.map((m) => (m.childId === id ? { ...m, childId: NO_CHILD_ID } : m)));
+      if (effectiveFamilyOwnerEmail) {
+        childEvents.forEach((e) => pushEventToCloud(effectiveFamilyOwnerEmail, { ...e, childId: NO_CHILD_ID }));
+        childMealPlans.forEach((m) => pushMealPlanToCloud(effectiveFamilyOwnerEmail, { ...m, childId: NO_CHILD_ID }));
+      }
+    } else {
+      if (childEvents.length > 0) deleteEvents(childEvents.map((e) => e.id));
+      if (childMealPlans.length > 0) {
+        const mealIds = new Set(childMealPlans.map((m) => m.id));
+        setMealPlans((prev) => prev.filter((m) => !mealIds.has(m.id)));
+        if (effectiveFamilyOwnerEmail) {
+          childMealPlans.forEach((m) => deleteMealPlanFromCloud(effectiveFamilyOwnerEmail, m.id));
+        }
+      }
+    }
     setChildProfiles((prev) => prev.filter((c) => c.id !== id));
     setSelectedChildId((prev) => {
       if (prev !== id) return prev;
