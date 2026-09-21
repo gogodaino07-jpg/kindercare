@@ -131,23 +131,39 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
   const photoUri = selectedChild?.photoUri;
   const daysOld = daysSinceBirth(selectedChild?.birthdate);
 
-  // 일반 사용자에게는 안 보이는 숨은 테스트 진입점 — "생후 N일째" 문구를 빠르게
-  // 3번 연속 누르면 onDaysOldTripleTap을 호출한다(예: 온보딩 튜토리얼 다시 보기).
-  // 탭 사이 간격이 700ms를 넘으면 연속 탭이 아니라고 보고 횟수를 리셋한다.
+  // "생후 N일째" 문구를 한 번 눌러도 아이 전환 팝업이 열리게 한다. 다만 이 문구에는 일반
+  // 사용자에게 안 보이는 숨은 테스트 진입점(3번 연속 탭 → onDaysOldTripleTap, 예: 온보딩
+  // 튜토리얼 다시 보기)이 있어서, 3번째 탭인지 확인하려고 탭 후 0.3초를 기다렸다가 그 사이
+  // 다음 탭이 없을 때만 전환 팝업을 연다. 탭 사이 간격이 700ms를 넘으면 연속 탭으로 안 본다.
   const tripleTapCountRef = useRef(0);
   const tripleTapLastAtRef = useRef(0);
+  const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
+    };
+  }, []);
   const handleDaysOldPress = () => {
-    if (!onDaysOldTripleTap) return;
+    if (!onDaysOldTripleTap) {
+      onPressChild();
+      return;
+    }
     const now = Date.now();
     if (now - tripleTapLastAtRef.current > 700) {
       tripleTapCountRef.current = 0;
     }
     tripleTapCountRef.current += 1;
     tripleTapLastAtRef.current = now;
+    if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
     if (tripleTapCountRef.current >= 3) {
       tripleTapCountRef.current = 0;
       onDaysOldTripleTap();
+      return;
     }
+    singleTapTimerRef.current = setTimeout(() => {
+      tripleTapCountRef.current = 0;
+      onPressChild();
+    }, 300);
   };
 
   return (
@@ -191,7 +207,12 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
             </View>
           </Pressable>
           {daysOld !== undefined && (
-            <Pressable style={styles.daysOldRow} onPress={handleDaysOldPress} hitSlop={6}>
+            <Pressable
+              style={styles.daysOldRow}
+              onPress={handleDaysOldPress}
+              hitSlop={{ top: 4, bottom: 12, right: 12 }}
+              accessibilityLabel="아이 전환하기"
+            >
               <MaterialCommunityIcons name="clock-outline" size={13} color={colors.gray400} />
               <Text style={styles.daysOldText}>생후 {daysOld}일째</Text>
             </Pressable>
@@ -331,7 +352,9 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      marginTop: 3,
+      // 세로로 살짝 넉넉하게 잡아 터치가 쉽게 한다(위쪽 margin을 padding으로 옮겨 겉모양은 그대로).
+      paddingTop: 4,
+      paddingBottom: 6,
     },
     daysOldText: {
       fontSize: 12.5,
