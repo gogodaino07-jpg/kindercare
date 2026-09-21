@@ -158,7 +158,7 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
             <View style={styles.dragHandle} />
 
             <View style={styles.headerRow}>
-              <Text style={styles.title}>아이 전환·관리</Text>
+              <Text style={styles.title}>아이 선택</Text>
               <Pressable onPress={handleClose} accessibilityLabel="닫기" hitSlop={8}>
                 <Text style={styles.closeIcon}>✕</Text>
               </Pressable>
