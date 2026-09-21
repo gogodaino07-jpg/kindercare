@@ -213,21 +213,31 @@ exports.deleteAccount = onCall(
 
 /** 하루에 같은 사람이 너무 많이 보내는 걸 막는 최소한의 방어선(스팸/오남용 방지). */
 const SUPPORT_EMAIL_DAILY_LIMIT = 10;
+/** 게스트는 입력한 이메일을 바꿔가며 위 한도를 우회할 수 있어서, 전체 사용자 합계로도 하루 상한을 건다. */
+const SUPPORT_EMAIL_GLOBAL_DAILY_LIMIT = 50;
+const SUPPORT_EMAIL_GLOBAL_KEY = '_global';
 
 // 로그인 없이도(게스트 모드) 문의를 보낼 수 있어야 하므로, 로그인 상태면
 // uid로, 아니면 사용자가 입력한 답변받을 이메일로 한도를 구분한다.
 async function assertUnderSupportEmailLimit(limitKey) {
   const todayKey = toISODateUTC(new Date());
   const guardRef = getFirestore().collection('supportEmailGuard').doc(limitKey);
+  const globalRef = getFirestore().collection('supportEmailGuard').doc(SUPPORT_EMAIL_GLOBAL_KEY);
 
   await getFirestore().runTransaction(async (tx) => {
-    const snap = await tx.get(guardRef);
+    const [snap, globalSnap] = await Promise.all([tx.get(guardRef), tx.get(globalRef)]);
     const data = snap.exists ? snap.data() : null;
     const dayCount = data?.dayKey === todayKey ? (data.dayCount ?? 0) : 0;
     if (dayCount >= SUPPORT_EMAIL_DAILY_LIMIT) {
       throw new HttpsError('resource-exhausted', '오늘 문의 가능 횟수를 모두 사용했어요. 내일 다시 시도해주세요.');
     }
+    const globalData = globalSnap.exists ? globalSnap.data() : null;
+    const globalCount = globalData?.dayKey === todayKey ? (globalData.dayCount ?? 0) : 0;
+    if (globalCount >= SUPPORT_EMAIL_GLOBAL_DAILY_LIMIT) {
+      throw new HttpsError('resource-exhausted', '오늘 문의가 너무 많이 접수됐어요. 내일 다시 시도해주세요.');
+    }
     tx.set(guardRef, { dayKey: todayKey, dayCount: dayCount + 1 });
+    tx.set(globalRef, { dayKey: todayKey, dayCount: globalCount + 1 });
   });
 }
 
@@ -260,7 +270,9 @@ exports.sendSupportEmail = onCall(
       throw new HttpsError('invalid-argument', '문의 내용이 올바르지 않습니다.');
     }
 
-    const limitKey = request.auth ? `uid:${request.auth.uid}` : `email:${replyEmail.trim().toLowerCase()}`;
+    // 이메일은 문서 ID로 그대로 쓰면 '/' 같은 문자로 경로가 깨질 수 있어 해시해서 쓴다.
+    const emailHash = crypto.createHash('sha256').update(replyEmail.trim().toLowerCase()).digest('hex');
+    const limitKey = request.auth ? `uid:${request.auth.uid}` : `email:${emailHash}`;
     await assertUnderSupportEmailLimit(limitKey);
 
     const transporter = nodemailer.createTransport({
