@@ -61,6 +61,11 @@ export default function SettingsScreen() {
 
   const appVersion = Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.0';
 
+  // 카드 영역이 화면보다 길어 실제로 넘칠 때만 카드 영역 스크롤을 켠다.
+  const [scrollContainerHeight, setScrollContainerHeight] = useState(0);
+  const [scrollContentHeight, setScrollContentHeight] = useState(0);
+  const canScrollContent = scrollContentHeight > scrollContainerHeight + 1;
+
   const [weatherLabel, setWeatherLabel] = useState('내 지역');
   const [weatherPreview, setWeatherPreview] = useState<{ emoji: string; tempC: number } | null>(null);
 
@@ -200,13 +205,18 @@ export default function SettingsScreen() {
       />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
+          {/* 카드 영역만 스크롤 대상 — 큰 화면에선 내용 높이만큼만 차지해 스크롤이 생기지 않고,
+              작은 화면에서 넘칠 때만 이 영역 안에서 스크롤된다(푸터는 아래에 고정). */}
           <ScrollView
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: 56 + insets.bottom }]}
+            style={styles.cardScroll}
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            scrollEnabled={false}
+            scrollEnabled={canScrollContent}
             bounces={false}
             overScrollMode="never"
+            onLayout={(e) => setScrollContainerHeight(e.nativeEvent.layout.height)}
+            onContentSizeChange={(_w, h) => setScrollContentHeight(h)}
           >
             {/* 계정 카드 — 로그인 없이 온보딩만 마친 게스트는 탭해서 바로 로그인할 수 있다. */}
             <Pressable
@@ -357,7 +367,9 @@ export default function SettingsScreen() {
                   <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
                 </TouchableOpacity>
               </View>
+          </ScrollView>
 
+          <View style={[styles.footerArea, { paddingBottom: 56 + insets.bottom }]}>
             <View style={styles.versionContainer}>
               <Text style={styles.versionText}>버전 정보 v{appVersion}</Text>
             </View>
@@ -391,7 +403,7 @@ export default function SettingsScreen() {
                 <Text style={styles.legalLinkText}>문의하기</Text>
               </TouchableOpacity>
             </View>
-          </ScrollView>
+          </View>
         </View>
       </SafeAreaView>
     </View>
@@ -407,7 +419,11 @@ function createStyles(colors: any) {
     // flexGrow:1이 있으면 내용이 화면보다 짧을 때(카드 몇 개 줄인 뒤로 더
     // 자주 그럼) 그 차이만큼 억지로 늘어나 하단에 여백만 남는다 — 내용
     // 높이 그대로 두고 자연스럽게 짧아지게 둔다.
+    // RN ScrollView 기본값이 flexGrow: 1이라 그대로 두면 푸터가 화면 맨 아래로 밀려난다 —
+    // 0으로 눌러 카드 높이만큼만 차지하고, 넘칠 때만 flexShrink로 줄어들게 한다.
+    cardScroll: { flexGrow: 0, flexShrink: 1 },
     scrollContent: { paddingTop: 8, paddingHorizontal: 16 },
+    footerArea: { paddingHorizontal: 16 },
     securePill: {
       flexDirection: 'row',
       alignItems: 'center',
