@@ -429,7 +429,15 @@ export default function UploadScreen() {
       }
     }
     if (!selectedChild) {
-      showAlert({ title: '아이를 선택해주세요', message: '아이를 먼저 선택해주세요', icon: '👶' });
+      showAlert({
+        title: '아이를 선택해주세요',
+        message: '아이를 먼저 선택해주세요',
+        icon: '👶',
+        buttons: [
+          { text: '취소', style: 'cancel' },
+          { text: '아이 등록하기', onPress: () => router.push('/child-profile') },
+        ],
+      });
       return;
     }
 
