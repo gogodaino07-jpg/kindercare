@@ -356,11 +356,18 @@ export default function ChildProfileScreen() {
     // 다른 아이인지 앱이 알 수 없으니 등록하기 전에 이어받을지 직접 고르게 한다.
     if (hasKeptDataFromDeletedChild) {
       showAlert({
-        title: '이전 일정을 이어받을까요?',
+        title: '일정을 이어받을까요?',
         message: (
           <View>
-            <Text style={{ fontSize: 15, lineHeight: 23, textAlign: 'center', color: colors.textSecondary }}>
-              이전 아이를 삭제하면서 남겨둔{'\n'}일정과 급식표가 있어요.
+            <AlertNameLead
+              name={name.trim()}
+              tail={name.trim() ? '에게 이어줄 일정이 있어요.' : '이어줄 일정이 있어요.'}
+              colors={colors}
+            />
+            <Text
+              style={{ fontSize: 13, lineHeight: 19, textAlign: 'center', color: colors.textSecondary, marginTop: 4 }}
+            >
+              이전 아이를 삭제하면서 남겨둔 일정과 급식표예요.
             </Text>
             <View style={{ marginTop: 14, gap: 8 }}>
               <AlertOptionCard
