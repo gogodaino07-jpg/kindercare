@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
-import { AppState, Image, Modal, Pressable, StyleSheet, View, Dimensions } from 'react-native';
+import { AppState, Modal, Pressable, StyleSheet, View, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
@@ -165,16 +165,12 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
             </View>
 
             {sortedChildren.length === 0 ? (
-              // 아이가 하나도 없을 때(신규 게스트 등) — 시트에 확보해둔 최소 높이
-              // 안에서 그냥 방치되던 넓은 빈 공간 대신, 가운데 정렬된 안내와
-              // 눈에 띄는 채워진 버튼으로 첫 아이 등록을 유도한다.
+              // 아이가 하나도 없을 때(신규 게스트 등) — 장식용 이미지 없이 짧은 안내와
+              // 첫 아이 등록 버튼만 담백하게 보여준다.
               <View style={styles.emptyState}>
-                <View style={styles.emptyIconCircle}>
-                  <Text style={styles.emptyIconText}>🧒</Text>
-                </View>
                 <Text style={styles.emptyTitle}>아직 등록된 아이가 없어요</Text>
                 <Text style={styles.emptySubtitle}>
-                  아이를 등록하면 일정과 준비물을{'\n'}스마트하게 챙길 수 있어요
+                  아이를 등록하면 일정과 준비물을 스마트하게 챙길 수 있어요
                 </Text>
                 <Pressable style={styles.emptyAddButton} onPress={handleAddChild}>
                   <Text style={styles.emptyAddButtonText}>+ 아이 추가하기</Text>
@@ -185,16 +181,19 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
                 {sortedChildren.map((child) => {
                   const isSelected = child.id === selectedChild?.id;
                   const locked = isChildLocked(children, child.id, isSubscribed);
-                  const label = [child.name, `${child.age}세`, child.className]
+                  const subLabel = [
+                    child.age !== undefined && child.age !== null ? `${child.age}세` : undefined,
+                    child.className,
+                  ]
                     .filter(Boolean)
                     .join(' · ');
                   return (
                     <View
                       key={child.id}
-                      style={[styles.card, isSelected && styles.cardSelected, locked && styles.cardLocked]}
+                      style={[styles.row, isSelected && styles.rowSelected, locked && styles.rowLocked]}
                     >
                       <Pressable
-                        style={styles.cardMain}
+                        style={styles.rowMain}
                         onPress={() => {
                           if (locked) {
                             handleLockedChildPress();
@@ -204,14 +203,19 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
                           handleClose();
                         }}
                       >
-                        {child.photoUri ? (
-                          <Image source={{ uri: child.photoUri }} style={[styles.avatar, locked && styles.avatarLocked]} />
-                        ) : (
-                          <View style={styles.avatarPlaceholder}>
-                            <Text style={styles.avatarIcon}>{child.avatarEmoji ?? '🧒'}</Text>
-                          </View>
-                        )}
-                        <Text style={[styles.cardLabel, locked && styles.cardLabelLocked]}>{label}</Text>
+                        <View style={[styles.radio, isSelected && styles.radioSelected]}>
+                          {isSelected && <View style={styles.radioDot} />}
+                        </View>
+                        <View style={styles.rowTextBlock}>
+                          <Text style={[styles.rowName, locked && styles.rowNameLocked]} numberOfLines={1}>
+                            {child.name || '이름 없음'}
+                          </Text>
+                          {!!subLabel && (
+                            <Text style={styles.rowSub} numberOfLines={1}>
+                              {subLabel}
+                            </Text>
+                          )}
+                        </View>
                         {locked && <Text style={styles.lockIcon}>🔒</Text>}
                       </Pressable>
                       <Pressable
@@ -259,102 +263,109 @@ function createStyles(colors: ThemeColors, bottomInset: number, isDark: boolean)
     },
     sheet: {
       backgroundColor: colors.skyBackground,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
-      // 아이가 한두 명뿐이면 시트가 너무 낮아 보인다는 피드백으로 화면 높이의
-      // 일정 비율만큼은 항상 확보한다. (0.42는 아이 1명일 때 하단 여백이
-      // 과했다는 피드백으로 축소함)
-      minHeight: SCREEN_HEIGHT * 0.32,
-      padding: 22,
-      paddingTop: 16,
-      paddingBottom: 24 + bottomInset,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      padding: 20,
+      paddingTop: 12,
+      paddingBottom: 20 + bottomInset,
       // 다크모드에서는 시트 배경이 거의 검정이라 뒤의 딤 배경과 경계가 흐려져,
       // 위쪽 모서리에 옅은 테두리를 더해 시트 영역을 또렷하게 구분한다.
       ...(isDark && { borderTopWidth: 1, borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.border }),
       ...SHADOW,
     },
     dragHandle: {
-      width: 40,
+      width: 36,
       height: 4,
       backgroundColor: colors.gray100,
       borderRadius: 2,
       alignSelf: 'center',
-      marginBottom: 16,
+      marginBottom: 12,
     },
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 18,
+      marginBottom: 12,
     },
     title: {
-      fontSize: 16,
-      fontWeight: '700',
+      fontSize: 15,
+      fontWeight: '800',
       color: colors.gray900,
     },
     closeIcon: {
-      fontSize: 16,
+      fontSize: 15,
       color: colors.textSecondary,
     },
-    card: {
+    row: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: colors.cardWhite,
-      borderRadius: 18,
-      marginBottom: 12,
-      paddingRight: 14,
-      ...(isDark && { borderWidth: 1, borderColor: colors.border }),
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: isDark ? colors.border : 'transparent',
+      marginBottom: 8,
+      paddingRight: 10,
       ...SHADOW,
+      shadowOpacity: 0.06,
+      elevation: 1,
     },
-    cardSelected: {
+    rowSelected: {
       backgroundColor: colors.lightBlueBg,
+      borderColor: colors.accent,
     },
-    cardLocked: {
+    rowLocked: {
       opacity: 0.55,
     },
-    cardMain: {
+    rowMain: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 18,
+      paddingVertical: 13,
+      paddingHorizontal: 14,
     },
-    avatar: {
-      width: 58,
-      height: 58,
-      borderRadius: 29,
-      marginRight: 14,
-    },
-    avatarLocked: {
-      opacity: 0.6,
-    },
-    avatarPlaceholder: {
-      width: 58,
-      height: 58,
-      borderRadius: 29,
-      backgroundColor: colors.gray100,
+    radio: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: colors.border,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 14,
+      marginRight: 12,
     },
-    avatarIcon: {
-      fontSize: 28,
+    radioSelected: {
+      borderColor: colors.accent,
     },
-    cardLabel: {
+    radioDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: colors.accent,
+    },
+    rowTextBlock: {
       flex: 1,
-      fontSize: 16,
-      fontWeight: '600',
+    },
+    rowName: {
+      fontSize: 15,
+      fontWeight: '700',
       color: colors.gray900,
     },
-    cardLabelLocked: {
+    rowNameLocked: {
       color: colors.textSecondary,
     },
+    rowSub: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
     lockIcon: {
-      fontSize: 14,
+      fontSize: 13,
       marginLeft: 6,
     },
     editButton: {
-      paddingVertical: 7,
-      paddingHorizontal: 14,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
       borderRadius: 999,
       backgroundColor: colors.gray100,
     },
@@ -365,8 +376,7 @@ function createStyles(colors: ThemeColors, bottomInset: number, isDark: boolean)
     },
     addButton: {
       marginTop: 2,
-      marginBottom: 4,
-      paddingVertical: 17,
+      paddingVertical: 13,
       alignItems: 'center',
       borderRadius: 14,
       borderWidth: 1,
@@ -374,53 +384,37 @@ function createStyles(colors: ThemeColors, bottomInset: number, isDark: boolean)
       borderStyle: 'dashed',
     },
     addButtonText: {
-      fontSize: 14,
+      fontSize: 13.5,
       fontWeight: '700',
       color: colors.accent,
     },
     emptyState: {
-      flex: 1,
       alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 20,
+      paddingTop: 8,
+      paddingBottom: 4,
     },
-    emptyIconCircle: {
-      width: 72,
-      height: 72,
-      borderRadius: 36,
-      backgroundColor: colors.lightBlueBg,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 16,
-    },
-    emptyIconText: { fontSize: 34 },
     emptyTitle: {
-      fontSize: 16,
+      fontSize: 15,
       fontWeight: '800',
       color: colors.gray900,
       marginBottom: 6,
     },
     emptySubtitle: {
-      fontSize: 13,
+      fontSize: 12.5,
       color: colors.textSecondary,
       textAlign: 'center',
-      lineHeight: 19,
-      marginBottom: 24,
+      lineHeight: 18,
+      marginBottom: 18,
     },
     emptyAddButton: {
+      alignSelf: 'stretch',
+      alignItems: 'center',
       backgroundColor: colors.accent,
-      borderRadius: 999,
-      paddingVertical: 15,
-      paddingHorizontal: 32,
-      ...SHADOW,
-      shadowColor: colors.accent,
-      shadowOpacity: 0.28,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 3,
+      borderRadius: 14,
+      paddingVertical: 13,
     },
     emptyAddButtonText: {
-      fontSize: 15,
+      fontSize: 14,
       fontWeight: '800',
       color: '#FFFFFF',
     },
