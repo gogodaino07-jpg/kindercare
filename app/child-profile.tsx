@@ -50,6 +50,50 @@ function formatBirthdate(date: Date): string {
 }
 
 
+/** 삭제/이어받기 알림창 본문의 첫 줄 — 이름은 크고 진하게, 나머지 문구는 차분하게 보여준다. */
+function AlertNameLead({ name, tail, colors }: { name?: string; tail: string; colors: ThemeColors }) {
+  return (
+    <Text style={{ fontSize: 15, lineHeight: 23, textAlign: 'center', color: colors.textSecondary }}>
+      {name ? <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>{name}</Text> : null}
+      {tail}
+    </Text>
+  );
+}
+
+/** 알림창 안의 선택지 설명 카드 — 왼쪽 색 막대와 색 제목으로 각 선택지를 구분한다. */
+function AlertOptionCard({
+  title,
+  description,
+  tone,
+  colors,
+}: {
+  title: string;
+  description: string;
+  tone: 'default' | 'danger';
+  colors: ThemeColors;
+}) {
+  const accent = tone === 'danger' ? colors.tomorrowRed : colors.accent;
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignSelf: 'stretch',
+        backgroundColor: colors.gray100,
+        borderRadius: 14,
+        overflow: 'hidden',
+      }}
+    >
+      <View style={{ width: 4, backgroundColor: accent }} />
+      <View style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 14 }}>
+        <Text style={{ fontSize: 14, fontWeight: '800', color: accent, marginBottom: 3 }}>{title}</Text>
+        <Text style={{ fontSize: 13, lineHeight: 19, fontWeight: '500', color: colors.textPrimary }}>
+          {description}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export default function ChildProfileScreen() {
   const router = useRouter();
   const navigation = useNavigation();
@@ -313,10 +357,27 @@ export default function ChildProfileScreen() {
     if (hasKeptDataFromDeletedChild) {
       showAlert({
         title: '이전 일정을 이어받을까요?',
-        message:
-          '이전 아이를 삭제하면서 일정과 급식표를 남겨두었어요.\n\n' +
-          '· 이어받기: 이 아이의 일정으로 이어져요.\n' +
-          '· 초기화하고 시작: 남은 일정과 급식표를 지우고 새로 시작해요.',
+        message: (
+          <View>
+            <Text style={{ fontSize: 15, lineHeight: 23, textAlign: 'center', color: colors.textSecondary }}>
+              이전 아이를 삭제하면서 남겨둔{'\n'}일정과 급식표가 있어요.
+            </Text>
+            <View style={{ marginTop: 14, gap: 8 }}>
+              <AlertOptionCard
+                title="이어받기"
+                description="남아 있던 일정과 급식표가 이 아이의 것으로 이어져요."
+                tone="default"
+                colors={colors}
+              />
+              <AlertOptionCard
+                title="초기화하고 시작"
+                description="남은 일정과 급식표를 지우고 새로 시작해요."
+                tone="danger"
+                colors={colors}
+              />
+            </View>
+          </View>
+        ),
         dismissible: true,
         buttons: [
           { text: '이어받기', onPress: () => createChild(false) },
@@ -377,10 +438,25 @@ export default function ChildProfileScreen() {
     if (children.length === 1) {
       showAlert({
         title: '아이 프로필 삭제',
-        message:
-          `${editingChild.name} 프로필을 삭제해요.\n\n` +
-          '· 아이만 삭제: 일정·급식표는 남겨두고, 다음에 아이를 등록하면 이어져요.\n' +
-          '· 모두 초기화: 일정·급식표도 함께 삭제해요.',
+        message: (
+          <View>
+            <AlertNameLead name={editingChild.name} tail=" 프로필을 삭제할까요?" colors={colors} />
+            <View style={{ marginTop: 14, gap: 8 }}>
+              <AlertOptionCard
+                title="아이만 삭제"
+                description="일정·급식표는 남겨두고, 다음에 아이를 등록하면 이어져요."
+                tone="default"
+                colors={colors}
+              />
+              <AlertOptionCard
+                title="모두 초기화"
+                description="일정·급식표도 함께 삭제해요."
+                tone="danger"
+                colors={colors}
+              />
+            </View>
+          </View>
+        ),
         dismissible: true,
         buttons: [
           { text: '아이만 삭제', onPress: () => finishDelete(true) },
@@ -392,7 +468,19 @@ export default function ChildProfileScreen() {
 
     showAlert({
       title: '아이 프로필 삭제',
-      message: `정말 이 아이 프로필을 삭제하시겠습니까?\n${editingChild.name}\n\n이 아이의 일정과 급식표도 함께 삭제돼요.`,
+      message: (
+        <View>
+          <AlertNameLead name={editingChild.name} tail=" 프로필을 삭제할까요?" colors={colors} />
+          <View style={{ marginTop: 14 }}>
+            <AlertOptionCard
+              title="함께 삭제돼요"
+              description="이 아이의 일정과 급식표도 함께 삭제돼요."
+              tone="danger"
+              colors={colors}
+            />
+          </View>
+        </View>
+      ),
       buttons: [
         { text: '취소', style: 'cancel' },
         { text: '삭제', style: 'destructive', onPress: () => finishDelete(false) },
