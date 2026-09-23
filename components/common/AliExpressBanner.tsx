@@ -343,7 +343,7 @@ export default function AliExpressBanner({ style }: AliExpressBannerProps) {
             </Animated.View>
           </View>
           <View style={styles.ctaButton}>
-            <Text style={styles.ctaText}>구매</Text>
+            <Text style={styles.ctaText}>구매하기</Text>
             <Feather name="chevron-right" size={13} color="#FF3D00" />
           </View>
         </View>
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   banner: {
-    paddingVertical: 14,
+    paddingVertical: 15,
     paddingHorizontal: 14,
   },
   bannerContent: {
@@ -375,8 +375,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   imageWrap: {
-    width: 66,
-    height: 66,
+    width: 68,
+    height: 68,
     borderRadius: 15,
     overflow: 'hidden',
     backgroundColor: 'rgba(255,255,255,0.25)',
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 999,
     paddingHorizontal: 11,
-    paddingVertical: 8,
+    paddingVertical: 9,
   },
   ctaText: { fontSize: 12.5, fontWeight: '800', color: '#FF3D00' },
 });

@@ -50,10 +50,54 @@ function formatBirthdate(date: Date): string {
 }
 
 
+/** 삭제/이어받기 알림창 본문의 첫 줄 — 이름은 크고 진하게, 나머지 문구는 차분하게 보여준다. */
+function AlertNameLead({ name, tail, colors }: { name?: string; tail: string; colors: ThemeColors }) {
+  return (
+    <Text style={{ fontSize: 15, lineHeight: 23, textAlign: 'center', color: colors.textSecondary }}>
+      {name ? <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>{name}</Text> : null}
+      {tail}
+    </Text>
+  );
+}
+
+/** 알림창 안의 선택지 설명 카드 — 왼쪽 색 막대와 색 제목으로 각 선택지를 구분한다. */
+function AlertOptionCard({
+  title,
+  description,
+  tone,
+  colors,
+}: {
+  title: string;
+  description: string;
+  tone: 'default' | 'danger';
+  colors: ThemeColors;
+}) {
+  const accent = tone === 'danger' ? colors.tomorrowRed : colors.accent;
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignSelf: 'stretch',
+        backgroundColor: colors.gray100,
+        borderRadius: 14,
+        overflow: 'hidden',
+      }}
+    >
+      <View style={{ width: 4, backgroundColor: accent }} />
+      <View style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 14 }}>
+        <Text style={{ fontSize: 14, fontWeight: '800', color: accent, marginBottom: 3 }}>{title}</Text>
+        <Text style={{ fontSize: 13, lineHeight: 19, fontWeight: '500', color: colors.textPrimary }}>
+          {description}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export default function ChildProfileScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const { children, addChild, updateChild, deleteChild } = useAppData();
+  const { children, addChild, updateChild, deleteChild, hasKeptDataFromDeletedChild } = useAppData();
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
   const { showToast } = useToast();
@@ -66,14 +110,6 @@ export default function ChildProfileScreen() {
 
   const scrollViewRef = useRef<ScrollView>(null);
   const classNameInputRef = useRef<TextInput>(null);
-  // 메인 아이는 삭제 링크가 없어 내용이 한 화면에 다 들어오지만, 메인이 아닌
-  // 아이는 "아이 프로필 삭제" 링크가 하나 더 붙어서 화면보다 길어질 수 있다.
-  // scrollEnabled를 무조건 false로 고정해두면 그 경우 삭제 링크가 화면 밖에
-  // 렌더링된 채 손으로 내려서 볼 방법이 없어진다 — 내용이 실제로 넘칠 때만
-  // 스크롤을 켠다(HomeEmptyContent.tsx와 같은 방식).
-  const [scrollContainerHeight, setScrollContainerHeight] = useState(0);
-  const [scrollContentHeight, setScrollContentHeight] = useState(0);
-  const canScrollContent = scrollContentHeight > scrollContainerHeight + 1;
   const scrollToEndOnFocus = () => {
     // 반 이름/알레르기 입력란은 폼 아래쪽 필드라, 정확한 좌표를 재는 것보다
     // 스크롤 끝으로 이동시키는 편이 New Architecture에서 더 안정적으로 동작함.
@@ -184,6 +220,38 @@ export default function ChildProfileScreen() {
   // 수정하기 전까지는 계속 최신 이름 기준으로 갱신되도록 별도 플래그로 추적.
   // 기존 아이를 수정하는 경우엔 이미 등록된 애칭을 덮어쓰면 안 되므로 true로 시작.
   const givenNameTouchedRef = useRef(!!editingChild?.givenName);
+
+  // 위 useState 초기값들은 마운트 시점에 한 번만 계산되는데, children 목록이 아직
+  // 컨텍스트에서 로딩되기 전에 이 화면이 먼저 렌더되면(editingChild가 처음엔
+  // undefined) 그 뒤 children이 채워져도 name 등 입력값이 계속 빈 값으로 남는
+  // 문제가 있었다("이름 수정 시 자동입력 안됨"). childId별로 한 번만 다시
+  // 채워주되, 사용자가 이미 입력을 시작한 뒤에는(같은 아이 기준으로 재실행되어
+  // 입력 중인 내용을 덮어쓰지 않도록) 다시 실행하지 않는다.
+  const prefilledForRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (childId && !editingChild) return; // children 로딩 대기
+    const key = childId ?? '__new__';
+    if (prefilledForRef.current === key) return; // 이미 이 아이 기준으로 채웠음 — 입력 중인 내용 유지
+    prefilledForRef.current = key;
+    setPhotoUri(editingChild?.photoUri ?? null);
+    setName(editingChild?.name ?? '');
+    setGivenName(editingChild?.givenName ?? '');
+    givenNameTouchedRef.current = !!editingChild?.givenName;
+    setBirthdate(editingChild?.birthdate ? parseISODate(editingChild.birthdate) : null);
+    setAge(editingChild?.age ?? null);
+    setClassName(editingChild ? editingChild.className ?? '없음' : '');
+    setHasNoClass(editingChild ? !editingChild.className : false);
+    setAllergiesText(editingChild?.allergies?.join(', ') ?? '');
+    initialSnapshot.name = editingChild?.name ?? '';
+    initialSnapshot.givenName = editingChild?.givenName ?? '';
+    initialSnapshot.className = editingChild ? editingChild.className ?? '없음' : '';
+    initialSnapshot.age = editingChild?.age ?? null;
+    initialSnapshot.birthdate = editingChild?.birthdate ?? null;
+    initialSnapshot.photoUri = editingChild?.photoUri ?? null;
+    initialSnapshot.allergiesText = editingChild?.allergies?.join(', ') ?? '';
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [childId, editingChild]);
+
   const handleNameChange = (t: string) => {
     const cleaned = stripInvalidCharacters(t);
     setName(cleaned);
@@ -283,7 +351,52 @@ export default function ChildProfileScreen() {
   // 2번째 아이부터는 등록 전에 리워드 광고를 끝까지 봐야 한다 — 첫 아이는 무료.
   // 두 경우 모두 광고를 먼저 다 보여준 뒤에야 실제로 등록하도록 순서를 맞춘다
   // (저장부터 해놓고 광고를 나중에 띄우면, 광고가 끝났을 때 이미 화면이 넘어가 있어 어색하다).
-  const handleConfirmCreate = async () => {
+  const handleConfirmCreate = () => {
+    // 이전에 "아이만 삭제"로 남겨둔 일정/급식표가 있으면, 같은 아이를 다시 등록하는 건지
+    // 다른 아이인지 앱이 알 수 없으니 등록하기 전에 이어받을지 직접 고르게 한다.
+    if (hasKeptDataFromDeletedChild) {
+      showAlert({
+        title: '일정을 이어받을까요?',
+        message: (
+          <View>
+            <AlertNameLead
+              name={name.trim()}
+              tail={name.trim() ? '에게 이어줄 일정이 있어요.' : '이어줄 일정이 있어요.'}
+              colors={colors}
+            />
+            <Text
+              style={{ fontSize: 13, lineHeight: 19, textAlign: 'center', color: colors.textSecondary, marginTop: 4 }}
+            >
+              이전 아이를 삭제하면서 남겨둔 일정과 급식표예요.
+            </Text>
+            <View style={{ marginTop: 14, gap: 8 }}>
+              <AlertOptionCard
+                title="이어받기"
+                description="남아 있던 일정과 급식표가 이 아이의 것으로 이어져요."
+                tone="default"
+                colors={colors}
+              />
+              <AlertOptionCard
+                title="초기화하고 시작"
+                description="남은 일정과 급식표를 지우고 새로 시작해요."
+                tone="danger"
+                colors={colors}
+              />
+            </View>
+          </View>
+        ),
+        dismissible: true,
+        buttons: [
+          { text: '이어받기', onPress: () => createChild(false) },
+          { text: '초기화하고 시작', style: 'destructive', onPress: () => createChild(true) },
+        ],
+      });
+      return;
+    }
+    createChild(false);
+  };
+
+  const createChild = async (discardKeptData: boolean) => {
     setIsSaving(true);
     const isAdditionalChild = children.length >= 1;
     if (isAdditionalChild) {
@@ -299,7 +412,7 @@ export default function ChildProfileScreen() {
     } else {
       await showChildSaveAd();
     }
-    addChild(buildInput());
+    addChild(buildInput(), { discardKeptData });
     justSavedRef.current = true;
     setShowSuccessModal(false);
     showToast('저장이 완료되었습니다.');
@@ -319,24 +432,65 @@ export default function ChildProfileScreen() {
     setShowSuccessModal(false);
   };
 
-  const isMainChild = editingChild && children[0]?.id === editingChild.id;
-
   const handleDelete = () => {
     if (!editingChild) return;
+    const finishDelete = (keepData: boolean) => {
+      deleteChild(editingChild.id, { keepData });
+      justSavedRef.current = true;
+      router.back();
+    };
+
+    // 마지막 남은 아이를 지울 때만 일정/급식표를 남길지 고르게 한다 — 다른 아이가 남아
+    // 있으면 그 일정을 붙여줄 곳이 없어서 함께 지워진다(AppDataContext.deleteChild).
+    if (children.length === 1) {
+      showAlert({
+        title: '아이 프로필 삭제',
+        message: (
+          <View>
+            <AlertNameLead name={editingChild.name} tail=" 프로필을 삭제할까요?" colors={colors} />
+            <View style={{ marginTop: 14, gap: 8 }}>
+              <AlertOptionCard
+                title="아이만 삭제"
+                description="일정·급식표는 남겨두고, 다음에 아이를 등록하면 이어져요."
+                tone="default"
+                colors={colors}
+              />
+              <AlertOptionCard
+                title="모두 초기화"
+                description="일정·급식표도 함께 삭제해요."
+                tone="danger"
+                colors={colors}
+              />
+            </View>
+          </View>
+        ),
+        dismissible: true,
+        buttons: [
+          { text: '아이만 삭제', onPress: () => finishDelete(true) },
+          { text: '모두 초기화', style: 'destructive', onPress: () => finishDelete(false) },
+        ],
+      });
+      return;
+    }
+
     showAlert({
       title: '아이 프로필 삭제',
-      message: `정말 이 아이 프로필을 삭제하시겠습니까?\n${editingChild.name}`,
+      message: (
+        <View>
+          <AlertNameLead name={editingChild.name} tail=" 프로필을 삭제할까요?" colors={colors} />
+          <View style={{ marginTop: 14 }}>
+            <AlertOptionCard
+              title="함께 삭제돼요"
+              description="이 아이의 일정과 급식표도 함께 삭제돼요."
+              tone="danger"
+              colors={colors}
+            />
+          </View>
+        </View>
+      ),
       buttons: [
         { text: '취소', style: 'cancel' },
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: () => {
-            deleteChild(editingChild.id);
-            justSavedRef.current = true;
-            router.back();
-          },
-        },
+        { text: '삭제', style: 'destructive', onPress: () => finishDelete(false) },
       ],
     });
   };
@@ -351,7 +505,7 @@ export default function ChildProfileScreen() {
           <MaterialCommunityIcons name="chevron-left" size={26} color={colors.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>아이 프로필 설정</Text>
-        {editingChild && !isMainChild && (
+        {editingChild && (
           <Pressable onPress={handleDelete} hitSlop={8} style={styles.headerButton}>
             <MaterialCommunityIcons name="trash-can-outline" size={22} color={colors.tomorrowRed} />
           </Pressable>
@@ -365,15 +519,12 @@ export default function ChildProfileScreen() {
         ref={scrollViewRef}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
-        // 내용이 화면에 다 들어올 때는 스크롤을 막아 흔들림 없이 고정하고,
-        // (삭제 링크가 붙는 등) 화면보다 길어지는 경우에만 실제로 스크롤한다.
-        // scrollEnabled가 false여도 반 이름/알레르기 입력칸 포커스 시
-        // scrollToEnd로 자동으로 올려주는 동작(scrollToEndOnFocus)은 그대로 동작한다.
-        scrollEnabled={canScrollContent}
+        // 화면을 손으로 끌어 스크롤하지 못하게 고정한다. scrollEnabled가 false여도
+        // 반 이름/알레르기 입력칸 포커스 시 scrollToEnd로 올려주는 동작
+        // (scrollToEndOnFocus)은 코드로 호출하는 스크롤이라 그대로 동작한다.
+        scrollEnabled={false}
         bounces={false}
         overScrollMode="never"
-        onLayout={(e) => setScrollContainerHeight(e.nativeEvent.layout.height)}
-        onContentSizeChange={(_w, h) => setScrollContentHeight(h)}
       >
         <View style={styles.avatarWrap}>
           <LinearGradient colors={AVATAR_RING_GRADIENT} style={styles.avatarRing}>

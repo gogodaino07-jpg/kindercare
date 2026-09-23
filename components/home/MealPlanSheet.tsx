@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useAppData } from '../../context/AppDataContext';
+import { useRequireLogin } from '../../context/GuestLoginGateContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { useTodayISO } from '../../hooks/useTodayISO';
 import { isAllergyMatch } from '../../utils/allergy';
@@ -38,6 +39,7 @@ const AMBER_DEEP = '#B45309';
 export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) {
   const router = useRouter();
   const colors = useThemeColors();
+  const requireLogin = useRequireLogin();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { mealPlans, selectedChild } = useAppData();
   const [expanded, setExpanded] = useState(false);
@@ -119,7 +121,7 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
       Animated.timing(opacityAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
     ]).start(() => {
       onClose();
-      router.push('/meal-scan');
+      requireLogin(() => router.push('/meal-scan'));
     });
   };
 
@@ -138,7 +140,9 @@ export default function MealPlanSheet({ visible, onClose }: MealPlanSheetProps) 
                 <View style={styles.titleRow}>
                   <Text style={styles.title}>오늘의 급식 메뉴</Text>
                   <Pressable style={styles.aiPillButton} onPress={handleAiScan} hitSlop={4}>
+                    <MaterialIcons name="photo-camera" size={11} color={AMBER_DEEP} />
                     <Text style={styles.aiPillButtonText}>AI 분석</Text>
+                    <MaterialIcons name="chevron-right" size={13} color={AMBER_DEEP} />
                   </Pressable>
                 </View>
                 <Text style={styles.dateSubtitle}>{todayDateLabel}</Text>

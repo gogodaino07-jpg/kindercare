@@ -3,8 +3,17 @@ import { getDb } from '../../../utils/firebase';
 
 /** 무료 사용자가 광고 없이 바로 쓸 수 있는 평생 스캔 횟수 — 알림장/급식표를 구분하지 않고
  *  하나의 풀을 공유한다. 이 횟수를 다 쓰면 완전히 막히는 게 아니라, 구독하지 않는 한
- *  스캔마다 광고 시청이 필요해진다(무제한 반복 가능). */
-export const FREE_LIFETIME_LIMIT = 2;
+ *  스캔마다 광고 시청이 필요해진다(무제한 반복 가능).
+ *  2026-09-19: 새 이메일만 만들면 광고 없이 공짜로 스캔 2회를 받아갈 수 있어 봇 계정
+ *  어뷰징의 진입 장벽이 너무 낮았다(가짜 계정 166개 발견) — 0으로 낮춰서 첫 스캔부터
+ *  광고 시청을 요구하게 함. */
+export const FREE_LIFETIME_LIMIT = 0;
+/** 무료 사용자가 광고를 보고 계속 이용할 수 있는 한도를 "무제한"에서 "월 5회"로 낮춘다
+ *  (2026-09-19) — 광고 시청만 하면 스캔이 무제한으로 계속 가능했는데, 스캔 1회당 비용이
+ *  대략 ₩50 안팎이라 이 정도 한도로는 사용자당 비용 부담이 거의 없으면서도(월 최대 250원
+ *  수준), 유치원 알림장이 주 2~3회씩 오는 실사용 빈도를 충분히 커버한다.
+ *  알림장/급식표를 구분하지 않는 공유 풀이며, 매월 초기화된다. */
+export const FREE_MONTHLY_LIMIT = 5;
 /** 탈퇴 후 같은 이메일로 재가입했을 때, 무료 스캔 횟수를 다시 2회로 리셋해주기까지
  *  기다리는 기간. 탈퇴 즉시 리셋해주면 탈퇴+재가입을 반복해 무료 스캔을 무한정
  *  받아가는 어뷰징이 가능해서 텀을 둔다. */
@@ -16,6 +25,13 @@ export const PREMIUM_MONTHLY_LIMIT = 50;
 /** 프리미엄 구독자의 급식표 스캔 주간/월간 한도 — 알림장 스캔과 별도로 관리. */
 export const PREMIUM_MEAL_WEEKLY_LIMIT = 5;
 export const PREMIUM_MEAL_MONTHLY_LIMIT = 15;
+
+/** 2026-09 서울 리전(asia-northeast3) Cloud Build/Artifact Registry/Cloud Run 장애로
+ *  analyzeNewsletter 함수가 응답하지 못하는 동안, 사용자가 광고까지 보고도 "분석 실패"만
+ *  받는 걸 막기 위한 임시 점검 모드. 구글 쪽 복구(또는 리전 이전) 확인되면 false로 되돌릴 것. */
+export const AI_ANALYSIS_MAINTENANCE_MODE = false;
+export const AI_ANALYSIS_MAINTENANCE_MESSAGE =
+  '서버 점검 중이라 AI 분석을 잠시 사용할 수 없어요. 곧 복구할 예정이니 조금만 기다려주세요 🙏';
 
 export type AIUsageType = 'newsletter' | 'meal';
 
@@ -48,6 +64,9 @@ interface PremiumUsageRecord {
 
 interface FreeLifetimeRecord {
   totalCount: number;
+  /** 광고 시청 후 스캔한 횟수의 월간 카운터(FREE_MONTHLY_LIMIT 적용 대상). */
+  monthStart?: string; // YYYY-MM
+  monthCount?: number;
 }
 
 function getMondayISO(date: Date): string {
@@ -106,10 +125,25 @@ export const AIUsageLimitService = {
     return remainingForPremium(usage, type);
   },
 
+  /** 무료 사용자가 광고 시청 후 이번 달에 몇 회 더 스캔할 수 있는지(FREE_MONTHLY_LIMIT
+   *  기준). 구독자에게는 의미 없는 값이라 항상 호출 전에 isSubscribed부터 확인할 것. */
+  async getFreeMonthlyRemaining(userId?: string): Promise<number> {
+    const usage = await this.readFreeLifetimeUsage(userId);
+    const thisMonth = currentMonthStart();
+    const monthCount = usage.monthStart === thisMonth ? (usage.monthCount ?? 0) : 0;
+    return Math.max(0, FREE_MONTHLY_LIMIT - monthCount);
+  },
+
   async consume(userId?: string, isSubscribed = false, type: AIUsageType = 'newsletter'): Promise<number> {
     if (!isSubscribed) {
       const usage = await this.readFreeLifetimeUsage(userId);
-      const nextRecord: FreeLifetimeRecord = { totalCount: usage.totalCount + 1 };
+      const thisMonth = currentMonthStart();
+      const monthCount = usage.monthStart === thisMonth ? (usage.monthCount ?? 0) : 0;
+      const nextRecord: FreeLifetimeRecord = {
+        totalCount: usage.totalCount + 1,
+        monthStart: thisMonth,
+        monthCount: monthCount + 1,
+      };
       await this.writeFreeLifetimeUsage(userId, nextRecord);
       return Math.max(0, FREE_LIFETIME_LIMIT - nextRecord.totalCount);
     }

@@ -11,7 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Defs, Mask, Rect as SvgRect } from 'react-native-svg';
 import { SHADOW, ThemeColors } from '../../constants/theme';
-import { useThemeColors } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 import Text from '../common/AppText';
 
 const AnimatedSvgRect = Animated.createAnimatedComponent(SvgRect);
@@ -83,11 +83,16 @@ function clampHighlight(rect: Rect, screen: { width: number; height: number }, f
 
 /**
  * 앱 첫 실행(온보딩 미완료) 시 홈 화면 주요 영역을 순서대로 스포트라이트로
- * 강조하는 코치마크 투어. 배경/하이라이트 영역을 탭해도 아무 동작이 없고,
- * 오직 툴팁 안의 "다음/시작하기"·"건너뛰기" 버튼으로만 진행/종료된다.
+ * 강조하는 코치마크 투어. 화면 어디를 탭해도 다음 단계로 넘어가고(마지막 단계에선
+ * 종료), 툴팁 안의 "다음/시작하기"·"건너뛰기" 버튼으로도 진행/종료된다.
  */
 export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIntoView }: HomeTutorialOverlayProps) {
-  const colors = useThemeColors();
+  const { colors, resolvedScheme } = useTheme();
+  // 다크모드에서는 카드 배경(cardWhite, 거의 검정)이 뒤의 어두운 딤 배경과
+  // 명도 차이가 작아 툴팁 경계가 흐릿하게 보였다 — 테두리를 더해 경계를
+  // 또렷하게 하고, 대비가 약했던 보조 텍스트(건너뛰기/단계 카운터)도 밝게 올린다.
+  const isDark = resolvedScheme === 'dark';
+  const mutedTextColor = isDark ? colors.gray500 : colors.gray400;
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const [transitioning, setTransitioning] = useState(false);
@@ -325,8 +330,8 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
           mask="url(#tutorial-spotlight-mask)"
         />
       </Svg>
-      {/* 배경/하이라이트 영역 전체의 터치를 삼켜서, 툴팁의 버튼 외에는 아무 동작도 하지 않게 한다. */}
-      <Pressable style={StyleSheet.absoluteFill} onPress={() => {}} />
+      {/* 배경/하이라이트 영역 어디를 눌러도 다음 단계로 넘어간다(뒤의 실제 화면으로는 터치가 새지 않음). */}
+      <Pressable style={StyleSheet.absoluteFill} onPress={handleNext} />
 
       <Animated.View
         pointerEvents="none"
@@ -341,7 +346,17 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
         pointerEvents="box-none"
         style={[styles.tooltipWrap, tooltipBelow ? { top: bottom + 14 } : { bottom: screen.height - top + 14 }]}
       >
-        <Animated.View style={[styles.tooltip, tooltipFadeStyle, { backgroundColor: colors.cardWhite }]}>
+        {/* 툴팁 카드 본문을 눌러도 다음으로 넘어가게 카드 전체를 Pressable로 감싼다 —
+            안쪽 "다음/건너뛰기" 버튼은 그대로 자기 동작을 우선한다. */}
+        <Pressable onPress={handleNext} style={styles.tooltipPressable}>
+        <Animated.View
+          style={[
+            styles.tooltip,
+            tooltipFadeStyle,
+            { backgroundColor: colors.cardWhite },
+            isDark && { borderWidth: 1, borderColor: colors.border },
+          ]}
+        >
           <View
             style={[
               styles.tail,
@@ -351,7 +366,7 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
           />
           <View style={styles.tooltipHeaderRow}>
             <Text style={[styles.tooltipTitle, { color: colors.gray900 }]}>{step.title}</Text>
-            <Text style={[styles.stepCounter, { color: colors.gray400 }]}>
+            <Text style={[styles.stepCounter, { color: mutedTextColor }]}>
               {stepIndex + 1}/{steps.length}
             </Text>
           </View>
@@ -371,7 +386,7 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
             </View>
             <View style={styles.footerButtonsRow}>
               <Pressable onPress={handleSkip} hitSlop={8} style={styles.skipButton}>
-                <Text style={[styles.skipButtonText, { color: colors.gray400 }]}>건너뛰기</Text>
+                <Text style={[styles.skipButtonText, { color: mutedTextColor }]}>건너뛰기</Text>
               </Pressable>
               <Pressable
                 onPress={handleNext}
@@ -386,6 +401,7 @@ export default function HomeTutorialOverlay({ visible, steps, onFinish, scrollIn
             </View>
           </View>
         </Animated.View>
+        </Pressable>
       </View>
     </Animated.View>
   );
@@ -413,6 +429,7 @@ const styles = StyleSheet.create({
     right: 20,
     alignItems: 'center',
   },
+  tooltipPressable: { width: '100%' },
   tooltip: {
     width: '100%',
     borderRadius: 18,

@@ -11,7 +11,6 @@ import {
   Switch,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatTimeOfDay } from '../../components/settings/TimeWheelPicker';
@@ -20,11 +19,11 @@ import AliExpressBanner, { ALIEXPRESS_LEGAL_DISCLOSURE_TEXT } from '../../compon
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../constants/fontOptions';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
+import { useRequireLogin } from '../../context/GuestLoginGateContext';
 import { LockMethod, useAppLock } from '../../context/AppLockContext';
 import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { THEME_MODE_LABELS, useTheme } from '../../context/ThemeContext';
-import { FREE_LIFETIME_LIMIT } from '../../features/newsletter-analysis';
 import { resolveCoords } from '../../hooks/useWeeklyWeather';
 import { fetchWeatherPreview } from '../../utils/weatherPreviewFetch';
 
@@ -38,16 +37,19 @@ const LOCK_METHOD_LABELS: Record<LockMethod, string> = {
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  // 내비게이션 바 표시 여부는 app/_layout.tsx에서 현재 경로 기준으로 전역 관리한다
+  // (홈 화면만 숨김, 나머지는 표시) — 이 화면에서 개별로 제어하지 않는다.
+
   const { mode, setMode, colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { showAlert } = useAlert();
+  const requireLogin = useRequireLogin();
   const {
     resetAllData,
     requestWithdrawal,
     googleAccount,
     signOutGoogle,
-    familyKey,
-    familyMembers,
     notificationSettings,
     updateNotificationSettings,
     fontChoiceId,
@@ -59,7 +61,11 @@ export default function SettingsScreen() {
 
   const appVersion = Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.0';
 
-  const [copied, setCopied] = useState(false);
+  // 카드 영역이 화면보다 길어 실제로 넘칠 때만 카드 영역 스크롤을 켠다.
+  const [scrollContainerHeight, setScrollContainerHeight] = useState(0);
+  const [scrollContentHeight, setScrollContentHeight] = useState(0);
+  const canScrollContent = scrollContentHeight > scrollContainerHeight + 1;
+
   const [weatherLabel, setWeatherLabel] = useState('내 지역');
   const [weatherPreview, setWeatherPreview] = useState<{ emoji: string; tempC: number } | null>(null);
 
@@ -90,16 +96,6 @@ export default function SettingsScreen() {
   const fontSizeOption = FONT_SIZE_OPTIONS.find((o) => o.id === fontSizeChoice) ?? FONT_SIZE_OPTIONS[2];
   const fontSizePx = Math.round(18 * fontSizeOption.scale);
 
-  const handleCopyFamilyKey = async () => {
-    try {
-      await Clipboard.setStringAsync(familyKey);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      showAlert({ title: '복사에 실패했어요', message: '잠시 후 다시 시도해주세요.' });
-    }
-  };
-
   const handleLogout = () => {
     showAlert({
       title: '로그아웃',
@@ -110,11 +106,29 @@ export default function SettingsScreen() {
           text: '로그아웃',
           style: 'destructive',
           onPress: async () => {
+            // 로그아웃하면 계정만 빠지고 게스트 상태로 남는다 — 가족 그룹
+            // 선택 화면 대신 바로 홈으로 보낸다(홈은 이미 게스트를 지원).
             await signOutGoogle();
             router.dismissAll();
-            router.replace('/family-group-start');
+            router.replace('/');
           },
         },
+      ],
+    });
+  };
+
+  const handleShowAccountInfo = () => {
+    showAlert({
+      title: '계정을 연동하면 좋은 점',
+      icon: '💡',
+      message:
+        '로그인하면 아이 프로필과 일정·급식 정보가 클라우드에 저장돼요.\n\n' +
+        '· 다른 기기에서도 같은 정보를 이어서 볼 수 있어요\n' +
+        '· 로그아웃 후 다시 로그인해도 정보가 그대로 남아있어요\n\n' +
+        '로그인 없이도 앱은 그대로 쓸 수 있지만, 이 기기에서 앱을 지우면 그동안의 정보는 사라져요.',
+      buttons: [
+        { text: '확인', style: 'cancel' },
+        { text: '로그인하기', onPress: () => requireLogin(() => {}) },
       ],
     });
   };
@@ -191,23 +205,43 @@ export default function SettingsScreen() {
       />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
+          {/* 푸터까지 전부 스크롤 영역 안 — 내용이 화면에 다 들어가면 스크롤이 안 되고,
+              넘칠 때만 스크롤돼 푸터가 잘리지 않고 끝까지 볼 수 있다. */}
           <ScrollView
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + insets.bottom }]}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: 56 + insets.bottom }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            scrollEnabled={canScrollContent}
+            bounces={false}
+            overScrollMode="never"
+            onLayout={(e) => setScrollContainerHeight(e.nativeEvent.layout.height)}
+            onContentSizeChange={(_w, h) => setScrollContentHeight(h)}
           >
-            {/* 계정 카드 */}
-            <View style={[styles.card, styles.profileCard]}>
+            {/* 계정 카드 — 로그인 없이 온보딩만 마친 게스트는 탭해서 바로 로그인할 수 있다. */}
+            <Pressable
+              style={[styles.card, styles.profileCard]}
+              disabled={!!googleAccount}
+              onPress={() => requireLogin(() => {})}
+            >
                 <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarInitial}>
-                    {(googleAccount?.name ?? '?').trim().charAt(0) || '?'}
-                  </Text>
+                  {googleAccount ? (
+                    <Text style={styles.avatarInitial}>
+                      {(googleAccount.name ?? '').trim().charAt(0) || '?'}
+                    </Text>
+                  ) : (
+                    <MaterialCommunityIcons name="account-outline" size={20} color={colors.accent} />
+                  )}
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={styles.profileNameRow}>
                     <Text style={styles.profileName} numberOfLines={1}>
-                      {googleAccount ? googleAccount.name : '연동된 계정 없음'}
+                      {googleAccount ? googleAccount.name : '계정 연동이 필요합니다'}
                     </Text>
+                    {!googleAccount && (
+                      <Pressable onPress={handleShowAccountInfo} hitSlop={8}>
+                        <MaterialCommunityIcons name="alert-circle-outline" size={15} color={colors.gray400} />
+                      </Pressable>
+                    )}
                     {isSubscribed && (
                       <View style={styles.proBadge}>
                         <MaterialCommunityIcons name="lightning-bolt" size={11} color={colors.orange500} />
@@ -215,60 +249,17 @@ export default function SettingsScreen() {
                       </View>
                     )}
                   </View>
-                  {!!googleAccount?.email && (
+                  {googleAccount?.email ? (
                     <Text style={styles.profileEmail} numberOfLines={1}>
                       {googleAccount.email}
                     </Text>
+                  ) : (
+                    <Text style={styles.profileEmail} numberOfLines={1}>
+                      로그인하고 나만의 설정을 동기화하세요
+                    </Text>
                   )}
                 </View>
-              </View>
-
-            {/* 알림 설정 / 가족 키 공유 위젯 카드 */}
-              <View style={styles.quickRow}>
-                <TouchableOpacity
-                  style={[styles.card, styles.quickCard]}
-                  activeOpacity={0.85}
-                  onPress={() => router.push('/settings/notifications')}
-                >
-                  <View style={styles.quickCardTopRow}>
-                    <View style={[styles.rowIconBadge, { backgroundColor: colors.orangeLight1 }]}>
-                      <MaterialCommunityIcons name="bell-outline" size={18} color={colors.orange500} />
-                    </View>
-                    <Switch
-                      style={styles.notifSwitch}
-                      value={notificationSettings.enabled}
-                      onValueChange={(v) => updateNotificationSettings({ ...notificationSettings, enabled: v })}
-                      trackColor={{ true: colors.accent, false: colors.border }}
-                      thumbColor={colors.cardWhite}
-                    />
-                  </View>
-                  <Text style={styles.quickCardTitle}>알림 설정</Text>
-                  <Text style={styles.quickCardSubtitle} numberOfLines={1}>
-                    {notificationSettings.enabled
-                      ? `${formatTimeOfDay(notificationSettings.dayBeforeTime)} 켜짐`
-                      : '꺼짐'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.card, styles.quickCard]}
-                  activeOpacity={0.85}
-                  onPress={() => router.push({ pathname: '/settings/family', params: { title: '키 공유 / 재발급' } })}
-                >
-                  <View style={styles.quickCardTopRow}>
-                    <View style={[styles.rowIconBadge, { backgroundColor: colors.lightBlueBg }]}>
-                      <MaterialCommunityIcons name="key-variant" size={18} color={colors.accent} />
-                    </View>
-                    <Pressable onPress={handleCopyFamilyKey} hitSlop={6} style={styles.copyPill}>
-                      <Text style={styles.copyPillText}>{copied ? '복사됨' : '복사'}</Text>
-                    </Pressable>
-                  </View>
-                  <Text style={styles.quickCardTitle}>가족 키 공유</Text>
-                  <Text style={styles.quickCardKey} numberOfLines={1}>
-                    {familyKey}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              </Pressable>
 
             {/* 알리익스프레스 제휴 배너 — 좌우 여백 없이 화면 끝까지 꽉 채우는 풀 와이드
                 형식. 화면 전체 스크롤 영역의 좌우 padding(scrollContent)을 음수
@@ -280,47 +271,33 @@ export default function SettingsScreen() {
               </View>
             )}
 
-            {/* 멤버십 + 가족 계정 */}
+            {/* 알림 설정 + 멤버십 — 가족 키 공유/구성원 관리는 당분간 숨김(거의 안 쓰여서) */}
               <View style={styles.card}>
                 <TouchableOpacity
                   style={[styles.row, styles.rowSpaceBetween]}
                   activeOpacity={0.7}
-                  onPress={() => router.push('/settings/subscription')}
+                  onPress={() => router.push('/settings/notifications')}
                 >
                   <View style={styles.rowLeftGroup}>
                     <View style={[styles.rowIconBadge, { backgroundColor: colors.orangeLight1 }]}>
-                      <MaterialCommunityIcons name="creation" size={17} color={colors.orange500} />
+                      <MaterialCommunityIcons name="bell-outline" size={17} color={colors.orange500} />
                     </View>
                     <View>
-                      <Text style={styles.rowTitle}>프리미엄 구독</Text>
-                      <Text
-                        style={[styles.rowSubtitleInline, isSubscribed && { color: colors.accent }]}
-                        numberOfLines={1}
-                      >
-                        {isSubscribed ? '구독 중' : `무료 ${FREE_LIFETIME_LIMIT}회, 이후 광고 시청 시 계속 이용`}
+                      <Text style={styles.rowTitle}>알림 설정</Text>
+                      <Text style={styles.rowSubtitleInline} numberOfLines={1}>
+                        {notificationSettings.enabled
+                          ? `${formatTimeOfDay(notificationSettings.dayBeforeTime)} 켜짐`
+                          : '꺼짐'}
                       </Text>
                     </View>
                   </View>
-                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
-                </TouchableOpacity>
-                <View style={styles.divider} />
-                <TouchableOpacity
-                  style={[styles.row, styles.rowSpaceBetween]}
-                  activeOpacity={0.7}
-                  onPress={() => router.push({ pathname: '/settings/family', params: { title: '구성원 관리' } })}
-                >
-                  <View style={styles.rowLeftGroup}>
-                    <View style={[styles.rowIconBadge, { backgroundColor: colors.lightBlueBg }]}>
-                      <MaterialCommunityIcons name="account-group-outline" size={17} color={colors.accent} />
-                    </View>
-                    <Text style={[styles.rowTitle, { flex: 0 }]}>구성원 관리</Text>
-                  </View>
-                  <View style={styles.rowRightGroup}>
-                    <View style={styles.countPill}>
-                      <Text style={styles.countPillText}>{familyMembers.length}명</Text>
-                    </View>
-                    <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
-                  </View>
+                  <Switch
+                    style={styles.notifSwitch}
+                    value={notificationSettings.enabled}
+                    onValueChange={(v) => updateNotificationSettings({ ...notificationSettings, enabled: v })}
+                    trackColor={{ true: colors.accent, false: colors.border }}
+                    thumbColor={colors.cardWhite}
+                  />
                 </TouchableOpacity>
               </View>
 
@@ -364,6 +341,18 @@ export default function SettingsScreen() {
                   <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
                 </TouchableOpacity>
                 <View style={styles.divider} />
+                <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => router.push('/settings/app-lock')}>
+                  <Text style={styles.rowTitle}>잠금화면</Text>
+                  <Text style={styles.rowValue} numberOfLines={1}>{LOCK_METHOD_LABELS[method]}</Text>
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
+                </TouchableOpacity>
+              </View>
+
+            {/* 유틸리티 설정 */}
+              <View style={styles.card}>
+                <View style={styles.cardHeaderRow}>
+                  <Text style={styles.cardHeaderTitle}>유틸리티 설정</Text>
+                </View>
                 <TouchableOpacity
                   style={styles.row}
                   activeOpacity={0.7}
@@ -374,12 +363,6 @@ export default function SettingsScreen() {
                     {weatherLabel}
                     {weatherPreview ? ` ${weatherPreview.emoji} ${weatherPreview.tempC}°` : ''}
                   </Text>
-                  <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
-                </TouchableOpacity>
-                <View style={styles.divider} />
-                <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => router.push('/settings/app-lock')}>
-                  <Text style={styles.rowTitle}>잠금화면</Text>
-                  <Text style={styles.rowValue} numberOfLines={1}>{LOCK_METHOD_LABELS[method]}</Text>
                   <MaterialCommunityIcons name="chevron-right" size={20} color={colors.gray400} />
                 </TouchableOpacity>
               </View>
@@ -430,7 +413,10 @@ function createStyles(colors: any) {
     headerBackButton: { paddingHorizontal: 4 },
     safeArea: { flex: 1 },
     container: { flex: 1 },
-    scrollContent: { paddingTop: 8, paddingHorizontal: 16, flexGrow: 1 },
+    // flexGrow:1이 있으면 내용이 화면보다 짧을 때(카드 몇 개 줄인 뒤로 더
+    // 자주 그럼) 그 차이만큼 억지로 늘어나 하단에 여백만 남는다 — 내용
+    // 높이 그대로 두고 자연스럽게 짧아지게 둔다.
+    scrollContent: { paddingTop: 8, paddingHorizontal: 16 },
     securePill: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -448,7 +434,7 @@ function createStyles(colors: any) {
       borderWidth: 1,
       borderColor: colors.border,
       padding: 8,
-      marginBottom: 16,
+      marginBottom: 14,
       ...Platform.select({
         ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 8 },
         android: { elevation: 1.5 },
@@ -458,8 +444,8 @@ function createStyles(colors: any) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
-      padding: 12,
-      marginBottom: 12,
+      padding: 13,
+      marginBottom: 10,
     },
     avatarCircle: {
       width: 40,
@@ -483,20 +469,7 @@ function createStyles(colors: any) {
     },
     proBadgeText: { fontSize: 10, fontWeight: '800', color: colors.orange500 },
     profileEmail: { fontSize: 11.5, color: colors.textSecondary, fontWeight: '500' },
-    quickRow: { flexDirection: 'row', gap: 12 },
-    quickCard: { flex: 1, padding: 14 },
-    quickCardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
     notifSwitch: { transform: [{ scaleX: 1.18 }, { scaleY: 1.05 }] },
-    quickCardTitle: { fontSize: 13.5, fontWeight: '800', color: colors.textPrimary, marginBottom: 2 },
-    quickCardSubtitle: { fontSize: 11.5, color: colors.textSecondary, fontWeight: '600' },
-    quickCardKey: { fontSize: 15, fontWeight: '800', color: colors.accent, letterSpacing: 0.5 },
-    copyPill: {
-      backgroundColor: colors.gray100,
-      borderRadius: 999,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-    },
-    copyPillText: { fontSize: 10.5, fontWeight: '700', color: colors.textSecondary },
     rowIconBadge: {
       width: 34,
       height: 34,
@@ -527,7 +500,7 @@ function createStyles(colors: any) {
       justifyContent: 'space-between',
       paddingHorizontal: 12,
       paddingTop: 6,
-      paddingBottom: 12,
+      paddingBottom: 10,
     },
     cardHeaderTitle: { fontSize: 13.5, fontWeight: '800', color: colors.textSecondary },
     segmentedControl: {
@@ -544,7 +517,7 @@ function createStyles(colors: any) {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 5,
-      paddingVertical: 9,
+      paddingVertical: 10,
       borderRadius: 999,
     },
     segmentActive: { backgroundColor: colors.accent },
@@ -552,11 +525,11 @@ function createStyles(colors: any) {
     segmentTextActive: { color: '#FFFFFF', fontWeight: '800' },
     versionContainer: { alignItems: 'center', marginTop: 8 },
     versionText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
-    footerLinkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16 },
+    footerLinkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 14 },
     footerLinkText: { fontSize: 13, color: colors.textSecondary, fontWeight: '700' },
     footerLinkTextMuted: { fontSize: 12, color: colors.gray400, fontWeight: '500' },
     footerLinkDivider: { fontSize: 13, color: colors.border, fontWeight: '400' },
-    legalLinkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingBottom: 20, flexWrap: 'wrap' },
+    legalLinkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6, paddingBottom: 18, flexWrap: 'wrap' },
     legalLinkText: { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
     legalLinkTextEmphasis: { fontSize: 12, color: colors.textPrimary, fontWeight: '800' },
     legalLinkDivider: { fontSize: 12, color: colors.border },
@@ -571,7 +544,7 @@ function createStyles(colors: any) {
       color: colors.textSecondary,
       textAlign: 'center',
       marginTop: 4,
-      marginBottom: 16,
+      marginBottom: 14,
       paddingHorizontal: 20,
     },
   });

@@ -5,6 +5,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
+import { useRequireLogin } from '../../context/GuestLoginGateContext';
 import { getDisplayItems } from '../../hooks/useLocalChecklist';
 import { EventDateGroup } from '../../hooks/useUpcomingEvents';
 import { Event, EventItem } from '../../types/models';
@@ -104,6 +105,7 @@ export default function ScheduleBoard({
   onSearchInputBlur,
 }: ScheduleBoardProps) {
   const router = useRouter();
+  const requireLogin = useRequireLogin();
   const { colors, resolvedScheme } = useTheme();
   const isDark = resolvedScheme === 'dark';
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
@@ -163,7 +165,7 @@ export default function ScheduleBoard({
             <Text style={styles.headerTitle}>알림장 일정 & 준비물</Text>
           </View>
           {!isEmpty && (
-            <Pressable onPress={() => router.push('/upload')}>
+            <Pressable onPress={() => requireLogin(() => router.push('/upload'))}>
               <LinearGradient
                 colors={['#6366F1', '#9333EA']}
                 start={{ x: 0, y: 0 }}
@@ -198,7 +200,7 @@ export default function ScheduleBoard({
             <Text style={styles.emptySubtitle}>
               선생님이 보내주신 알림장이 있다면{'\n'}스캔해서 일정을 바로 등록해보세요
             </Text>
-            <Pressable onPress={() => router.push('/upload')}>
+            <Pressable onPress={() => requireLogin(() => router.push('/upload'))}>
               <LinearGradient
                 colors={['#6366F1', '#9333EA']}
                 start={{ x: 0, y: 0 }}

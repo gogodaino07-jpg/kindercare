@@ -15,9 +15,12 @@ import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import {
+  AI_ANALYSIS_MAINTENANCE_MESSAGE,
+  AI_ANALYSIS_MAINTENANCE_MODE,
   AIUsageLimitService,
   AnalysisResultStore,
   FREE_LIFETIME_LIMIT,
+  FREE_MONTHLY_LIMIT,
   GeminiAnalysisError,
   GeminiAnalysisService,
   PREMIUM_MEAL_MONTHLY_LIMIT,
@@ -133,12 +136,24 @@ export default function MealScanScreen() {
   };
 
   const handleAnalyze = async () => {
+    if (AI_ANALYSIS_MAINTENANCE_MODE) {
+      showAlert({ title: '점검 중', message: AI_ANALYSIS_MAINTENANCE_MESSAGE, icon: '🛠️' });
+      return;
+    }
     if (!doc) {
-      showAlert({ title: '알림', message: '먼저 급식표 사진이나 파일을 올려주세요' });
+      showAlert({ title: '사진을 선택해주세요', message: '먼저 급식표 사진이나 파일을 올려주세요', icon: '📷' });
       return;
     }
     if (!selectedChild) {
-      showAlert({ title: '알림', message: '아이를 먼저 선택해주세요' });
+      showAlert({
+        title: '아이를 선택해주세요',
+        message: '아이를 먼저 선택해주세요',
+        icon: '👶',
+        buttons: [
+          { text: '취소', style: 'cancel' },
+          { text: '아이 등록하기', onPress: () => router.push('/child-profile') },
+        ],
+      });
       return;
     }
 
@@ -150,6 +165,21 @@ export default function MealScanScreen() {
         icon: '⏳',
       });
       return;
+    }
+    if (!isSubscribed) {
+      const freeMonthlyRemaining = await AIUsageLimitService.getFreeMonthlyRemaining(googleAccount?.email);
+      if (freeMonthlyRemaining <= 0) {
+        showAlert({
+          title: '이번 달 무료 스캔을 다 쓰셨어요',
+          message: `무료 이용자는 광고 시청 포함 한 달 최대 ${FREE_MONTHLY_LIMIT}회까지 스캔할 수 있어요(알림장 스캔과 합산). 다음 달에 다시 시도하거나 프리미엄을 구독하면 계속 이용하실 수 있어요.`,
+          icon: '⏳',
+          buttons: [
+            { text: '다음에요', style: 'cancel' },
+            { text: '프리미엄 구독 안내', onPress: () => router.push('/settings/subscription') },
+          ],
+        });
+        return;
+      }
     }
     // 무료 사용자는 처음 FREE_LIFETIME_LIMIT회까지만 광고 없이 쓰고, 그 이후엔 구독하지
     // 않는 한 스캔마다 광고 시청이 필요하다(막히지 않고 무제한 반복 가능).

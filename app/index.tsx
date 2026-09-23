@@ -37,15 +37,14 @@ import { isChildLocked, useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useThemeColors } from '../context/ThemeContext';
-import { useToast } from '../context/ToastContext';
 import { getDisplayItems } from '../hooks/useLocalChecklist';
 import { useTodayISO } from '../hooks/useTodayISO';
 import { useUpcomingEvents } from '../hooks/useUpcomingEvents';
 import { useWeeklyWeather } from '../hooks/useWeeklyWeather';
-import { Event, EventItem } from '../types/models';
-import { isBirthdayToday, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
+import { Event, EventItem, NO_CHILD_ID } from '../types/models';
+import { isBirthdayToday, isBirthMilestoneToday, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
 import { updateHomeWidget } from '../utils/homeWidget';
-import { HOME_TUTORIAL_KEY, hasSeenTutorial, markTutorialSeen, resetTutorialSeen } from '../utils/tutorialStorage';
+import { HOME_TUTORIAL_KEY, hasSeenTutorial, markTutorialSeen } from '../utils/tutorialStorage';
 
 // 앱 프로세스가 살아있는 동안 전면 광고는 한 번만 시도한다. 컴포넌트 스코프
 // ref로 관리하면 AI 스캔 후 홈으로 돌아오면서 화면이 다시 마운트될 때마다
@@ -110,7 +109,6 @@ export default function HomeScreen() {
   const { hasOnboarded, children, selectedChild, selectChild, events, googleAccount, onboardingLoaded, mealPlans, updateEvent, isFamilyOwner, canEditFamilyData } = useAppData();
   const { isLocked } = useAppLock();
   const { isSubscribed, isReady: subscriptionReady } = useSubscription();
-  const { showToast } = useToast();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const styles = useMemo(
@@ -129,7 +127,7 @@ export default function HomeScreen() {
     // 과거 공지가 홈 화면에 계속 노출되지 않도록 오늘 이후의 공지만 보여준다.
     // 단, 오늘 날짜인 공지는 "오늘 일정"(D-DAY 배지)에 이미 노출되므로 중복을 피하기 위해 내일 이후만 보여준다.
     return events
-      .filter((e) => e.category === '공지' && e.childId === selectedChild?.id && e.date > todayISO)
+      .filter((e) => e.category === '공지' && e.childId === (selectedChild?.id ?? NO_CHILD_ID) && e.date > todayISO)
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [events, selectedChild, todayISO]);
   const todayMeal = useMemo(() => {
@@ -159,6 +157,8 @@ export default function HomeScreen() {
   // 쓰면 오늘 일정이 짧아 스크롤 콘텐츠가 짧은 날 그 아래로 빈 여백이 크게 남았다.
   const [bottomStackHeight, setBottomStackHeight] = useState(0);
   const isChildBirthdayToday = isBirthdayToday(selectedChild?.birthdate);
+  // 생일(연 1회)과 별개로 생후 100/200/300…일 단위 기념일에도 같은 축하 효과를 띄운다.
+  const isChildBirthMilestoneToday = isBirthMilestoneToday(selectedChild?.birthdate);
 
   // 쿠팡 검색창(ScheduleBoard 맨 아래)이 키보드에 가려지는 문제 — 이 화면은
   // targetSdk 36(엣지투엣지 강제 적용) 기기에서 windowSoftInputMode="adjustResize"만으론
@@ -265,9 +265,9 @@ export default function HomeScreen() {
       await weather.retry();
     } finally {
       setRefreshing(false);
-      if (isChildBirthdayToday) setBirthdayBurstKey((k) => k + 1);
+      if (isChildBirthdayToday || isChildBirthMilestoneToday) setBirthdayBurstKey((k) => k + 1);
     }
-  }, [weather, isChildBirthdayToday]);
+  }, [weather, isChildBirthdayToday, isChildBirthMilestoneToday]);
 
   // "오늘 등원 준비물 챙기기" 배너를 누르면 그 배너가 화면 상단(고정 프로필 헤더 바로 아래)으로 오도록 스크롤.
   const scrollToProgress = useCallback(() => {
@@ -397,7 +397,10 @@ export default function HomeScreen() {
     // subscriptionReady를 기다리지 않으면, 프리미엄 구독자도 콜드 스타트 직후 RevenueCat
     // 조회가 끝나기 전엔 isSubscribed가 잠깐 false라 광고 팝업이 떠버린다.
     // 홈 화면 튜토리얼이 떠 있는 동안엔 광고 팝업이 그 위를 덮어버리지 않도록 미룬다.
-    if (hasAttemptedAdThisSession || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked || !subscriptionReady || isSubscribed || homeTutorialVisible) {
+    // 로그인 없이 온보딩만 마친 게스트에게도 이 팝업은 그대로 노출한다 —
+    // 게스트 여부와 무관하게 비구독 사용자 전체에게 적용되는 광고라 googleAccount는
+    // 더 이상 조건에 넣지 않는다.
+    if (hasAttemptedAdThisSession || !onboardingLoaded || !hasOnboarded || isLocked || !subscriptionReady || isSubscribed || homeTutorialVisible) {
       return;
     }
 
@@ -408,14 +411,16 @@ export default function HomeScreen() {
     }, 500); // 0.5s delay for better UX
 
     return () => clearTimeout(timeoutId);
-  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked, subscriptionReady, isSubscribed, homeTutorialVisible]);
+  }, [onboardingLoaded, hasOnboarded, isLocked, subscriptionReady, isSubscribed, homeTutorialVisible]);
 
   // 홈 화면 첫 진입 시 1회만(신규 가입자 대상) 4단계 코치마크 투어를 보여준다.
   // 이미 온보딩한 계정은 google-signin.tsx에서 로그인 시점에 시청 기록을
   // 미리 남겨두므로 여기서는 걸러지고, 신규 가입자에게만 자연스럽게 뜬다
   // (앱 삭제 후 재설치해도 다시 온보딩해야 하는 계정이 아니면 안 뜸).
   useEffect(() => {
-    if (!onboardingLoaded || !hasOnboarded || !googleAccount || isLocked) return;
+    // 로그인 없이 온보딩만 마친 게스트에게도 튜토리얼이 떠야 하므로
+    // googleAccount는 조건에서 뺐다.
+    if (!onboardingLoaded || !hasOnboarded || isLocked) return;
     let cancelled = false;
     hasSeenTutorial(HOME_TUTORIAL_KEY).then((seen) => {
       if (cancelled || seen) return;
@@ -426,27 +431,16 @@ export default function HomeScreen() {
     return () => {
       cancelled = true;
     };
-  }, [onboardingLoaded, hasOnboarded, googleAccount, isLocked]);
+  }, [onboardingLoaded, hasOnboarded, isLocked]);
 
   // 설정 화면 "온보딩 다시 보기"로 들어온 경우: 시청 기록과 무관하게 즉시 투어를
   // 다시 띄운다. 한 번 처리한 뒤에는 파라미터를 지워서 이후 홈 재진입 시
   // 또 뜨지 않게 한다.
   useEffect(() => {
-    if (replayTutorial !== '1' || !onboardingLoaded || !hasOnboarded || !googleAccount || isLocked) return;
+    if (replayTutorial !== '1' || !onboardingLoaded || !hasOnboarded || isLocked) return;
     setHomeTutorialVisible(true);
     router.setParams({ replayTutorial: undefined });
-  }, [replayTutorial, onboardingLoaded, hasOnboarded, googleAccount, isLocked, router]);
-
-  // 개발/테스트용 숨은 진입점 — 삭제·재설치 없이 온보딩 튜토리얼을 바로 다시
-  // 볼 수 있게, 프로필 영역의 "생후 N일째" 문구를 3번 연속 탭하면 실행된다.
-  // 홈 튜토리얼뿐 아니라 급식 시트/캘린더의 "처음 봤는지" 기록도 같이 지워서,
-  // 다음에 그 화면들에 들어갔을 때 첫 진입 안내 배너도 다시 뜨게 한다.
-  const handleDaysOldTripleTap = useCallback(() => {
-    setHomeTutorialVisible(true);
-    resetTutorialSeen('mealSheet:v1').catch(() => {});
-    resetTutorialSeen('calendar:v1').catch(() => {});
-    showToast('🎬 온보딩 튜토리얼을 다시 보여드릴게요. (급식/캘린더 안내도 초기화됨)');
-  }, [showToast]);
+  }, [replayTutorial, onboardingLoaded, hasOnboarded, isLocked, router]);
 
   const handleFinishHomeTutorial = useCallback(() => {
     setHomeTutorialVisible(false);
@@ -526,7 +520,10 @@ export default function HomeScreen() {
     return null;
   }
 
-  if (!hasOnboarded || !googleAccount) {
+  // 로그인 없이 온보딩만 마친 게스트도 홈 화면을 쓸 수 있어야 하므로
+  // googleAccount는 더 이상 조건에 넣지 않는다(AI 스캔 등 계정이 꼭
+  // 필요한 동작은 GuestLoginGateContext가 그 시점에 따로 로그인을 요구한다).
+  if (!hasOnboarded) {
     return <Redirect href="/splash" />;
   }
 
@@ -539,12 +536,15 @@ export default function HomeScreen() {
             selectedChild={selectedChild}
             onPressChild={() => setSwitcherOpen(true)}
             birthdayBurstKey={birthdayBurstKey}
-            onDaysOldTripleTap={handleDaysOldTripleTap}
             calendarIconRef={calendarIconRef}
             settingsIconRef={settingsIconRef}
           />
         </View>
-        {!isFamilyOwner && (
+        {/* 로그인 안 한 게스트는 애초에 남의 가족 데이터를 보고 있을 수 없으니
+            (전부 로컬 개인 데이터) 이 배너 대상이 아니다. isFamilyOwner는
+            "계정이 있고 + 그 계정이 소유자"일 때만 true라, 계정이 아예 없는
+            게스트는 항상 false로 나와서 배너가 잘못 뜨는 문제가 있었다. */}
+        {!!googleAccount && !isFamilyOwner && (
           <View style={styles.familyBannerWrap}>
             <LinearGradient
               colors={canEditFamilyData ? ['#34D399', '#10B981'] : ['#CBD5E1', '#94A3B8']}
@@ -673,7 +673,7 @@ export default function HomeScreen() {
         {SHOW_FAMILY_SHARE_CARD && !upcoming.isEmpty && (
           <FamilyShareCard events={activeDayEvents} dayLabel={activeDayLabel} dateISO={activeDayISO} />
         )}
-        {subscriptionReady && !isSubscribed && <CoupangBanner />}
+        {subscriptionReady && !isSubscribed && <CoupangBanner height={68} />}
       </View>
 
       <ChildSwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />

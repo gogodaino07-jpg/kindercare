@@ -17,15 +17,24 @@ const GEMINI_MODEL = 'gemini-3.6-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 /**
- * 앱(AIUsageLimitService)이 관리하는 무료(평생 5회 공유 풀)/프리미엄(주간·월간) 한도는
+ * 앱(AIUsageLimitService)이 관리하는 무료(평생 스캔 풀)/프리미엄(주간·월간) 한도는
  * 클라이언트에서만 체크되므로, Firestore 문서를 직접 조작하거나 앱을 거치지 않고 이 함수를
  * 반복 호출하면 우회될 수 있다. 여기서는 실제 요금제를 서버가 알 방법이 없어 정확한
- * 무료/프리미엄 한도를 그대로 재현하진 않지만, 프리미엄 최대 한도(월 기준)를 절대 상한으로
- * 걸어 정상 이용자는 걸리지 않으면서 Gemini 비용이 무한정 새는 것만은 막는 최종 방어선이다.
+ * 무료/프리미엄 한도를 그대로 재현하진 않지만, 이 절대 상한을 걸어 정상 이용자는
+ * 걸리지 않으면서 Gemini 비용이 무한정 새는 것만은 막는 최종 방어선이다.
  * 클라이언트가 관리하는 aiUsage/mealAiUsage/aiUsageFreeLifetime 문서와는 별도 문서에
  * 서버가 직접 카운트한다.
+ *
+ * 2026-09-19: 원래 프리미엄 월간 약속 한도(newsletter 50 / meal 15)와 똑같이 맞춰뒀었는데,
+ * 실사용량(28일 전체 사용자 합계 100건 안팎)에 비해 봇 계정 1개당 허용치가 너무 높았다.
+ * 지금은 유료 구독자가 아직 한 명도 없어서 당장은 안전하게 낮출 수 있지만,
+ * ⚠️ 첫 구독자가 생기면 이 값이 features/newsletter-analysis/services/AIUsageLimitService.ts의
+ * PREMIUM_MONTHLY_LIMIT(50)/PREMIUM_MEAL_MONTHLY_LIMIT(15)보다 낮아서 구독자가 자기
+ * 약속된 한도를 다 쓰기도 전에 서버가 먼저 막아버리는 문제가 생긴다 — 그때는 구독
+ * 상태를 서버가 알 수 있게(RevenueCat 서버 동기화 등) 만들어서 구독자만 더 높은
+ * 한도를 적용하도록 반드시 다시 손볼 것.
  */
-const HARD_MONTHLY_LIMIT_BY_TYPE = { newsletter: 50, meal: 15 };
+const HARD_MONTHLY_LIMIT_BY_TYPE = { newsletter: 15, meal: 5 };
 
 async function assertUnderHardLimit(email, usageType) {
   const limit = HARD_MONTHLY_LIMIT_BY_TYPE[usageType];
@@ -35,14 +44,45 @@ async function assertUnderHardLimit(email, usageType) {
   })();
   const guardRef = getFirestore().collection('users').doc(email).collection('serverGuard').doc(usageType);
 
-  await getFirestore().runTransaction(async (tx) => {
+  // 반환값(이번 달 몇 번째 호출인지)은 관리자 알림 메일에 참고용으로 쓴다.
+  return getFirestore().runTransaction(async (tx) => {
     const snap = await tx.get(guardRef);
     const data = snap.exists ? snap.data() : null;
     const monthCount = data?.monthStart === monthStart ? (data.monthCount ?? 0) : 0;
     if (monthCount >= limit) {
       throw new HttpsError('resource-exhausted', '이번 달 AI 분석 한도를 모두 사용했어요.');
     }
-    tx.set(guardRef, { monthStart, monthCount: monthCount + 1 });
+    const newMonthCount = monthCount + 1;
+    tx.set(guardRef, { monthStart, monthCount: newMonthCount });
+    return newMonthCount;
+  });
+}
+
+function createSupportMailTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: SUPPORT_EMAIL, pass: GMAIL_APP_PASSWORD.value() },
+  });
+}
+
+const USAGE_TYPE_LABEL = { newsletter: '가정통신문', meal: '식단표' };
+
+/**
+ * AI 분석 서버 함수가 실제로 호출될 때마다 개발자 본인 메일로 알림을 보낸다.
+ * 클라이언트 버튼 탭이 아니라 이 서버 함수 호출 시점에 보내므로, 네트워크
+ * 오류 등으로 실제 API 호출까지 못 간 시도는 안 잡히고 "진짜 호출 시도"만
+ * 정확히 집계된다. 실패해도 본 기능(AI 분석)에는 영향 없도록 호출부에서
+ * await 없이 fire-and-forget으로 쓰고 에러는 로그만 남긴다.
+ */
+async function notifyScanAttempt({ email, usageType, monthCount }) {
+  const transporter = createSupportMailTransporter();
+  const label = USAGE_TYPE_LABEL[usageType] ?? usageType;
+  const now = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+  await transporter.sendMail({
+    from: `킨더케어 알림 <${SUPPORT_EMAIL}>`,
+    to: SUPPORT_EMAIL,
+    subject: `[킨더케어] AI 분석 호출 - ${label}`,
+    text: `사용자: ${email}\n분석 유형: ${label}\n이번 달 이 계정 ${monthCount}번째 호출\n시각: ${now} (KST)`,
   });
 }
 
@@ -56,7 +96,7 @@ async function assertUnderHardLimit(email, usageType) {
  */
 exports.analyzeNewsletter = onCall(
   {
-    secrets: [GEMINI_API_KEY],
+    secrets: [GEMINI_API_KEY, GMAIL_APP_PASSWORD],
     region: 'asia-northeast3',
     timeoutSeconds: 120,
     memory: '512MiB',
@@ -76,7 +116,12 @@ exports.analyzeNewsletter = onCall(
     }
     const usageType = request.data?.usageType === 'meal' ? 'meal' : 'newsletter';
 
-    await assertUnderHardLimit(email, usageType);
+    const monthCount = await assertUnderHardLimit(email, usageType);
+
+    // 알림 메일 발송 실패가 본 기능(AI 분석)을 막지 않도록 await하지 않는다.
+    notifyScanAttempt({ email, usageType, monthCount }).catch((err) => {
+      logger.error('Scan attempt notify email failed', err);
+    });
 
     let response;
     try {
@@ -204,19 +249,31 @@ exports.deleteAccount = onCall(
 
 /** 하루에 같은 사람이 너무 많이 보내는 걸 막는 최소한의 방어선(스팸/오남용 방지). */
 const SUPPORT_EMAIL_DAILY_LIMIT = 10;
+/** 게스트는 입력한 이메일을 바꿔가며 위 한도를 우회할 수 있어서, 전체 사용자 합계로도 하루 상한을 건다. */
+const SUPPORT_EMAIL_GLOBAL_DAILY_LIMIT = 50;
+const SUPPORT_EMAIL_GLOBAL_KEY = '_global';
 
-async function assertUnderSupportEmailLimit(uid) {
+// 로그인 없이도(게스트 모드) 문의를 보낼 수 있어야 하므로, 로그인 상태면
+// uid로, 아니면 사용자가 입력한 답변받을 이메일로 한도를 구분한다.
+async function assertUnderSupportEmailLimit(limitKey) {
   const todayKey = toISODateUTC(new Date());
-  const guardRef = getFirestore().collection('users').doc(uid).collection('serverGuard').doc('supportEmail');
+  const guardRef = getFirestore().collection('supportEmailGuard').doc(limitKey);
+  const globalRef = getFirestore().collection('supportEmailGuard').doc(SUPPORT_EMAIL_GLOBAL_KEY);
 
   await getFirestore().runTransaction(async (tx) => {
-    const snap = await tx.get(guardRef);
+    const [snap, globalSnap] = await Promise.all([tx.get(guardRef), tx.get(globalRef)]);
     const data = snap.exists ? snap.data() : null;
     const dayCount = data?.dayKey === todayKey ? (data.dayCount ?? 0) : 0;
     if (dayCount >= SUPPORT_EMAIL_DAILY_LIMIT) {
       throw new HttpsError('resource-exhausted', '오늘 문의 가능 횟수를 모두 사용했어요. 내일 다시 시도해주세요.');
     }
+    const globalData = globalSnap.exists ? globalSnap.data() : null;
+    const globalCount = globalData?.dayKey === todayKey ? (globalData.dayCount ?? 0) : 0;
+    if (globalCount >= SUPPORT_EMAIL_GLOBAL_DAILY_LIMIT) {
+      throw new HttpsError('resource-exhausted', '오늘 문의가 너무 많이 접수됐어요. 내일 다시 시도해주세요.');
+    }
     tx.set(guardRef, { dayKey: todayKey, dayCount: dayCount + 1 });
+    tx.set(globalRef, { dayKey: todayKey, dayCount: globalCount + 1 });
   });
 }
 
@@ -240,10 +297,6 @@ exports.sendSupportEmail = onCall(
     timeoutSeconds: 30,
   },
   async (request) => {
-    if (!request.auth) {
-      throw new HttpsError('unauthenticated', '로그인이 필요합니다.');
-    }
-
     const replyEmail = request.data?.replyEmail;
     const content = request.data?.content;
     if (!replyEmail || typeof replyEmail !== 'string' || !EMAIL_PATTERN.test(replyEmail)) {
@@ -253,7 +306,10 @@ exports.sendSupportEmail = onCall(
       throw new HttpsError('invalid-argument', '문의 내용이 올바르지 않습니다.');
     }
 
-    await assertUnderSupportEmailLimit(request.auth.uid);
+    // 이메일은 문서 ID로 그대로 쓰면 '/' 같은 문자로 경로가 깨질 수 있어 해시해서 쓴다.
+    const emailHash = crypto.createHash('sha256').update(replyEmail.trim().toLowerCase()).digest('hex');
+    const limitKey = request.auth ? `uid:${request.auth.uid}` : `email:${emailHash}`;
+    await assertUnderSupportEmailLimit(limitKey);
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',

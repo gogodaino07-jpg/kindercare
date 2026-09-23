@@ -19,11 +19,17 @@ import {
   seedNotificationSettings,
 } from '../data/seed';
 import { isSimilarEvent } from '../data/mockAIResult';
-import { Child, Event, FamilyInvite, FamilyMember, FamilyMembership, GoogleAccount, MealPlan, NotificationSettings } from '../types/models';
+import { Child, Event, FamilyInvite, FamilyMember, FamilyMembership, GoogleAccount, MealPlan, NO_CHILD_ID, NotificationSettings } from '../types/models';
 import { toISODate } from '../utils/date';
 import { withExternalAction } from '../utils/externalAction';
 import { getDb, getFirebaseAuth, getFunctions } from '../utils/firebase';
-import { deleteChildProfilePhoto, downloadChildProfilePhoto, uploadChildProfilePhoto } from '../utils/childProfilePhoto';
+import {
+  clearLocalChildProfilePhotos,
+  deleteChildProfilePhoto,
+  deleteLocalChildProfilePhoto,
+  downloadChildProfilePhoto,
+  uploadChildProfilePhoto,
+} from '../utils/childProfilePhoto';
 import { scheduleEventNotifications } from '../utils/notifications';
 import { HOME_TUTORIAL_KEY, resetTutorialSeen } from '../utils/tutorialStorage';
 import { sanitizeData } from '../utils/validation';
@@ -142,9 +148,11 @@ interface AppDataContextValue {
   children: Child[];
   selectedChild: Child | undefined;
   selectChild: (id: string) => void;
-  addChild: (input: Omit<Child, 'id'>) => void;
+  addChild: (input: Omit<Child, 'id'>, options?: { discardKeptData?: boolean }) => void;
+  /** 아이가 없는 지금, "아이만 삭제"로 남겨둔 일정/급식표가 있는지. */
+  hasKeptDataFromDeletedChild: boolean;
   updateChild: (id: string, input: Omit<Child, 'id'>) => void;
-  deleteChild: (id: string) => void;
+  deleteChild: (id: string, options?: { keepData?: boolean }) => void;
 
   // Events
   events: Event[];
@@ -194,6 +202,9 @@ interface AppDataContextValue {
   googleAccount: GoogleAccount | null;
   signInWithGoogle: () => Promise<GoogleAccount>;
   signOutGoogle: () => void;
+  /** 로그인 없이 온보딩을 마친 게스트가 나중에 로그인할 때, 그때까지 로컬에만
+   *  있던 아이/일정/식단 데이터를 이 계정 소유로 클라우드에 올려준다. */
+  adoptGuestDataToAccount: (email: string) => Promise<void>;
 
   // Kakao sign-in
   signInWithKakao: () => Promise<GoogleAccount>;
@@ -795,6 +806,16 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
+  // 로그인 없이 온보딩만 마친 게스트는 아이/일정/식단이 전부 로컬에만 있고
+  // 클라우드엔 하나도 안 올라가 있다(각 add* 함수가 그 시점에 계정이 없으면
+  // 푸시를 건너뛰기 때문). 이 게스트가 나중에(예: AI 스캔을 쓰려다) 로그인하면,
+  // 그 시점까지 쌓인 로컬 데이터를 한 번에 이 계정 소유로 올려준다.
+  const adoptGuestDataToAccount = async (email: string) => {
+    await Promise.all(childProfiles.map((child) => pushChildToCloud(email, child, undefined)));
+    await Promise.all(events.map((event) => pushEventToCloud(email, event)));
+    await Promise.all(mealPlans.map((mealPlan) => pushMealPlanToCloud(email, mealPlan)));
+  };
+
   const deleteChildFromCloud = async (email: string, childId: string) => {
     try {
       console.log('📡 Deleting child from cloud:', childId);
@@ -803,6 +824,14 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
       console.log('✅ Child delete success');
     } catch (error) {
       console.error('❌ Firestore Delete Child Error:', error);
+    }
+  };
+
+  const deleteMealPlanFromCloud = async (email: string, mealPlanId: string) => {
+    try {
+      await getDb().collection('users').doc(email).collection('mealPlans').doc(mealPlanId).delete();
+    } catch (error) {
+      console.error('❌ Firestore Delete Meal Plan Error:', error);
     }
   };
 
@@ -1070,14 +1099,67 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     );
   };
 
-  const addChild = (input: Omit<Child, 'id'>) => {
+  /**
+   * 아이 등록. 아이가 하나도 없을 때(NO_CHILD_ID) 남아 있던 일정/급식표는 첫 아이의 것이 된다 —
+   * 안 그러면 아이를 등록한 뒤 캘린더에서 사라져 보인다. 단, 예전에 "아이만 삭제"로 남겨둔
+   * 항목(keptFromDeletedChild)은 discardKeptData가 true면 이어받지 않고 지운다. 처음부터 아이
+   * 없이 만든 일정은 이 옵션과 상관없이 항상 이어받는다.
+   */
+  const addChild = (input: Omit<Child, 'id'>, options?: { discardKeptData?: boolean }) => {
     const newChild: Child = { ...input, id: nextChildId() };
+    const isFirstChild = childProfiles.length === 0;
+    const discardKept = isFirstChild && !!options?.discardKeptData;
+    const orphanEvents = isFirstChild ? events.filter((e) => e.childId === NO_CHILD_ID) : [];
+    const orphanMealPlans = isFirstChild ? mealPlans.filter((m) => m.childId === NO_CHILD_ID) : [];
+    const discardedEvents = discardKept ? orphanEvents.filter((e) => e.keptFromDeletedChild) : [];
+    const discardedMealPlans = discardKept ? orphanMealPlans.filter((m) => m.keptFromDeletedChild) : [];
+    const discardedEventIds = new Set(discardedEvents.map((e) => e.id));
+    const discardedMealIds = new Set(discardedMealPlans.map((m) => m.id));
+    const adoptedEventById = new Map<string, Event>();
+    orphanEvents
+      .filter((e) => !discardedEventIds.has(e.id))
+      .forEach(({ keptFromDeletedChild: _kept, ...rest }) =>
+        adoptedEventById.set(rest.id, { ...rest, childId: newChild.id })
+      );
+    const adoptedMealById = new Map<string, MealPlan>();
+    orphanMealPlans
+      .filter((m) => !discardedMealIds.has(m.id))
+      .forEach(({ keptFromDeletedChild: _kept, ...rest }) =>
+        adoptedMealById.set(rest.id, { ...rest, childId: newChild.id })
+      );
+
+    if (isFirstChild) {
+      // 예전에 지운 아이들이 남긴 프로필 사진 캐시를 비운다 — 새 아이는 사진 없이 시작한다.
+      clearLocalChildProfilePhotos().catch(() => {});
+    }
+    if (discardedEvents.length > 0) deleteEvents(discardedEvents.map((e) => e.id));
+    if (discardedMealPlans.length > 0) {
+      setMealPlans((prev) => prev.filter((m) => !discardedMealIds.has(m.id)));
+      if (effectiveFamilyOwnerEmail) {
+        discardedMealPlans.forEach((m) => deleteMealPlanFromCloud(effectiveFamilyOwnerEmail, m.id));
+      }
+    }
     setChildProfiles((prev) => [...prev, newChild]);
     setSelectedChildId(newChild.id);
+    if (adoptedEventById.size > 0) {
+      setEvents((prev) => prev.map((e) => adoptedEventById.get(e.id) ?? e));
+    }
+    if (adoptedMealById.size > 0) {
+      setMealPlans((prev) => prev.map((m) => adoptedMealById.get(m.id) ?? m));
+    }
     if (effectiveFamilyOwnerEmail) {
       pushChildToCloud(effectiveFamilyOwnerEmail, newChild, undefined);
+      adoptedEventById.forEach((e) => pushEventToCloud(effectiveFamilyOwnerEmail, e));
+      adoptedMealById.forEach((m) => pushMealPlanToCloud(effectiveFamilyOwnerEmail, m));
     }
   };
+
+  // 아이가 없는 지금, "아이만 삭제"로 남겨둔 일정/급식표가 있는지 — 새 아이를 등록할 때
+  // 이어받을지 물어보는 데 쓴다.
+  const hasKeptDataFromDeletedChild =
+    childProfiles.length === 0 &&
+    (events.some((e) => e.childId === NO_CHILD_ID && e.keptFromDeletedChild) ||
+      mealPlans.some((m) => m.childId === NO_CHILD_ID && m.keptFromDeletedChild));
 
   const updateChild = (id: string, input: Omit<Child, 'id'>) => {
     const previousChild = childProfiles.find((c) => c.id === id);
@@ -1090,7 +1172,44 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
-  const deleteChild = (id: string) => {
+  /**
+   * 아이 프로필 삭제. 그 아이의 일정/급식표는 함께 지우는 게 기본이고, 마지막 남은 아이를
+   * 지울 때만 keepData로 "정보는 남기고 아이만 삭제"를 고를 수 있다 — 이 경우 일정/급식표는
+   * NO_CHILD_ID로 남아 있다가 다음에 아이를 등록하면 그 아이에게 귀속된다(addChild).
+   * 다른 아이가 남아 있으면 일정을 붙여줄 곳이 없어 keepData는 무시하고 함께 지운다.
+   */
+  const deleteChild = (id: string, options?: { keepData?: boolean }) => {
+    const isLastChild = childProfiles.length === 1 && childProfiles[0]?.id === id;
+    const keepData = !!options?.keepData && isLastChild;
+    const childEvents = events.filter((e) => e.childId === id);
+    const childMealPlans = mealPlans.filter((m) => m.childId === id);
+    if (keepData) {
+      setEvents((prev) =>
+        prev.map((e) => (e.childId === id ? { ...e, childId: NO_CHILD_ID, keptFromDeletedChild: true } : e))
+      );
+      setMealPlans((prev) =>
+        prev.map((m) => (m.childId === id ? { ...m, childId: NO_CHILD_ID, keptFromDeletedChild: true } : m))
+      );
+      if (effectiveFamilyOwnerEmail) {
+        childEvents.forEach((e) =>
+          pushEventToCloud(effectiveFamilyOwnerEmail, { ...e, childId: NO_CHILD_ID, keptFromDeletedChild: true })
+        );
+        childMealPlans.forEach((m) =>
+          pushMealPlanToCloud(effectiveFamilyOwnerEmail, { ...m, childId: NO_CHILD_ID, keptFromDeletedChild: true })
+        );
+      }
+    } else {
+      if (childEvents.length > 0) deleteEvents(childEvents.map((e) => e.id));
+      if (childMealPlans.length > 0) {
+        const mealIds = new Set(childMealPlans.map((m) => m.id));
+        setMealPlans((prev) => prev.filter((m) => !mealIds.has(m.id)));
+        if (effectiveFamilyOwnerEmail) {
+          childMealPlans.forEach((m) => deleteMealPlanFromCloud(effectiveFamilyOwnerEmail, m.id));
+        }
+      }
+    }
+    // 이 기기에 남아있는 그 아이의 프로필 사진 파일도 함께 지운다(클라우드 사진은 deleteChildFromCloud가 처리).
+    deleteLocalChildProfilePhoto(id, childProfiles.find((c) => c.id === id)?.photoUri).catch(() => {});
     setChildProfiles((prev) => prev.filter((c) => c.id !== id));
     setSelectedChildId((prev) => {
       if (prev !== id) return prev;
@@ -1641,17 +1760,18 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
-  // Whenever the event list or the notification schedule preferences change,
-  // re-schedule the day-before/same-day local notifications so newly
-  // added/edited events actually get a reminder without the user having to
-  // separately revisit the notification settings screen.
+  // Whenever the event list, notification schedule preferences, or the
+  // children list change, re-schedule the day-before/same-day local event
+  // notifications (and the next 100-day birth-milestone notification per
+  // child) so they stay up to date without the user having to separately
+  // revisit the notification settings screen.
   useEffect(() => {
     // The permission prompt this may trigger briefly blips AppState on some
     // platforms — suppress the lock/splash replay that would otherwise fire.
-    withExternalAction(() => scheduleEventNotifications(events, notificationSettings)).catch(
+    withExternalAction(() => scheduleEventNotifications(events, notificationSettings, childProfiles)).catch(
       () => {}
     );
-  }, [events, notificationSettings]);
+  }, [events, notificationSettings, childProfiles]);
 
   // 원본 스캔 사진(photoUris)을 events 상태와 분리해서 관리하는 이유는
   // photoUrisByEventId 선언부 주석 참고 — 실제로 앱 전체에 노출되는 시점에 여기서 합친다.
@@ -1686,6 +1806,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     selectedChild,
     selectChild: setSelectedChildId,
     addChild,
+    hasKeptDataFromDeletedChild,
     updateChild,
     deleteChild,
 
@@ -1728,6 +1849,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     googleAccount,
     signInWithGoogle,
     signOutGoogle,
+    adoptGuestDataToAccount,
 
     signInWithKakao,
     signOutKakao,

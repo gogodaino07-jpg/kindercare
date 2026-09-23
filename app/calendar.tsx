@@ -23,7 +23,7 @@ import EditEventModal from '../components/calendar/EditEventModal';
 import Text from '../components/common/AppText';
 import { useAppData } from '../context/AppDataContext';
 import { getDisplayItems } from '../hooks/useLocalChecklist';
-import { Event, EventItem } from '../types/models';
+import { Event, EventItem, NO_CHILD_ID } from '../types/models';
 import { parseISODate, toISODate } from '../utils/date';
 
 export default function CalendarScreen() {
@@ -33,6 +33,9 @@ export default function CalendarScreen() {
   const { events, selectedChild, updateEvent } = useAppData();
   const t = useCalendarTheme();
   const styles = useMemo(() => createStyles(t), [t]);
+
+  // 내비게이션 바 표시 여부는 app/_layout.tsx에서 현재 경로 기준으로 전역 관리한다
+  // (홈 화면만 숨김, 나머지는 표시) — 이 화면에서 개별로 제어하지 않는다.
 
   const todayISO = useMemo(() => toISODate(new Date()), []);
   // 홈 화면에서 특정 날짜의 일정을 탭해서 들어온 경우, 그 날짜에 포커스한 채로 시작한다.
@@ -158,7 +161,7 @@ export default function CalendarScreen() {
   }, [selectedDate, scrollRef]);
 
   const childEvents = useMemo(
-    () => events.filter((e) => e.childId === selectedChild?.id),
+    () => events.filter((e) => e.childId === (selectedChild?.id ?? NO_CHILD_ID)),
     [events, selectedChild]
   );
 

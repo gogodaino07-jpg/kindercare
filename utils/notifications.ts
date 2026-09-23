@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { Event, NotificationSettings, TimeOfDay } from '../types/models';
-import { isPast, parseISODate, toISODate } from './date';
+import { Child, Event, NotificationSettings, TimeOfDay } from '../types/models';
+import { daysSinceBirth, isPast, nextBirthMilestoneDate, parseISODate, toISODate } from './date';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -101,22 +101,23 @@ function buildNotificationContent(
 // 똑같은 알림 2개가 동시에 온 것으로 확인됨. 실행 중에 새 호출이 들어오면 지금 실행을
 // 끊지 않고, 끝난 뒤 마지막 인자로 한 번만 더 실행되도록 직렬화해서 막는다.
 let scheduleInFlight: Promise<void> | null = null;
-let pendingArgs: { events: Event[]; settings: NotificationSettings } | null = null;
+let pendingArgs: { events: Event[]; settings: NotificationSettings; children: Child[] } | null = null;
 
 export function scheduleEventNotifications(
   events: Event[],
-  settings: NotificationSettings
+  settings: NotificationSettings,
+  children: Child[] = []
 ): Promise<void> {
   if (scheduleInFlight) {
-    pendingArgs = { events, settings };
+    pendingArgs = { events, settings, children };
     return scheduleInFlight;
   }
-  scheduleInFlight = runScheduleEventNotifications(events, settings).finally(() => {
+  scheduleInFlight = runScheduleEventNotifications(events, settings, children).finally(() => {
     scheduleInFlight = null;
     if (pendingArgs) {
       const next = pendingArgs;
       pendingArgs = null;
-      scheduleEventNotifications(next.events, next.settings);
+      scheduleEventNotifications(next.events, next.settings, next.children);
     }
   });
   return scheduleInFlight;
@@ -124,15 +125,20 @@ export function scheduleEventNotifications(
 
 async function runScheduleEventNotifications(
   events: Event[],
-  settings: NotificationSettings
+  settings: NotificationSettings,
+  children: Child[]
 ): Promise<void> {
   await Notifications.cancelAllScheduledNotificationsAsync();
-  if (!settings.enabled) return;
 
   const { status } = await Notifications.requestPermissionsAsync();
   if (status !== 'granted') return;
-
   await ensureAndroidChannel();
+
+  // 생후 100일 단위 기념일 알림은 "알림 설정"(일정 리마인더 on/off)이 꺼져 있어도
+  // 계속 예약해준다 — 일정 리마인더와는 성격이 다른 축하 이벤트라서.
+  await scheduleBirthMilestoneNotifications(children);
+  if (!settings.enabled) return;
+
   await ensureSnoozeCategory();
 
   const upcoming = events.filter((e) => !isPast(e.date) && hasNotifiableContent(e));
@@ -177,6 +183,37 @@ async function runScheduleEventNotifications(
         });
       }
     }
+  }
+}
+
+/** 생후 100/200/300…일째(무한정) 기념일 하루 전날 저녁에 미리 알려준다. 매번 "다음 한 번의
+ *  기념일"만 예약해두고, 이 함수 자체가 events/settings가 바뀔 때마다(즉 앱을 쓸 때마다)
+ *  다시 호출되므로 그때마다 최신 다음 기념일로 자연스럽게 갱신된다. */
+async function scheduleBirthMilestoneNotifications(children: Child[]): Promise<void> {
+  for (const child of children) {
+    const milestoneDate = nextBirthMilestoneDate(child.birthdate);
+    if (!milestoneDate) continue;
+
+    const daysSince = daysSinceBirth(child.birthdate, milestoneDate);
+    if (daysSince === undefined) continue;
+    const dayBefore = new Date(milestoneDate);
+    dayBefore.setDate(dayBefore.getDate() - 1);
+    const trigger = withTime(dayBefore, { hour: 7, minute: 0, period: 'PM' });
+    if (trigger.getTime() <= Date.now()) continue;
+
+    const childLabel = child.name?.trim() || '아이';
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: `🎉 내일은 ${childLabel} 생후 ${daysSince}일이에요!`,
+        body: '벌써 이만큼 자랐어요. 홈 화면에서 축하 효과를 확인해보세요.',
+        data: { childId: child.id, milestoneDays: daysSince },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: trigger,
+        channelId: ANDROID_CHANNEL_ID,
+      },
+    });
   }
 }
 

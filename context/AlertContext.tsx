@@ -20,6 +20,10 @@ interface AlertConfig {
   buttons?: AlertButton[];
   /** Optional callback when the alert is dismissed via hardware back button or other non-button interactions. */
   onDismiss?: () => void;
+  /** true면 우측 상단에 ✕ 버튼을 보여 주고, 그걸 누르면 아무것도 고르지 않고 닫힌다(onDismiss 호출).
+   *  바깥 영역을 눌러서는 닫히지 않는다 — 실수로 닫히는 걸 막기 위해서다. 기본은 꺼져 있어서 기존
+   *  알림창 모양은 그대로다. */
+  dismissible?: boolean;
 }
 
 interface AlertContextValue {
@@ -61,6 +65,11 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
         <View style={styles.overlay}>
           {config ? (
             <View style={styles.card}>
+              {config.dismissible ? (
+                <Pressable style={styles.closeButton} onPress={handleDismiss} hitSlop={10} accessibilityLabel="닫기">
+                  <Text style={styles.closeText}>✕</Text>
+                </Pressable>
+              ) : null}
               {config.icon ? (
                 <View style={[styles.iconBadge, isDanger ? styles.iconBadgeDanger : styles.iconBadgeNeutral]}>
                   <Text style={styles.icon}>{config.icon}</Text>
@@ -141,6 +150,16 @@ function createStyles(colors: ThemeColors) {
       shadowRadius: 24,
       shadowOffset: { width: 0, height: 12 },
       elevation: 10,
+    },
+    closeButton: {
+      position: 'absolute',
+      top: 14,
+      right: 18,
+      zIndex: 1,
+    },
+    closeText: {
+      fontSize: 16,
+      color: colors.textSecondary,
     },
     iconBadge: {
       width: 56,

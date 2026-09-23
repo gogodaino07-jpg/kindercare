@@ -6,9 +6,10 @@ import Text from '../common/AppText';
 import TextInput from '../common/ClearableTextInput';
 import { useAlert } from '../../context/AlertContext';
 import { useAppData } from '../../context/AppDataContext';
+import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { useCalendarAddEventInterstitialAd } from '../../hooks/useCalendarAddEventInterstitialAd';
-import { EventItem } from '../../types/models';
+import { EventItem, NO_CHILD_ID } from '../../types/models';
 import { parseISODate, toISODate, WEEKDAY_KO } from '../../utils/date';
 import { stripInvalidCharacters } from '../../utils/validation';
 import { useCalendarTheme } from './useCalendarTheme';
@@ -30,7 +31,9 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
   const { showAlert } = useAlert();
   const { showIfEligible: showAddEventAd } = useCalendarAddEventInterstitialAd();
   const t = useCalendarTheme();
-  const styles = useMemo(() => createStyles(t), [t]);
+  const { resolvedScheme } = useTheme();
+  const isDark = resolvedScheme === 'dark';
+  const styles = useMemo(() => createStyles(t, isDark), [t, isDark]);
 
   const [date, setDate] = useState(() => parseISODate(initialDateISO));
   const [showPicker, setShowPicker] = useState(false);
@@ -76,14 +79,11 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
     // 안 보인다(모달을 닫지 않고 검증 실패로 여기서 멈추는 경우). 모달과
     // 같은 방식(별도 Modal)으로 뜨는 alert를 대신 써서 항상 위에 보이게 한다.
     if (!title.trim()) {
-      showAlert({ title: '알림', message: '일정 제목을 입력해 주세요.' });
+      showAlert({ title: '일정 제목이 필요해요', message: '일정 제목을 입력해 주세요.', icon: '📝' });
       return;
     }
-    if (!selectedChild) {
-      showAlert({ title: '알림', message: '등록된 아이 정보가 없습니다.' });
-      return;
-    }
-
+    // 아이가 없어도 일정은 등록할 수 있다 — 그런 일정은 NO_CHILD_ID로 저장돼 있다가,
+    // 첫 아이를 등록하는 순간 그 아이의 일정으로 귀속된다(AppDataContext.addChild).
     setIsSaving(true);
     await showAddEventAd();
 
@@ -101,7 +101,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
       noticeText: noticeText.trim() || undefined,
       category: '원내 활동',
       notifyDayBefore: true,
-      childId: selectedChild.id,
+      childId: selectedChild?.id ?? NO_CHILD_ID,
       source: 'manual',
       icon: '📌',
     });
@@ -233,7 +233,7 @@ export default function AddEventModal({ visible, initialDateISO, onClose }: AddE
   );
 }
 
-function createStyles(t: import('./calendarTheme').CalendarTheme) {
+function createStyles(t: import('./calendarTheme').CalendarTheme, isDark: boolean) {
   return StyleSheet.create({
   overlay: {
     flex: 1,
@@ -249,6 +249,8 @@ function createStyles(t: import('./calendarTheme').CalendarTheme) {
     backgroundColor: t.cardWhite,
     borderRadius: 24,
     padding: 22,
+    // 다크모드에서는 카드 배경이 거의 검정이라 딤 배경과 구분이 흐려져 옅은 테두리로 경계를 준다.
+    ...(isDark && { borderWidth: 1, borderColor: t.border }),
   },
   headerRow: {
     flexDirection: 'row',

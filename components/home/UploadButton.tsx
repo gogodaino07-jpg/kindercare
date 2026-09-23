@@ -3,15 +3,17 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { SHADOW, ThemeColors } from '../../constants/theme';
 import { useThemeColors } from '../../context/ThemeContext';
+import { useRequireLogin } from '../../context/GuestLoginGateContext';
 import Text from '../common/AppText';
 
 export default function UploadButton() {
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const requireLogin = useRequireLogin();
 
   return (
-    <Pressable style={styles.button} onPress={() => router.push('/upload')}>
+    <Pressable style={styles.button} onPress={() => requireLogin(() => router.push('/upload'))}>
       <Text style={styles.buttonText}>📤 우리 아이 가정통신문 올리기</Text>
     </Pressable>
   );

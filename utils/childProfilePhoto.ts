@@ -28,6 +28,22 @@ export async function deleteChildProfilePhoto(ownerEmail: string, childId: strin
   }
 }
 
+// 앱이 직접 만든 파일(크롭 결과, 내려받은 캐시)만 지운다 — 갤러리 원본 등 사용자의 파일은 건드리지 않는다.
+const isAppOwnedFile = (uri: string) =>
+  [FileSystem.documentDirectory, FileSystem.cacheDirectory].some((dir) => !!dir && uri.startsWith(dir));
+
+/** 아이를 삭제할 때 이 기기에 남아있는 그 아이의 프로필 사진(캐시 사본 + 로컬 사진 파일)을 지운다. */
+export async function deleteLocalChildProfilePhoto(childId: string, photoUri?: string | null): Promise<void> {
+  const targets = [localCachePath(childId)];
+  if (photoUri && isAppOwnedFile(photoUri)) targets.push(photoUri);
+  await Promise.all(targets.map((t) => FileSystem.deleteAsync(t, { idempotent: true }).catch(() => {})));
+}
+
+/** 첫 아이를 등록할 때, 예전에 지운 아이들이 남긴 프로필 사진 캐시를 통째로 비운다. */
+export async function clearLocalChildProfilePhotos(): Promise<void> {
+  await FileSystem.deleteAsync(LOCAL_CACHE_DIR, { idempotent: true }).catch(() => {});
+}
+
 /** 다른 기기/재설치로 로컬 캐시가 없을 때, photoUrl로 사진을 내려받아 로컬 파일 경로를 반환한다. */
 export async function downloadChildProfilePhoto(photoUrl: string, childId: string): Promise<string> {
   await FileSystem.makeDirectoryAsync(LOCAL_CACHE_DIR, { intermediates: true }).catch(() => {});

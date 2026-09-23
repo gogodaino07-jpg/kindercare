@@ -9,7 +9,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, Image, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
-import CoupangBanner from '../components/common/CoupangBanner';
+import { BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
 import Text from '../components/common/AppText';
 import { isAdTestAccount } from '../constants/adTestAccounts';
 import { useAlert } from '../context/AlertContext';
@@ -18,9 +18,12 @@ import { useAppLock } from '../context/AppLockContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useToast } from '../context/ToastContext';
 import {
+  AI_ANALYSIS_MAINTENANCE_MESSAGE,
+  AI_ANALYSIS_MAINTENANCE_MODE,
   AIUsageLimitService,
   AnalysisResultStore,
   FREE_LIFETIME_LIMIT,
+  FREE_MONTHLY_LIMIT,
   GeminiAnalysisError,
   GeminiAnalysisService,
   PREMIUM_MONTHLY_LIMIT,
@@ -30,6 +33,8 @@ import { ScanColors, useScanColors } from '../features/newsletter-analysis/uiCol
 import { useScanRewardedAd } from '../hooks/useScanRewardedAd';
 import { Event, MealPlan, UploadedDoc } from '../types/models';
 import { toISODate } from '../utils/date';
+
+const UPLOAD_BANNER_AD_UNIT_ID = process.env.EXPO_PUBLIC_AD_UPLOAD_BANNER_ID || null;
 
 // 광고 시청으로 미리 충전해둔 스캔권 1회는 이번 분석에 쓰일 때까지 화면을 나갔다 와도
 // 유지돼야 한다(사용자가 광고를 보고 받은 걸 화면 재진입만으로 잃으면 안 됨) — 계정별로
@@ -97,6 +102,7 @@ export default function UploadScreen() {
   // 다음 분석 시 광고를 다시 요구하지 않고, 분석에 성공하면 소모돼 다시 false로 돌아간다.
   const [adCredited, setAdCredited] = useState(false);
   const [watchingCredit, setWatchingCredit] = useState(false);
+  const [freeMonthlyRemaining, setFreeMonthlyRemaining] = useState<number | null>(null);
 
   const maxCredits = isSubscribed ? PREMIUM_WEEKLY_LIMIT : FREE_LIFETIME_LIMIT;
   const skipAd = isAdTestAccount(googleAccount?.email);
@@ -147,7 +153,7 @@ export default function UploadScreen() {
   const gaugeSubtitle = !isSubscribed && !hasFreeCredit
     ? adCredited
       ? '스캔권 1회 충전 완료 · 지금 분석을 진행해보세요'
-      : `무료 ${maxCredits}회를 모두 사용했어요 · 광고 시청 후 계속 이용 가능`
+      : '짧은 광고 시청 후 스캔할 수 있어요'
     : `총 ${maxCredits}회 중 ${remainingAnalyses ?? 0}회 남음 · 1건당 1회 차감`;
 
   // Prevent accidental navigation during analysis
@@ -198,6 +204,18 @@ export default function UploadScreen() {
   useEffect(() => {
     AIUsageLimitService.getRemainingCount(googleAccount?.email, isSubscribed).then(setRemainingAnalyses);
   }, [googleAccount?.email, isSubscribed]);
+
+  // 이번 달 광고 시청 스캔 잔여 횟수 — 화면 진입 시점 값이 스캔 완료 후 소모돼 바뀌므로,
+  // 화면에 다시 포커스될 때마다(분석 후 돌아왔을 때 포함) 다시 읽어온다.
+  useEffect(() => {
+    if (isSubscribed) return;
+    const loadFreeMonthlyRemaining = () => {
+      AIUsageLimitService.getFreeMonthlyRemaining(googleAccount?.email).then(setFreeMonthlyRemaining);
+    };
+    loadFreeMonthlyRemaining();
+    const unsub = navigation.addListener('focus', loadFreeMonthlyRemaining);
+    return unsub;
+  }, [navigation, googleAccount?.email, isSubscribed]);
 
   useEffect(() => {
     AsyncStorage.getItem(adCreditStorageKey(googleAccount?.email)).then((value) => {
@@ -379,8 +397,12 @@ export default function UploadScreen() {
   };
 
   const handleAnalyze = async () => {
+    if (AI_ANALYSIS_MAINTENANCE_MODE) {
+      showAlert({ title: '점검 중', message: AI_ANALYSIS_MAINTENANCE_MESSAGE, icon: '🛠️' });
+      return;
+    }
     if (docs.length === 0) {
-      showAlert({ title: '알림', message: '먼저 사진이나 파일을 올려주세요' });
+      showAlert({ title: '파일을 선택해주세요', message: '먼저 사진이나 파일을 올려주세요', icon: '📎' });
       return;
     }
     if (isSubscribed && remainingAnalyses !== null && remainingAnalyses <= 0) {
@@ -391,8 +413,31 @@ export default function UploadScreen() {
       });
       return;
     }
+    if (!isSubscribed) {
+      const freeMonthlyRemaining = await AIUsageLimitService.getFreeMonthlyRemaining(googleAccount?.email);
+      if (freeMonthlyRemaining <= 0) {
+        showAlert({
+          title: '이번 달 무료 스캔을 다 쓰셨어요',
+          message: `무료 이용자는 광고 시청 포함 한 달 최대 ${FREE_MONTHLY_LIMIT}회까지 스캔할 수 있어요. 다음 달에 다시 시도하거나 프리미엄을 구독하면 계속 이용하실 수 있어요.`,
+          icon: '⏳',
+          buttons: [
+            { text: '다음에요', style: 'cancel' },
+            { text: '프리미엄 구독 안내', onPress: () => router.push('/settings/subscription') },
+          ],
+        });
+        return;
+      }
+    }
     if (!selectedChild) {
-      showAlert({ title: '알림', message: '아이를 먼저 선택해주세요' });
+      showAlert({
+        title: '아이를 선택해주세요',
+        message: '아이를 먼저 선택해주세요',
+        icon: '👶',
+        buttons: [
+          { text: '취소', style: 'cancel' },
+          { text: '아이 등록하기', onPress: () => router.push('/child-profile') },
+        ],
+      });
       return;
     }
 
@@ -446,6 +491,7 @@ export default function UploadScreen() {
                 onWatchAd={handleWatchAdForCredit}
                 adCredited={adCredited}
                 hasSelectedFiles={docs.length > 0}
+                freeMonthlyRemaining={freeMonthlyRemaining}
               />
             ) : (
               <View style={styles.gaugeCard}>
@@ -550,7 +596,22 @@ export default function UploadScreen() {
             )}
           </View>
 
-          {subscriptionReady && !isSubscribed && <CoupangBanner style={{ paddingBottom: insets.bottom }} />}
+          {subscriptionReady && !isSubscribed && UPLOAD_BANNER_AD_UNIT_ID && (
+            <View
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 50 + 6 + insets.bottom + 6,
+                paddingVertical: 6,
+                paddingBottom: insets.bottom + 6,
+                backgroundColor: C.surface,
+                borderTopWidth: 1,
+                borderTopColor: C.border,
+              }}
+            >
+              <BannerAd unitId={UPLOAD_BANNER_AD_UNIT_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />
+            </View>
+          )}
         </>
       )}
     </SafeAreaView>
@@ -671,6 +732,7 @@ function ScanCreditCard({
   onWatchAd,
   adCredited,
   hasSelectedFiles,
+  freeMonthlyRemaining,
 }: {
   watching: boolean;
   onWatchAd: () => void;
@@ -680,6 +742,9 @@ function ScanCreditCard({
    * 같이 보이면 "광고 보는 버튼이 두 개"로 보여 혼란스럽다는 피드백으로
    * 이 상태에선 충전 버튼을 숨기고 안내 문구만 보여준다. */
   hasSelectedFiles: boolean;
+  /** 이번 달 광고 시청 스캔 잔여 횟수 — 한도(FREE_MONTHLY_LIMIT)를 다 쓰기 전까지
+   * 사용자가 전혀 모르고 있다가 막힐 때 알림으로만 알게 되던 문제로 미리 고지한다. */
+  freeMonthlyRemaining: number | null;
 }) {
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
@@ -705,67 +770,71 @@ function ScanCreditCard({
     return () => loop.stop();
   }, [pulse, adCredited]);
 
+  // 월간 카운트는 분석에 성공해 실제 소모될 때 올라가므로, 충전만 해둔 상태에선 그대로다.
+  // 충전한 1회는 이미 예약된 것이라 충전 완료 상태에선 그만큼 미리 차감해서 보여준다
+  // (분석 후 실제 카운트가 올라가면 adCredited가 꺼지므로 표시값이 그대로 이어진다).
+  const displayMonthlyRemaining =
+    freeMonthlyRemaining === null ? null : Math.max(0, freeMonthlyRemaining - (adCredited ? 1 : 0));
+
   return (
-    <LinearGradient
-      colors={[C.violet600, C.indigo600]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.creditCard}
-    >
+    <View style={styles.creditCard}>
       <View style={styles.creditTopRow}>
         <View style={styles.creditTextBlock}>
-          <View style={styles.creditBadge}>
-            <Ionicons name="flash" size={13} color="#FCD34D" />
-            <Text style={styles.creditBadgeText}>무료 이용권 모두 소진</Text>
+          <View style={styles.creditTitleRow}>
+            <View style={styles.creditBadge}>
+              <Text style={styles.creditBadgeText}>REWARD</Text>
+            </View>
+            <Text style={styles.creditHeadline} numberOfLines={1}>
+              {adCredited ? '스캔권 충전 완료!' : '무료 스캔 찬스'}
+            </Text>
           </View>
-          <Text style={styles.creditHeadline}>
-            {adCredited ? '스캔권 충전 완료!' : '광고 1개 보고 스캔권 충전하기'}
+          <Text style={styles.creditSubtitle} numberOfLines={2}>
+            {adCredited ? '지금 알림장을 추가해 바로 분석해보세요' : '짧은 광고 시청하고 스캔 1회를 충전하세요.'}
           </Text>
-          <Text style={styles.creditSubtitle}>
-            {adCredited ? (
-              '지금 알림장을 추가해 바로 분석해보세요'
-            ) : (
-              <>짧은 광고 시청 시 <Text style={styles.creditSubtitleEm}>1회 즉시 충전</Text></>
-            )}
-          </Text>
+          {displayMonthlyRemaining !== null && (
+            <Text style={styles.creditMonthlyText}>
+              이번 달 {displayMonthlyRemaining}/{FREE_MONTHLY_LIMIT}회 남음
+            </Text>
+          )}
         </View>
-        <CircularGauge
-          value={adCredited ? 1 : 0}
-          max={1}
-          unit="회"
-          trackColor="rgba(255,255,255,0.25)"
-          fillColor="#FCD34D"
-          textColor="#FFFFFF"
-          subTextColor="rgba(255,255,255,0.85)"
-        />
-      </View>
-      {!adCredited && (
-        hasSelectedFiles ? (
-          // 파일을 이미 골라 하단에 "광고 보고 분석하기" 버튼이 떠 있는 상태 —
-          // 거기서 광고 시청+분석이 한 번에 처리되므로, 여기 버튼까지 같이 보이면
-          // "광고 보는 버튼이 두 개"로 보인다는 피드백으로 버튼 대신 안내만 둔다.
-          // 카드 높이가 갑자기 바뀌어 보이지 않도록 버튼과 같은 padding/radius를 써서
-          // 자리 자체는 그대로 유지한다.
-          <View style={styles.creditHintRow}>
-            <Ionicons name="arrow-down-circle" size={15} color="rgba(255,255,255,0.9)" />
-            <Text style={styles.creditHintText}>아래 분석 버튼에서 광고 보고 바로 진행하세요</Text>
+        {adCredited ? (
+          <View style={styles.creditDoneBadge}>
+            <Ionicons name="checkmark" size={18} color={C.violet700} />
           </View>
         ) : (
-          <Animated.View style={{ opacity: pulse, transform: [{ scale: pulseScale }] }}>
-            <Pressable style={styles.creditButton} onPress={onWatchAd} disabled={watching}>
-              {watching ? (
-                <ActivityIndicator color={C.violet700} />
-              ) : (
-                <>
-                  <Ionicons name="play" size={15} color={C.violet700} />
-                  <Text style={styles.creditButtonText}>광고 1개 시청하고 1회 충전하기</Text>
-                </>
-              )}
-            </Pressable>
-          </Animated.View>
-        )
+          !hasSelectedFiles && (
+            <Animated.View style={{ opacity: pulse, transform: [{ scale: pulseScale }] }}>
+              <Pressable onPress={onWatchAd} disabled={watching} style={styles.creditButtonWrap}>
+                <LinearGradient
+                  colors={[C.violet600, C.indigo600]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.creditButton}
+                >
+                  {watching ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="play" size={13} color="#FFFFFF" />
+                      <Text style={styles.creditButtonText}>무료충전</Text>
+                    </>
+                  )}
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
+          )
+        )}
+      </View>
+      {!adCredited && hasSelectedFiles && (
+        // 파일을 이미 골라 하단에 "광고 보고 분석하기" 버튼이 떠 있는 상태 —
+        // 거기서 광고 시청+분석이 한 번에 처리되므로, 여기 버튼까지 같이 보이면
+        // "광고 보는 버튼이 두 개"로 보인다는 피드백으로 버튼 대신 안내만 둔다.
+        <View style={styles.creditHintRow}>
+          <Ionicons name="arrow-down-circle" size={15} color={C.violet600} />
+          <Text style={styles.creditHintText}>아래 분석 버튼에서 광고 보고 바로 진행하세요</Text>
+        </View>
       )}
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -996,48 +1065,61 @@ function createStyles(C: ScanColors) {
   tipText: { flex: 1, fontSize: 12.5, color: C.slate700 },
   tipBold: { fontWeight: '600', color: C.amber700 },
   creditCard: {
-    borderRadius: 24,
-    padding: 12,
-    gap: 5,
+    backgroundColor: C.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.violet100,
+    padding: 14,
+    gap: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  creditTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+  creditTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   creditTextBlock: { flex: 1, gap: 4 },
+  creditTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   creditBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: C.violet100,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
   },
-  creditBadgeText: { fontSize: 11.5, fontWeight: '800', color: '#FFFFFF' },
-  creditHeadline: { fontSize: 19, fontWeight: '700', color: '#FFFFFF' },
-  creditSubtitle: { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
-  creditSubtitleEm: { fontWeight: '600', color: '#FCD34D', textDecorationLine: 'underline' },
+  creditBadgeText: { fontSize: 10.5, fontWeight: '800', color: C.violet700, letterSpacing: 0.3 },
+  creditHeadline: { flexShrink: 1, fontSize: 16, fontWeight: '800', color: C.slate900 },
+  creditSubtitle: { fontSize: 12.5, fontWeight: '500', color: C.slate500 },
+  creditMonthlyText: { fontSize: 11.5, fontWeight: '600', color: C.violet700, marginTop: 2 },
+  creditButtonWrap: { borderRadius: 999, overflow: 'hidden' },
   creditButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    paddingVertical: 9,
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
   },
-  creditButtonText: { fontSize: 12.5, fontWeight: '800', color: C.violet700 },
-  // creditButton과 같은 paddingVertical/borderRadius를 써서, 버튼 대신 이 안내가
-  // 보일 때도 카드 전체 높이가 그대로 유지되게 한다.
+  creditButtonText: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
+  creditDoneBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: C.violet100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // 카드 배경이 밝은 톤으로 바뀌어 기존 반투명 흰색 오버레이 대신 옅은 바이올렛
+  // 배경을 쓴다.
   creditHintRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: C.violet50,
     borderRadius: 14,
     paddingVertical: 9,
   },
-  creditHintText: { fontSize: 12.5, fontWeight: '700', color: 'rgba(255,255,255,0.92)' },
+  creditHintText: { fontSize: 12.5, fontWeight: '700', color: C.violet700 },
   guideCard: {
     backgroundColor: C.surface,
     borderRadius: 22,

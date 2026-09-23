@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { Linking, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
@@ -45,6 +46,10 @@ export default function AdPopupModal({ visible, onClose }: AdPopupModalProps) {
     <Modal visible={visible} transparent onRequestClose={onClose} animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.card}>
+          <Pressable style={styles.closeIconButton} onPress={onClose} accessibilityLabel="닫기" hitSlop={8}>
+            <Feather name="x" size={16} color={colors.gray500} />
+          </Pressable>
+
           <View style={styles.adHeader}>
             <Text style={styles.adTitle}>🎁 오늘의 추천 아이템</Text>
           </View>
@@ -88,10 +93,6 @@ export default function AdPopupModal({ visible, onClose }: AdPopupModalProps) {
           <Text style={styles.disclosure}>
             이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
           </Text>
-
-          <Pressable style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>닫기</Text>
-          </Pressable>
         </View>
       </View>
     </Modal>
@@ -115,6 +116,14 @@ function createStyles(colors: ThemeColors) {
       padding: 16,
       alignItems: 'center',
       ...SHADOW,
+    },
+    closeIconButton: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      zIndex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     adHeader: {
       marginBottom: 12,
@@ -141,21 +150,8 @@ function createStyles(colors: ThemeColors) {
       fontSize: 10,
       color: colors.textSecondary,
       textAlign: 'center',
-      marginBottom: 16,
       lineHeight: 14,
       paddingHorizontal: 10,
-    },
-    closeButton: {
-      width: '100%',
-      backgroundColor: colors.textPrimary,
-      borderRadius: 14,
-      paddingVertical: 14,
-      alignItems: 'center',
-    },
-    closeButtonText: {
-      color: colors.cardWhite,
-      fontSize: 15,
-      fontWeight: '700',
     },
   });
 }

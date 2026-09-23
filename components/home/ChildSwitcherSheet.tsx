@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
-import { AppState, Image, Modal, Pressable, StyleSheet, View, Dimensions } from 'react-native';
+import { AppState, Modal, Pressable, StyleSheet, View, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
@@ -15,7 +15,7 @@ import { useAlert } from '../../context/AlertContext';
 import { FREE_CHILD_LIMIT, isChildLocked, useAppData } from '../../context/AppDataContext';
 import { useAppLock } from '../../context/AppLockContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { useThemeColors } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 import Text from '../common/AppText';
 
 interface ChildSwitcherSheetProps {
@@ -32,8 +32,9 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
   const { isLocked } = useAppLock();
   const { isSubscribed } = useSubscription();
   const { showAlert } = useAlert();
-  const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors, insets.bottom), [colors, insets.bottom]);
+  const { colors, resolvedScheme } = useTheme();
+  const isDark = resolvedScheme === 'dark';
+  const styles = useMemo(() => createStyles(colors, insets.bottom, isDark), [colors, insets.bottom, isDark]);
 
   // Initial hidden position is fully below the screen
   const translateY = useSharedValue(SCREEN_HEIGHT);
@@ -157,64 +158,88 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
             <View style={styles.dragHandle} />
 
             <View style={styles.headerRow}>
-              <Text style={styles.title}>아이 전환·관리</Text>
+              <Text style={styles.title}>아이 선택</Text>
               <Pressable onPress={handleClose} accessibilityLabel="닫기" hitSlop={8}>
                 <Text style={styles.closeIcon}>✕</Text>
               </Pressable>
             </View>
 
-            {sortedChildren.map((child) => {
-              const isSelected = child.id === selectedChild?.id;
-              const locked = isChildLocked(children, child.id, isSubscribed);
-              const label = [child.name, `${child.age}세`, child.className]
-                .filter(Boolean)
-                .join(' · ');
-              return (
-                <View
-                  key={child.id}
-                  style={[styles.card, isSelected && styles.cardSelected, locked && styles.cardLocked]}
-                >
-                  <Pressable
-                    style={styles.cardMain}
-                    onPress={() => {
-                      if (locked) {
-                        handleLockedChildPress();
-                        return;
-                      }
-                      selectChild(child.id);
-                      handleClose();
-                    }}
-                  >
-                    {child.photoUri ? (
-                      <Image source={{ uri: child.photoUri }} style={[styles.avatar, locked && styles.avatarLocked]} />
-                    ) : (
-                      <View style={styles.avatarPlaceholder}>
-                        <Text style={styles.avatarIcon}>{child.avatarEmoji ?? '🧒'}</Text>
-                      </View>
-                    )}
-                    <Text style={[styles.cardLabel, locked && styles.cardLabelLocked]}>{label}</Text>
-                    {locked && <Text style={styles.lockIcon}>🔒</Text>}
-                  </Pressable>
-                  <Pressable
-                    style={styles.editButton}
-                    onPress={() => {
-                      if (locked) {
-                        handleLockedChildPress();
-                        return;
-                      }
-                      handleClose();
-                      router.push({ pathname: '/child-profile', params: { childId: child.id } });
-                    }}
-                    accessibilityLabel={locked ? '잠긴 프로필' : '프로필 수정'}
-                  >
-                    <Text style={styles.editButtonText}>{locked ? '잠김' : '수정'}</Text>
-                  </Pressable>
-                </View>
-              );
-            })}
-            <Pressable style={styles.addButton} onPress={handleAddChild}>
-              <Text style={styles.addButtonText}>+ 아이 추가</Text>
-            </Pressable>
+            {sortedChildren.length === 0 ? (
+              // 아이가 하나도 없을 때(신규 게스트 등) — 장식용 이미지 없이 짧은 안내와
+              // 첫 아이 등록 버튼만 담백하게 보여준다.
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyTitle}>아직 등록된 아이가 없어요</Text>
+                <Text style={styles.emptySubtitle}>
+                  아이를 등록하면 일정과 준비물을 스마트하게 챙길 수 있어요
+                </Text>
+                <Pressable style={styles.emptyAddButton} onPress={handleAddChild}>
+                  <Text style={styles.emptyAddButtonText}>+ 아이 추가하기</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                {sortedChildren.map((child) => {
+                  const isSelected = child.id === selectedChild?.id;
+                  const locked = isChildLocked(children, child.id, isSubscribed);
+                  const subLabel = [
+                    child.age !== undefined && child.age !== null ? `${child.age}세` : undefined,
+                    child.className,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ');
+                  return (
+                    <View
+                      key={child.id}
+                      style={[styles.row, isSelected && styles.rowSelected, locked && styles.rowLocked]}
+                    >
+                      <Pressable
+                        style={styles.rowMain}
+                        onPress={() => {
+                          if (locked) {
+                            handleLockedChildPress();
+                            return;
+                          }
+                          selectChild(child.id);
+                          handleClose();
+                        }}
+                      >
+                        <View style={[styles.radio, isSelected && styles.radioSelected]}>
+                          {isSelected && <View style={styles.radioDot} />}
+                        </View>
+                        <View style={styles.rowTextBlock}>
+                          <Text style={[styles.rowName, locked && styles.rowNameLocked]} numberOfLines={1}>
+                            {child.name || '이름 없음'}
+                          </Text>
+                          {!!subLabel && (
+                            <Text style={styles.rowSub} numberOfLines={1}>
+                              {subLabel}
+                            </Text>
+                          )}
+                        </View>
+                        {locked && <Text style={styles.lockIcon}>🔒</Text>}
+                      </Pressable>
+                      <Pressable
+                        style={styles.editButton}
+                        onPress={() => {
+                          if (locked) {
+                            handleLockedChildPress();
+                            return;
+                          }
+                          handleClose();
+                          router.push({ pathname: '/child-profile', params: { childId: child.id } });
+                        }}
+                        accessibilityLabel={locked ? '잠긴 프로필' : '프로필 수정'}
+                      >
+                        <Text style={styles.editButtonText}>{locked ? '잠김' : '수정'}</Text>
+                      </Pressable>
+                    </View>
+                  );
+                })}
+                <Pressable style={styles.addButton} onPress={handleAddChild}>
+                  <Text style={styles.addButtonText}>+ 아이 추가</Text>
+                </Pressable>
+              </>
+            )}
           </Animated.View>
         </GestureDetector>
       </GestureHandlerRootView>
@@ -222,7 +247,7 @@ export default function ChildSwitcherSheet({ visible, onClose }: ChildSwitcherSh
   );
 }
 
-function createStyles(colors: ThemeColors, bottomInset: number) {
+function createStyles(colors: ThemeColors, bottomInset: number, isDark: boolean) {
   return StyleSheet.create({
     overlayContainer: {
       flex: 1,
@@ -238,94 +263,109 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     sheet: {
       backgroundColor: colors.skyBackground,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
-      padding: 22,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      padding: 20,
       paddingTop: 12,
-      paddingBottom: 16 + bottomInset,
+      paddingBottom: 20 + bottomInset,
+      // 다크모드에서는 시트 배경이 거의 검정이라 뒤의 딤 배경과 경계가 흐려져,
+      // 위쪽 모서리에 옅은 테두리를 더해 시트 영역을 또렷하게 구분한다.
+      ...(isDark && { borderTopWidth: 1, borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.border }),
       ...SHADOW,
     },
     dragHandle: {
-      width: 40,
+      width: 36,
       height: 4,
       backgroundColor: colors.gray100,
       borderRadius: 2,
       alignSelf: 'center',
-      marginBottom: 16,
+      marginBottom: 12,
     },
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 18,
+      marginBottom: 12,
     },
     title: {
-      fontSize: 16,
-      fontWeight: '700',
+      fontSize: 15,
+      fontWeight: '800',
       color: colors.gray900,
     },
     closeIcon: {
-      fontSize: 16,
+      fontSize: 15,
       color: colors.textSecondary,
     },
-    card: {
+    row: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: colors.cardWhite,
-      borderRadius: 18,
-      marginBottom: 12,
-      paddingRight: 14,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: isDark ? colors.border : 'transparent',
+      marginBottom: 8,
+      paddingRight: 10,
       ...SHADOW,
+      shadowOpacity: 0.06,
+      elevation: 1,
     },
-    cardSelected: {
+    rowSelected: {
       backgroundColor: colors.lightBlueBg,
+      borderColor: colors.accent,
     },
-    cardLocked: {
+    rowLocked: {
       opacity: 0.55,
     },
-    cardMain: {
+    rowMain: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 14,
+      paddingVertical: 13,
+      paddingHorizontal: 14,
     },
-    avatar: {
-      width: 52,
-      height: 52,
-      borderRadius: 26,
-      marginRight: 14,
-    },
-    avatarLocked: {
-      opacity: 0.6,
-    },
-    avatarPlaceholder: {
-      width: 52,
-      height: 52,
-      borderRadius: 26,
-      backgroundColor: colors.gray100,
+    radio: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: colors.border,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 14,
+      marginRight: 12,
     },
-    avatarIcon: {
-      fontSize: 26,
+    radioSelected: {
+      borderColor: colors.accent,
     },
-    cardLabel: {
+    radioDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: colors.accent,
+    },
+    rowTextBlock: {
       flex: 1,
-      fontSize: 16,
-      fontWeight: '600',
+    },
+    rowName: {
+      fontSize: 15,
+      fontWeight: '700',
       color: colors.gray900,
     },
-    cardLabelLocked: {
+    rowNameLocked: {
       color: colors.textSecondary,
     },
+    rowSub: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
     lockIcon: {
-      fontSize: 14,
+      fontSize: 13,
       marginLeft: 6,
     },
     editButton: {
-      paddingVertical: 7,
-      paddingHorizontal: 14,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
       borderRadius: 999,
       backgroundColor: colors.gray100,
     },
@@ -336,8 +376,7 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
     },
     addButton: {
       marginTop: 2,
-      marginBottom: 4,
-      paddingVertical: 14,
+      paddingVertical: 13,
       alignItems: 'center',
       borderRadius: 14,
       borderWidth: 1,
@@ -345,9 +384,39 @@ function createStyles(colors: ThemeColors, bottomInset: number) {
       borderStyle: 'dashed',
     },
     addButtonText: {
-      fontSize: 14,
+      fontSize: 13.5,
       fontWeight: '700',
       color: colors.accent,
+    },
+    emptyState: {
+      alignItems: 'center',
+      paddingTop: 8,
+      paddingBottom: 4,
+    },
+    emptyTitle: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: colors.gray900,
+      marginBottom: 6,
+    },
+    emptySubtitle: {
+      fontSize: 12.5,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 18,
+      marginBottom: 18,
+    },
+    emptyAddButton: {
+      alignSelf: 'stretch',
+      alignItems: 'center',
+      backgroundColor: colors.accent,
+      borderRadius: 14,
+      paddingVertical: 13,
+    },
+    emptyAddButtonText: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: '#FFFFFF',
     },
   });
 }

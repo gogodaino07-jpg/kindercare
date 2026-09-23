@@ -6,7 +6,7 @@ import { ThemeColors } from '../../constants/theme';
 import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Child } from '../../types/models';
-import { parseISODate } from '../../utils/date';
+import { daysSinceBirth } from '../../utils/date';
 import Text from '../common/AppText';
 import CalendarIcon from '../common/CalendarIcon';
 import SettingsIcon from '../common/SettingsIcon';
@@ -24,8 +24,6 @@ interface HomeProfileBarProps {
   onPressChild: () => void;
   /** 생일인 아이 새로고침 시 값이 바뀔 때마다 프로필 영역에 폭죽 애니메이션을 재생. */
   birthdayBurstKey?: number;
-  /** "생후 N일째" 문구를 빠르게 3번 연속 탭하면 호출되는 숨은 테스트 진입점(온보딩 튜토리얼 다시 보기 등). */
-  onDaysOldTripleTap?: () => void;
   /** 홈 화면 튜토리얼이 캘린더 아이콘만 좁혀서 강조할 때 위치를 재기 위한 ref. */
   calendarIconRef?: React.RefObject<View | null>;
   /** 홈 화면 튜토리얼이 설정 아이콘만 좁혀서 강조할 때 위치를 재기 위한 ref. */
@@ -37,16 +35,6 @@ function formatClassName(className?: string): string | undefined {
   const trimmed = className?.trim();
   if (!trimmed) return undefined;
   return trimmed.endsWith('반') ? trimmed : `${trimmed}반`;
-}
-
-/** 생일 당일을 "생후 1일째"로 세는 방식(자정 기준 날짜 차이 + 1). */
-function daysSinceBirth(birthdate?: string): number | undefined {
-  if (!birthdate) return undefined;
-  const birth = parseISODate(birthdate);
-  birth.setHours(0, 0, 0, 0);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.floor((today.getTime() - birth.getTime()) / 86400000) + 1;
 }
 
 const AVATAR_SMALL_SIZE = 56;
@@ -131,7 +119,7 @@ const confettiStyles = StyleSheet.create({
 });
 
 /** 홈 화면 최상단 아이 프로필 행 — 스크롤해도 화면 상단에 고정되는 헤더로 app/index.tsx에서 ScrollView 바깥에 렌더링된다. */
-export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBurstKey, onDaysOldTripleTap, calendarIconRef, settingsIconRef }: HomeProfileBarProps) {
+export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBurstKey, calendarIconRef, settingsIconRef }: HomeProfileBarProps) {
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -140,25 +128,6 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
   const [photoPreviewVisible, setPhotoPreviewVisible] = useState(false);
   const photoUri = selectedChild?.photoUri;
   const daysOld = daysSinceBirth(selectedChild?.birthdate);
-
-  // 일반 사용자에게는 안 보이는 숨은 테스트 진입점 — "생후 N일째" 문구를 빠르게
-  // 3번 연속 누르면 onDaysOldTripleTap을 호출한다(예: 온보딩 튜토리얼 다시 보기).
-  // 탭 사이 간격이 700ms를 넘으면 연속 탭이 아니라고 보고 횟수를 리셋한다.
-  const tripleTapCountRef = useRef(0);
-  const tripleTapLastAtRef = useRef(0);
-  const handleDaysOldPress = () => {
-    if (!onDaysOldTripleTap) return;
-    const now = Date.now();
-    if (now - tripleTapLastAtRef.current > 700) {
-      tripleTapCountRef.current = 0;
-    }
-    tripleTapCountRef.current += 1;
-    tripleTapLastAtRef.current = now;
-    if (tripleTapCountRef.current >= 3) {
-      tripleTapCountRef.current = 0;
-      onDaysOldTripleTap();
-    }
-  };
 
   return (
     <View style={styles.topRow}>
@@ -201,7 +170,12 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
             </View>
           </Pressable>
           {daysOld !== undefined && (
-            <Pressable style={styles.daysOldRow} onPress={handleDaysOldPress} hitSlop={6}>
+            <Pressable
+              style={styles.daysOldRow}
+              onPress={onPressChild}
+              hitSlop={{ top: 4, bottom: 12, right: 12 }}
+              accessibilityLabel="아이 전환하기"
+            >
               <MaterialCommunityIcons name="clock-outline" size={13} color={colors.gray400} />
               <Text style={styles.daysOldText}>생후 {daysOld}일째</Text>
             </Pressable>
@@ -341,7 +315,9 @@ function createStyles(colors: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      marginTop: 3,
+      // 세로로 살짝 넉넉하게 잡아 터치가 쉽게 한다(위쪽 margin을 padding으로 옮겨 겉모양은 그대로).
+      paddingTop: 4,
+      paddingBottom: 6,
     },
     daysOldText: {
       fontSize: 12.5,

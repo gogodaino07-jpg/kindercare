@@ -33,6 +33,9 @@ export interface EventItem {
   reviewReason?: string;
 }
 
+/** 소속 아이가 없는 일정의 childId — 아이 등록 전에 캘린더에서 직접 만든 일정용. */
+export const NO_CHILD_ID = '';
+
 export interface Event {
   id: string;
   /** ISO date string, e.g. "2026-07-21" */
@@ -58,6 +61,8 @@ export interface Event {
   noticeText?: string;
   /** 등원 전날 저녁 알림 수신 여부 — defaults to true when unset. */
   notifyDayBefore?: boolean;
+  /** 아이가 아직 없을 때 캘린더에서 직접 등록한 일정은 NO_CHILD_ID('')이고,
+   *  첫 아이를 등록하는 순간 그 아이로 귀속된다(AppDataContext.addChild). */
   childId: string;
   /** 'ai' = 가정통신문 업로드 → AI 확인 화면에서 저장된 일정, 'manual' = 캘린더에서 직접 추가 */
   source: 'ai' | 'manual';
@@ -68,6 +73,8 @@ export interface Event {
   photoUris?: string[];
   needsReview?: boolean;
   reviewReason?: string;
+  /** 마지막 아이를 "아이만 삭제"할 때 남겨둔 일정 표시 — 다음에 아이를 등록할 때 이어받을지 묻는 대상. */
+  keptFromDeletedChild?: boolean;
 }
 
 export interface MealPlan {
@@ -80,6 +87,8 @@ export interface MealPlan {
   mainMenu?: string;
   /** Event처럼 아이(=소속 기관) 기준으로 스코프 */
   childId: string;
+  /** Event.keptFromDeletedChild와 같은 뜻 — 아이만 삭제할 때 남겨둔 급식표 표시. */
+  keptFromDeletedChild?: boolean;
 }
 
 export interface FamilyMember {
