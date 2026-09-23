@@ -17,6 +17,8 @@ import mobileAds, { MaxAdContentRating } from 'react-native-google-mobile-ads';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppLockScreen from '../components/AppLockScreen';
 import BootSplashOverlay from '../components/BootSplashOverlay';
+import InAppUpdateSheet from '../components/InAppUpdateSheet';
+import { useInAppUpdate } from '../hooks/useInAppUpdate';
 import { isExternalActionActive } from '../utils/externalAction';
 import { snoozeNotification, SNOOZE_ACTION_ID } from '../utils/notifications';
 import { AlertProvider, useAlert } from '../context/AlertContext';
@@ -68,6 +70,7 @@ function ThemedNavigation() {
   const splashOpacity = useRef(new Animated.Value(1)).current;
   const appOpacity = useRef(new Animated.Value(0)).current;
   const [showOverlay, setShowOverlay] = useState(true);
+  const { showSheet: showUpdateSheet, applyUpdate, dismiss: dismissUpdateSheet } = useInAppUpdate();
 
   // Consolidated readiness flag
   const isReady = themeLoaded && lockLoaded && onboardingLoaded && !isBooting;
@@ -276,6 +279,7 @@ function ThemedNavigation() {
               <Stack.Screen name="settings/support" options={{ title: '고객센터' }} />
             </Stack>
             <AppLockScreen autoBiometricEnabled={!showOverlay} />
+            <InAppUpdateSheet visible={showUpdateSheet} onUpdatePress={applyUpdate} onLaterPress={dismissUpdateSheet} />
           </>
         )}
       </Animated.View>
