@@ -44,14 +44,45 @@ async function assertUnderHardLimit(email, usageType) {
   })();
   const guardRef = getFirestore().collection('users').doc(email).collection('serverGuard').doc(usageType);
 
-  await getFirestore().runTransaction(async (tx) => {
+  // 반환값(이번 달 몇 번째 호출인지)은 관리자 알림 메일에 참고용으로 쓴다.
+  return getFirestore().runTransaction(async (tx) => {
     const snap = await tx.get(guardRef);
     const data = snap.exists ? snap.data() : null;
     const monthCount = data?.monthStart === monthStart ? (data.monthCount ?? 0) : 0;
     if (monthCount >= limit) {
       throw new HttpsError('resource-exhausted', '이번 달 AI 분석 한도를 모두 사용했어요.');
     }
-    tx.set(guardRef, { monthStart, monthCount: monthCount + 1 });
+    const newMonthCount = monthCount + 1;
+    tx.set(guardRef, { monthStart, monthCount: newMonthCount });
+    return newMonthCount;
+  });
+}
+
+function createSupportMailTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: SUPPORT_EMAIL, pass: GMAIL_APP_PASSWORD.value() },
+  });
+}
+
+const USAGE_TYPE_LABEL = { newsletter: '가정통신문', meal: '식단표' };
+
+/**
+ * AI 분석 서버 함수가 실제로 호출될 때마다 개발자 본인 메일로 알림을 보낸다.
+ * 클라이언트 버튼 탭이 아니라 이 서버 함수 호출 시점에 보내므로, 네트워크
+ * 오류 등으로 실제 API 호출까지 못 간 시도는 안 잡히고 "진짜 호출 시도"만
+ * 정확히 집계된다. 실패해도 본 기능(AI 분석)에는 영향 없도록 호출부에서
+ * await 없이 fire-and-forget으로 쓰고 에러는 로그만 남긴다.
+ */
+async function notifyScanAttempt({ email, usageType, monthCount }) {
+  const transporter = createSupportMailTransporter();
+  const label = USAGE_TYPE_LABEL[usageType] ?? usageType;
+  const now = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+  await transporter.sendMail({
+    from: `킨더케어 알림 <${SUPPORT_EMAIL}>`,
+    to: SUPPORT_EMAIL,
+    subject: `[킨더케어] AI 분석 호출 - ${label}`,
+    text: `사용자: ${email}\n분석 유형: ${label}\n이번 달 이 계정 ${monthCount}번째 호출\n시각: ${now} (KST)`,
   });
 }
 
@@ -65,7 +96,7 @@ async function assertUnderHardLimit(email, usageType) {
  */
 exports.analyzeNewsletter = onCall(
   {
-    secrets: [GEMINI_API_KEY],
+    secrets: [GEMINI_API_KEY, GMAIL_APP_PASSWORD],
     region: 'asia-northeast3',
     timeoutSeconds: 120,
     memory: '512MiB',
@@ -85,7 +116,12 @@ exports.analyzeNewsletter = onCall(
     }
     const usageType = request.data?.usageType === 'meal' ? 'meal' : 'newsletter';
 
-    await assertUnderHardLimit(email, usageType);
+    const monthCount = await assertUnderHardLimit(email, usageType);
+
+    // 알림 메일 발송 실패가 본 기능(AI 분석)을 막지 않도록 await하지 않는다.
+    notifyScanAttempt({ email, usageType, monthCount }).catch((err) => {
+      logger.error('Scan attempt notify email failed', err);
+    });
 
     let response;
     try {
