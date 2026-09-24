@@ -15,7 +15,7 @@ const LOAD_POLL_INTERVAL_MS = 300;
  * 반복할 때(예: 일정을 여러 개 몰아서 추가) 매번 뜨는 걸 막기 위함.
  */
 export function useIntervalInterstitialAd(adUnitId: string | null, storageKey: string, minIntervalMs: number) {
-  const { isLoaded, isClosed, load, show } = useInterstitialAd(adUnitId);
+  const { isLoaded, isClosed, error, load, show } = useInterstitialAd(adUnitId);
   const isLoadedRef = useRef(isLoaded);
   useEffect(() => {
     isLoadedRef.current = isLoaded;
@@ -50,6 +50,15 @@ export function useIntervalInterstitialAd(adUnitId: string | null, storageKey: s
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClosed]);
+
+  // show()가 실패하면(광고 만료 등) CLOSED 이벤트가 영영 안 와서 showIfEligible()을
+  // await하는 호출부가 멈춰버린다 — 에러가 오면 기다리던 쪽을 풀어준다.
+  useEffect(() => {
+    if (!error) return;
+    const resolvers = closeResolversRef.current;
+    closeResolversRef.current = [];
+    resolvers.forEach((resolve) => resolve());
+  }, [error]);
 
   /**
    * 동작 완료 직후 호출. 광고 단위 미설정/로드 실패(대기 후에도)/간격 이내

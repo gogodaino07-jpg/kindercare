@@ -45,6 +45,7 @@ import { Event, EventItem, NO_CHILD_ID } from '../types/models';
 import { isBirthdayToday, isBirthMilestoneToday, parseISODate, toISODate, WEEKDAY_KO } from '../utils/date';
 import { updateHomeWidget } from '../utils/homeWidget';
 import { HOME_TUTORIAL_KEY, hasSeenTutorial, markTutorialSeen } from '../utils/tutorialStorage';
+import { useTutorialFinishInterstitialAd } from '../hooks/useTutorialFinishInterstitialAd';
 
 // 앱 프로세스가 살아있는 동안 전면 광고는 한 번만 시도한다. 컴포넌트 스코프
 // ref로 관리하면 AI 스캔 후 홈으로 돌아오면서 화면이 다시 마운트될 때마다
@@ -157,6 +158,11 @@ export default function HomeScreen() {
   // homeTutorialVisible이 아직 false라 광고 팝업(500ms 지연)이 먼저 떠서 세션당
   // 1회 기회를 튜토리얼 뒤에서 소진해버렸다 — 결정이 끝날 때까지 광고를 미룬다.
   const [homeTutorialChecked, setHomeTutorialChecked] = useState(false);
+  // 튜토리얼이 떠 있는 동안에만 종료용 전면광고를 미리 로드해두고(armed), 튜토리얼을
+  // 끝낸 뒤 그 광고가 닫힐 때까지(pending) 홈 광고 팝업을 미뤄 두 광고가 겹치지 않게 한다.
+  const [tutorialAdArmed, setTutorialAdArmed] = useState(false);
+  const [tutorialAdPending, setTutorialAdPending] = useState(false);
+  const { showIfEligible: showTutorialFinishAd } = useTutorialFinishInterstitialAd(tutorialAdArmed);
   // 하단에 떠있는 공유배너/쿠팡배너 높이만큼만 스크롤 여백을 잡아준다 — 고정값을
   // 쓰면 오늘 일정이 짧아 스크롤 콘텐츠가 짧은 날 그 아래로 빈 여백이 크게 남았다.
   const [bottomStackHeight, setBottomStackHeight] = useState(0);
@@ -412,7 +418,8 @@ export default function HomeScreen() {
       !subscriptionReady ||
       isSubscribed ||
       !homeTutorialChecked ||
-      homeTutorialVisible
+      homeTutorialVisible ||
+      tutorialAdPending
     ) {
       return;
     }
@@ -424,7 +431,11 @@ export default function HomeScreen() {
     }, 500); // 0.5s delay for better UX
 
     return () => clearTimeout(timeoutId);
-  }, [onboardingLoaded, hasOnboarded, isLocked, subscriptionReady, isSubscribed, homeTutorialChecked, homeTutorialVisible]);
+  }, [onboardingLoaded, hasOnboarded, isLocked, subscriptionReady, isSubscribed, homeTutorialChecked, homeTutorialVisible, tutorialAdPending]);
+
+  useEffect(() => {
+    if (homeTutorialVisible && subscriptionReady && !isSubscribed) setTutorialAdArmed(true);
+  }, [homeTutorialVisible, subscriptionReady, isSubscribed]);
 
   // 홈 화면 첫 진입 시 1회만(신규 가입자 대상) 4단계 코치마크 투어를 보여준다.
   // 이미 온보딩한 계정은 google-signin.tsx에서 로그인 시점에 시청 기록을
@@ -464,7 +475,16 @@ export default function HomeScreen() {
   const handleFinishHomeTutorial = useCallback(() => {
     setHomeTutorialVisible(false);
     markTutorialSeen(HOME_TUTORIAL_KEY).catch(() => {});
-  }, []);
+    if (!tutorialAdArmed) return;
+    // 전면광고가 닫힌 뒤(또는 못 띄운 경우 바로) 홈 광고 팝업이 이어서 뜬다.
+    setTutorialAdPending(true);
+    showTutorialFinishAd()
+      .catch(() => false)
+      .finally(() => {
+        setTutorialAdPending(false);
+        setTutorialAdArmed(false);
+      });
+  }, [tutorialAdArmed, showTutorialFinishAd]);
 
   // 프로필/캘린더/설정 아이콘은 스크롤 영역 밖(항상 보이는 고정 헤더)이라
   // 이 호출이 사실상 스크롤을 0으로 되돌리는 정도로만 작동하고, 급식/날씨/
