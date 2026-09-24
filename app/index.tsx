@@ -153,6 +153,10 @@ export default function HomeScreen() {
   const scheduleSectionRef = useRef<View>(null);
   const emptyContentRef = useRef<HomeEmptyContentHandle>(null);
   const [homeTutorialVisible, setHomeTutorialVisible] = useState(false);
+  // 튜토리얼을 띄울지(시청 기록 조회 + 600ms 지연) 결정이 끝났는지. 결정 전엔
+  // homeTutorialVisible이 아직 false라 광고 팝업(500ms 지연)이 먼저 떠서 세션당
+  // 1회 기회를 튜토리얼 뒤에서 소진해버렸다 — 결정이 끝날 때까지 광고를 미룬다.
+  const [homeTutorialChecked, setHomeTutorialChecked] = useState(false);
   // 하단에 떠있는 공유배너/쿠팡배너 높이만큼만 스크롤 여백을 잡아준다 — 고정값을
   // 쓰면 오늘 일정이 짧아 스크롤 콘텐츠가 짧은 날 그 아래로 빈 여백이 크게 남았다.
   const [bottomStackHeight, setBottomStackHeight] = useState(0);
@@ -400,7 +404,16 @@ export default function HomeScreen() {
     // 로그인 없이 온보딩만 마친 게스트에게도 이 팝업은 그대로 노출한다 —
     // 게스트 여부와 무관하게 비구독 사용자 전체에게 적용되는 광고라 googleAccount는
     // 더 이상 조건에 넣지 않는다.
-    if (hasAttemptedAdThisSession || !onboardingLoaded || !hasOnboarded || isLocked || !subscriptionReady || isSubscribed || homeTutorialVisible) {
+    if (
+      hasAttemptedAdThisSession ||
+      !onboardingLoaded ||
+      !hasOnboarded ||
+      isLocked ||
+      !subscriptionReady ||
+      isSubscribed ||
+      !homeTutorialChecked ||
+      homeTutorialVisible
+    ) {
       return;
     }
 
@@ -411,7 +424,7 @@ export default function HomeScreen() {
     }, 500); // 0.5s delay for better UX
 
     return () => clearTimeout(timeoutId);
-  }, [onboardingLoaded, hasOnboarded, isLocked, subscriptionReady, isSubscribed, homeTutorialVisible]);
+  }, [onboardingLoaded, hasOnboarded, isLocked, subscriptionReady, isSubscribed, homeTutorialChecked, homeTutorialVisible]);
 
   // 홈 화면 첫 진입 시 1회만(신규 가입자 대상) 4단계 코치마크 투어를 보여준다.
   // 이미 온보딩한 계정은 google-signin.tsx에서 로그인 시점에 시청 기록을
@@ -423,9 +436,15 @@ export default function HomeScreen() {
     if (!onboardingLoaded || !hasOnboarded || isLocked) return;
     let cancelled = false;
     hasSeenTutorial(HOME_TUTORIAL_KEY).then((seen) => {
-      if (cancelled || seen) return;
+      if (cancelled) return;
+      if (seen) {
+        setHomeTutorialChecked(true);
+        return;
+      }
       setTimeout(() => {
-        if (!cancelled) setHomeTutorialVisible(true);
+        if (cancelled) return;
+        setHomeTutorialVisible(true);
+        setHomeTutorialChecked(true);
       }, 600);
     });
     return () => {
