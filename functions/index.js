@@ -22,7 +22,7 @@ const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GE
  * 2026-09-24 기본값 기준치(4장): thinking 3,263 / 출력 2,093 / 입력 10,623토큰, 25.6초 —
  * thinking이 비용의 절반 가까이라 'low'로 전환. 품질이 떨어지면 null로 되돌릴 것.
  */
-const GEMINI_THINKING_LEVEL = 'low';
+const GEMINI_THINKING_LEVEL = null;
 
 /**
  * 비용·속도 튜닝 판단용으로 Gemini 응답의 토큰 사용량과 소요 시간을 남긴다.
