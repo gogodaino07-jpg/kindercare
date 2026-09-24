@@ -15,6 +15,45 @@ const SUPPORT_EMAIL = 'gogodaino07@gmail.com';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GEMINI_MODEL = 'gemini-3.6-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+/**
+ * Gemini 3 계열은 thinking 토큰(출력 단가로 청구)이 기본값에서 비용·응답시간의 큰 비중을
+ * 차지할 수 있다. 앱 업데이트 없이 조정할 수 있도록 서버에서 요청 본문에 덮어쓴다.
+ * null이면 덮어쓰지 않고 모델 기본값 그대로 — 먼저 이 상태로 'Gemini usage' 로그를
+ * 기준치로 모은 뒤 'low'로 바꿔서 토큰/소요시간/결과 품질을 비교할 것.
+ */
+const GEMINI_THINKING_LEVEL = null;
+
+/**
+ * 비용·속도 튜닝 판단용으로 Gemini 응답의 토큰 사용량과 소요 시간을 남긴다.
+ * 로그 실패가 본 기능을 막으면 안 되므로 어떤 예외도 밖으로 던지지 않는다.
+ */
+function logGeminiUsage({ email, usageType, body, json, elapsedMs }) {
+  try {
+    const parts = body?.contents?.[0]?.parts;
+    const imageCount = Array.isArray(parts) ? parts.filter((p) => p?.inline_data || p?.inlineData).length : 0;
+    const usage = json?.usageMetadata ?? {};
+    const byModality = {};
+    (usage.promptTokensDetails ?? []).forEach((d) => {
+      if (d?.modality) byModality[d.modality] = d.tokenCount;
+    });
+    logger.info('Gemini usage', {
+      email,
+      usageType,
+      model: GEMINI_MODEL,
+      thinkingLevel: GEMINI_THINKING_LEVEL ?? 'default',
+      imageCount,
+      elapsedMs,
+      promptTokens: usage.promptTokenCount,
+      promptTokensByModality: byModality,
+      cachedTokens: usage.cachedContentTokenCount,
+      thoughtsTokens: usage.thoughtsTokenCount,
+      outputTokens: usage.candidatesTokenCount,
+      totalTokens: usage.totalTokenCount,
+    });
+  } catch (err) {
+    logger.warn('Gemini usage log failed', err);
+  }
+}
 
 /**
  * 앱(AIUsageLimitService)이 관리하는 무료(평생 스캔 풀)/프리미엄(주간·월간) 한도는
@@ -123,6 +162,15 @@ exports.analyzeNewsletter = onCall(
       logger.error('Scan attempt notify email failed', err);
     });
 
+    if (GEMINI_THINKING_LEVEL) {
+      // 앱은 snake_case(generation_config)로 보내므로 같은 표기로 맞춰 덮어쓴다.
+      body.generation_config = {
+        ...(body.generation_config ?? {}),
+        thinking_config: { thinking_level: GEMINI_THINKING_LEVEL },
+      };
+    }
+
+    const startedAt = Date.now();
     let response;
     try {
       response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY.value()}`, {
@@ -136,6 +184,7 @@ exports.analyzeNewsletter = onCall(
     }
 
     const json = await response.json();
+    const elapsedMs = Date.now() - startedAt;
 
     if (!response.ok) {
       logger.error('Gemini API error', { status: response.status, json });
@@ -151,6 +200,8 @@ exports.analyzeNewsletter = onCall(
         detail ? `Gemini 오류 (${response.status}): ${detail}` : `문서 분석에 실패했어요 (HTTP ${response.status})`
       );
     }
+
+    logGeminiUsage({ email, usageType, body, json, elapsedMs });
 
     return json;
   }
