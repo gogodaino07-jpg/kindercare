@@ -18,16 +18,17 @@ const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GE
 /**
  * Gemini 3 계열은 thinking 토큰(출력 단가로 청구)이 기본값에서 비용·응답시간의 큰 비중을
  * 차지할 수 있다. 앱 업데이트 없이 조정할 수 있도록 서버에서 요청 본문에 덮어쓴다.
- * null이면 덮어쓰지 않고 모델 기본값 그대로 — 먼저 이 상태로 'Gemini usage' 로그를
- * 기준치로 모은 뒤 'low'로 바꿔서 토큰/소요시간/결과 품질을 비교할 것.
+ * null이면 덮어쓰지 않고 모델 기본값 그대로.
+ * 2026-09-24 기본값 기준치(4장): thinking 3,263 / 출력 2,093 / 입력 10,623토큰, 25.6초 —
+ * thinking이 비용의 절반 가까이라 'low'로 전환. 품질이 떨어지면 null로 되돌릴 것.
  */
-const GEMINI_THINKING_LEVEL = null;
+const GEMINI_THINKING_LEVEL = 'low';
 
 /**
  * 비용·속도 튜닝 판단용으로 Gemini 응답의 토큰 사용량과 소요 시간을 남긴다.
  * 로그 실패가 본 기능을 막으면 안 되므로 어떤 예외도 밖으로 던지지 않는다.
  */
-function logGeminiUsage({ email, usageType, body, json, elapsedMs }) {
+function logGeminiUsage({ email, usageType, body, json, elapsedMs, thinkingLevel }) {
   try {
     const parts = body?.contents?.[0]?.parts;
     const imageCount = Array.isArray(parts) ? parts.filter((p) => p?.inline_data || p?.inlineData).length : 0;
@@ -40,7 +41,7 @@ function logGeminiUsage({ email, usageType, body, json, elapsedMs }) {
       email,
       usageType,
       model: GEMINI_MODEL,
-      thinkingLevel: GEMINI_THINKING_LEVEL ?? 'default',
+      thinkingLevel: thinkingLevel ?? 'default',
       imageCount,
       elapsedMs,
       promptTokens: usage.promptTokenCount,
@@ -162,28 +163,46 @@ exports.analyzeNewsletter = onCall(
       logger.error('Scan attempt notify email failed', err);
     });
 
-    if (GEMINI_THINKING_LEVEL) {
-      // 앱은 snake_case(generation_config)로 보내므로 같은 표기로 맞춰 덮어쓴다.
-      body.generation_config = {
-        ...(body.generation_config ?? {}),
-        thinking_config: { thinking_level: GEMINI_THINKING_LEVEL },
-      };
-    }
+    const callGemini = async (requestBody) => {
+      try {
+        return await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY.value()}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        });
+      } catch (err) {
+        logger.error('Gemini fetch failed', err);
+        throw new HttpsError('unavailable', 'AI 서버에 연결하지 못했어요.');
+      }
+    };
+
+    // 앱은 snake_case(generation_config)로 보내므로 같은 표기로 맞춰 덮어쓴다.
+    const tunedBody = GEMINI_THINKING_LEVEL
+      ? {
+          ...body,
+          generation_config: {
+            ...(body.generation_config ?? {}),
+            thinking_config: { thinking_level: GEMINI_THINKING_LEVEL },
+          },
+        }
+      : body;
+    let appliedThinkingLevel = GEMINI_THINKING_LEVEL;
 
     const startedAt = Date.now();
-    let response;
-    try {
-      response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY.value()}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-    } catch (err) {
-      logger.error('Gemini fetch failed', err);
-      throw new HttpsError('unavailable', 'AI 서버에 연결하지 못했어요.');
-    }
+    let response = await callGemini(tunedBody);
+    let json = await response.json();
 
-    const json = await response.json();
+    // 모델 교체 등으로 thinking 설정값이 거부(400)되더라도 스캔 자체가 실패하지 않도록,
+    // thinking 설정을 뺀 원래 요청으로 한 번 더 시도한다.
+    if (!response.ok && response.status === 400 && tunedBody !== body) {
+      logger.warn('Gemini rejected thinking config, retrying without it', {
+        thinkingLevel: GEMINI_THINKING_LEVEL,
+        error: json?.error?.message,
+      });
+      appliedThinkingLevel = null;
+      response = await callGemini(body);
+      json = await response.json();
+    }
     const elapsedMs = Date.now() - startedAt;
 
     if (!response.ok) {
@@ -201,7 +220,7 @@ exports.analyzeNewsletter = onCall(
       );
     }
 
-    logGeminiUsage({ email, usageType, body, json, elapsedMs });
+    logGeminiUsage({ email, usageType, body, json, elapsedMs, thinkingLevel: appliedThinkingLevel });
 
     return json;
   }
