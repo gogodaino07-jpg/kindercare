@@ -21,10 +21,13 @@ export function useIntervalInterstitialAd(adUnitId: string | null, storageKey: s
     isLoadedRef.current = isLoaded;
   }, [isLoaded]);
 
+  // useInterstitialAd는 광고 객체를 첫 렌더 이후 effect에서 만들어서, 마운트 시점의
+  // load()는 객체가 없어 아무 일도 안 했다(그래서 아래 4초 재시도에서야 첫 로드가
+  // 나갔음). load는 광고 객체가 생길 때마다 새로 만들어지므로 그 시점에 바로 로드한다.
   useEffect(() => {
     if (adUnitId) load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
   // 최초 load()가 AdMob SDK 초기화(mobileAds().initialize())보다 먼저 나가면
   // 그 요청이 조용히 유실되고 이후 재시도가 없어 그 세션 내내 로드가 안 됐다.
