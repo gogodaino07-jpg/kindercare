@@ -20,9 +20,11 @@ const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GE
  * 차지할 수 있다. 앱 업데이트 없이 조정할 수 있도록 서버에서 요청 본문에 덮어쓴다.
  * null이면 덮어쓰지 않고 모델 기본값 그대로.
  * 2026-09-24 기본값 기준치(4장): thinking 3,263 / 출력 2,093 / 입력 10,623토큰, 25.6초 —
- * thinking이 비용의 절반 가까이라 'low'로 전환. 품질이 떨어지면 null로 되돌릴 것.
+ * thinking이 비용의 절반 가까이라 'low'로 전환. 다른 기관 통신문을 섞은 스캔으로 비교했을 때
+ * 기본값(thinking 6,194토큰, 43.5초)도 low와 똑같이 다른 기관 일정을 포함해 품질 차이 없음 확인.
+ * 품질이 떨어지면 null로 되돌릴 것.
  */
-const GEMINI_THINKING_LEVEL = null;
+const GEMINI_THINKING_LEVEL = 'low';
 
 /**
  * 비용·속도 튜닝 판단용으로 Gemini 응답의 토큰 사용량과 소요 시간을 남긴다.
