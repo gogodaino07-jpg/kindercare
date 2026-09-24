@@ -46,11 +46,7 @@ import { isBirthdayToday, isBirthMilestoneToday, parseISODate, toISODate, WEEKDA
 import { updateHomeWidget } from '../utils/homeWidget';
 import { HOME_TUTORIAL_KEY, hasSeenTutorial, markTutorialSeen } from '../utils/tutorialStorage';
 import { useTutorialFinishInterstitialAd } from '../hooks/useTutorialFinishInterstitialAd';
-
-// 앱 프로세스가 살아있는 동안 전면 광고는 한 번만 시도한다. 컴포넌트 스코프
-// ref로 관리하면 AI 스캔 후 홈으로 돌아오면서 화면이 다시 마운트될 때마다
-// 광고가 또 뜨는 문제가 있어, 모듈 스코프(진짜 콜드 스타트에서만 리셋)로 관리.
-let hasAttemptedAdThisSession = false;
+import { hasAttemptedHomeAdPopup, markHomeAdPopupAttempted } from '../utils/homeAdPopupSession';
 
 /** 홈 화면 최하단 "가족과 함께 보기" 공유 배너 노출 여부 — 임시로 숨김. */
 const SHOW_FAMILY_SHARE_CARD = false;
@@ -400,9 +396,9 @@ export default function HomeScreen() {
   // pattern/biometric prompt on cold start. Shown regardless of whether the
   // user has any events yet — a brand-new signup with zero events should
   // still see it, not just users who already have schedules.
-  // hasAttemptedAdThisSession is a module-scope flag (not state) so AI scan
+  // The "attempted" flag is module-scope (utils/homeAdPopupSession) so AI scan
   // → Home remounts mid-session don't retrigger it; it only resets on a
-  // genuine cold start.
+  // genuine cold start, or on withdrawal/account switch (resetAllData).
   useEffect(() => {
     // subscriptionReady를 기다리지 않으면, 프리미엄 구독자도 콜드 스타트 직후 RevenueCat
     // 조회가 끝나기 전엔 isSubscribed가 잠깐 false라 광고 팝업이 떠버린다.
@@ -411,7 +407,7 @@ export default function HomeScreen() {
     // 게스트 여부와 무관하게 비구독 사용자 전체에게 적용되는 광고라 googleAccount는
     // 더 이상 조건에 넣지 않는다.
     if (
-      hasAttemptedAdThisSession ||
+      hasAttemptedHomeAdPopup() ||
       !onboardingLoaded ||
       !hasOnboarded ||
       isLocked ||
@@ -425,9 +421,9 @@ export default function HomeScreen() {
     }
 
     const timeoutId = setTimeout(() => {
-      if (hasAttemptedAdThisSession) return;
+      if (hasAttemptedHomeAdPopup()) return;
       setAdPopupVisible(true);
-      hasAttemptedAdThisSession = true;
+      markHomeAdPopupAttempted();
     }, 500); // 0.5s delay for better UX
 
     return () => clearTimeout(timeoutId);
@@ -444,7 +440,13 @@ export default function HomeScreen() {
   useEffect(() => {
     // 로그인 없이 온보딩만 마친 게스트에게도 튜토리얼이 떠야 하므로
     // googleAccount는 조건에서 뺐다.
-    if (!onboardingLoaded || !hasOnboarded || isLocked) return;
+    if (!onboardingLoaded || !hasOnboarded || isLocked) {
+      // 탈퇴/계정 전환으로 온보딩이 풀렸는데 이 화면이 언마운트되지 않고 남아 있던
+      // 경우, 이전 판단(checked=true)이 남아 재가입 직후 광고 팝업이 튜토리얼보다
+      // 먼저 뜨지 않도록 다시 판단하게 초기화한다.
+      if (onboardingLoaded && !hasOnboarded) setHomeTutorialChecked(false);
+      return;
+    }
     let cancelled = false;
     hasSeenTutorial(HOME_TUTORIAL_KEY).then((seen) => {
       if (cancelled) return;

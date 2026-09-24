@@ -32,6 +32,7 @@ import {
 } from '../utils/childProfilePhoto';
 import { scheduleEventNotifications } from '../utils/notifications';
 import { HOME_TUTORIAL_KEY, resetTutorialSeen } from '../utils/tutorialStorage';
+import { resetHomeAdPopupSession } from '../utils/homeAdPopupSession';
 import { sanitizeData } from '../utils/validation';
 import { AIUsageLimitService } from '../features/newsletter-analysis';
 
@@ -1595,6 +1596,8 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     // 재가입해도 예전에 저장된 로컬 플래그가 남아 신규 가입인데 튜토리얼이 안 뜨는
     // 문제가 있었다.
     if (!options?.preserveOnboarded) await resetTutorialSeen(HOME_TUTORIAL_KEY);
+    // 같은 이유로, 앱을 끄지 않고 탈퇴 후 재가입해도 새 가입자처럼 홈 광고 팝업이 다시 뜨게 한다.
+    if (!options?.preserveOnboarded) resetHomeAdPopupSession();
     if (googleAccount?.email) {
       await AIUsageLimitService.resetUsage(googleAccount.email);
       await AIUsageLimitService.resetUsage(googleAccount.email, 'meal');
