@@ -78,13 +78,28 @@ function logGeminiUsage({ email, usageType, body, json, elapsedMs, thinkingLevel
  */
 const HARD_MONTHLY_LIMIT_BY_TYPE = { newsletter: 15, meal: 5 };
 
+// 관리자(개발자 본인) 테스트 계정은 월간 상한·연속 사용 대기에서 제외한다.
+const LIMIT_EXEMPT_EMAILS = new Set([SUPPORT_EMAIL]);
+
+function currentMonthStart() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function hardLimitRef(email, usageType) {
+  return getFirestore().collection('users').doc(email).collection('serverGuard').doc(usageType);
+}
+
+/**
+ * 한도 초과·대기 중 안내는 'failed-precondition'으로 보낸다 — 앱은 resource-exhausted를
+ * 전부 "1분 뒤 다시 시도"로 바꿔 보여주고(실제 Gemini 429용 문구) 자동 재시도 대상도
+ * 아니어야 하는데, failed-precondition은 이미 배포된 앱에서도 서버 메시지를 그대로
+ * 보여주고 재시도하지 않는다. 월 한도에 걸렸는데 "1분 뒤"로 안내되던 문제의 수정.
+ */
 async function assertUnderHardLimit(email, usageType) {
   const limit = HARD_MONTHLY_LIMIT_BY_TYPE[usageType];
-  const monthStart = (() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  })();
-  const guardRef = getFirestore().collection('users').doc(email).collection('serverGuard').doc(usageType);
+  const monthStart = currentMonthStart();
+  const guardRef = hardLimitRef(email, usageType);
 
   // 반환값(이번 달 몇 번째 호출인지)은 관리자 알림 메일에 참고용으로 쓴다.
   return getFirestore().runTransaction(async (tx) => {
@@ -92,12 +107,102 @@ async function assertUnderHardLimit(email, usageType) {
     const data = snap.exists ? snap.data() : null;
     const monthCount = data?.monthStart === monthStart ? (data.monthCount ?? 0) : 0;
     if (monthCount >= limit) {
-      throw new HttpsError('resource-exhausted', '이번 달 AI 분석 한도를 모두 사용했어요.');
+      throw new HttpsError(
+        'failed-precondition',
+        '이번 달 AI 분석 한도를 모두 사용했어요. 다음 달에 다시 이용할 수 있어요.',
+        { reason: 'monthly-limit' }
+      );
     }
     const newMonthCount = monthCount + 1;
     tx.set(guardRef, { monthStart, monthCount: newMonthCount });
     return newMonthCount;
   });
+}
+
+/**
+ * Gemini 오류 등으로 분석이 실패한 호출은 월간 횟수에서 되돌린다 — 구글 쪽 일시 장애(503)
+ * 때문에 사용자 한도가 깎이던 문제(2026-09-25) 수정. 실패해도 원래 오류를 가리지 않도록
+ * 여기서 난 예외는 로그만 남긴다.
+ */
+async function refundHardLimit(email, usageType) {
+  const monthStart = currentMonthStart();
+  const guardRef = hardLimitRef(email, usageType);
+  try {
+    await getFirestore().runTransaction(async (tx) => {
+      const snap = await tx.get(guardRef);
+      const data = snap.exists ? snap.data() : null;
+      if (data?.monthStart !== monthStart || !(data.monthCount > 0)) return;
+      tx.set(guardRef, { monthStart, monthCount: data.monthCount - 1 });
+    });
+  } catch (err) {
+    logger.error('Hard limit refund failed', err);
+  }
+}
+
+/**
+ * 연속 사용 대기: 24시간 안에 분석을 BURST_LIMIT번 성공하면 대기에 들어간다. 첫 대기는
+ * 24시간, 대기가 끝난 뒤 7일 안에 또 걸리면 48시간. 7일 동안 안 걸리면 다시 24시간부터.
+ * 봇/어뷰징 계정을 월간 상한보다 빨리 막기 위한 장치 — 성공한 분석만 센다.
+ * 계정 단위(가정통신문+식단표 합산)로 센다.
+ */
+const BURST_LIMIT = 5;
+const BURST_WINDOW_MS = 24 * 60 * 60 * 1000;
+const COOLDOWN_FIRST_MS = 24 * 60 * 60 * 1000;
+const COOLDOWN_REPEAT_MS = 48 * 60 * 60 * 1000;
+const COOLDOWN_STRIKE_RESET_MS = 7 * 24 * 60 * 60 * 1000;
+
+function burstRef(email) {
+  return getFirestore().collection('users').doc(email).collection('serverGuard').doc('burst');
+}
+
+function formatKstDateTime(ms) {
+  return new Date(ms).toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+async function assertNotInCooldown(email) {
+  const snap = await burstRef(email).get();
+  const cooldownUntil = snap.exists ? snap.data()?.cooldownUntil ?? 0 : 0;
+  if (Date.now() < cooldownUntil) {
+    throw new HttpsError(
+      'failed-precondition',
+      `짧은 시간에 AI 분석을 많이 사용해서 잠시 쉬어가요. ${formatKstDateTime(cooldownUntil)}부터 다시 이용할 수 있어요.`,
+      { reason: 'cooldown', retryAt: cooldownUntil }
+    );
+  }
+}
+
+/** 성공한 분석을 기록하고, 연속 사용 기준을 넘으면 대기를 건다. 실패해도 분석 결과는 그대로 돌려준다. */
+async function recordSuccessfulScan(email) {
+  try {
+    await getFirestore().runTransaction(async (tx) => {
+      const ref = burstRef(email);
+      const snap = await tx.get(ref);
+      const data = snap.exists ? snap.data() : {};
+      const now = Date.now();
+      const recent = (Array.isArray(data.recentSuccessAt) ? data.recentSuccessAt : [])
+        .filter((t) => typeof t === 'number' && now - t < BURST_WINDOW_MS)
+        .concat(now);
+
+      if (recent.length < BURST_LIMIT) {
+        tx.set(ref, { ...data, recentSuccessAt: recent });
+        return;
+      }
+
+      const lastCooldownEndAt = data.lastCooldownEndAt ?? 0;
+      const isRepeat = lastCooldownEndAt > 0 && now - lastCooldownEndAt < COOLDOWN_STRIKE_RESET_MS;
+      const cooldownUntil = now + (isRepeat ? COOLDOWN_REPEAT_MS : COOLDOWN_FIRST_MS);
+      tx.set(ref, { recentSuccessAt: [], cooldownUntil, lastCooldownEndAt: cooldownUntil });
+      logger.warn('Scan burst cooldown started', { email, hours: isRepeat ? 48 : 24 });
+    });
+  } catch (err) {
+    logger.error('Record successful scan failed', err);
+  }
 }
 
 function createSupportMailTransporter() {
@@ -158,75 +263,123 @@ exports.analyzeNewsletter = onCall(
     }
     const usageType = request.data?.usageType === 'meal' ? 'meal' : 'newsletter';
 
-    const monthCount = await assertUnderHardLimit(email, usageType);
+    const isExempt = LIMIT_EXEMPT_EMAILS.has(email.toLowerCase());
+    let monthCount = '관리자 계정(제한 제외)';
+    if (!isExempt) {
+      await assertNotInCooldown(email);
+      monthCount = await assertUnderHardLimit(email, usageType);
+    }
 
     // 알림 메일 발송 실패가 본 기능(AI 분석)을 막지 않도록 await하지 않는다.
     notifyScanAttempt({ email, usageType, monthCount }).catch((err) => {
       logger.error('Scan attempt notify email failed', err);
     });
 
-    const callGemini = async (requestBody) => {
-      try {
-        return await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY.value()}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody),
-        });
-      } catch (err) {
-        logger.error('Gemini fetch failed', err);
-        throw new HttpsError('unavailable', 'AI 서버에 연결하지 못했어요.');
-      }
-    };
-
-    // 앱은 snake_case(generation_config)로 보내므로 같은 표기로 맞춰 덮어쓴다.
-    const tunedBody = GEMINI_THINKING_LEVEL
-      ? {
-          ...body,
-          generation_config: {
-            ...(body.generation_config ?? {}),
-            thinking_config: { thinking_level: GEMINI_THINKING_LEVEL },
-          },
-        }
-      : body;
-    let appliedThinkingLevel = GEMINI_THINKING_LEVEL;
-
-    const startedAt = Date.now();
-    let response = await callGemini(tunedBody);
-    let json = await response.json();
-
-    // 모델 교체 등으로 thinking 설정값이 거부(400)되더라도 스캔 자체가 실패하지 않도록,
-    // thinking 설정을 뺀 원래 요청으로 한 번 더 시도한다.
-    if (!response.ok && response.status === 400 && tunedBody !== body) {
-      logger.warn('Gemini rejected thinking config, retrying without it', {
-        thinkingLevel: GEMINI_THINKING_LEVEL,
-        error: json?.error?.message,
-      });
-      appliedThinkingLevel = null;
-      response = await callGemini(body);
-      json = await response.json();
+    let json;
+    try {
+      json = await runGeminiAnalysis({ email, usageType, body });
+    } catch (err) {
+      if (!isExempt) await refundHardLimit(email, usageType);
+      throw err;
     }
-    const elapsedMs = Date.now() - startedAt;
-
-    if (!response.ok) {
-      logger.error('Gemini API error', { status: response.status, json });
-      if (response.status === 429) {
-        throw new HttpsError(
-          'resource-exhausted',
-          'AI 분석 요청이 너무 많습니다. 1분만 기다렸다가 다시 시도해 주세요.'
-        );
-      }
-      const detail = json?.error?.message;
-      throw new HttpsError(
-        'internal',
-        detail ? `Gemini 오류 (${response.status}): ${detail}` : `문서 분석에 실패했어요 (HTTP ${response.status})`
-      );
-    }
-
-    logGeminiUsage({ email, usageType, body, json, elapsedMs, thinkingLevel: appliedThinkingLevel });
-
+    if (!isExempt) await recordSuccessfulScan(email);
     return json;
   }
 );
+
+// Gemini가 과부하(503)·일시 오류(500)를 내면 잠깐 기다렸다가 다시 시도한다 — 구글 쪽
+// 일시 장애는 몇 초 뒤 재시도하면 되는 경우가 대부분이었다(2026-09-25). 함수 제한시간
+// (120초) 안에 끝나도록, 첫 시도 후 경과 시간이 길면 더 재시도하지 않는다.
+const GEMINI_RETRYABLE_STATUSES = new Set([500, 503]);
+const GEMINI_RETRY_DELAYS_MS = [2000, 5000];
+const GEMINI_RETRY_MAX_ELAPSED_MS = 60 * 1000;
+
+// 게이트웨이 오류 등으로 JSON이 아닌 응답이 와도 파싱 예외로 죽지 않고 상태코드 기반으로 처리되게 한다.
+async function readGeminiJson(response) {
+  try {
+    return await response.json();
+  } catch {
+    return {};
+  }
+}
+
+async function runGeminiAnalysis({ email, usageType, body }) {
+  const callGemini = async (requestBody) => {
+    try {
+      return await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY.value()}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+    } catch (err) {
+      logger.error('Gemini fetch failed', err);
+      throw new HttpsError('unavailable', 'AI 서버에 연결하지 못했어요.');
+    }
+  };
+
+  // 앱은 snake_case(generation_config)로 보내므로 같은 표기로 맞춰 덮어쓴다.
+  const tunedBody = GEMINI_THINKING_LEVEL
+    ? {
+        ...body,
+        generation_config: {
+          ...(body.generation_config ?? {}),
+          thinking_config: { thinking_level: GEMINI_THINKING_LEVEL },
+        },
+      }
+    : body;
+  let appliedThinkingLevel = GEMINI_THINKING_LEVEL;
+
+  const startedAt = Date.now();
+  let requestBody = tunedBody;
+  let response = await callGemini(requestBody);
+  let json = await readGeminiJson(response);
+
+  // 모델 교체 등으로 thinking 설정값이 거부(400)되더라도 스캔 자체가 실패하지 않도록,
+  // thinking 설정을 뺀 원래 요청으로 한 번 더 시도한다.
+  if (!response.ok && response.status === 400 && tunedBody !== body) {
+    logger.warn('Gemini rejected thinking config, retrying without it', {
+      thinkingLevel: GEMINI_THINKING_LEVEL,
+      error: json?.error?.message,
+    });
+    appliedThinkingLevel = null;
+    requestBody = body;
+    response = await callGemini(requestBody);
+    json = await readGeminiJson(response);
+  }
+
+  for (const delayMs of GEMINI_RETRY_DELAYS_MS) {
+    if (response.ok || !GEMINI_RETRYABLE_STATUSES.has(response.status)) break;
+    if (Date.now() - startedAt > GEMINI_RETRY_MAX_ELAPSED_MS) break;
+    logger.warn('Gemini temporarily unavailable, retrying', {
+      status: response.status,
+      delayMs,
+      error: json?.error?.message,
+    });
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    response = await callGemini(requestBody);
+    json = await readGeminiJson(response);
+  }
+  const elapsedMs = Date.now() - startedAt;
+
+  if (!response.ok) {
+    logger.error('Gemini API error', { status: response.status, json });
+    if (response.status === 429) {
+      throw new HttpsError(
+        'resource-exhausted',
+        'AI 분석 요청이 너무 많습니다. 1분만 기다렸다가 다시 시도해 주세요.'
+      );
+    }
+    const detail = json?.error?.message;
+    throw new HttpsError(
+      'internal',
+      detail ? `Gemini 오류 (${response.status}): ${detail}` : `문서 분석에 실패했어요 (HTTP ${response.status})`
+    );
+  }
+
+  logGeminiUsage({ email, usageType, body, json, elapsedMs, thinkingLevel: appliedThinkingLevel });
+
+  return json;
+}
 
 /**
  * 카카오 로그인 검증 프록시.
