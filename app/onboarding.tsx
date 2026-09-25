@@ -34,8 +34,6 @@ const COLORS = {
   ink: '#1E293B',
   gray: '#64748B',
   naver: '#03C75A',
-  kakao: '#FEE500',
-  kakaoInk: '#3C1E1E',
 };
 
 const GLASS_BG = 'rgba(255,255,255,0.5)';
@@ -273,10 +271,8 @@ const styles = StyleSheet.create({
   btnIcon: { marginRight: 10 },
   btnGoogle: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E4E4E7' },
   btnNaver: { backgroundColor: COLORS.naver },
-  btnKakao: { backgroundColor: COLORS.kakao, marginBottom: 0 },
   btnTextDark: { color: '#3C4043', fontSize: 15, fontWeight: '700' },
   btnTextLight: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  btnTextKakao: { color: COLORS.kakaoInk, fontSize: 15, fontWeight: '700' },
   footer: { paddingBottom: 34, alignItems: 'center' },
   footerText: { fontSize: 11.5, color: '#B8B2AC', textAlign: 'center', lineHeight: 17 },
 });

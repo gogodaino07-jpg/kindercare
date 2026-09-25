@@ -2,7 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { login as kakaoLogin, logout as kakaoLogout, getProfile as getKakaoProfile } from '@react-native-seoul/kakao-login';
 import * as FileSystem from 'expo-file-system/legacy';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_CHALKBOARD_THEME_ID } from '../constants/chalkboardThemes';
@@ -207,9 +206,6 @@ interface AppDataContextValue {
    *  있던 아이/일정/식단 데이터를 이 계정 소유로 클라우드에 올려준다. */
   adoptGuestDataToAccount: (email: string) => Promise<void>;
 
-  // Kakao sign-in
-  signInWithKakao: () => Promise<GoogleAccount>;
-  signOutKakao: () => void;
 }
 
 const AppDataContext = createContext<AppDataContextValue | undefined>(undefined);
@@ -620,7 +616,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   // [Family Members Synchronization]
   // Listens to users/{ownerEmail}/members so the owner sees new joiners in
   // real time, and a joined member sees the same shared roster. The owner's
-  // own "나" entry stays locally seeded (see signInWithGoogle/Kakao below);
+  // own "나" entry stays locally seeded (see signInWithGoogle below);
   // this only adds/updates entries for people who actually joined via code.
   useEffect(() => {
     if (!effectiveFamilyOwnerEmail || !googleAccount?.email || !onboardingLoaded || !syncChecked) return;
@@ -983,7 +979,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   // 초대 코드로 가족에 합류 — 코드를 조회해 소유자를 찾고, 내 권한 기록(members 문서)을
   // 남긴 뒤 familyOwnerEmail을 그 소유자로 세팅한다. 실패(코드 없음 등)하면 false.
   //
-  // account는 로그인 직후 signInWithGoogle/Kakao가 반환한 값을 호출부가 그대로 넘긴다 —
+  // account는 로그인 직후 signInWithGoogle가 반환한 값을 호출부가 그대로 넘긴다 —
   // Context의 googleAccount state를 여기서 다시 읽으면, 로그인 setState가 아직 리렌더에
   // 반영되기 전(경쟁 상태)이라 이전 계정 이메일로 members 문서를 써버리는 버그가 있었다.
   // (실기기 재현: 계정 A로 실패 후 계정 B로 재시도했는데 여전히 A의 이메일로 쓰기 시도됨.)
@@ -1021,7 +1017,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
 
       setFamilyOwnerEmail(invite.ownerEmail);
       await AsyncStorage.setItem(FAMILY_OWNER_EMAIL_KEY, invite.ownerEmail);
-      // signInWithGoogle/Kakao가 로그인 직후 "빈 목록이면 나를 소유자로" 임시 시딩을
+      // signInWithGoogle가 로그인 직후 "빈 목록이면 나를 소유자로" 임시 시딩을
       // 해뒀을 수 있는데(합류 여부를 아직 모르는 시점이라), 합류가 확정된 지금은 그
       // 임시값을 지운다 — 잠시 후 members 리스너가 진짜 목록으로 채워준다.
       setFamilyMembers([]);
@@ -1469,90 +1465,6 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     }
   };
 
-  // Kakao doesn't have a Firebase Auth provider, so Firestore's
-  // per-user security rules (request.auth.token.email == doc id) would
-  // otherwise reject every read/write for those accounts. We derive a
-  // stable password from the email itself (not the provider's uid) and
-  // use it to sign into Firebase Auth with email/password every time,
-  // creating the account on first login.
-  // 예전에는 "고정 문자열 + 이메일"로 계산한 비밀번호로 Firebase 이메일/비밀번호
-  // 로그인을 흉내냈는데, 그 비밀번호는 이메일만 알면 누구나 똑같이 계산할 수 있어
-  // 계정 탈취에 악용될 수 있었다(이 저장소가 공개라 계산식 자체도 그대로 노출됨).
-  // 이제는 카카오 액세스 토큰을 서버(kakaoSignIn 함수)로 보내 카카오 쪽에서 직접
-  // 신원을 검증받고, 그 결과로 발급된 Firebase Custom Token으로만 로그인한다 —
-  // 클라이언트가 스스로 계산 가능한 값으로는 더 이상 로그인이 성립하지 않는다.
-  const signInFirebaseWithKakao = async (accessToken: string) => {
-    const { data } = await getFunctions().httpsCallable('kakaoSignIn')({ accessToken });
-    const customToken = (data as { customToken?: string } | undefined)?.customToken;
-    if (!customToken) {
-      throw new Error('카카오 인증에 실패했습니다.');
-    }
-    await getFirebaseAuth().signInWithCustomToken(customToken);
-    // signInWithCustomToken() 직후엔 Firestore 요청에 실릴 ID 토큰이 아직 완전히
-    // 갱신되지 않은 짧은 순간이 있다 — 로그인 직후 바로 이어지는 Firestore 조회
-    // (checkCloudDataExists 등)가 이 타이밍에 걸리면 인증 안 된 것처럼 permission
-    // denied로 실패하는데, 그 실패를 "데이터 없음"으로 잘못 해석해 기존 사용자를
-    // 신규 가입 흐름으로 잘못 안내하는 문제로 이어졌다(카카오 로그인에서 재현됨).
-    // 토큰을 명시적으로 한 번 새로고침해서 이후 요청이 확실히 인증된 상태로
-    // 나가게 한다.
-    await getFirebaseAuth().currentUser?.getIdToken(true);
-  };
-
-  const signInWithKakao = async (): Promise<GoogleAccount> => {
-    try {
-      console.log('📡 Starting Kakao Sign-In...');
-      const token = await kakaoLogin();
-      if (!token?.accessToken) throw new Error('Kakao login failed - no token');
-
-      // 카카오 프로필 조회(클라이언트→카카오)와 Firebase 로그인(클라이언트→서버→카카오)은
-      // 서로 결과를 기다릴 필요가 없어 동시에 보내 지연 시간을 줄인다.
-      const [profile] = await Promise.all([
-        getKakaoProfile(),
-        signInFirebaseWithKakao(token.accessToken),
-      ]);
-      if (!profile || !profile.email) {
-        throw new Error('Kakao profile is missing email');
-      }
-
-      const account: GoogleAccount = {
-        email: profile.email,
-        name: profile.nickname ?? '사용자'
-      };
-
-      setGoogleAccount(account);
-      await AsyncStorage.setItem(GOOGLE_ACCOUNT_KEY, JSON.stringify(account));
-
-      if (hasOnboarded) {
-        await syncUserToFirestore(account, 'kakao');
-      }
-
-      // Initialize family members if empty
-      setFamilyMembers((prev) => {
-        if (prev.length === 0) {
-          return [{ id: `member-${Date.now()}`, name: '나', isOwner: true }];
-        }
-        return prev;
-      });
-
-      console.log('✅ Kakao Sign-In Success');
-      return account;
-    } catch (error: any) {
-      console.error('Kakao Sign-In Error:', error);
-      throw error;
-    }
-  };
-
-  const signOutKakao = async () => {
-    try {
-      await kakaoLogout();
-      await getFirebaseAuth().signOut();
-      // signOutGoogle과 동일한 이유로 로컬 캐시를 함께 지운다.
-      await resetAllData({ preserveOnboarded: true });
-    } catch (error) {
-      console.error('Kakao Sign-Out Error:', error);
-    }
-  };
-
   // 회원탈퇴: wipes every piece of this app's persisted state and puts the
   // in-memory data back to the same shape a fresh install would have, then
   // the caller navigates back to onboarding.
@@ -1562,7 +1474,7 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
   // only want to clear the previous owner's cached data — not the session we
   // just established (that would incorrectly bounce them back to splash).
   //
-  // `preserveOnboarded` is for the plain sign-out path (signOutGoogle/signOutKakao):
+  // `preserveOnboarded` is for the plain sign-out path (signOutGoogle):
   // clearing hasOnboarded there races with google-signin's relogin flow, which
   // sets it back to true asynchronously inside restoreDataFromCloud right before
   // navigating home — if that update hasn't committed yet, index.tsx reads the
@@ -1854,8 +1766,6 @@ export function AppDataProvider({ children: reactChildren }: { children: React.R
     signOutGoogle,
     adoptGuestDataToAccount,
 
-    signInWithKakao,
-    signOutKakao,
   };
 
   return <AppDataContext.Provider value={value}>{reactChildren}</AppDataContext.Provider>;

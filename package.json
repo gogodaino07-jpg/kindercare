@@ -23,7 +23,6 @@
     "@react-native-firebase/functions": "^21.14.0",
     "@react-native-firebase/storage": "^21.14.0",
     "@react-native-google-signin/google-signin": "^16.1.2",
-    "@react-native-seoul/kakao-login": "^6.0.4",
     "babel-preset-expo": "~57.0.0",
     "expo": "~57.0.7",
     "expo-camera": "~57.0.4",

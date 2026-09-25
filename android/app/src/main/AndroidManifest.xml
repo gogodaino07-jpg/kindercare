@@ -44,14 +44,6 @@
         <data android:scheme="kindercare"/>
       </intent-filter>
     </activity>
-    <activity android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity" android:exported="true">
-      <intent-filter>
-        <action android:name="android.intent.action.VIEW"/>
-        <category android:name="android.intent.category.DEFAULT"/>
-        <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:host="oauth" android:scheme="kakao023ef0c004f81af8742c2cecfc27299f"/>
-      </intent-filter>
-    </activity>
     <receiver android:name=".widget.TodaySummaryWidgetProvider" android:exported="true">
       <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
