@@ -14,7 +14,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AddEventModal from '../components/calendar/AddEventModal';
-import BuyModal from '../components/calendar/BuyModal';
 import CalendarAccordion from '../components/calendar/CalendarAccordion';
 import { useCalendarTheme } from '../components/calendar/useCalendarTheme';
 import CalendarHeader from '../components/calendar/CalendarHeader';
@@ -24,6 +23,7 @@ import Text from '../components/common/AppText';
 import { useAppData } from '../context/AppDataContext';
 import { getDisplayItems } from '../hooks/useLocalChecklist';
 import { Event, EventItem, NO_CHILD_ID } from '../types/models';
+import { openCoupangSearch } from '../utils/coupang';
 import { parseISODate, toISODate } from '../utils/date';
 
 export default function CalendarScreen() {
@@ -52,7 +52,6 @@ export default function CalendarScreen() {
 
   const [addEventVisible, setAddEventVisible] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [buyState, setBuyState] = useState<{ event: Event; item: EventItem } | null>(null);
 
   // 달력 축소/확대 진행도(0=주간 1줄, 1=월간). 카드 드래그·리스트 드래그·아래로
   // 당겨 펼치기가 모두 이 값을 실시간으로 갱신하고, 손을 떼면 가까운 상태로
@@ -253,14 +252,11 @@ export default function CalendarScreen() {
     [setItemCompleted]
   );
 
-  const handleOpenBuy = useCallback((event: Event, item: EventItem) => {
-    setBuyState({ event, item });
+  // 예전엔 "준비물 바로 구매" 시트를 거쳤지만, 한 단계 줄이려고 바로 쿠팡(파트너스 링크)으로 보낸다.
+  // 시트에 있던 "이미 주문했어요"는 준비물 체크박스로 똑같이 할 수 있다.
+  const handleOpenBuy = useCallback((_event: Event, item: EventItem) => {
+    openCoupangSearch(item.name);
   }, []);
-
-  const handleMarkOrdered = useCallback(() => {
-    if (!buyState) return;
-    setItemCompleted(buyState.event, buyState.item, true);
-  }, [buyState, setItemCompleted]);
 
   return (
     <View style={styles.root}>
@@ -332,12 +328,6 @@ export default function CalendarScreen() {
         </Pressable>
       </View>
 
-      <BuyModal
-        visible={!!buyState}
-        itemName={buyState?.item.name ?? null}
-        onClose={() => setBuyState(null)}
-        onMarkOrdered={handleMarkOrdered}
-      />
       <AddEventModal
         visible={addEventVisible}
         initialDateISO={selectedDate}

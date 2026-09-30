@@ -65,49 +65,10 @@ async function fetchPartnerLink(keyword: string): Promise<string | null> {
   }
 }
 
-export interface CoupangProduct {
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-  /** 이미 파트너스 트래킹이 붙은 링크. */
-  url: string;
-  isRocket: boolean;
-}
-
-function toCoupangKeyword(text: string): string {
-  return getSmartSearchKeyword(extractPrimaryKeyword(text));
-}
-
-/**
- * 준비물 추천 상품(서버 프록시, 키워드별 24시간 캐싱). 쿠팡 검색 API 한도가 작아서
- * 실패·한도 초과면 빈 배열 — 호출하는 쪽은 카드만 숨기면 된다.
- */
-export async function fetchCoupangProducts(text: string): Promise<CoupangProduct[]> {
-  const keyword = toCoupangKeyword(text);
-  if (!keyword) return [];
-  try {
-    const result = await getFunctions().httpsCallable('getCoupangProducts')({ keyword });
-    const products = (result.data as { products?: unknown } | undefined)?.products;
-    return Array.isArray(products) ? (products as CoupangProduct[]) : [];
-  } catch (err) {
-    console.warn('Coupang products fetch failed:', err);
-    return [];
-  }
-}
-
-export async function openCoupangProduct(url: string): Promise<void> {
-  markExternalActionBriefly();
-  try {
-    await Linking.openURL(url);
-  } catch (err) {
-    console.error('Coupang Link Error:', err);
-  }
-}
-
 /** Opens Coupang's mobile search results for the given 준비물 keyword. */
 export async function openCoupangSearch(keyword: string): Promise<void> {
-  const smartKeyword = toCoupangKeyword(keyword);
+  const primary = extractPrimaryKeyword(keyword);
+  const smartKeyword = getSmartSearchKeyword(primary);
 
   if (!smartKeyword) return;
 
