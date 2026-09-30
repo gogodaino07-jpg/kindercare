@@ -11,6 +11,8 @@ initializeApp();
 
 const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
 const GMAIL_APP_PASSWORD = defineSecret('GMAIL_APP_PASSWORD');
+const COUPANG_ACCESS_KEY = defineSecret('COUPANG_ACCESS_KEY');
+const COUPANG_SECRET_KEY = defineSecret('COUPANG_SECRET_KEY');
 const SUPPORT_EMAIL = 'gogodaino07@gmail.com';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GEMINI_MODEL = 'gemini-3.6-flash';
@@ -489,5 +491,79 @@ exports.sendSupportEmail = onCall(
     }
 
     return { success: true };
+  }
+);
+
+const COUPANG_API_HOST = 'https://api-gateway.coupang.com';
+const COUPANG_DEEPLINK_PATH = '/v2/providers/affiliate_open_api/apis/openapi/v1/deeplink';
+const COUPANG_KEYWORD_MAX_LENGTH = 50;
+
+/** 쿠팡 파트너스 Open API의 HMAC 서명 헤더. signed-date는 GMT 기준 yyMMdd'T'HHmmss'Z' 형식. */
+function buildCoupangAuthorization(method, path, query, accessKey, secretKey) {
+  const datetime = new Date().toISOString().replace(/[-:]/g, '').slice(2, 15) + 'Z';
+  const signature = crypto
+    .createHmac('sha256', secretKey)
+    .update(datetime + method + path + query)
+    .digest('hex');
+  return `CEA algorithm=HmacSHA256, access-key=${accessKey}, signed-date=${datetime}, signature=${signature}`;
+}
+
+/**
+ * 준비물 "쿠팡에서 찾기" 검색 URL을 쿠팡 파트너스 트래킹 링크로 변환.
+ *
+ * 예전엔 일반 쿠팡 검색 URL을 그대로 열어서 사용자가 구매해도 수수료가 잡히지 않았다.
+ * Secret Key로 서명해야 해서 앱이 아니라 서버에서 호출한다. 같은 키워드는 항상 같은
+ * 링크가 나오므로 Firestore에 캐싱해 API 호출 한도를 아낀다. 실패하면 앱이 일반
+ * 검색 URL로 폴백하므로 여기서는 에러만 던지면 된다. 게스트도 쓰는 기능이라 로그인 불필요.
+ */
+exports.getCoupangDeeplink = onCall(
+  {
+    secrets: [COUPANG_ACCESS_KEY, COUPANG_SECRET_KEY],
+    region: 'asia-northeast3',
+    timeoutSeconds: 10,
+  },
+  async (request) => {
+    const keyword = typeof request.data?.keyword === 'string' ? request.data.keyword.trim() : '';
+    if (!keyword || keyword.length > COUPANG_KEYWORD_MAX_LENGTH) {
+      throw new HttpsError('invalid-argument', '검색어가 올바르지 않습니다.');
+    }
+
+    const cacheId = crypto.createHash('sha256').update(keyword).digest('hex');
+    const cacheRef = getFirestore().collection('coupangDeeplinks').doc(cacheId);
+    const cached = await cacheRef.get();
+    if (cached.exists && cached.data()?.url) {
+      return { url: cached.data().url };
+    }
+
+    const searchUrl = `https://www.coupang.com/np/search?component=&q=${encodeURIComponent(keyword)}&channel=user`;
+    const authorization = buildCoupangAuthorization(
+      'POST', COUPANG_DEEPLINK_PATH, '', COUPANG_ACCESS_KEY.value(), COUPANG_SECRET_KEY.value()
+    );
+
+    let json;
+    try {
+      const res = await fetch(COUPANG_API_HOST + COUPANG_DEEPLINK_PATH, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json;charset=UTF-8', Authorization: authorization },
+        body: JSON.stringify({ coupangUrls: [searchUrl] }),
+      });
+      json = await res.json();
+      if (!res.ok) {
+        logger.error('Coupang deeplink HTTP error', { status: res.status, body: json });
+        throw new Error(`HTTP ${res.status}`);
+      }
+    } catch (err) {
+      logger.error('Coupang deeplink request failed', err);
+      throw new HttpsError('unavailable', '쿠팡 링크 생성에 실패했어요.');
+    }
+
+    const url = json?.data?.[0]?.shortenUrl;
+    if (json?.rCode !== '0' || !url) {
+      logger.error('Coupang deeplink unexpected response', json);
+      throw new HttpsError('unavailable', '쿠팡 링크 생성에 실패했어요.');
+    }
+
+    await cacheRef.set({ keyword, url, createdAt: new Date() });
+    return { url };
   }
 );

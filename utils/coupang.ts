@@ -1,5 +1,9 @@
 import { Linking } from 'react-native';
 import { markExternalActionBriefly } from './externalAction';
+import { getFunctions } from './firebase';
+
+/** 딥링크 서버 응답이 이보다 늦으면 사용자를 기다리게 하지 않고 일반 검색 URL로 연다. */
+const DEEPLINK_TIMEOUT_MS = 3000;
 
 /**
  * Analyzes the 준비물 text and returns a "smart" search keyword for Coupang.
@@ -44,6 +48,23 @@ function extractPrimaryKeyword(text: string): string {
   return (first ?? text).trim();
 }
 
+/**
+ * 검색 URL을 쿠팡 파트너스 트래킹 링크로 변환(서버 프록시, 키워드별 캐싱).
+ * 실패하거나 느리면 null — 수수료만 못 받을 뿐 검색 자체는 막지 않는다.
+ */
+async function fetchPartnerLink(keyword: string): Promise<string | null> {
+  try {
+    const call = getFunctions().httpsCallable('getCoupangDeeplink')({ keyword });
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), DEEPLINK_TIMEOUT_MS));
+    const result = await Promise.race([call, timeout]);
+    const url = (result?.data as { url?: unknown } | undefined)?.url;
+    return typeof url === 'string' ? url : null;
+  } catch (err) {
+    console.warn('Coupang deeplink failed, falling back to plain search:', err);
+    return null;
+  }
+}
+
 /** Opens Coupang's mobile search results for the given 준비물 keyword. */
 export async function openCoupangSearch(keyword: string): Promise<void> {
   const primary = extractPrimaryKeyword(keyword);
@@ -51,12 +72,12 @@ export async function openCoupangSearch(keyword: string): Promise<void> {
 
   if (!smartKeyword) return;
 
+  const encoded = encodeURIComponent(smartKeyword);
+  const webUrl = (await fetchPartnerLink(smartKeyword)) ?? `https://m.coupang.com/nm/search?q=${encoded}`;
+
   // Leaving to Coupang (browser/app) blips AppState to 'background' — suppress
   // the lock/splash replay that would otherwise fire the moment we return.
   markExternalActionBriefly();
-
-  const encoded = encodeURIComponent(smartKeyword);
-  const webUrl = `https://m.coupang.com/nm/search?q=${encoded}`;
 
   try {
     await Linking.openURL(webUrl);
