@@ -567,3 +567,81 @@ exports.getCoupangDeeplink = onCall(
     return { url };
   }
 );
+
+const COUPANG_SEARCH_PATH = '/v2/providers/affiliate_open_api/apis/openapi/v1/products/search';
+const COUPANG_PRODUCTS_LIMIT = 4;
+/** 쿠팡 상품 검색 API는 계정당 시간당 호출 한도가 매우 작아서(약 10회), 키워드별 결과를 오래 재사용한다. */
+const COUPANG_PRODUCTS_CACHE_MS = 24 * 60 * 60 * 1000;
+/** 한도 초과 응답을 받으면 이 시간 동안은 API를 부르지 않고 바로 빈 결과를 준다(인스턴스 메모리 기준). */
+const COUPANG_SEARCH_BACKOFF_MS = 10 * 60 * 1000;
+let coupangSearchBlockedUntil = 0;
+
+/**
+ * 준비물 "바로 구매" 시트에 보여줄 쿠팡 추천 상품.
+ *
+ * 응답의 productUrl은 이미 파트너스 트래킹 링크라서 그대로 열면 된다. 한도 초과나 오류는
+ * 에러 대신 빈 배열로 돌려준다 — 앱은 상품 카드만 숨기고 기존 "쿠팡에서 보기" 버튼을 그대로 쓴다.
+ */
+exports.getCoupangProducts = onCall(
+  {
+    secrets: [COUPANG_ACCESS_KEY, COUPANG_SECRET_KEY],
+    region: 'asia-northeast3',
+    timeoutSeconds: 10,
+  },
+  async (request) => {
+    const keyword = typeof request.data?.keyword === 'string' ? request.data.keyword.trim() : '';
+    if (!keyword || keyword.length > COUPANG_KEYWORD_MAX_LENGTH) {
+      throw new HttpsError('invalid-argument', '검색어가 올바르지 않습니다.');
+    }
+
+    const cacheId = crypto.createHash('sha256').update(keyword).digest('hex');
+    const cacheRef = getFirestore().collection('coupangProducts').doc(cacheId);
+    const cached = await cacheRef.get();
+    const cachedData = cached.exists ? cached.data() : null;
+    if (cachedData && Date.now() - cachedData.fetchedAt < COUPANG_PRODUCTS_CACHE_MS) {
+      return { products: cachedData.products };
+    }
+    // 한도 초과 중이면 오래된 캐시라도 있는 게 낫다.
+    if (Date.now() < coupangSearchBlockedUntil) {
+      return { products: cachedData?.products ?? [] };
+    }
+
+    const query = `keyword=${encodeURIComponent(keyword)}&limit=${COUPANG_PRODUCTS_LIMIT}&imageSize=230x230`;
+    const authorization = buildCoupangAuthorization(
+      'GET', COUPANG_SEARCH_PATH, query, COUPANG_ACCESS_KEY.value().trim(), COUPANG_SECRET_KEY.value().trim()
+    );
+
+    let json;
+    try {
+      const res = await fetch(`${COUPANG_API_HOST}${COUPANG_SEARCH_PATH}?${query}`, {
+        headers: { Authorization: authorization },
+      });
+      json = await res.json().catch(() => null);
+      if (!res.ok || json?.rCode !== '0') {
+        if (res.status === 429 || /limit|too many/i.test(json?.rMessage ?? '')) {
+          coupangSearchBlockedUntil = Date.now() + COUPANG_SEARCH_BACKOFF_MS;
+        }
+        logger.warn('Coupang product search failed', { status: res.status, body: json });
+        return { products: cachedData?.products ?? [] };
+      }
+    } catch (err) {
+      logger.error('Coupang product search request failed', err);
+      return { products: cachedData?.products ?? [] };
+    }
+
+    const products = (json.data?.productData ?? [])
+      .filter((p) => p?.productUrl && p?.productName && p?.productImage)
+      .slice(0, COUPANG_PRODUCTS_LIMIT)
+      .map((p) => ({
+        id: String(p.productId),
+        name: p.productName,
+        price: Number(p.productPrice) || 0,
+        image: p.productImage,
+        url: p.productUrl,
+        isRocket: Boolean(p.isRocket),
+      }));
+
+    await cacheRef.set({ keyword, products, fetchedAt: Date.now() });
+    return { products };
+  }
+);
