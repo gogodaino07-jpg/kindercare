@@ -537,7 +537,7 @@ exports.getCoupangDeeplink = onCall(
 
     const searchUrl = `https://www.coupang.com/np/search?component=&q=${encodeURIComponent(keyword)}&channel=user`;
     const authorization = buildCoupangAuthorization(
-      'POST', COUPANG_DEEPLINK_PATH, '', COUPANG_ACCESS_KEY.value(), COUPANG_SECRET_KEY.value()
+      'POST', COUPANG_DEEPLINK_PATH, '', COUPANG_ACCESS_KEY.value().trim(), COUPANG_SECRET_KEY.value().trim()
     );
 
     let json;
