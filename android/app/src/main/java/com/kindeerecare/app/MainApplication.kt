@@ -38,6 +38,7 @@ class MainApplication : Application(), ReactApplication {
       ReleaseLevel.STABLE
     }
     loadReactNative(this)
+    AdActivityInsetsFix.register(this)
     ApplicationLifecycleDispatcher.onApplicationCreate(this)
   }
 
