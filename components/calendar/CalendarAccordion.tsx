@@ -47,7 +47,10 @@ export default function CalendarAccordion({
   setExpanded,
   onOpenAddEvent,
 }: CalendarAccordionProps) {
-  const { canEditFamilyData } = useAppData();
+  const { canEditFamilyData, googleAccount } = useAppData();
+  // canEditFamilyData는 로그인 계정 기준이라 게스트(비로그인)면 항상 false — 게스트는 가족 공유와
+  // 무관하게 자기 기기 데이터를 편집하는 사용자이므로 일정 추가를 허용한다.
+  const canAddEvent = !googleAccount || canEditFamilyData;
   const t = useCalendarTheme();
   const styles = useMemo(() => createStyles(t), [t]);
   const cells = useMemo(() => {
@@ -166,7 +169,7 @@ export default function CalendarAccordion({
               />
             </Pressable>
 
-            {canEditFamilyData && (
+            {canAddEvent && (
               <Pressable style={styles.addEventBadge} onPress={onOpenAddEvent}>
                 <MaterialCommunityIcons name="plus" size={16} color="#FFFFFF" />
                 <Text style={styles.addEventBadgeText}>일정 추가</Text>
