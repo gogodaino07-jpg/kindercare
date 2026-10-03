@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 import GuestLoginModal from '../components/onboarding/GuestLoginModal';
+import { getFirebaseAuth } from '../utils/firebase';
 import { useAppData } from './AppDataContext';
 
 interface GuestLoginGateValue {
@@ -18,7 +19,10 @@ export function GuestLoginGateProvider({ children }: { children: React.ReactNode
 
   const requireLogin = useCallback(
     (onReady: () => void) => {
-      if (googleAccount) {
+      // googleAccount는 AsyncStorage에 캐시된 값이라 Firebase Auth 세션이 끊겨도
+      // 그대로 남는다. 그 상태로 통과시키면 서버 함수가 unauthenticated로 거부해
+      // 분석 도중에 "로그인이 필요해요"가 떴으므로, 실제 Firebase 세션까지 확인한다.
+      if (googleAccount && getFirebaseAuth().currentUser) {
         onReady();
         return;
       }
