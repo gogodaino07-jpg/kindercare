@@ -13,6 +13,7 @@ import { isAdTestAccount } from '../constants/adTestAccounts';
 import { useAlert } from '../context/AlertContext';
 import { useAppData } from '../context/AppDataContext';
 import { useAppLock } from '../context/AppLockContext';
+import { useRequireLogin } from '../context/GuestLoginGateContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import {
   AI_ANALYSIS_MAINTENANCE_MESSAGE,
@@ -45,6 +46,7 @@ export default function MealScanScreen() {
   const { showAlert } = useAlert();
   const { setPickerActive } = useAppLock();
   const { requestAndShow } = useScanRewardedAd();
+  const requireLogin = useRequireLogin();
   const insets = useSafeAreaInsets();
   const C = useScanColors();
   const styles = useMemo(() => createStyles(C), [C]);
@@ -135,7 +137,7 @@ export default function MealScanScreen() {
     }
   };
 
-  const handleAnalyze = async () => {
+  const runAnalyze = async () => {
     if (AI_ANALYSIS_MAINTENANCE_MODE) {
       showAlert({ title: '점검 중', message: AI_ANALYSIS_MAINTENANCE_MESSAGE, icon: '🛠️' });
       return;
@@ -215,6 +217,19 @@ export default function MealScanScreen() {
     } finally {
       setStarting(false);
     }
+  };
+
+  // 로그인 직후 이어서 분석할 때 로그인 전 렌더의 클로저(이전 googleAccount 등)가
+  // 아니라 최신 렌더의 runAnalyze를 부르기 위해 ref로 들고 있는다.
+  const runAnalyzeRef = useRef(runAnalyze);
+  runAnalyzeRef.current = runAnalyze;
+
+  // 로그인(Firebase 세션) 없이 진행하면 광고까지 본 뒤 서버에서 unauthenticated로
+  // 거부돼 "분석 실패"가 뜰 수 있다 — 누르자마자 로그인 팝업을 띄우고, 로그인이 끝나면 이어서 분석한다.
+  const handleAnalyze = () => {
+    requireLogin(() => {
+      setTimeout(() => runAnalyzeRef.current(), 0);
+    });
   };
 
   return (
