@@ -6,7 +6,7 @@ import { ThemeColors } from '../../constants/theme';
 import { useNotificationCenter } from '../../context/NotificationCenterContext';
 import { useThemeColors } from '../../context/ThemeContext';
 import { Child } from '../../types/models';
-import { daysSinceBirth } from '../../utils/date';
+import { ageInMonthsAndDays } from '../../utils/date';
 import Text from '../common/AppText';
 import CalendarIcon from '../common/CalendarIcon';
 import SettingsIcon from '../common/SettingsIcon';
@@ -127,7 +127,7 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
   const [notifVisible, setNotifVisible] = useState(false);
   const [photoPreviewVisible, setPhotoPreviewVisible] = useState(false);
   const photoUri = selectedChild?.photoUri;
-  const daysOld = daysSinceBirth(selectedChild?.birthdate);
+  const ageMD = ageInMonthsAndDays(selectedChild?.birthdate);
 
   return (
     <View style={styles.topRow}>
@@ -169,7 +169,7 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
               <MaterialIcons name="expand-more" size={18} color={colors.gray600} />
             </View>
           </Pressable>
-          {daysOld !== undefined && (
+          {ageMD !== undefined && (
             <Pressable
               style={styles.daysOldRow}
               onPress={onPressChild}
@@ -177,7 +177,7 @@ export default function HomeProfileBar({ selectedChild, onPressChild, birthdayBu
               accessibilityLabel="아이 전환하기"
             >
               <MaterialCommunityIcons name="clock-outline" size={13} color={colors.gray400} />
-              <Text style={styles.daysOldText}>생후 {daysOld}일째</Text>
+              <Text style={styles.daysOldText}>생후 {ageMD.months}개월{ageMD.days}일</Text>
             </Pressable>
           )}
         </View>

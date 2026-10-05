@@ -371,6 +371,12 @@ export default function RootLayout() {
         // We handle splash screen hiding in ThemedNavigation once all data is ready.
         mobileAds()
           .initialize()
+          .then(() => {
+            // 전면광고 영상이 소리 켠 채로 시작되지 않도록 광고 소리를 끈다.
+            // (광고 단위별 설정은 없어 앱 전체 광고에 적용된다)
+            mobileAds().setAppMuted(true);
+            mobileAds().setAppVolume(0);
+          })
           .catch(() => {});
       });
   }, []);

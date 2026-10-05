@@ -78,6 +78,30 @@ export function daysSinceBirth(birthdate?: string, on: Date = new Date()): numbe
   return Math.floor((day.getTime() - birth.getTime()) / 86400000) + 1;
 }
 
+/** 생일 기준 만 개월 수와 그 뒤로 남는 일수. 예) 2022-08-03생, 오늘 2026-10-05 → { months: 50, days: 2 }.
+ *  생일 날짜가 없는 달(31일생의 2월 등)은 그 달 말일을 월 경계로 본다. */
+export function ageInMonthsAndDays(
+  birthdate?: string,
+  on: Date = new Date()
+): { months: number; days: number } | undefined {
+  if (!birthdate) return undefined;
+  const birth = parseISODate(birthdate);
+  const today = startOfDay(on);
+  if (today.getTime() < birth.getTime()) return undefined;
+
+  const monthAnniversary = (months: number) => {
+    const y = birth.getFullYear();
+    const m = birth.getMonth() + months;
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    return new Date(y, m, Math.min(birth.getDate(), lastDay));
+  };
+
+  let months = (today.getFullYear() - birth.getFullYear()) * 12 + (today.getMonth() - birth.getMonth());
+  if (monthAnniversary(months).getTime() > today.getTime()) months -= 1;
+  const days = Math.round((today.getTime() - monthAnniversary(months).getTime()) / 86400000);
+  return { months, days };
+}
+
 /** 생후 일수가 100의 배수(100일, 200일, 300일…)인 날인지 — 무한정 계속 적용된다. */
 export function isBirthMilestoneToday(birthdate?: string): boolean {
   const days = daysSinceBirth(birthdate);

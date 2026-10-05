@@ -31,15 +31,34 @@ object AdActivityInsetsFix : Application.ActivityLifecycleCallbacks {
     // 반투명 테마라 패딩 영역에 뒤쪽 앱 화면이 비치지 않도록 광고 배경과 같은 검정으로 채운다.
     content.setBackgroundColor(Color.BLACK)
     ViewCompat.setOnApplyWindowInsetsListener(content) { v, insets ->
-      val nav = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-      v.setPadding(nav.left, 0, nav.right, nav.bottom)
+      applyNavPadding(v, insets)
       insets
     }
     ViewCompat.requestApplyInsets(content)
   }
 
+  // 홈 화면은 내비게이션 바를 숨겨두기 때문에 광고가 그 상태에서 뜨면 바 높이가 0으로
+  // 잡혀 패딩이 안 들어갔고(하단 닫기/설치 버튼이 화면 밖으로 잘림), 이후 바가 다시
+  // 나타나면 그대로 버튼을 덮었다. 보임 여부와 상관없이 바 자리만큼 비워둔다.
+  private fun applyNavPadding(v: View, insets: WindowInsetsCompat) {
+    val nav = insets.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.navigationBars())
+    if (v.paddingLeft != nav.left || v.paddingRight != nav.right || v.paddingBottom != nav.bottom) {
+      v.setPadding(nav.left, 0, nav.right, nav.bottom)
+    }
+  }
+
+  // SDK가 하위 뷰에서 인셋을 먼저 소비해 리스너가 안 불리는 경우를 대비해, 화면이 보인
+  // 뒤에도 현재 창의 인셋으로 한 번 더 적용한다.
+  override fun onActivityResumed(activity: Activity) {
+    if (activity.javaClass.name != AD_ACTIVITY) return
+    val content = activity.findViewById<View>(android.R.id.content) ?: return
+    content.post {
+      val insets = ViewCompat.getRootWindowInsets(content) ?: return@post
+      applyNavPadding(content, insets)
+    }
+  }
+
   override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
-  override fun onActivityResumed(activity: Activity) {}
   override fun onActivityPaused(activity: Activity) {}
   override fun onActivityStopped(activity: Activity) {}
   override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
