@@ -2,60 +2,66 @@ package com.kindeerecare.app
 
 import android.app.Activity
 import android.app.Application
-import android.graphics.Color
 import android.os.Bundle
-import android.view.View
-import androidx.core.view.ViewCompat
+import android.view.ViewTreeObserver
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import java.util.WeakHashMap
 
 /**
  * AdMob 전면광고 화면(AdActivity) 하단이 내비게이션 바에 가려지는 문제 보정.
  *
- * targetSdk 36부터는 모든 화면이 강제로 edge-to-edge(시스템 바 뒤까지 그림)라서, AdMob SDK가
- * 위쪽 상태바 여백은 챙기지만 아래 3버튼 내비게이션 바 여백은 챙기지 않아 광고 하단의
- * 앱 이름/설치 버튼 줄이 바 뒤로 들어갔다. AdActivity는 SDK 소유라 직접 못 고치므로,
- * 화면이 뜰 때 콘텐츠 루트에 내비게이션 바 높이만큼 하단(좌우) 패딩을 넣는다.
+ * targetSdk 36부터는 모든 화면이 강제로 edge-to-edge(시스템 바 뒤까지 그림)라서 광고 하단의
+ * 닫기/설치 버튼 줄이 3버튼 내비게이션 바 뒤로 들어갔다. 처음엔 콘텐츠에 바 높이만큼 하단
+ * 패딩을 줬지만, 광고 웹페이지가 뷰 크기와 상관없이 전체 화면 높이 기준으로 그려져서 줄어든
+ * 만큼 하단이 그대로 잘렸다(실기기 uiautomator로 확인). 그래서 AdActivity가 떠 있는 동안
+ * 내비게이션 바를 숨겨 광고가 화면 전체를 쓰게 한다. 바는 스와이프하면 잠깐 나타난다.
  */
 object AdActivityInsetsFix : Application.ActivityLifecycleCallbacks {
   private const val AD_ACTIVITY = "com.google.android.gms.ads.AdActivity"
+  // 화면 전환 직후 바로 hide()하면 시스템이 반영 안 하는 경우가 있어(홈 내비바 show와 같은
+  // 타이밍 경합) 조금 뒤에 한 번 더 건다.
+  private const val RETRY_DELAY_MS = 400L
+  private val hooked = WeakHashMap<Activity, Boolean>()
 
   fun register(app: Application) {
     app.registerActivityLifecycleCallbacks(this)
+  }
+
+  private fun hideNavBar(activity: Activity) {
+    val window = activity.window ?: return
+    WindowCompat.getInsetsController(window, window.decorView).apply {
+      systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+      hide(WindowInsetsCompat.Type.navigationBars())
+    }
   }
 
   // onCreate 시점엔 SDK가 아직 창 기능을 설정 중일 수 있어서(decor를 먼저 만들면
   // requestFeature 크래시 위험) 콘텐츠가 붙은 뒤인 onStart에서 적용한다.
   override fun onActivityStarted(activity: Activity) {
     if (activity.javaClass.name != AD_ACTIVITY) return
-    val content = activity.findViewById<View>(android.R.id.content) ?: return
-    // 반투명 테마라 패딩 영역에 뒤쪽 앱 화면이 비치지 않도록 광고 배경과 같은 검정으로 채운다.
-    content.setBackgroundColor(Color.BLACK)
-    ViewCompat.setOnApplyWindowInsetsListener(content) { v, insets ->
-      applyNavPadding(v, insets)
-      insets
-    }
-    ViewCompat.requestApplyInsets(content)
+    // onStart는 광고 클릭 후 돌아올 때마다 다시 불리므로 리스너는 한 번만 단다.
+    if (hooked.put(activity, true) != null) return
+    val decor = activity.window?.decorView ?: return
+    // 광고 클릭으로 브라우저/스토어에 다녀오는 등 포커스를 되찾을 때 바가 다시 보이므로 그때마다 숨긴다.
+    decor.viewTreeObserver.addOnWindowFocusChangeListener(object : ViewTreeObserver.OnWindowFocusChangeListener {
+      override fun onWindowFocusChanged(hasFocus: Boolean) {
+        if (activity.isDestroyed) {
+          if (decor.viewTreeObserver.isAlive) decor.viewTreeObserver.removeOnWindowFocusChangeListener(this)
+          return
+        }
+        if (hasFocus) hideNavBar(activity)
+      }
+    })
   }
 
-  // 홈 화면은 내비게이션 바를 숨겨두기 때문에 광고가 그 상태에서 뜨면 바 높이가 0으로
-  // 잡혀 패딩이 안 들어갔고(하단 닫기/설치 버튼이 화면 밖으로 잘림), 이후 바가 다시
-  // 나타나면 그대로 버튼을 덮었다. 보임 여부와 상관없이 바 자리만큼 비워둔다.
-  private fun applyNavPadding(v: View, insets: WindowInsetsCompat) {
-    val nav = insets.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.navigationBars())
-    if (v.paddingLeft != nav.left || v.paddingRight != nav.right || v.paddingBottom != nav.bottom) {
-      v.setPadding(nav.left, 0, nav.right, nav.bottom)
-    }
-  }
-
-  // SDK가 하위 뷰에서 인셋을 먼저 소비해 리스너가 안 불리는 경우를 대비해, 화면이 보인
-  // 뒤에도 현재 창의 인셋으로 한 번 더 적용한다.
   override fun onActivityResumed(activity: Activity) {
     if (activity.javaClass.name != AD_ACTIVITY) return
-    val content = activity.findViewById<View>(android.R.id.content) ?: return
-    content.post {
-      val insets = ViewCompat.getRootWindowInsets(content) ?: return@post
-      applyNavPadding(content, insets)
-    }
+    hideNavBar(activity)
+    activity.window?.decorView?.postDelayed({
+      if (!activity.isDestroyed) hideNavBar(activity)
+    }, RETRY_DELAY_MS)
   }
 
   override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
